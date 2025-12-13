@@ -54,16 +54,16 @@ export default function Settings() {
                 <p className="text-white">{profile.full_name || 'Not set'}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">Location</label>
-                <p className="text-white">{profile.location || 'Not set'}</p>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Position</label>
+                <p className="text-white">{profile.position || 'Not set'}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">School</label>
-                <p className="text-white">{profile.school || 'Not set'}</p>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Team</label>
+                <p className="text-white">{profile.team || 'Not set'}</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1">College</label>
-                <p className="text-white">{profile.college || 'Not set'}</p>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Jersey Number</label>
+                <p className="text-white">{profile.number || 'Not set'}</p>
               </div>
             </div>
             <button

@@ -1,17 +1,20 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 import { Upload, User, ArrowLeft, Save } from 'lucide-react';
 
 export default function EditProfile() {
-  const { profile, updateProfile, user } = useAuth();
+  const { profile, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState(profile?.full_name || '');
-  const [location, setLocation] = useState(profile?.location || '');
-  const [school, setSchool] = useState(profile?.school || '');
-  const [college, setCollege] = useState(profile?.college || '');
   const [bio, setBio] = useState(profile?.bio || '');
+  const [position, setPosition] = useState(profile?.position || '');
+  const [number, setNumber] = useState(profile?.number || '');
+  const [team, setTeam] = useState(profile?.team || '');
+  const [height, setHeight] = useState(profile?.height || '');
+  const [weight, setWeight] = useState(profile?.weight || '');
+  const [achievements, setAchievements] = useState(profile?.achievements || '');
+  const [stats, setStats] = useState(profile?.stats || '');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -28,28 +31,19 @@ export default function EditProfile() {
       }
 
       const file = e.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user?.id}/${Math.random()}.${fileExt}`;
+      const reader = new FileReader();
 
-      const { error: uploadError, data } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, { upsert: true });
+      reader.onloadend = async () => {
+        const dataUrl = reader.result as string;
+        setAvatarPreview(dataUrl);
+        await updateProfile({ avatar_url: dataUrl });
+        setMessage('Photo uploaded successfully!');
+        setUploading(false);
+      };
 
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
-      setAvatarPreview(publicUrl);
-
-      await updateProfile({ avatar_url: publicUrl });
-      setMessage('Photo uploaded successfully!');
+      reader.readAsDataURL(file);
     } catch (error) {
       setMessage('Error uploading photo: ' + (error as Error).message);
-    } finally {
       setUploading(false);
     }
   };
@@ -61,16 +55,21 @@ export default function EditProfile() {
 
     const { error } = await updateProfile({
       full_name: fullName,
-      location,
-      school,
-      college,
       bio,
+      position,
+      number,
+      team,
+      height,
+      weight,
+      achievements,
+      stats,
     });
 
     if (error) {
       setMessage('Error updating profile: ' + error.message);
     } else {
       setMessage('Profile updated successfully!');
+      setTimeout(() => navigate('/dashboard'), 1500);
     }
 
     setSaving(false);
@@ -167,46 +166,78 @@ export default function EditProfile() {
               />
             </div>
 
-            <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-300 mb-2">
-                Location
-              </label>
-              <input
-                id="location"
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                placeholder="New York, USA"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="position" className="block text-sm font-medium text-gray-300 mb-2">
+                  Position
+                </label>
+                <input
+                  id="position"
+                  type="text"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                  placeholder="Striker"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="number" className="block text-sm font-medium text-gray-300 mb-2">
+                  Jersey Number
+                </label>
+                <input
+                  id="number"
+                  type="text"
+                  value={number}
+                  onChange={(e) => setNumber(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                  placeholder="10"
+                />
+              </div>
             </div>
 
             <div>
-              <label htmlFor="school" className="block text-sm font-medium text-gray-300 mb-2">
-                School
+              <label htmlFor="team" className="block text-sm font-medium text-gray-300 mb-2">
+                Team
               </label>
               <input
-                id="school"
+                id="team"
                 type="text"
-                value={school}
-                onChange={(e) => setSchool(e.target.value)}
+                value={team}
+                onChange={(e) => setTeam(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                placeholder="Lincoln High School"
+                placeholder="FC Barcelona"
               />
             </div>
 
-            <div>
-              <label htmlFor="college" className="block text-sm font-medium text-gray-300 mb-2">
-                College
-              </label>
-              <input
-                id="college"
-                type="text"
-                value={college}
-                onChange={(e) => setCollege(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                placeholder="State University"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="height" className="block text-sm font-medium text-gray-300 mb-2">
+                  Height
+                </label>
+                <input
+                  id="height"
+                  type="text"
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                  placeholder="5'10&quot;"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="weight" className="block text-sm font-medium text-gray-300 mb-2">
+                  Weight
+                </label>
+                <input
+                  id="weight"
+                  type="text"
+                  value={weight}
+                  onChange={(e) => setWeight(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                  placeholder="165 lbs"
+                />
+              </div>
             </div>
 
             <div>
@@ -215,11 +246,39 @@ export default function EditProfile() {
               </label>
               <textarea
                 id="bio"
-                rows={4}
+                rows={3}
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all resize-none"
                 placeholder="Tell us about yourself..."
+              />
+            </div>
+
+            <div>
+              <label htmlFor="achievements" className="block text-sm font-medium text-gray-300 mb-2">
+                Achievements
+              </label>
+              <textarea
+                id="achievements"
+                rows={3}
+                value={achievements}
+                onChange={(e) => setAchievements(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all resize-none"
+                placeholder="Awards, trophies, honors..."
+              />
+            </div>
+
+            <div>
+              <label htmlFor="stats" className="block text-sm font-medium text-gray-300 mb-2">
+                Career Stats
+              </label>
+              <textarea
+                id="stats"
+                rows={3}
+                value={stats}
+                onChange={(e) => setStats(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all resize-none"
+                placeholder="Goals, assists, matches played..."
               />
             </div>
 

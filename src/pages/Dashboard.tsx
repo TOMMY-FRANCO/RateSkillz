@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase, Rating } from '../lib/supabase';
-import PlayerCard from '../components/PlayerCard';
+import PlayerCard, { Rating } from '../components/PlayerCard';
 import { Settings, Users, LogOut, Edit } from 'lucide-react';
 
 export default function Dashboard() {
@@ -25,14 +24,12 @@ export default function Dashboard() {
   const fetchRatings = async () => {
     if (!profile) return;
 
-    const { data, error } = await supabase
-      .from('ratings')
-      .select('*')
-      .eq('rated_user_id', profile.id);
+    const allRatings = JSON.parse(localStorage.getItem('ratings') || '{}');
+    const userRatings = Object.values(allRatings).filter(
+      (rating: any) => rating.player_id === profile.id
+    ) as Rating[];
 
-    if (!error && data) {
-      setRatings(data);
-    }
+    setRatings(userRatings);
     setLoading(false);
   };
 

@@ -1,14 +1,29 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase, Profile } from '../lib/supabase';
+
+export interface Profile {
+  id: string;
+  username: string;
+  full_name: string;
+  avatar_url?: string;
+  bio?: string;
+  position?: string;
+  number?: string;
+  team?: string;
+  height?: string;
+  weight?: string;
+  achievements?: string;
+  stats?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: { id: string } | null;
+  session: { user: { id: string } } | null;
   profile: Profile | null;
   loading: boolean;
   signUp: (email: string, password: string, username: string, fullName: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (username: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
@@ -17,108 +32,52 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<{ id: string } | null>(null);
+  const [session, setSession] = useState<{ user: { id: string } } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (!error && data) {
-      setProfile(data);
-    }
-  };
-
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      (async () => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        }
-        setLoading(false);
-      })();
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      (async () => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-        }
-      })();
-    });
-
-    return () => subscription.unsubscribe();
+    const storedProfile = localStorage.getItem('currentProfile');
+    if (storedProfile) {
+      const profileData = JSON.parse(storedProfile);
+      setProfile(profileData);
+      setUser({ id: profileData.id });
+      setSession({ user: { id: profileData.id } });
+    }
+    setLoading(false);
   }, []);
 
   const signUp = async (email: string, password: string, username: string, fullName: string) => {
-    try {
-      if (password.length < 8) {
-        return { error: new Error('Password must be at least 8 characters long') };
-      }
-
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('username', username)
-        .maybeSingle();
-
-      if (existingProfile) {
-        return { error: new Error('Username already taken') };
-      }
-
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: undefined,
-        }
-      });
-
-      if (error) return { error };
-      if (!data.user) return { error: new Error('Failed to create user') };
-
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          username,
-          full_name: fullName,
-        });
-
-      if (profileError) return { error: profileError };
-
-      await fetchProfile(data.user.id);
-
-      return { error: null };
-    } catch (error) {
-      return { error: error as Error };
-    }
+    return { error: new Error('Not implemented') };
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (username: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const allProfiles = JSON.parse(localStorage.getItem('profiles') || '{}');
 
-      if (error) {
-        if (error.message?.includes('Invalid login credentials')) {
-          return { error: new Error('Invalid email or password. Please try again.') };
-        }
-        return { error };
+      let profileData = Object.values(allProfiles).find(
+        (p: any) => p.username === username
+      ) as Profile | undefined;
+
+      if (!profileData) {
+        const newId = Date.now().toString();
+        profileData = {
+          id: newId,
+          username,
+          full_name: username,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        allProfiles[newId] = profileData;
+        localStorage.setItem('profiles', JSON.stringify(allProfiles));
       }
+
+      localStorage.setItem('currentProfile', JSON.stringify(profileData));
+      setProfile(profileData);
+      setUser({ id: profileData.id });
+      setSession({ user: { id: profileData.id } });
+
       return { error: null };
     } catch (error) {
       return { error: error as Error };
@@ -126,22 +85,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    localStorage.removeItem('currentProfile');
     setProfile(null);
+    setUser(null);
+    setSession(null);
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!user) return { error: new Error('No user logged in') };
+    if (!profile) return { error: new Error('No user logged in') };
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', user.id);
+      const updatedProfile = { ...profile, ...updates, updated_at: new Date().toISOString() };
 
-      if (error) return { error };
+      const allProfiles = JSON.parse(localStorage.getItem('profiles') || '{}');
+      allProfiles[profile.id] = updatedProfile;
+      localStorage.setItem('profiles', JSON.stringify(allProfiles));
+      localStorage.setItem('currentProfile', JSON.stringify(updatedProfile));
 
-      await fetchProfile(user.id);
+      setProfile(updatedProfile);
       return { error: null };
     } catch (error) {
       return { error: error as Error };
@@ -149,8 +110,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.id);
+    const storedProfile = localStorage.getItem('currentProfile');
+    if (storedProfile) {
+      setProfile(JSON.parse(storedProfile));
     }
   };
 

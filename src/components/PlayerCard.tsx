@@ -1,5 +1,19 @@
-import { Profile, Rating } from '../lib/supabase';
+import { Profile } from '../contexts/AuthContext';
 import { User } from 'lucide-react';
+
+export interface Rating {
+  id: string;
+  rater_id: string;
+  player_id: string;
+  pac: number;
+  sho: number;
+  pas: number;
+  dri: number;
+  def: number;
+  phy: number;
+  comment?: string;
+  created_at: string;
+}
 
 interface PlayerCardProps {
   profile: Profile;
@@ -8,7 +22,7 @@ interface PlayerCardProps {
 }
 
 export default function PlayerCard({ profile, ratings = [], size = 'large' }: PlayerCardProps) {
-  const calculateAverageRating = (attribute: keyof Rating) => {
+  const calculateAverageRating = (attribute: keyof Omit<Rating, 'id' | 'rater_id' | 'player_id' | 'comment' | 'created_at'>) => {
     if (ratings.length === 0) return 50;
     const sum = ratings.reduce((acc, rating) => acc + rating[attribute], 0);
     return Math.round(sum / ratings.length);
