@@ -88,16 +88,19 @@ export default function PlayerCard({ profile, ratings = [], size = 'large', rank
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <div className="bg-purple-700 px-4 py-2 rounded-lg text-white font-bold text-sm border border-purple-300/50 text-center">
+            <div className="flex flex-col gap-3">
+              <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-5 py-3 rounded-xl text-white font-black text-base border-2 border-purple-300 text-center shadow-xl">
                 {profile.team || 'RS 25'}
               </div>
               {rank && (
-                <div className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 px-4 py-2 rounded-lg text-black font-black text-base border-2 border-yellow-300 text-center shadow-2xl animate-pulse">
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs font-bold uppercase tracking-wider">Rank</span>
-                    <span className="text-xl">#{rank.position}</span>
-                    <span className="text-xs">of {rank.total}</span>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl blur-sm"></div>
+                  <div className="relative bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 px-5 py-3 rounded-xl text-black font-black text-base border-3 border-yellow-200 text-center shadow-2xl">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="text-xs font-black uppercase tracking-widest">RANK</span>
+                      <span className="text-2xl leading-none">#{rank.position}</span>
+                      <span className="text-xs font-bold">of {rank.total}</span>
+                    </div>
                   </div>
                 </div>
               )}
