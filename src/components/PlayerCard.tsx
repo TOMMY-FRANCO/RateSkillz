@@ -93,8 +93,12 @@ export default function PlayerCard({ profile, ratings = [], size = 'large', rank
                 {profile.team || 'RS 25'}
               </div>
               {rank && (
-                <div className="bg-gradient-to-r from-yellow-500 to-orange-500 px-3 py-1 rounded-lg text-white font-bold text-xs border border-yellow-300/50 text-center shadow-lg">
-                  #{rank.position} of {rank.total}
+                <div className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 px-4 py-2 rounded-lg text-black font-black text-base border-2 border-yellow-300 text-center shadow-2xl animate-pulse">
+                  <div className="flex flex-col items-center">
+                    <span className="text-xs font-bold uppercase tracking-wider">Rank</span>
+                    <span className="text-xl">#{rank.position}</span>
+                    <span className="text-xs">of {rank.total}</span>
+                  </div>
                 </div>
               )}
             </div>
