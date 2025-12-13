@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import PlayerCard, { Rating } from '../components/PlayerCard';
-import { ArrowLeft, ThumbsUp, ThumbsDown, Send } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
 
 interface Comment {
@@ -22,6 +22,8 @@ interface ProfileLike {
   is_like: boolean;
 }
 
+type FriendStatus = 'none' | 'pending_sent' | 'pending_received' | 'accepted' | 'blocked';
+
 export default function ProfileView() {
   const { username } = useParams<{ username: string }>();
   const { profile: currentUser } = useAuth();
@@ -35,6 +37,8 @@ export default function ProfileView() {
   const [dislikes, setDislikes] = useState(0);
   const [userVote, setUserVote] = useState<boolean | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [friendStatus, setFriendStatus] = useState<FriendStatus>('none');
+  const [friendshipId, setFriendshipId] = useState<string | null>(null);
 
   useEffect(() => {
     if (username) {
@@ -57,6 +61,29 @@ export default function ProfileView() {
       }
 
       setProfile(profileData);
+
+      if (currentUser && profileData.id !== currentUser.id) {
+        const { data: friendData } = await supabase
+          .from('friends')
+          .select('*')
+          .or(`and(user_id.eq.${currentUser.id},friend_id.eq.${profileData.id}),and(user_id.eq.${profileData.id},friend_id.eq.${currentUser.id})`)
+          .maybeSingle();
+
+        if (friendData) {
+          setFriendshipId(friendData.id);
+          if (friendData.status === 'accepted') {
+            setFriendStatus('accepted');
+          } else if (friendData.status === 'blocked') {
+            setFriendStatus('blocked');
+          } else if (friendData.status === 'pending') {
+            if (friendData.user_id === currentUser.id) {
+              setFriendStatus('pending_sent');
+            } else {
+              setFriendStatus('pending_received');
+            }
+          }
+        }
+      }
 
       const { data: ratingsData } = await supabase
         .from('ratings')
@@ -97,8 +124,68 @@ export default function ProfileView() {
     }
   };
 
-  const handleVote = async (isLike: boolean) => {
+  const handleFriendRequest = async () => {
     if (!currentUser || !profile) return;
+
+    try {
+      if (friendStatus === 'none') {
+        const { data, error } = await supabase
+          .from('friends')
+          .insert({
+            user_id: currentUser.id,
+            friend_id: profile.id,
+            status: 'pending',
+          })
+          .select()
+          .single();
+
+        if (!error && data) {
+          setFriendshipId(data.id);
+          setFriendStatus('pending_sent');
+        }
+      } else if (friendStatus === 'pending_sent') {
+        if (friendshipId) {
+          const { error } = await supabase
+            .from('friends')
+            .delete()
+            .eq('id', friendshipId);
+
+          if (!error) {
+            setFriendshipId(null);
+            setFriendStatus('none');
+          }
+        }
+      } else if (friendStatus === 'pending_received') {
+        if (friendshipId) {
+          const { error } = await supabase
+            .from('friends')
+            .update({ status: 'accepted' })
+            .eq('id', friendshipId);
+
+          if (!error) {
+            setFriendStatus('accepted');
+          }
+        }
+      } else if (friendStatus === 'accepted') {
+        if (friendshipId) {
+          const { error } = await supabase
+            .from('friends')
+            .delete()
+            .eq('id', friendshipId);
+
+          if (!error) {
+            setFriendshipId(null);
+            setFriendStatus('none');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error managing friend request:', error);
+    }
+  };
+
+  const handleVote = async (isLike: boolean) => {
+    if (!currentUser || !profile || friendStatus !== 'accepted') return;
 
     try {
       if (userVote === isLike) {
@@ -217,35 +304,78 @@ export default function ProfileView() {
         </div>
 
         <div className="max-w-2xl mx-auto space-y-6">
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
-            <h3 className="text-xl font-bold text-white mb-4">Rate this player</h3>
-            <div className="flex items-center justify-center space-x-8">
-              <button
-                onClick={() => handleVote(true)}
-                disabled={!currentUser}
-                className={`flex flex-col items-center space-y-2 transition-all ${
-                  userVote === true
-                    ? 'text-green-400'
-                    : 'text-gray-400 hover:text-green-400'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                <ThumbsUp className="w-12 h-12" />
-                <span className="text-2xl font-bold">{likes}</span>
-              </button>
-              <button
-                onClick={() => handleVote(false)}
-                disabled={!currentUser}
-                className={`flex flex-col items-center space-y-2 transition-all ${
-                  userVote === false
-                    ? 'text-red-400'
-                    : 'text-gray-400 hover:text-red-400'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                <ThumbsDown className="w-12 h-12" />
-                <span className="text-2xl font-bold">{dislikes}</span>
-              </button>
+          {currentUser && profile.id !== currentUser.id && (
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
+              <div className="flex items-center justify-center">
+                {friendStatus === 'none' && (
+                  <button
+                    onClick={handleFriendRequest}
+                    className="px-8 py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all flex items-center space-x-2"
+                  >
+                    <UserPlus className="w-5 h-5" />
+                    <span>Send Friend Request</span>
+                  </button>
+                )}
+                {friendStatus === 'pending_sent' && (
+                  <button
+                    onClick={handleFriendRequest}
+                    className="px-8 py-3 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-500 transition-all flex items-center space-x-2"
+                  >
+                    <Clock className="w-5 h-5" />
+                    <span>Request Pending (Cancel)</span>
+                  </button>
+                )}
+                {friendStatus === 'pending_received' && (
+                  <button
+                    onClick={handleFriendRequest}
+                    className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold rounded-lg hover:from-blue-400 hover:to-purple-400 transition-all flex items-center space-x-2"
+                  >
+                    <UserCheck className="w-5 h-5" />
+                    <span>Accept Friend Request</span>
+                  </button>
+                )}
+                {friendStatus === 'accepted' && (
+                  <button
+                    onClick={handleFriendRequest}
+                    className="px-8 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-500 transition-all flex items-center space-x-2"
+                  >
+                    <UserX className="w-5 h-5" />
+                    <span>Remove Friend</span>
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {friendStatus === 'accepted' && (
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
+              <h3 className="text-xl font-bold text-white mb-4">Rate this player</h3>
+              <div className="flex items-center justify-center space-x-8">
+                <button
+                  onClick={() => handleVote(true)}
+                  className={`flex flex-col items-center space-y-2 transition-all ${
+                    userVote === true
+                      ? 'text-green-400'
+                      : 'text-gray-400 hover:text-green-400'
+                  }`}
+                >
+                  <ThumbsUp className="w-12 h-12" />
+                  <span className="text-2xl font-bold">{likes}</span>
+                </button>
+                <button
+                  onClick={() => handleVote(false)}
+                  className={`flex flex-col items-center space-y-2 transition-all ${
+                    userVote === false
+                      ? 'text-red-400'
+                      : 'text-gray-400 hover:text-red-400'
+                  }`}
+                >
+                  <ThumbsDown className="w-12 h-12" />
+                  <span className="text-2xl font-bold">{dislikes}</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
             <h3 className="text-xl font-bold text-white mb-4">Comments</h3>
