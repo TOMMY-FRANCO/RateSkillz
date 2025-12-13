@@ -1,5 +1,7 @@
+import { useRef } from 'react';
 import { Profile } from '../contexts/AuthContext';
-import { User } from 'lucide-react';
+import { User, Download } from 'lucide-react';
+import html2canvas from 'html2canvas';
 
 export interface Rating {
   id: string;
@@ -19,9 +21,13 @@ interface PlayerCardProps {
   profile: Profile;
   ratings?: Rating[];
   size?: 'small' | 'medium' | 'large';
+  rank?: { position: number; total: number };
+  showDownloadButton?: boolean;
 }
 
-export default function PlayerCard({ profile, ratings = [], size = 'large' }: PlayerCardProps) {
+export default function PlayerCard({ profile, ratings = [], size = 'large', rank, showDownloadButton = false }: PlayerCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+
   const calculateAverageRating = (attribute: keyof Omit<Rating, 'id' | 'rater_id' | 'player_id' | 'comment' | 'created_at'>) => {
     if (ratings.length === 0) return 50;
     const sum = ratings.reduce((acc, rating) => acc + rating[attribute], 0);
@@ -45,9 +51,29 @@ export default function PlayerCard({ profile, ratings = [], size = 'large' }: Pl
     large: 'w-[420px]',
   };
 
+  const handleDownload = async () => {
+    if (!cardRef.current) return;
+
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: null,
+        scale: 2,
+        logging: false,
+      });
+
+      const link = document.createElement('a');
+      link.download = `${profile.username}-player-card.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (error) {
+      console.error('Error downloading card:', error);
+    }
+  };
+
   return (
-    <div className={`${sizeClasses[size]} relative mx-auto`}>
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-600 via-purple-700 to-gray-900 shadow-2xl border-4 border-purple-400/30">
+    <div className="flex flex-col items-center gap-4">
+      <div ref={cardRef} className={`${sizeClasses[size]} relative`}>
+        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-600 via-purple-700 to-gray-900 shadow-2xl border-4 border-purple-400/30">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-pink-400/20 via-transparent to-transparent"></div>
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMDMiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
 
@@ -62,8 +88,15 @@ export default function PlayerCard({ profile, ratings = [], size = 'large' }: Pl
               </div>
             </div>
 
-            <div className="bg-purple-700 px-4 py-2 rounded-lg text-white font-bold text-sm border border-purple-300/50">
-              {profile.team || 'RS 25'}
+            <div className="flex flex-col gap-2">
+              <div className="bg-purple-700 px-4 py-2 rounded-lg text-white font-bold text-sm border border-purple-300/50 text-center">
+                {profile.team || 'RS 25'}
+              </div>
+              {rank && (
+                <div className="bg-gradient-to-r from-yellow-500 to-orange-500 px-3 py-1 rounded-lg text-white font-bold text-xs border border-yellow-300/50 text-center shadow-lg">
+                  #{rank.position} of {rank.total}
+                </div>
+              )}
             </div>
           </div>
 
@@ -118,7 +151,18 @@ export default function PlayerCard({ profile, ratings = [], size = 'large' }: Pl
         </div>
 
         <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-white/5 pointer-events-none rounded-2xl"></div>
+        </div>
       </div>
+
+      {showDownloadButton && (
+        <button
+          onClick={handleDownload}
+          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-bold rounded-lg hover:from-green-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+        >
+          <Download className="w-5 h-5" />
+          Download PNG
+        </button>
+      )}
     </div>
   );
 }

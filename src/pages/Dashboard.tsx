@@ -4,16 +4,19 @@ import { useAuth } from '../contexts/AuthContext';
 import PlayerCard, { Rating } from '../components/PlayerCard';
 import OnlineStatus from '../components/OnlineStatus';
 import { Settings, Users, LogOut, Edit } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rank, setRank] = useState<{ position: number; total: number } | undefined>();
 
   useEffect(() => {
     if (profile) {
       fetchRatings();
+      calculateRank();
     }
   }, [profile]);
 
@@ -32,6 +35,49 @@ export default function Dashboard() {
 
     setRatings(userRatings);
     setLoading(false);
+  };
+
+  const calculateRank = async () => {
+    if (!profile) return;
+
+    try {
+      const { data: profiles, error } = await supabase
+        .from('profiles')
+        .select('id');
+
+      if (error) throw error;
+
+      const allRatingsData = JSON.parse(localStorage.getItem('ratings') || '{}');
+
+      const profileOveralls = profiles.map((p) => {
+        const playerRatings = Object.values(allRatingsData).filter(
+          (rating: any) => rating.player_id === p.id
+        ) as Rating[];
+
+        if (playerRatings.length === 0) {
+          return { id: p.id, overall: 50 };
+        }
+
+        const stats = {
+          pac: playerRatings.reduce((acc, r) => acc + r.pac, 0) / playerRatings.length,
+          sho: playerRatings.reduce((acc, r) => acc + r.sho, 0) / playerRatings.length,
+          pas: playerRatings.reduce((acc, r) => acc + r.pas, 0) / playerRatings.length,
+          dri: playerRatings.reduce((acc, r) => acc + r.dri, 0) / playerRatings.length,
+          def: playerRatings.reduce((acc, r) => acc + r.def, 0) / playerRatings.length,
+          phy: playerRatings.reduce((acc, r) => acc + r.phy, 0) / playerRatings.length,
+        };
+
+        const overall = Math.round(Object.values(stats).reduce((a, b) => a + b, 0) / 6);
+        return { id: p.id, overall };
+      });
+
+      profileOveralls.sort((a, b) => b.overall - a.overall);
+
+      const position = profileOveralls.findIndex((p) => p.id === profile.id) + 1;
+      setRank({ position, total: profileOveralls.length });
+    } catch (error) {
+      console.error('Error calculating rank:', error);
+    }
   };
 
   if (!profile) {
@@ -104,7 +150,7 @@ export default function Dashboard() {
           {loading ? (
             <div className="text-white">Loading your card...</div>
           ) : (
-            <PlayerCard profile={profile} ratings={ratings} />
+            <PlayerCard profile={profile} ratings={ratings} rank={rank} showDownloadButton={true} />
           )}
         </div>
 
