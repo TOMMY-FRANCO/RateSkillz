@@ -1,6 +1,5 @@
 import { Profile } from '../contexts/AuthContext';
 import { User } from 'lucide-react';
-import OnlineStatus from './OnlineStatus';
 
 export interface Rating {
   id: string;
@@ -48,11 +47,11 @@ export default function PlayerCard({ profile, ratings = [], size = 'large' }: Pl
 
   return (
     <div className={`${sizeClasses[size]} relative mx-auto`}>
-      <div className="relative" style={{ paddingBottom: '145%' }}>
+      <div className="relative" style={{ paddingBottom: '120%' }}>
         <div
           className="absolute inset-0 overflow-hidden"
           style={{
-            clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+            clipPath: 'polygon(0 0, 100% 0, 100% 90%, 50% 100%, 0 90%)',
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-purple-700 to-gray-900 opacity-90"></div>
@@ -60,13 +59,13 @@ export default function PlayerCard({ profile, ratings = [], size = 'large' }: Pl
 
           <div className="absolute inset-0 border-4 border-gradient-to-r from-purple-400 via-pink-300 to-yellow-300"
             style={{
-              clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+              clipPath: 'polygon(0 0, 100% 0, 100% 90%, 50% 100%, 0 90%)',
               borderImage: 'linear-gradient(135deg, #c084fc, #f9a8d4, #fcd34d) 1',
             }}
           ></div>
 
-          <div className="absolute inset-0 p-5">
-            <div className="flex items-start justify-between mb-3">
+          <div className="absolute inset-0 px-5 pt-4 pb-2 flex flex-col">
+            <div className="flex items-start justify-between mb-2">
               <div className="flex flex-col items-center space-y-1 bg-purple-900/50 rounded-lg px-3 py-2 backdrop-blur-sm border border-purple-400/30">
                 <div className="text-5xl font-black text-white drop-shadow-lg">
                   {overall}
@@ -76,15 +75,12 @@ export default function PlayerCard({ profile, ratings = [], size = 'large' }: Pl
                 </div>
               </div>
 
-              <div className="flex flex-col items-end space-y-1">
-                <div className="bg-purple-700 px-3 py-1 rounded text-white font-bold text-xs border border-purple-300/50">
-                  {profile.team || 'RS 25'}
-                </div>
-                <OnlineStatus lastActive={profile.last_active} size="medium" />
+              <div className="bg-purple-700 px-3 py-1 rounded text-white font-bold text-xs border border-purple-300/50">
+                {profile.team || 'RS 25'}
               </div>
             </div>
 
-            <div className="relative mb-2" style={{ height: '45%' }}>
+            <div className="relative mb-2 flex-grow max-h-[40%]">
               <div className="w-full h-full mx-auto overflow-visible flex items-end justify-center">
                 {profile.avatar_url ? (
                   <img
@@ -108,26 +104,26 @@ export default function PlayerCard({ profile, ratings = [], size = 'large' }: Pl
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-purple-900/90 via-purple-800/90 to-purple-900/90 backdrop-blur-sm px-4 py-3 rounded-lg border border-purple-400/30 mb-3">
-              <h3 className="text-3xl font-black text-white text-center tracking-wide uppercase drop-shadow-lg">
+            <div className="bg-gradient-to-r from-purple-900/90 via-purple-800/90 to-purple-900/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-purple-400/30 mb-2 mt-auto">
+              <h3 className="text-2xl font-black text-white text-center tracking-wide uppercase drop-shadow-lg">
                 {profile.full_name || profile.username}
               </h3>
             </div>
 
-            <div className="grid grid-cols-6 gap-1 bg-gradient-to-r from-purple-950/80 via-black/80 to-purple-950/80 backdrop-blur-sm p-3 rounded-lg border border-purple-400/30">
+            <div className="grid grid-cols-6 gap-1 bg-gradient-to-r from-purple-950/80 via-black/80 to-purple-950/80 backdrop-blur-sm p-2 rounded-lg border border-purple-400/30 mb-2">
               {Object.entries(stats).map(([key, value]) => (
                 <div key={key} className="flex flex-col items-center">
-                  <span className="text-[10px] font-bold text-purple-200 uppercase tracking-wide">{key}</span>
-                  <span className="text-2xl font-black text-white drop-shadow-lg">{value}</span>
+                  <span className="text-[9px] font-bold text-purple-200 uppercase tracking-wide">{key}</span>
+                  <span className="text-xl font-black text-white drop-shadow-lg">{value}</span>
                 </div>
               ))}
             </div>
 
             {ratings.length > 0 && (
-              <div className="mt-2 text-center">
+              <div className="text-center mb-2">
                 <div className="inline-block bg-purple-900/50 px-3 py-1 rounded-full border border-purple-400/30">
-                  <p className="text-xs text-purple-100 font-semibold">
-                    ⭐ Rated by {ratings.length}
+                  <p className="text-[10px] text-purple-100 font-semibold">
+                    Rated by {ratings.length}
                   </p>
                 </div>
               </div>
@@ -141,7 +137,7 @@ export default function PlayerCard({ profile, ratings = [], size = 'large' }: Pl
         <div
           className="absolute -inset-2 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-yellow-500/20 blur-xl -z-10"
           style={{
-            clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+            clipPath: 'polygon(0 0, 100% 0, 100% 90%, 50% 100%, 0 90%)',
           }}
         ></div>
       </div>

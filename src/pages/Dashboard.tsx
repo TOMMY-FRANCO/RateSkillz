@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PlayerCard, { Rating } from '../components/PlayerCard';
+import OnlineStatus from '../components/OnlineStatus';
 import { Settings, Users, LogOut, Edit } from 'lucide-react';
 
 export default function Dashboard() {
@@ -89,6 +90,9 @@ export default function Dashboard() {
           <h2 className="text-3xl font-bold text-white mb-2">
             Welcome, {profile.username}!
           </h2>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <OnlineStatus lastActive={profile.last_active} size="large" />
+          </div>
           <p className="text-gray-400">
             {ratings.length === 0
               ? 'Invite friends to rate your player card'
