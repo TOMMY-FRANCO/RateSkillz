@@ -486,9 +486,20 @@ export default function ProfileView() {
           {currentUser && profile.id !== currentUser.id && (
             <>
               <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
-                <h3 className="text-xl font-bold text-white mb-4">Your Skill Ratings</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-white">Your Skill Ratings</h3>
+                  {ratings.length > 0 && (
+                    <span className="text-sm text-cyan-400 font-medium">
+                      Card shows average of {ratings.length} {ratings.length === 1 ? 'rating' : 'ratings'}
+                    </span>
+                  )}
+                </div>
                 {friendStatus === 'accepted' ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <>
+                    <p className="text-sm text-gray-400 mb-4">
+                      Click any skill to edit your rating. The player card above shows the average from all friends.
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {[
                       { key: 'pac', label: 'PAC', color: 'from-blue-500 to-cyan-500' },
                       { key: 'sho', label: 'SHO', color: 'from-red-500 to-orange-500' },
@@ -528,6 +539,7 @@ export default function ProfileView() {
                       );
                     })}
                   </div>
+                  </>
                 ) : (
                   <div className="text-center text-gray-400 py-8">
                     Become friends to rate this player's skills
