@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, LogOut, User, Users } from 'lucide-react';
+import { ArrowLeft, LogOut, User, Users, Bell } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Profile } from '../contexts/AuthContext';
 import OnlineStatus from '../components/OnlineStatus';
@@ -11,10 +11,30 @@ export default function Settings() {
   const navigate = useNavigate();
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   useEffect(() => {
     loadProfiles();
-  }, []);
+    if (profile) {
+      fetchPendingRequests();
+    }
+  }, [profile]);
+
+  const fetchPendingRequests = async () => {
+    if (!profile) return;
+
+    try {
+      const { data } = await supabase
+        .from('friends')
+        .select('id')
+        .eq('friend_id', profile.id)
+        .eq('status', 'pending');
+
+      setPendingRequestsCount(data?.length || 0);
+    } catch (error) {
+      console.error('Error fetching pending requests:', error);
+    }
+  };
 
   const loadProfiles = async () => {
     try {
@@ -60,6 +80,17 @@ export default function Settings() {
               </button>
               <h1 className="text-xl font-bold text-white">Settings</h1>
             </div>
+            <button
+              onClick={() => navigate('/friends')}
+              className="text-gray-300 hover:text-cyan-400 transition-colors relative bg-none border-none cursor-pointer"
+            >
+              <Bell className="w-5 h-5" />
+              {pendingRequestsCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                  {pendingRequestsCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
       </nav>

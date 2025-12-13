@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PlayerCard, { Rating } from '../components/PlayerCard';
 import OnlineStatus from '../components/OnlineStatus';
-import { Settings, Users, LogOut, Edit } from 'lucide-react';
+import { Settings, Users, LogOut, Edit, Bell } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 export default function Dashboard() {
@@ -12,13 +12,31 @@ export default function Dashboard() {
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [loading, setLoading] = useState(true);
   const [rank, setRank] = useState<{ position: number; total: number } | undefined>();
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   useEffect(() => {
     if (profile) {
       fetchRatings();
       calculateRank();
+      fetchPendingRequests();
     }
   }, [profile]);
+
+  const fetchPendingRequests = async () => {
+    if (!profile) return;
+
+    try {
+      const { data } = await supabase
+        .from('friends')
+        .select('id')
+        .eq('friend_id', profile.id)
+        .eq('status', 'pending');
+
+      setPendingRequestsCount(data?.length || 0);
+    } catch (error) {
+      console.error('Error fetching pending requests:', error);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -154,10 +172,15 @@ export default function Dashboard() {
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate('/friends')}
-                className="text-gray-300 hover:text-cyan-400 transition-colors flex items-center space-x-2 bg-none border-none cursor-pointer"
+                className="text-gray-300 hover:text-cyan-400 transition-colors flex items-center space-x-2 bg-none border-none cursor-pointer relative"
               >
-                <Users className="w-5 h-5" />
-                <span className="hidden sm:inline">Friends</span>
+                <Bell className="w-5 h-5" />
+                {pendingRequestsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                    {pendingRequestsCount}
+                  </span>
+                )}
+                <span className="hidden sm:inline">Notifications</span>
               </button>
               <button
                 onClick={() => navigate('/edit-profile')}
@@ -209,15 +232,20 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
           <button
             onClick={() => navigate('/friends')}
-            className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-6 hover:border-cyan-500/50 transition-all group cursor-pointer text-left w-full"
+            className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-6 hover:border-cyan-500/50 transition-all group cursor-pointer text-left w-full relative"
           >
+            {pendingRequestsCount > 0 && (
+              <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                {pendingRequestsCount}
+              </span>
+            )}
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Users className="w-6 h-6 text-black" />
+                <Bell className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Friends</h3>
-                <p className="text-gray-400 text-sm">Manage connections</p>
+                <h3 className="text-white font-semibold">Notifications</h3>
+                <p className="text-gray-400 text-sm">Friend requests</p>
               </div>
             </div>
           </button>
