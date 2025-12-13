@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import EditProfile from './pages/EditProfile';
 import Friends from './pages/Friends';
 import Settings from './pages/Settings';
+import ProfileView from './pages/ProfileView';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -75,6 +76,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Settings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/:username"
+          element={
+            <ProtectedRoute>
+              <ProfileView />
             </ProtectedRoute>
           }
         />
