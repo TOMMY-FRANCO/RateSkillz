@@ -5,6 +5,7 @@ export interface Profile {
   username: string;
   full_name: string;
   avatar_url?: string;
+  avatar_position?: { x: number; y: number; scale: number };
   bio?: string;
   position?: string;
   number?: string;
@@ -15,6 +16,14 @@ export interface Profile {
   stats?: string;
   created_at?: string;
   updated_at?: string;
+  last_active?: string;
+}
+
+export function isUserOnline(lastActive?: string): boolean {
+  if (!lastActive) return false;
+  const lastActiveTime = new Date(lastActive).getTime();
+  const now = Date.now();
+  return now - lastActiveTime < 5 * 60 * 1000;
 }
 
 interface AuthContextType {
@@ -27,6 +36,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
+  updateActivity: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,6 +46,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<{ user: { id: string } } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const updateActivity = () => {
+    if (!profile) return;
+
+    const updatedProfile = { ...profile, last_active: new Date().toISOString() };
+    const allProfiles = JSON.parse(localStorage.getItem('profiles') || '{}');
+    allProfiles[profile.id] = updatedProfile;
+    localStorage.setItem('profiles', JSON.stringify(allProfiles));
+    localStorage.setItem('currentProfile', JSON.stringify(updatedProfile));
+    setProfile(updatedProfile);
+  };
 
   useEffect(() => {
     const storedProfile = localStorage.getItem('currentProfile');
@@ -47,6 +68,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (!profile) return;
+
+    updateActivity();
+
+    const interval = setInterval(() => {
+      updateActivity();
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [profile?.id]);
 
   const signUp = async (email: string, password: string, username: string, fullName: string) => {
     return { error: new Error('Not implemented') };
@@ -68,8 +101,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           full_name: username,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          last_active: new Date().toISOString(),
         };
         allProfiles[newId] = profileData;
+        localStorage.setItem('profiles', JSON.stringify(allProfiles));
+      } else {
+        profileData = { ...profileData, last_active: new Date().toISOString() };
+        allProfiles[profileData.id] = profileData;
         localStorage.setItem('profiles', JSON.stringify(allProfiles));
       }
 
@@ -126,6 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     updateProfile,
     refreshProfile,
+    updateActivity,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

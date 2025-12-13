@@ -19,6 +19,10 @@ export default function EditProfile() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [avatarPreview, setAvatarPreview] = useState(profile?.avatar_url || '');
+  const [avatarPosition, setAvatarPosition] = useState(
+    profile?.avatar_position || { x: 0, y: 0, scale: 1 }
+  );
+  const [showPositioning, setShowPositioning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,11 +37,11 @@ export default function EditProfile() {
       const file = e.target.files[0];
       const reader = new FileReader();
 
-      reader.onloadend = async () => {
+      reader.onloadend = () => {
         const dataUrl = reader.result as string;
         setAvatarPreview(dataUrl);
-        await updateProfile({ avatar_url: dataUrl });
-        setMessage('Photo uploaded successfully!');
+        setShowPositioning(true);
+        setMessage('Use the controls below to position your image');
         setUploading(false);
       };
 
@@ -46,6 +50,12 @@ export default function EditProfile() {
       setMessage('Error uploading photo: ' + (error as Error).message);
       setUploading(false);
     }
+  };
+
+  const saveAvatar = async () => {
+    await updateProfile({ avatar_url: avatarPreview, avatar_position: avatarPosition });
+    setShowPositioning(false);
+    setMessage('Photo saved successfully!');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -111,6 +121,10 @@ export default function EditProfile() {
                     src={avatarPreview}
                     alt="Profile"
                     className="w-full h-full object-cover"
+                    style={{
+                      transform: `translate(${avatarPosition.x}px, ${avatarPosition.y}px) scale(${avatarPosition.scale})`,
+                      transformOrigin: 'center center',
+                    }}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
@@ -119,6 +133,7 @@ export default function EditProfile() {
                 )}
               </div>
               <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
                 className="absolute bottom-0 right-0 w-10 h-10 bg-gradient-to-r from-green-500 to-cyan-500 rounded-full flex items-center justify-center hover:scale-110 transition-transform disabled:opacity-50"
@@ -135,6 +150,68 @@ export default function EditProfile() {
             </div>
             {uploading && (
               <p className="mt-2 text-sm text-cyan-400">Uploading...</p>
+            )}
+
+            {showPositioning && avatarPreview && (
+              <div className="mt-6 space-y-4 bg-gray-800 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-white mb-3">Position Your Image</h3>
+
+                <div>
+                  <label className="block text-xs text-gray-400 mb-2">Horizontal Position</label>
+                  <input
+                    type="range"
+                    min="-50"
+                    max="50"
+                    value={avatarPosition.x}
+                    onChange={(e) => setAvatarPosition({ ...avatarPosition, x: Number(e.target.value) })}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-400 mb-2">Vertical Position</label>
+                  <input
+                    type="range"
+                    min="-50"
+                    max="50"
+                    value={avatarPosition.y}
+                    onChange={(e) => setAvatarPosition({ ...avatarPosition, y: Number(e.target.value) })}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-gray-400 mb-2">Zoom: {avatarPosition.scale.toFixed(1)}x</label>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2"
+                    step="0.1"
+                    value={avatarPosition.scale}
+                    onChange={(e) => setAvatarPosition({ ...avatarPosition, scale: Number(e.target.value) })}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={saveAvatar}
+                    className="flex-1 py-2 bg-green-500 text-black font-semibold rounded-lg hover:bg-green-400 transition-all"
+                  >
+                    Save Position
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAvatarPosition({ x: 0, y: 0, scale: 1 });
+                    }}
+                    className="px-4 py-2 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-all"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
             )}
           </div>
 

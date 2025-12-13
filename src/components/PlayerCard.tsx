@@ -1,5 +1,6 @@
 import { Profile } from '../contexts/AuthContext';
 import { User } from 'lucide-react';
+import OnlineStatus from './OnlineStatus';
 
 export interface Rating {
   id: string;
@@ -47,10 +48,16 @@ export default function PlayerCard({ profile, ratings = [], size = 'large' }: Pl
 
   return (
     <div className={`${sizeClasses[size]} relative`}>
-      <div className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-2xl overflow-hidden shadow-2xl border-2 border-cyan-500/30">
+      <div
+        className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-black shadow-2xl border-2 border-cyan-500/30"
+        style={{
+          clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+          paddingBottom: '110%'
+        }}
+      >
         <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-cyan-500/5"></div>
 
-        <div className="relative p-6">
+        <div className="absolute inset-0 p-6 flex flex-col">
           <div className="flex items-start justify-between mb-4">
             <div className="space-y-1">
               <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">
@@ -61,19 +68,30 @@ export default function PlayerCard({ profile, ratings = [], size = 'large' }: Pl
               </div>
             </div>
 
-            <div className="text-right space-y-1">
-              <div className="text-sm font-bold text-green-400">FC 25</div>
-              <div className="text-xs text-gray-400">PLAYER</div>
+            <div className="flex flex-col items-end space-y-2">
+              <div className="text-right">
+                <div className="text-sm font-bold text-green-400">RS 25</div>
+                <div className="text-xs text-gray-400">PLAYER</div>
+              </div>
+              <OnlineStatus lastActive={profile.last_active} size="medium" />
             </div>
           </div>
 
-          <div className="relative mb-6">
+          <div className="relative mb-4 flex-shrink-0">
             <div className="w-48 h-48 mx-auto rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 overflow-hidden border-2 border-cyan-500/30 shadow-lg">
               {profile.avatar_url ? (
                 <img
                   src={profile.avatar_url}
                   alt={profile.username}
                   className="w-full h-full object-cover"
+                  style={
+                    profile.avatar_position
+                      ? {
+                          transform: `translate(${profile.avatar_position.x}px, ${profile.avatar_position.y}px) scale(${profile.avatar_position.scale})`,
+                          transformOrigin: 'center center',
+                        }
+                      : undefined
+                  }
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -109,15 +127,13 @@ export default function PlayerCard({ profile, ratings = [], size = 'large' }: Pl
           </div>
 
           {ratings.length > 0 && (
-            <div className="mt-4 text-center">
+            <div className="mt-auto text-center pb-8">
               <p className="text-xs text-gray-500">
                 Rated by {ratings.length} {ratings.length === 1 ? 'friend' : 'friends'}
               </p>
             </div>
           )}
         </div>
-
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 via-cyan-500 to-green-500"></div>
       </div>
     </div>
   );

@@ -36,7 +36,7 @@ export default function Landing() {
                 <Star className="w-6 h-6 text-black" />
               </div>
               <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">
-                FC Rating
+                RateSkillz
               </h1>
             </div>
           </div>
