@@ -50,17 +50,17 @@ export default function PlayerCard({ profile, ratings = [], size = 'large' }: Pl
     <div className={`${sizeClasses[size]} relative mx-auto`}>
       <div className="relative" style={{ paddingBottom: '145%' }}>
         <div
-          className="absolute inset-0 rounded-3xl overflow-hidden"
+          className="absolute inset-0 overflow-hidden"
           style={{
-            clipPath: 'polygon(10% 3%, 90% 3%, 98% 12%, 98% 88%, 50% 98%, 2% 88%, 2% 12%)',
+            clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-br from-purple-600 via-purple-700 to-gray-900 opacity-90"></div>
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-pink-400/20 via-transparent to-transparent"></div>
 
-          <div className="absolute inset-0 border-4 border-gradient-to-r from-purple-400 via-pink-300 to-yellow-300 rounded-3xl"
+          <div className="absolute inset-0 border-4 border-gradient-to-r from-purple-400 via-pink-300 to-yellow-300"
             style={{
-              clipPath: 'polygon(10% 3%, 90% 3%, 98% 12%, 98% 88%, 50% 98%, 2% 88%, 2% 12%)',
+              clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
               borderImage: 'linear-gradient(135deg, #c084fc, #f9a8d4, #fcd34d) 1',
             }}
           ></div>
@@ -138,7 +138,12 @@ export default function PlayerCard({ profile, ratings = [], size = 'large' }: Pl
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMDMiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30 pointer-events-none"></div>
         </div>
 
-        <div className="absolute -inset-2 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-yellow-500/20 blur-xl -z-10 rounded-3xl"></div>
+        <div
+          className="absolute -inset-2 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-yellow-500/20 blur-xl -z-10"
+          style={{
+            clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+          }}
+        ></div>
       </div>
     </div>
   );
