@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import PlayerCard, { Rating } from '../components/PlayerCard';
 import OnlineStatus from '../components/OnlineStatus';
 import { Settings, Users, LogOut, Edit } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -41,11 +40,8 @@ export default function Dashboard() {
     if (!profile) return;
 
     try {
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('id');
-
-      if (error) throw error;
+      const allProfilesData = JSON.parse(localStorage.getItem('profiles') || '{}');
+      const profiles = Object.values(allProfilesData).map((p: any) => ({ id: p.id }));
 
       const allRatingsData = JSON.parse(localStorage.getItem('ratings') || '{}');
 
