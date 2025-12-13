@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import PlayerCard, { Rating } from '../components/PlayerCard';
-import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
 
 interface Comment {
@@ -39,6 +39,8 @@ export default function ProfileView() {
   const [submitting, setSubmitting] = useState(false);
   const [friendStatus, setFriendStatus] = useState<FriendStatus>('none');
   const [friendshipId, setFriendshipId] = useState<string | null>(null);
+  const [friendsCount, setFriendsCount] = useState(0);
+  const [viewsCount, setViewsCount] = useState(0);
 
   useEffect(() => {
     if (username) {
@@ -61,6 +63,26 @@ export default function ProfileView() {
       }
 
       setProfile(profileData);
+
+      if (currentUser && profileData.id !== currentUser.id) {
+        await supabase.from('profile_views').insert({
+          profile_id: profileData.id,
+          viewer_id: currentUser.id,
+        });
+      }
+
+      const { data: viewsData } = await supabase
+        .from('profile_views')
+        .select('id')
+        .eq('profile_id', profileData.id);
+      setViewsCount(viewsData?.length || 0);
+
+      const { data: friendsData } = await supabase
+        .from('friends')
+        .select('id')
+        .eq('status', 'accepted')
+        .or(`user_id.eq.${profileData.id},friend_id.eq.${profileData.id}`);
+      setFriendsCount(friendsData?.length || 0);
 
       if (currentUser && profileData.id !== currentUser.id) {
         const { data: friendData } = await supabase
@@ -238,7 +260,7 @@ export default function ProfileView() {
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser || !profile || !newComment.trim()) return;
+    if (!currentUser || !profile || !newComment.trim() || friendStatus !== 'accepted') return;
 
     setSubmitting(true);
     try {
@@ -303,6 +325,35 @@ export default function ProfileView() {
           <PlayerCard profile={profile} ratings={ratings} showDownloadButton={false} />
         </div>
 
+        <div className="max-w-2xl mx-auto mb-8">
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
+            <h3 className="text-lg font-bold text-white mb-4 text-center">Profile Stats</h3>
+            <div className="grid grid-cols-3 gap-6">
+              <div className="flex flex-col items-center space-y-2">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-2xl font-bold text-white">{friendsCount}</span>
+                <span className="text-sm text-gray-400">Friends</span>
+              </div>
+              <div className="flex flex-col items-center space-y-2">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <Eye className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-2xl font-bold text-white">{viewsCount}</span>
+                <span className="text-sm text-gray-400">Views</span>
+              </div>
+              <div className="flex flex-col items-center space-y-2">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                  <ThumbsUp className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-2xl font-bold text-white">{likes}</span>
+                <span className="text-sm text-gray-400">Likes</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="max-w-2xl mx-auto space-y-6">
           {currentUser && profile.id !== currentUser.id && (
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
@@ -347,58 +398,84 @@ export default function ProfileView() {
             </div>
           )}
 
-          {friendStatus === 'accepted' && (
+          {currentUser && profile.id !== currentUser.id && (
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
               <h3 className="text-xl font-bold text-white mb-4">Rate this player</h3>
-              <div className="flex items-center justify-center space-x-8">
-                <button
-                  onClick={() => handleVote(true)}
-                  className={`flex flex-col items-center space-y-2 transition-all ${
-                    userVote === true
-                      ? 'text-green-400'
-                      : 'text-gray-400 hover:text-green-400'
-                  }`}
-                >
-                  <ThumbsUp className="w-12 h-12" />
-                  <span className="text-2xl font-bold">{likes}</span>
-                </button>
-                <button
-                  onClick={() => handleVote(false)}
-                  className={`flex flex-col items-center space-y-2 transition-all ${
-                    userVote === false
-                      ? 'text-red-400'
-                      : 'text-gray-400 hover:text-red-400'
-                  }`}
-                >
-                  <ThumbsDown className="w-12 h-12" />
-                  <span className="text-2xl font-bold">{dislikes}</span>
-                </button>
-              </div>
+              {friendStatus === 'accepted' ? (
+                <div className="flex items-center justify-center space-x-8">
+                  <button
+                    onClick={() => handleVote(true)}
+                    className={`flex flex-col items-center space-y-2 transition-all ${
+                      userVote === true
+                        ? 'text-green-400'
+                        : 'text-gray-400 hover:text-green-400'
+                    }`}
+                  >
+                    <ThumbsUp className="w-12 h-12" />
+                    <span className="text-2xl font-bold">{likes}</span>
+                  </button>
+                  <button
+                    onClick={() => handleVote(false)}
+                    className={`flex flex-col items-center space-y-2 transition-all ${
+                      userVote === false
+                        ? 'text-red-400'
+                        : 'text-gray-400 hover:text-red-400'
+                    }`}
+                  >
+                    <ThumbsDown className="w-12 h-12" />
+                    <span className="text-2xl font-bold">{dislikes}</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center space-x-8">
+                  <div className="flex flex-col items-center space-y-2 text-gray-600">
+                    <ThumbsUp className="w-12 h-12" />
+                    <span className="text-2xl font-bold">{likes}</span>
+                  </div>
+                  <div className="flex flex-col items-center space-y-2 text-gray-600">
+                    <ThumbsDown className="w-12 h-12" />
+                    <span className="text-2xl font-bold">{dislikes}</span>
+                  </div>
+                </div>
+              )}
+              {friendStatus !== 'accepted' && (
+                <p className="text-center text-gray-400 text-sm mt-4">
+                  Become friends to rate this player
+                </p>
+              )}
             </div>
           )}
 
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
             <h3 className="text-xl font-bold text-white mb-4">Comments</h3>
 
-            {currentUser && (
-              <form onSubmit={handleSubmitComment} className="mb-6">
-                <div className="flex space-x-2">
-                  <input
-                    type="text"
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Add a comment..."
-                    className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newComment.trim() || submitting}
-                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                  >
-                    <Send className="w-5 h-5" />
-                  </button>
-                </div>
-              </form>
+            {currentUser && profile.id !== currentUser.id && (
+              <>
+                {friendStatus === 'accepted' ? (
+                  <form onSubmit={handleSubmitComment} className="mb-6">
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="Add a comment..."
+                        className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newComment.trim() || submitting}
+                        className="px-6 py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                      >
+                        <Send className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="mb-6 p-4 bg-gray-800 border border-gray-700 rounded-lg text-center">
+                    <p className="text-gray-400">Only friends can comment on this profile</p>
+                  </div>
+                )}
+              </>
             )}
 
             <div className="space-y-4">
