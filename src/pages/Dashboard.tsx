@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import PlayerCard, { Rating } from '../components/PlayerCard';
 import OnlineStatus from '../components/OnlineStatus';
 import { Settings, Users, LogOut, Edit } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -27,28 +28,47 @@ export default function Dashboard() {
   const fetchRatings = async () => {
     if (!profile) return;
 
-    const allRatings = JSON.parse(localStorage.getItem('ratings') || '{}');
-    const userRatings = Object.values(allRatings).filter(
-      (rating: any) => rating.player_id === profile.id
-    ) as Rating[];
+    try {
+      const { data, error } = await supabase
+        .from('ratings')
+        .select('*')
+        .eq('player_id', profile.id);
 
-    setRatings(userRatings);
-    setLoading(false);
+      if (error) throw error;
+
+      setRatings(data || []);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching ratings from Supabase:', error);
+
+      const allRatings = JSON.parse(localStorage.getItem('ratings') || '{}');
+      const userRatings = Object.values(allRatings).filter(
+        (rating: any) => rating.player_id === profile.id
+      ) as Rating[];
+
+      setRatings(userRatings);
+      setLoading(false);
+    }
   };
 
   const calculateRank = async () => {
     if (!profile) return;
 
     try {
-      const allProfilesData = JSON.parse(localStorage.getItem('profiles') || '{}');
-      const profiles = Object.values(allProfilesData).map((p: any) => ({ id: p.id }));
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id');
 
-      const allRatingsData = JSON.parse(localStorage.getItem('ratings') || '{}');
+      if (profilesError) throw profilesError;
 
-      const profileOveralls = profiles.map((p) => {
-        const playerRatings = Object.values(allRatingsData).filter(
-          (rating: any) => rating.player_id === p.id
-        ) as Rating[];
+      const { data: allRatings, error: ratingsError } = await supabase
+        .from('ratings')
+        .select('*');
+
+      if (ratingsError) throw ratingsError;
+
+      const profileOveralls = (profiles || []).map((p) => {
+        const playerRatings = (allRatings || []).filter((r) => r.player_id === p.id);
 
         if (playerRatings.length === 0) {
           return { id: p.id, overall: 50 };
@@ -72,7 +92,43 @@ export default function Dashboard() {
       const position = profileOveralls.findIndex((p) => p.id === profile.id) + 1;
       setRank({ position, total: profileOveralls.length });
     } catch (error) {
-      console.error('Error calculating rank:', error);
+      console.error('Error calculating rank from Supabase:', error);
+
+      try {
+        const allProfilesData = JSON.parse(localStorage.getItem('profiles') || '{}');
+        const profiles = Object.values(allProfilesData).map((p: any) => ({ id: p.id }));
+
+        const allRatingsData = JSON.parse(localStorage.getItem('ratings') || '{}');
+
+        const profileOveralls = profiles.map((p) => {
+          const playerRatings = Object.values(allRatingsData).filter(
+            (rating: any) => rating.player_id === p.id
+          ) as Rating[];
+
+          if (playerRatings.length === 0) {
+            return { id: p.id, overall: 50 };
+          }
+
+          const stats = {
+            pac: playerRatings.reduce((acc, r) => acc + r.pac, 0) / playerRatings.length,
+            sho: playerRatings.reduce((acc, r) => acc + r.sho, 0) / playerRatings.length,
+            pas: playerRatings.reduce((acc, r) => acc + r.pas, 0) / playerRatings.length,
+            dri: playerRatings.reduce((acc, r) => acc + r.dri, 0) / playerRatings.length,
+            def: playerRatings.reduce((acc, r) => acc + r.def, 0) / playerRatings.length,
+            phy: playerRatings.reduce((acc, r) => acc + r.phy, 0) / playerRatings.length,
+          };
+
+          const overall = Math.round(Object.values(stats).reduce((a, b) => a + b, 0) / 6);
+          return { id: p.id, overall };
+        });
+
+        profileOveralls.sort((a, b) => b.overall - a.overall);
+
+        const position = profileOveralls.findIndex((p) => p.id === profile.id) + 1;
+        setRank({ position, total: profileOveralls.length });
+      } catch (localError) {
+        console.error('Error calculating rank from localStorage:', localError);
+      }
     }
   };
 
