@@ -41,6 +41,9 @@ export default function ProfileView() {
   const [friendshipId, setFriendshipId] = useState<string | null>(null);
   const [friendsCount, setFriendsCount] = useState(0);
   const [viewsCount, setViewsCount] = useState(0);
+  const [myRating, setMyRating] = useState<Rating | null>(null);
+  const [editingSkill, setEditingSkill] = useState<string | null>(null);
+  const [tempValue, setTempValue] = useState('');
 
   useEffect(() => {
     if (username) {
@@ -113,6 +116,11 @@ export default function ProfileView() {
         .eq('player_id', profileData.id);
 
       setRatings(ratingsData || []);
+
+      if (currentUser && profileData.id !== currentUser.id) {
+        const userRating = ratingsData?.find((r) => r.rater_id === currentUser.id);
+        setMyRating(userRating || null);
+      }
 
       const { data: commentsData } = await supabase
         .from('comments')
@@ -286,6 +294,83 @@ export default function ProfileView() {
     }
   };
 
+  const handleSkillClick = (skill: string, currentValue: number) => {
+    if (friendStatus !== 'accepted') return;
+    setEditingSkill(skill);
+    setTempValue(currentValue.toString());
+  };
+
+  const handleSkillUpdate = async (skill: string) => {
+    if (!currentUser || !profile) return;
+
+    const numValue = parseInt(tempValue);
+    if (isNaN(numValue) || numValue < 1 || numValue > 100) {
+      setEditingSkill(null);
+      return;
+    }
+
+    try {
+      const updateData: any = {
+        rater_id: currentUser.id,
+        player_id: profile.id,
+        [skill]: numValue,
+      };
+
+      if (myRating) {
+        const { data, error } = await supabase
+          .from('ratings')
+          .update({ [skill]: numValue })
+          .eq('id', myRating.id)
+          .select()
+          .single();
+
+        if (!error && data) {
+          setMyRating(data);
+          setRatings(ratings.map((r) => (r.id === data.id ? data : r)));
+        }
+      } else {
+        const newRating = {
+          rater_id: currentUser.id,
+          player_id: profile.id,
+          pac: 50,
+          sho: 50,
+          pas: 50,
+          dri: 50,
+          def: 50,
+          phy: 50,
+          [skill]: numValue,
+        };
+
+        const { data, error } = await supabase
+          .from('ratings')
+          .insert(newRating)
+          .select()
+          .single();
+
+        if (!error && data) {
+          setMyRating(data);
+          setRatings([...ratings, data]);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating rating:', error);
+    } finally {
+      setEditingSkill(null);
+    }
+  };
+
+  const handleSkillBlur = (skill: string) => {
+    handleSkillUpdate(skill);
+  };
+
+  const handleSkillKeyDown = (e: React.KeyboardEvent, skill: string) => {
+    if (e.key === 'Enter') {
+      handleSkillUpdate(skill);
+    } else if (e.key === 'Escape') {
+      setEditingSkill(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -399,8 +484,59 @@ export default function ProfileView() {
           )}
 
           {currentUser && profile.id !== currentUser.id && (
-            <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
-              <h3 className="text-xl font-bold text-white mb-4">Rate this player</h3>
+            <>
+              <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
+                <h3 className="text-xl font-bold text-white mb-4">Your Skill Ratings</h3>
+                {friendStatus === 'accepted' ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {[
+                      { key: 'pac', label: 'PAC', color: 'from-blue-500 to-cyan-500' },
+                      { key: 'sho', label: 'SHO', color: 'from-red-500 to-orange-500' },
+                      { key: 'pas', label: 'PAS', color: 'from-green-500 to-emerald-500' },
+                      { key: 'dri', label: 'DRI', color: 'from-purple-500 to-pink-500' },
+                      { key: 'def', label: 'DEF', color: 'from-yellow-500 to-amber-500' },
+                      { key: 'phy', label: 'PHY', color: 'from-teal-500 to-cyan-500' },
+                    ].map(({ key, label, color }) => {
+                      const currentValue = myRating ? myRating[key as keyof Rating] as number : 50;
+                      const isEditing = editingSkill === key;
+
+                      return (
+                        <div
+                          key={key}
+                          className="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-cyan-500 transition-all cursor-pointer"
+                          onClick={() => !isEditing && handleSkillClick(key, currentValue)}
+                        >
+                          <div className="text-xs font-semibold text-gray-400 mb-2">{label}</div>
+                          {isEditing ? (
+                            <input
+                              type="number"
+                              min="1"
+                              max="100"
+                              value={tempValue}
+                              onChange={(e) => setTempValue(e.target.value)}
+                              onBlur={() => handleSkillBlur(key)}
+                              onKeyDown={(e) => handleSkillKeyDown(e, key)}
+                              className="w-full bg-gray-700 text-white text-2xl font-bold text-center rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              autoFocus
+                            />
+                          ) : (
+                            <div className={`text-3xl font-bold bg-gradient-to-r ${color} bg-clip-text text-transparent`}>
+                              {currentValue}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-400 py-8">
+                    Become friends to rate this player's skills
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
+                <h3 className="text-xl font-bold text-white mb-4">Rate this player</h3>
               {friendStatus === 'accepted' ? (
                 <div className="flex items-center justify-center space-x-8">
                   <button
@@ -444,6 +580,7 @@ export default function ProfileView() {
                 </p>
               )}
             </div>
+            </>
           )}
 
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
