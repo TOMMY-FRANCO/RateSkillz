@@ -277,14 +277,52 @@ export default function EditProfile() {
               <label htmlFor="team" className="block text-sm font-medium text-gray-300 mb-2">
                 Team
               </label>
-              <input
+              <select
                 id="team"
-                type="text"
                 value={team}
                 onChange={(e) => setTeam(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                placeholder="FC Barcelona"
-              />
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+              >
+                <option value="">Select a team</option>
+                <option value="Arsenal">Arsenal</option>
+                <option value="Aston Villa">Aston Villa</option>
+                <option value="Barnet">Barnet</option>
+                <option value="Barrow">Barrow</option>
+                <option value="Birmingham City">Birmingham City</option>
+                <option value="Blackburn Rovers">Blackburn Rovers</option>
+                <option value="Blackpool">Blackpool</option>
+                <option value="Bolton Wanderers">Bolton Wanderers</option>
+                <option value="Bournemouth">Bournemouth</option>
+                <option value="Brentford">Brentford</option>
+                <option value="Brighton & Hove Albion">Brighton & Hove Albion</option>
+                <option value="Bristol Rovers">Bristol Rovers</option>
+                <option value="Burnley">Burnley</option>
+                <option value="Charlton Athletic">Charlton Athletic</option>
+                <option value="Chelsea">Chelsea</option>
+                <option value="Coventry City">Coventry City</option>
+                <option value="Crewe Alexandra">Crewe Alexandra</option>
+                <option value="Crystal Palace">Crystal Palace</option>
+                <option value="Everton">Everton</option>
+                <option value="Fulham">Fulham</option>
+                <option value="Ipswich Town">Ipswich Town</option>
+                <option value="Leeds United">Leeds United</option>
+                <option value="Leicester City">Leicester City</option>
+                <option value="Liverpool">Liverpool</option>
+                <option value="Manchester City">Manchester City</option>
+                <option value="Manchester United">Manchester United</option>
+                <option value="Newcastle United">Newcastle United</option>
+                <option value="Nottingham Forest">Nottingham Forest</option>
+                <option value="Oldham Athletic">Oldham Athletic</option>
+                <option value="Queens Park Rangers">Queens Park Rangers</option>
+                <option value="Reading">Reading</option>
+                <option value="Sheffield United">Sheffield United</option>
+                <option value="Sheffield Wednesday">Sheffield Wednesday</option>
+                <option value="Sunderland">Sunderland</option>
+                <option value="Tottenham Hotspur">Tottenham Hotspur</option>
+                <option value="West Bromwich Albion">West Bromwich Albion</option>
+                <option value="West Ham United">West Ham United</option>
+                <option value="Wolverhampton Wanderers">Wolverhampton Wanderers</option>
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
