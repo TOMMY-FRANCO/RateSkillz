@@ -248,14 +248,20 @@ export default function EditProfile() {
                 <label htmlFor="position" className="block text-sm font-medium text-gray-300 mb-2">
                   Position
                 </label>
-                <input
+                <select
                   id="position"
-                  type="text"
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                  placeholder="Striker"
-                />
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                >
+                  <option value="">Select a position</option>
+                  <option value="AM">AM – Attacking Midfielder</option>
+                  <option value="SW">SW – Sweeper</option>
+                  <option value="CB">CB – Center Back</option>
+                  <option value="CF">CF – Center Forward</option>
+                  <option value="LB">LB – Left Back</option>
+                  <option value="RB">RB – Right Back</option>
+                </select>
               </div>
 
               <div>
