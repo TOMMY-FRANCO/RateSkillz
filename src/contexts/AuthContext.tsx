@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
 export interface Profile {
@@ -30,13 +31,15 @@ export function isUserOnline(lastActive?: string): boolean {
 }
 
 interface AuthContextType {
-  user: { id: string } | null;
-  session: { user: { id: string } } | null;
+  user: User | null;
+  session: Session | null;
   profile: Profile | null;
   loading: boolean;
   signUp: (email: string, password: string, username: string, fullName: string) => Promise<{ error: Error | null }>;
-  signIn: (username: string) => Promise<{ error: Error | null }>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
   updateActivity: () => void;
@@ -45,232 +48,215 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<{ id: string } | null>(null);
-  const [session, setSession] = useState<{ user: { id: string } } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const updateActivity = async () => {
-    if (!profile) return;
-
+  const fetchProfile = async (userId: string) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .update({ last_active: new Date().toISOString() })
-        .eq('id', profile.id);
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
 
       if (error) throw error;
 
-      const updatedProfile = { ...profile, last_active: new Date().toISOString() };
-      setProfile(updatedProfile);
-      localStorage.setItem('currentProfile', JSON.stringify(updatedProfile));
+      if (data) {
+        setProfile(data);
+        await updateActivity(data.id);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const updateActivity = async (userId?: string) => {
+    const id = userId || user?.id;
+    if (!id) return;
+
+    try {
+      await supabase
+        .from('profiles')
+        .update({ last_active: new Date().toISOString() })
+        .eq('id', id);
     } catch (error) {
       console.error('Error updating activity:', error);
-      const updatedProfile = { ...profile, last_active: new Date().toISOString() };
-      localStorage.setItem('currentProfile', JSON.stringify(updatedProfile));
     }
   };
 
   useEffect(() => {
-    const loadProfile = async () => {
-      const storedProfile = localStorage.getItem('currentProfile');
-      if (storedProfile) {
-        const profileData = JSON.parse(storedProfile);
-
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', profileData.id)
-            .maybeSingle();
-
-          if (data && !error) {
-            setProfile(data);
-            setUser({ id: data.id });
-            setSession({ user: { id: data.id } });
-            localStorage.setItem('currentProfile', JSON.stringify(data));
-          } else {
-            setProfile(profileData);
-            setUser({ id: profileData.id });
-            setSession({ user: { id: profileData.id } });
-          }
-        } catch (error) {
-          console.error('Error loading profile:', error);
-          setProfile(profileData);
-          setUser({ id: profileData.id });
-          setSession({ user: { id: profileData.id } });
-        }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
-    };
+    });
 
-    loadProfile();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+      }
+
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!profile) return;
-
-    updateActivity();
+    if (!user) return;
 
     const interval = setInterval(() => {
       updateActivity();
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [profile?.id]);
+  }, [user?.id]);
 
   const signUp = async (email: string, password: string, username: string, fullName: string) => {
-    return { error: new Error('Not implemented') };
-  };
-
-  const signIn = async (username: string) => {
     try {
-      const { data: existingProfile, error: fetchError } = await supabase
+      const usernameCheck = await supabase
         .from('profiles')
-        .select('*')
+        .select('username')
         .eq('username', username)
         .maybeSingle();
 
-      let profileData: Profile;
-
-      if (existingProfile && !fetchError) {
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ last_active: new Date().toISOString() })
-          .eq('id', existingProfile.id);
-
-        if (updateError) console.error('Error updating last_active:', updateError);
-
-        profileData = { ...existingProfile, last_active: new Date().toISOString() };
-      } else {
-        const newProfile = {
-          username,
-          full_name: username,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          last_active: new Date().toISOString(),
-        };
-
-        const { data: insertedProfile, error: insertError } = await supabase
-          .from('profiles')
-          .insert([newProfile])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Error creating profile:', insertError);
-          const localId = Date.now().toString();
-          profileData = { id: localId, ...newProfile };
-          const allProfiles = JSON.parse(localStorage.getItem('profiles') || '{}');
-          allProfiles[localId] = profileData;
-          localStorage.setItem('profiles', JSON.stringify(allProfiles));
-        } else {
-          profileData = insertedProfile;
-        }
+      if (usernameCheck.data) {
+        return { error: new Error('Username already taken') };
       }
 
-      localStorage.setItem('currentProfile', JSON.stringify(profileData));
-      setProfile(profileData);
-      setUser({ id: profileData.id });
-      setSession({ user: { id: profileData.id } });
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            username,
+            full_name: fullName,
+          },
+        },
+      });
 
-      return { error: null };
-    } catch (error) {
-      console.error('Sign in error:', error);
+      if (authError) throw authError;
 
-      const allProfiles = JSON.parse(localStorage.getItem('profiles') || '{}');
-      let profileData = Object.values(allProfiles).find(
-        (p: any) => p.username === username
-      ) as Profile | undefined;
+      if (authData.user) {
+        const { error: profileError } = await supabase.from('profiles').insert([
+          {
+            id: authData.user.id,
+            username,
+            full_name: fullName,
+            email,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            last_active: new Date().toISOString(),
+          },
+        ]);
 
-      if (!profileData) {
-        const newId = Date.now().toString();
-        profileData = {
-          id: newId,
-          username,
-          full_name: username,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          last_active: new Date().toISOString(),
-        };
-        allProfiles[newId] = profileData;
-        localStorage.setItem('profiles', JSON.stringify(allProfiles));
+        if (profileError) throw profileError;
       }
 
-      localStorage.setItem('currentProfile', JSON.stringify(profileData));
-      setProfile(profileData);
-      setUser({ id: profileData.id });
-      setSession({ user: { id: profileData.id } });
+      return { error: null };
+    } catch (error: any) {
+      return { error };
+    }
+  };
+
+  const signIn = async (email: string, password: string, rememberMe: boolean = true) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (!rememberMe) {
+        await supabase.auth.refreshSession();
+      }
 
       return { error: null };
+    } catch (error: any) {
+      return { error };
     }
   };
 
   const signOut = async () => {
-    localStorage.removeItem('currentProfile');
+    await supabase.auth.signOut();
     setProfile(null);
     setUser(null);
     setSession(null);
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+      return { error: null };
+    } catch (error: any) {
+      return { error };
+    }
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+      return { error: null };
+    } catch (error: any) {
+      return { error };
+    }
+  };
+
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!profile) return { error: new Error('No user logged in') };
+    if (!user) return { error: new Error('No user logged in') };
 
     try {
-      const updatedProfile = { ...profile, ...updates, updated_at: new Date().toISOString() };
-
       const { error } = await supabase
         .from('profiles')
-        .update(updates)
-        .eq('id', profile.id);
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
 
-      if (error) {
-        console.error('Error updating profile in Supabase:', error);
-        const allProfiles = JSON.parse(localStorage.getItem('profiles') || '{}');
-        allProfiles[profile.id] = updatedProfile;
-        localStorage.setItem('profiles', JSON.stringify(allProfiles));
-      }
+      if (error) throw error;
 
-      localStorage.setItem('currentProfile', JSON.stringify(updatedProfile));
-      setProfile(updatedProfile);
+      await refreshProfile();
       return { error: null };
-    } catch (error) {
-      console.error('Update profile error:', error);
-      const updatedProfile = { ...profile, ...updates, updated_at: new Date().toISOString() };
-      const allProfiles = JSON.parse(localStorage.getItem('profiles') || '{}');
-      allProfiles[profile.id] = updatedProfile;
-      localStorage.setItem('profiles', JSON.stringify(allProfiles));
-      localStorage.setItem('currentProfile', JSON.stringify(updatedProfile));
-      setProfile(updatedProfile);
-      return { error: null };
+    } catch (error: any) {
+      return { error };
     }
   };
 
   const refreshProfile = async () => {
-    if (!profile) return;
+    if (!user) return;
 
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', profile.id)
+        .eq('id', user.id)
         .maybeSingle();
 
-      if (data && !error) {
-        setProfile(data);
-        localStorage.setItem('currentProfile', JSON.stringify(data));
-      } else {
-        const storedProfile = localStorage.getItem('currentProfile');
-        if (storedProfile) {
-          setProfile(JSON.parse(storedProfile));
-        }
-      }
+      if (error) throw error;
+      if (data) setProfile(data);
     } catch (error) {
       console.error('Error refreshing profile:', error);
-      const storedProfile = localStorage.getItem('currentProfile');
-      if (storedProfile) {
-        setProfile(JSON.parse(storedProfile));
-      }
     }
   };
 
@@ -282,6 +268,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     signIn,
     signOut,
+    resetPassword,
+    updatePassword,
     updateProfile,
     refreshProfile,
     updateActivity,

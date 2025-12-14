@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, CheckCircle, Mail } from 'lucide-react';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
@@ -18,14 +20,20 @@ export default function Signup() {
     setError('');
     setLoading(true);
 
-    if (username.length < 3) {
-      setError('Username must be at least 3 characters');
+    if (username.length < 3 || username.length > 20) {
+      setError('Username must be between 3 and 20 characters');
       setLoading(false);
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
+      setLoading(false);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
       setLoading(false);
       return;
     }
@@ -36,9 +44,53 @@ export default function Signup() {
       setError(error.message);
       setLoading(false);
     } else {
-      navigate('/dashboard');
+      setSuccess(true);
+      setLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center px-4">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="flex justify-center mb-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-cyan-400 rounded-xl flex items-center justify-center">
+              <CheckCircle className="w-12 h-12 text-black" />
+            </div>
+          </div>
+
+          <h2 className="text-3xl font-bold text-white mb-2">Check Your Email</h2>
+
+          <div className="bg-gradient-to-r from-cyan-500/10 to-green-500/10 border border-cyan-500/30 rounded-xl p-6">
+            <Mail className="w-12 h-12 text-cyan-400 mx-auto mb-4" />
+            <p className="text-gray-300 mb-4">
+              We've sent a verification email to:
+            </p>
+            <p className="text-cyan-400 font-semibold text-lg mb-4">{email}</p>
+            <p className="text-gray-400 text-sm">
+              Please click the link in the email to verify your account. You must verify your email before you can log in.
+            </p>
+          </div>
+
+          <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4">
+            <p className="text-gray-400 text-sm mb-2">
+              Didn't receive the email?
+            </p>
+            <p className="text-gray-500 text-xs">
+              Check your spam folder or contact support if you need help.
+            </p>
+          </div>
+
+          <button
+            onClick={() => navigate('/')}
+            className="w-full py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all"
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-4 py-12">
@@ -82,8 +134,10 @@ export default function Signup() {
                 onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                 className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                 placeholder="johndoe"
+                minLength={3}
+                maxLength={20}
               />
-              <p className="mt-1 text-xs text-gray-500">Lowercase letters, numbers, and underscores only</p>
+              <p className="mt-1 text-xs text-gray-500">3-20 characters, lowercase letters, numbers, and underscores only</p>
             </div>
 
             <div>
@@ -113,8 +167,25 @@ export default function Signup() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                 placeholder="••••••••"
+                minLength={8}
               />
-              <p className="mt-1 text-xs text-gray-500">Minimum 6 characters</p>
+              <p className="mt-1 text-xs text-gray-500">Minimum 8 characters</p>
+            </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                placeholder="••••••••"
+                minLength={8}
+              />
             </div>
           </div>
 
@@ -135,10 +206,11 @@ export default function Signup() {
           <p className="text-center text-gray-400">
             Already have an account?{' '}
             <button
-              onClick={() => navigate('/login')}
+              type="button"
+              onClick={() => navigate('/')}
               className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors bg-none border-none cursor-pointer"
             >
-              Sign in
+              Log in
             </button>
           </p>
         </form>
