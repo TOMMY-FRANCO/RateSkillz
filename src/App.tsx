@@ -6,6 +6,7 @@ import EditProfile from './pages/EditProfile';
 import Friends from './pages/Friends';
 import Settings from './pages/Settings';
 import ProfileView from './pages/ProfileView';
+import Leaderboard from './pages/Leaderboard';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -84,6 +85,14 @@ function App() {
           element={
             <ProtectedRoute>
               <ProfileView />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leaderboard"
+          element={
+            <ProtectedRoute>
+              <Leaderboard />
             </ProtectedRoute>
           }
         />

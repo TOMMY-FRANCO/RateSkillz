@@ -90,9 +90,11 @@ export default function PlayerCard({ profile, ratings = [], size = 'large', rank
             </div>
 
             <div className="flex flex-col gap-3">
-              <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-5 py-3 rounded-xl text-white font-black text-base border-2 border-purple-300 text-center shadow-xl">
-                {profile.team || 'RS 25'}
-              </div>
+              {profile.team && (
+                <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-5 py-3 rounded-xl text-white font-black text-base border-2 border-purple-300 text-center shadow-xl">
+                  {profile.team}
+                </div>
+              )}
               {rank && (
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl blur-sm"></div>
