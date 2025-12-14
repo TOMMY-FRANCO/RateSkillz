@@ -1,24 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus, Check } from 'lucide-react';
-
-function RequirementItem({ met, text }: { met: boolean; text: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <div
-        className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
-          met ? 'bg-green-500' : 'bg-gray-700'
-        }`}
-      >
-        {met && <Check className="w-3 h-3 text-black" />}
-      </div>
-      <span className={`text-sm transition-colors ${met ? 'text-green-400' : 'text-gray-400'}`}>
-        {text}
-      </span>
-    </div>
-  );
-}
+import { UserPlus } from 'lucide-react';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -29,20 +12,6 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
-
-  const passwordRequirements = useMemo(() => {
-    return {
-      minLength: password.length >= 8,
-      hasUppercase: /[A-Z]/.test(password),
-      hasLowercase: /[a-z]/.test(password),
-      hasNumber: /[0-9]/.test(password),
-      hasSpecialChar: /[!@#$%^&*]/.test(password),
-    };
-  }, [password]);
-
-  const allRequirementsMet = useMemo(() => {
-    return Object.values(passwordRequirements).every(req => req);
-  }, [passwordRequirements]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,8 +24,8 @@ export default function Signup() {
       return;
     }
 
-    if (!allRequirementsMet) {
-      setError('Please meet all password requirements');
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
       setLoading(false);
       return;
     }
@@ -145,13 +114,7 @@ export default function Signup() {
                 className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                 placeholder="••••••••"
               />
-              <div className="mt-3 space-y-2">
-                <RequirementItem met={passwordRequirements.minLength} text="At least 8 characters" />
-                <RequirementItem met={passwordRequirements.hasUppercase} text="One uppercase letter" />
-                <RequirementItem met={passwordRequirements.hasLowercase} text="One lowercase letter" />
-                <RequirementItem met={passwordRequirements.hasNumber} text="One number" />
-                <RequirementItem met={passwordRequirements.hasSpecialChar} text="One special character (!@#$%^&*)" />
-              </div>
+              <p className="mt-1 text-xs text-gray-500">Minimum 6 characters</p>
             </div>
           </div>
 
@@ -163,7 +126,7 @@ export default function Signup() {
 
           <button
             type="submit"
-            disabled={loading || !allRequirementsMet}
+            disabled={loading}
             className="w-full py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold rounded-lg hover:from-green-400 hover:to-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Creating account...' : 'Create Account'}
