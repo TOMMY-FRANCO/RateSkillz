@@ -6,7 +6,6 @@ import { LogIn } from 'lucide-react';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
@@ -17,17 +16,13 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    const { error } = await signIn(email, password, rememberMe);
+    const { error } = await signIn(email, password);
 
     if (error) {
-      if (error.message.includes('Email not confirmed')) {
-        setError('Please verify your email before logging in. Check your inbox for the verification link.');
-      } else if (error.message.includes('Invalid')) {
-        setError('Invalid email or password');
-      } else {
-        setError(error.message);
-      }
+      setError(error.message);
       setLoading(false);
+    } else {
+      navigate('/dashboard');
     }
   };
 
@@ -75,29 +70,6 @@ export default function Login() {
                 placeholder="••••••••"
               />
             </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 bg-gray-900 border-gray-700 rounded focus:ring-2 focus:ring-cyan-500 text-cyan-500 cursor-pointer"
-                />
-                <label htmlFor="remember-me" className="ml-2 text-sm text-gray-400 cursor-pointer">
-                  Remember me
-                </label>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => navigate('/forgot-password')}
-                className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
-              >
-                Forgot Password?
-              </button>
-            </div>
           </div>
 
           {error && (
@@ -117,7 +89,6 @@ export default function Login() {
           <p className="text-center text-gray-400">
             Don't have an account?{' '}
             <button
-              type="button"
               onClick={() => navigate('/signup')}
               className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors bg-none border-none cursor-pointer"
             >
