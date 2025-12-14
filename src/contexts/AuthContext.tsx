@@ -81,14 +81,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadProfile(session.user.id);
-      }
-      setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          loadProfile(session.user.id);
+        }
+      })
+      .catch((error) => {
+        console.error('Error getting session:', error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     const {
       data: { subscription },
