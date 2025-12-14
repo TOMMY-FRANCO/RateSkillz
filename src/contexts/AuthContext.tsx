@@ -69,8 +69,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -89,39 +87,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    console.log('Checking authentication...');
-
-    const timeout = setTimeout(() => {
-      console.log('Session check timeout - showing login page');
-      setLoading(false);
-    }, 3000);
-
-    supabase.auth.getSession()
-      .then(({ data: { session }, error }) => {
-        clearTimeout(timeout);
-
-        if (error) {
-          console.error('Session check error:', error);
-          setLoading(false);
-          return;
-        }
-
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          console.log('Session found - fetching profile');
-          fetchProfile(session.user.id);
-        } else {
-          console.log('No session - showing login');
-          setLoading(false);
-        }
-      })
-      .catch((error) => {
-        console.error('Failed to check session:', error);
-        clearTimeout(timeout);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
         setLoading(false);
-      });
+      }
+    });
 
     const {
       data: { subscription },
@@ -133,14 +107,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchProfile(session.user.id);
       } else {
         setProfile(null);
-        setLoading(false);
       }
+
+      setLoading(false);
     });
 
-    return () => {
-      clearTimeout(timeout);
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
