@@ -81,20 +81,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          loadProfile(session.user.id);
+    let mounted = true;
+
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+
+          if (session?.user) {
+            await loadProfile(session.user.id);
+          }
+
+          setLoading(false);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Error getting session:', error);
-      })
-      .finally(() => {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initAuth();
+
+    const timeout = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn('Auth initialization timeout - setting loading to false');
         setLoading(false);
-      });
+      }
+    }, 3000);
 
     const {
       data: { subscription },
@@ -110,7 +128,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })();
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
