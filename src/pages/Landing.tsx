@@ -1,30 +1,8 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Star } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 
 export default function Landing() {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
-  const [username, setUsername] = useState('');
-  const [error, setError] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (!username.trim()) {
-      setError('Please enter a username');
-      return;
-    }
-
-    const { error: signInError } = await signIn(username.trim());
-    if (signInError) {
-      setError(signInError.message);
-    } else {
-      navigate('/dashboard');
-    }
-  };
 
   return (
     <div className="min-h-screen bg-black">
@@ -64,29 +42,23 @@ export default function Landing() {
                 Get rated by friends on your football skills. Build your ultimate player card and share it with the world.
               </p>
 
-              <form onSubmit={handleSubmit} className="max-w-md mx-auto">
-                <div className="mb-4">
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter your username"
-                    className="w-full px-6 py-4 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all text-lg"
-                  />
-                </div>
-                {error && (
-                  <p className="text-red-400 mb-4 text-sm">{error}</p>
-                )}
+              <div className="max-w-md mx-auto space-y-4">
                 <button
-                  type="submit"
+                  onClick={() => navigate('/signup')}
                   className="w-full px-8 py-4 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-bold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all text-lg shadow-lg shadow-cyan-500/50 cursor-pointer border-none"
                 >
                   Get Started
                 </button>
-              </form>
+                <button
+                  onClick={() => navigate('/login')}
+                  className="w-full px-8 py-4 bg-gray-900 border border-gray-700 text-white font-semibold rounded-lg hover:bg-gray-800 hover:border-cyan-500 transition-all text-lg cursor-pointer"
+                >
+                  Sign In
+                </button>
+              </div>
 
               <p className="text-gray-500 text-sm mt-6">
-                No signup required - just enter a username to start
+                Create your account and start building your player card
               </p>
             </div>
           </div>
