@@ -407,7 +407,12 @@ export default function ProfileView() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex justify-center mb-8">
-          <PlayerCard profile={profile} ratings={ratings} showDownloadButton={false} />
+          <PlayerCard
+            profile={profile}
+            ratings={ratings}
+            showDownloadButton={false}
+            overallRating={profile.overall_rating}
+          />
         </div>
 
         <div className="max-w-2xl mx-auto mb-8">

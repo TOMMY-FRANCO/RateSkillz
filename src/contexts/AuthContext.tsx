@@ -16,6 +16,7 @@ export interface Profile {
   weight?: string;
   achievements?: string;
   stats?: string;
+  overall_rating?: number;
   created_at?: string;
   updated_at?: string;
   last_active?: string;

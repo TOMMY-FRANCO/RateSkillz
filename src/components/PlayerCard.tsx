@@ -23,9 +23,10 @@ interface PlayerCardProps {
   size?: 'small' | 'medium' | 'large';
   rank?: { position: number; total: number };
   showDownloadButton?: boolean;
+  overallRating?: number;
 }
 
-export default function PlayerCard({ profile, ratings = [], size = 'large', rank, showDownloadButton = false }: PlayerCardProps) {
+export default function PlayerCard({ profile, ratings = [], size = 'large', rank, showDownloadButton = false, overallRating }: PlayerCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   const calculateAverageRating = (attribute: keyof Omit<Rating, 'id' | 'rater_id' | 'player_id' | 'comment' | 'created_at'>) => {
@@ -43,7 +44,7 @@ export default function PlayerCard({ profile, ratings = [], size = 'large', rank
     PHY: calculateAverageRating('phy'),
   };
 
-  const overall = Math.round(Object.values(stats).reduce((a, b) => a + b, 0) / 6);
+  const overall = overallRating ?? Math.round(Object.values(stats).reduce((a, b) => a + b, 0) / 6);
 
   const sizeClasses = {
     small: 'w-64',
