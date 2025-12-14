@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { UserPlus, CheckCircle, Mail } from 'lucide-react';
+import PasswordRequirements, { validatePassword } from '../components/PasswordRequirements';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -26,8 +27,8 @@ export default function Signup() {
       return;
     }
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+    if (!validatePassword(password)) {
+      setError('Password does not meet all requirements');
       setLoading(false);
       return;
     }
@@ -167,9 +168,8 @@ export default function Signup() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                 placeholder="••••••••"
-                minLength={8}
               />
-              <p className="mt-1 text-xs text-gray-500">Minimum 8 characters</p>
+              <PasswordRequirements password={password} />
             </div>
 
             <div>
@@ -197,7 +197,7 @@ export default function Signup() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !validatePassword(password) || password !== confirmPassword || !password || !confirmPassword}
             className="w-full py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold rounded-lg hover:from-green-400 hover:to-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Creating account...' : 'Create Account'}
