@@ -54,14 +54,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!profile) return;
 
     try {
+      const now = new Date().toISOString();
+
       const { error } = await supabase
         .from('profiles')
-        .update({ last_active: new Date().toISOString() })
+        .update({ last_active: now })
         .eq('id', profile.id);
 
       if (error) throw error;
 
-      const updatedProfile = { ...profile, last_active: new Date().toISOString() };
+      await supabase
+        .from('user_presence')
+        .upsert({
+          user_id: profile.id,
+          last_seen: now,
+          updated_at: now,
+        }, {
+          onConflict: 'user_id'
+        });
+
+      const updatedProfile = { ...profile, last_active: now };
       setProfile(updatedProfile);
       localStorage.setItem('currentProfile', JSON.stringify(updatedProfile));
     } catch (error) {

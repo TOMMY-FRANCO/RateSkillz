@@ -94,7 +94,7 @@ export default function ShareCardModal({ isOpen, onClose, username, fullName, ov
             className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:from-pink-600 hover:via-red-600 hover:to-yellow-600 text-white font-semibold rounded-lg transition-all"
           >
             <Instagram className="w-5 h-5" />
-            <span>Share to Instagram</span>
+            <span>Copy Link for Instagram</span>
           </button>
 
           <div className="relative">
@@ -121,7 +121,7 @@ export default function ShareCardModal({ isOpen, onClose, username, fullName, ov
         {copied && (
           <div className="mt-4 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
             <p className="text-sm text-green-400 text-center font-medium">
-              {shareUrl.includes('instagram') ? 'Link copied! Paste in your Instagram bio or story' : 'Link copied to clipboard!'}
+              Link copied! Paste it in your Instagram bio or story
             </p>
           </div>
         )}

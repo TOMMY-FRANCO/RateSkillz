@@ -6,6 +6,7 @@ import PlayerCard, { Rating } from '../components/PlayerCard';
 import ShareCardModal from '../components/ShareCardModal';
 import SocialLinks from '../components/SocialLinks';
 import EditSocialLinks from '../components/EditSocialLinks';
+import OnlineStatus from '../components/OnlineStatus';
 import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2 } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
 
@@ -77,6 +78,14 @@ export default function ProfileView() {
         await supabase.from('profile_views').insert({
           profile_id: profileData.id,
           viewer_id: currentUser.id,
+        });
+
+        await supabase.from('notifications').insert({
+          user_id: profileData.id,
+          actor_id: currentUser.id,
+          type: 'profile_view',
+          message: `${currentUser.username} viewed your profile`,
+          metadata: { profile_id: profileData.id },
         });
       }
 
@@ -413,7 +422,10 @@ export default function ProfileView() {
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <h1 className="text-xl font-bold text-white">{profile.username}'s Profile</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-bold text-white">{profile.username}'s Profile</h1>
+                <OnlineStatus lastActive={profile.last_active} size="medium" />
+              </div>
             </div>
           </div>
         </div>
