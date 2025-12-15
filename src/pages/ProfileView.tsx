@@ -51,6 +51,7 @@ export default function ProfileView() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showEditSocialLinks, setShowEditSocialLinks] = useState(false);
   const [socialLinks, setSocialLinks] = useState<any>(null);
+  const [commentVotes, setCommentVotes] = useState<Record<string, { is_upvote: boolean; vote_id: string }>>({});
 
   useEffect(() => {
     if (username) {
@@ -144,6 +145,20 @@ export default function ProfileView() {
         .order('created_at', { ascending: false });
 
       setComments(commentsData || []);
+
+      if (currentUser && commentsData) {
+        const { data: votesData } = await supabase
+          .from('comment_votes')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .in('comment_id', commentsData.map(c => c.id));
+
+        const votesMap: Record<string, { is_upvote: boolean; vote_id: string }> = {};
+        votesData?.forEach(vote => {
+          votesMap[vote.comment_id] = { is_upvote: vote.is_upvote, vote_id: vote.id };
+        });
+        setCommentVotes(votesMap);
+      }
 
       const { data: likesData } = await supabase
         .from('profile_likes')
@@ -391,6 +406,58 @@ export default function ProfileView() {
       handleSkillUpdate(skill);
     } else if (e.key === 'Escape') {
       setEditingSkill(null);
+    }
+  };
+
+  const handleCommentVote = async (commentId: string, isUpvote: boolean) => {
+    if (!currentUser) return;
+
+    try {
+      const existingVote = commentVotes[commentId];
+
+      if (existingVote) {
+        if (existingVote.is_upvote === isUpvote) {
+          await supabase
+            .from('comment_votes')
+            .delete()
+            .eq('id', existingVote.vote_id);
+
+          const newVotes = { ...commentVotes };
+          delete newVotes[commentId];
+          setCommentVotes(newVotes);
+        } else {
+          await supabase
+            .from('comment_votes')
+            .update({ is_upvote: isUpvote })
+            .eq('id', existingVote.vote_id);
+
+          setCommentVotes({
+            ...commentVotes,
+            [commentId]: { ...existingVote, is_upvote: isUpvote }
+          });
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('comment_votes')
+          .insert({
+            comment_id: commentId,
+            user_id: currentUser.id,
+            is_upvote: isUpvote
+          })
+          .select()
+          .single();
+
+        if (!error && data) {
+          setCommentVotes({
+            ...commentVotes,
+            [commentId]: { is_upvote: isUpvote, vote_id: data.id }
+          });
+        }
+      }
+
+      await loadProfile();
+    } catch (error) {
+      console.error('Error voting on comment:', error);
     }
   };
 
@@ -690,15 +757,31 @@ export default function ProfileView() {
                       </span>
                     </div>
                     <p className="text-gray-300 mb-3">{comment.text}</p>
-                    <div className="flex items-center space-x-4 text-sm text-gray-400">
-                      <span className="flex items-center space-x-1">
+                    <div className="flex items-center space-x-4 text-sm">
+                      <button
+                        onClick={() => handleCommentVote(comment.id, true)}
+                        disabled={!currentUser}
+                        className={`flex items-center space-x-1 transition-colors ${
+                          commentVotes[comment.id]?.is_upvote === true
+                            ? 'text-green-400'
+                            : 'text-gray-400 hover:text-green-400'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
                         <ThumbsUp className="w-4 h-4" />
                         <span>{comment.likes}</span>
-                      </span>
-                      <span className="flex items-center space-x-1">
+                      </button>
+                      <button
+                        onClick={() => handleCommentVote(comment.id, false)}
+                        disabled={!currentUser}
+                        className={`flex items-center space-x-1 transition-colors ${
+                          commentVotes[comment.id]?.is_upvote === false
+                            ? 'text-red-400'
+                            : 'text-gray-400 hover:text-red-400'
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
                         <ThumbsDown className="w-4 h-4" />
                         <span>{comment.dislikes}</span>
-                      </span>
+                      </button>
                     </div>
                   </div>
                 ))
