@@ -7,6 +7,7 @@ import Friends from './pages/Friends';
 import Settings from './pages/Settings';
 import ProfileView from './pages/ProfileView';
 import Leaderboard from './pages/Leaderboard';
+import PublicCard from './pages/PublicCard';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -96,6 +97,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="/card/:username" element={<PublicCard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

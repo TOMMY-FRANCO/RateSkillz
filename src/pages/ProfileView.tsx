@@ -3,7 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import PlayerCard, { Rating } from '../components/PlayerCard';
-import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye } from 'lucide-react';
+import ShareCardModal from '../components/ShareCardModal';
+import SocialLinks from '../components/SocialLinks';
+import EditSocialLinks from '../components/EditSocialLinks';
+import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2 } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
 
 interface Comment {
@@ -44,6 +47,9 @@ export default function ProfileView() {
   const [myRating, setMyRating] = useState<Rating | null>(null);
   const [editingSkill, setEditingSkill] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState('');
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showEditSocialLinks, setShowEditSocialLinks] = useState(false);
+  const [socialLinks, setSocialLinks] = useState<any>(null);
 
   useEffect(() => {
     if (username) {
@@ -146,6 +152,14 @@ export default function ProfileView() {
           setUserVote(userLike.is_like);
         }
       }
+
+      const { data: socialLinksData } = await supabase
+        .from('social_links')
+        .select('*')
+        .eq('user_id', profileData.id)
+        .maybeSingle();
+
+      setSocialLinks(socialLinksData);
 
       setLoading(false);
     } catch (error) {
@@ -415,6 +429,22 @@ export default function ProfileView() {
           />
         </div>
 
+        <div className="flex justify-center mb-8">
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-bold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+          >
+            <Share2 className="w-5 h-5" />
+            <span>Share Card</span>
+          </button>
+        </div>
+
+        <SocialLinks
+          socialLinks={socialLinks}
+          isOwner={currentUser?.id === profile.id}
+          onEdit={() => setShowEditSocialLinks(true)}
+        />
+
         <div className="max-w-2xl mx-auto mb-8">
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
             <h3 className="text-lg font-bold text-white mb-4 text-center">Profile Stats</h3>
@@ -665,6 +695,22 @@ export default function ProfileView() {
           </div>
         </div>
       </main>
+
+      <ShareCardModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        username={profile.username}
+        fullName={profile.full_name || profile.username}
+        overallRating={profile.overall_rating ?? 50}
+      />
+
+      <EditSocialLinks
+        isOpen={showEditSocialLinks}
+        onClose={() => setShowEditSocialLinks(false)}
+        userId={profile.id}
+        currentLinks={socialLinks}
+        onSave={loadProfile}
+      />
     </div>
   );
 }
