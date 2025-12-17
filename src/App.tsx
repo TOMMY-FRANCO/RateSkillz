@@ -12,34 +12,12 @@ import Leaderboard from './pages/Leaderboard';
 import PublicCard from './pages/PublicCard';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-
-  console.log('🔐 ProtectedRoute:', { loading, hasUser: !!user });
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
-  }
-
+  const { user } = useAuth();
   return user ? <>{children}</> : <Navigate to="/" replace />;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-
-  console.log('🌐 PublicRoute:', { loading, hasUser: !!user });
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
-  }
-
+  const { user } = useAuth();
   return !user ? <>{children}</> : <Navigate to="/dashboard" replace />;
 }
 
