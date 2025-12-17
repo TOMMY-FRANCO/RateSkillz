@@ -1,144 +1,29 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext';
-import Landing from './pages/Landing';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Dashboard from './pages/Dashboard';
-import EditProfile from './pages/EditProfile';
-import Friends from './pages/Friends';
-import Settings from './pages/Settings';
-import ProfileView from './pages/ProfileView';
-import Leaderboard from './pages/Leaderboard';
-import PublicCard from './pages/PublicCard';
-import Shop from './pages/Shop';
-import TransactionHistory from './pages/TransactionHistory';
-import WatchAd from './pages/WatchAd';
-
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  return user ? <>{children}</> : <Navigate to="/" replace />;
-}
-
-function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  return !user ? <>{children}</> : <Navigate to="/dashboard" replace />;
-}
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { HomePage } from './pages/HomePage';
-import { LoginPage } from './pages/LoginPage';
-import { SignupPage } from './pages/SignupPage';
-import { SuccessPage } from './pages/SuccessPage';
+import { AuthProvider } from './contexts/AuthContext';
+import { Home } from './pages/Home';
+import { Store } from './pages/Store';
+import { CheckoutSuccess } from './pages/CheckoutSuccess';
+import { Profile } from './pages/Profile';
+import { Leaderboard } from './pages/Leaderboard';
+import { Login } from './pages/Login';
+import { Signup } from './pages/Signup';
 
 function App() {
   console.log('🚀 App component rendering');
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/success" element={<SuccessPage />} />
-      </Routes>
-    </Router>
-          path="/"
-          element={
-            <PublicRoute>
-              <Landing />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/signup"
-          element={
-            <PublicRoute>
-              <Signup />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/edit-profile"
-          element={
-            <ProtectedRoute>
-              <EditProfile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/friends"
-          element={
-            <ProtectedRoute>
-              <Friends />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile/:username"
-          element={
-            <ProtectedRoute>
-              <ProfileView />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/leaderboard"
-          element={
-            <ProtectedRoute>
-              <Leaderboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/shop"
-          element={
-            <ProtectedRoute>
-              <Shop />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/transactions"
-          element={
-            <ProtectedRoute>
-              <TransactionHistory />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/watch-ad"
-          element={
-            <ProtectedRoute>
-              <WatchAd />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/card/:username" element={<PublicCard />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/store" element={<Store />} />
+          <Route path="/checkout/success" element={<CheckoutSuccess />} />
+          <Route path="/profile/:username?" element={<Profile />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
