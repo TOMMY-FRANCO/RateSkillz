@@ -173,47 +173,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
         options: {
           emailRedirectTo: undefined,
+          data: {
+            username,
+            full_name: fullName,
+          },
         },
       });
 
       if (signUpError) throw signUpError;
       if (!authData.user) throw new Error('No user returned from signup');
 
-      const newProfile = {
-        id: authData.user.id,
-        username,
-        full_name: fullName,
-        email,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        last_active: new Date().toISOString(),
-      };
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      const { error: profileError } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .insert([newProfile]);
+        .select('*')
+        .eq('id', authData.user.id)
+        .maybeSingle();
 
-      if (profileError) throw profileError;
-
-      const { error: statsError } = await supabase
-        .from('user_stats')
-        .insert([{
-          user_id: authData.user.id,
-          pac: 50,
-          sho: 50,
-          pas: 50,
-          dri: 50,
-          def: 50,
-          phy: 50,
-          overall: 50,
-          rating_count: 0,
-        }]);
-
-      if (statsError) throw statsError;
+      if (profileError || !profileData) {
+        throw new Error('Profile was not created');
+      }
 
       setUser({ id: authData.user.id });
       setSession({ user: { id: authData.user.id } });
-      setProfile(newProfile);
+      setProfile(profileData);
 
       return { error: null };
     } catch (error: any) {
