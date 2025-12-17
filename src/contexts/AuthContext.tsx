@@ -53,6 +53,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateActivity = async () => {
     if (!profile) return;
 
+    if (!supabase) {
+      const updatedProfile = { ...profile, last_active: new Date().toISOString() };
+      localStorage.setItem('currentProfile', JSON.stringify(updatedProfile));
+      return;
+    }
+
     try {
       const now = new Date().toISOString();
 
@@ -77,7 +83,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(updatedProfile);
       localStorage.setItem('currentProfile', JSON.stringify(updatedProfile));
     } catch (error) {
-      console.error('Error updating activity:', error);
       const updatedProfile = { ...profile, last_active: new Date().toISOString() };
       localStorage.setItem('currentProfile', JSON.stringify(updatedProfile));
     }
@@ -85,34 +90,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const loadProfile = async () => {
+      console.log('🔐 Auth Check Starting...');
+      const startTime = Date.now();
+
       const storedProfile = localStorage.getItem('currentProfile');
+      console.log('  Stored profile:', storedProfile ? 'Found' : 'Not found');
+
       if (storedProfile) {
         const profileData = JSON.parse(storedProfile);
+        console.log('  Profile ID:', profileData.id);
+        console.log('  Username:', profileData.username);
+
+        if (!supabase) {
+          console.warn('⚠️  Supabase not configured, using localStorage fallback');
+          setProfile(profileData);
+          setUser({ id: profileData.id });
+          setSession({ user: { id: profileData.id } });
+          setLoading(false);
+          return;
+        }
 
         try {
-          const { data, error } = await supabase
+          console.log('  Fetching profile from Supabase...');
+
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('Timeout')), 2000);
+          });
+
+          const fetchPromise = supabase
             .from('profiles')
             .select('*')
             .eq('id', profileData.id)
             .maybeSingle();
 
+          const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+
+          const elapsed = Date.now() - startTime;
+          console.log(`  ✅ Fetch completed in ${elapsed}ms`);
+
           if (data && !error) {
+            console.log('  Profile updated from database');
             setProfile(data);
             setUser({ id: data.id });
             setSession({ user: { id: data.id } });
             localStorage.setItem('currentProfile', JSON.stringify(data));
           } else {
+            console.log('  Using cached profile (no data or error)');
             setProfile(profileData);
             setUser({ id: profileData.id });
             setSession({ user: { id: profileData.id } });
           }
-        } catch (error) {
-          console.error('Error loading profile:', error);
+        } catch (error: any) {
+          const elapsed = Date.now() - startTime;
+
+          if (error.message === 'Timeout') {
+            console.warn(`⚠️  Session check timed out after ${elapsed}ms`);
+            console.warn('  Using cached profile');
+          } else {
+            console.error('❌ Error loading profile:', error);
+          }
+
           setProfile(profileData);
           setUser({ id: profileData.id });
           setSession({ user: { id: profileData.id } });
         }
+      } else {
+        console.log('  No stored profile - user needs to login');
       }
+
+      const totalTime = Date.now() - startTime;
+      console.log(`🔐 Auth Check Complete (${totalTime}ms)`);
       setLoading(false);
     };
 
@@ -136,59 +183,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (username: string) => {
-    try {
-      const { data: existingProfile, error: fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('username', username)
-        .maybeSingle();
+    console.log('🔑 Sign In Attempt:', username);
 
-      let profileData: Profile;
-
-      if (existingProfile && !fetchError) {
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ last_active: new Date().toISOString() })
-          .eq('id', existingProfile.id);
-
-        if (updateError) console.error('Error updating last_active:', updateError);
-
-        profileData = { ...existingProfile, last_active: new Date().toISOString() };
-      } else {
-        const newProfile = {
-          username,
-          full_name: username,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          last_active: new Date().toISOString(),
-        };
-
-        const { data: insertedProfile, error: insertError } = await supabase
-          .from('profiles')
-          .insert([newProfile])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Error creating profile:', insertError);
-          const localId = Date.now().toString();
-          profileData = { id: localId, ...newProfile };
-          const allProfiles = JSON.parse(localStorage.getItem('profiles') || '{}');
-          allProfiles[localId] = profileData;
-          localStorage.setItem('profiles', JSON.stringify(allProfiles));
-        } else {
-          profileData = insertedProfile;
-        }
-      }
-
-      localStorage.setItem('currentProfile', JSON.stringify(profileData));
-      setProfile(profileData);
-      setUser({ id: profileData.id });
-      setSession({ user: { id: profileData.id } });
-
-      return { error: null };
-    } catch (error) {
-      console.error('Sign in error:', error);
+    if (!supabase) {
+      console.warn('⚠️  Supabase not available, using localStorage mode');
 
       const allProfiles = JSON.parse(localStorage.getItem('profiles') || '{}');
       let profileData = Object.values(allProfiles).find(
@@ -196,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ) as Profile | undefined;
 
       if (!profileData) {
+        console.log('  Creating new local profile');
         const newId = Date.now().toString();
         profileData = {
           id: newId,
@@ -213,6 +212,102 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(profileData);
       setUser({ id: profileData.id });
       setSession({ user: { id: profileData.id } });
+      console.log('✅ Sign in successful (local mode)');
+
+      return { error: null };
+    }
+
+    try {
+      console.log('  Checking for existing profile in database...');
+
+      const { data: existingProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('username', username)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('❌ Error fetching profile:', fetchError);
+        throw fetchError;
+      }
+
+      let profileData: Profile;
+
+      if (existingProfile) {
+        console.log('  Found existing profile:', existingProfile.id);
+
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ last_active: new Date().toISOString() })
+          .eq('id', existingProfile.id);
+
+        if (updateError) {
+          console.error('⚠️  Error updating last_active:', updateError);
+        }
+
+        profileData = { ...existingProfile, last_active: new Date().toISOString() };
+      } else {
+        console.log('  Creating new profile in database...');
+
+        const newProfile = {
+          username,
+          full_name: username,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_active: new Date().toISOString(),
+        };
+
+        const { data: insertedProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert([newProfile])
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('❌ Error creating profile:', insertError);
+          throw insertError;
+        }
+
+        profileData = insertedProfile;
+        console.log('  Profile created:', profileData.id);
+      }
+
+      localStorage.setItem('currentProfile', JSON.stringify(profileData));
+      setProfile(profileData);
+      setUser({ id: profileData.id });
+      setSession({ user: { id: profileData.id } });
+      console.log('✅ Sign in successful');
+
+      return { error: null };
+    } catch (error: any) {
+      console.error('❌ Sign in error:', error.message);
+      console.warn('⚠️  Falling back to localStorage mode');
+
+      const allProfiles = JSON.parse(localStorage.getItem('profiles') || '{}');
+      let profileData = Object.values(allProfiles).find(
+        (p: any) => p.username === username
+      ) as Profile | undefined;
+
+      if (!profileData) {
+        console.log('  Creating new local profile (fallback)');
+        const newId = Date.now().toString();
+        profileData = {
+          id: newId,
+          username,
+          full_name: username,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          last_active: new Date().toISOString(),
+        };
+        allProfiles[newId] = profileData;
+        localStorage.setItem('profiles', JSON.stringify(allProfiles));
+      }
+
+      localStorage.setItem('currentProfile', JSON.stringify(profileData));
+      setProfile(profileData);
+      setUser({ id: profileData.id });
+      setSession({ user: { id: profileData.id } });
+      console.log('✅ Sign in successful (fallback mode)');
 
       return { error: null };
     }
@@ -228,27 +323,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!profile) return { error: new Error('No user logged in') };
 
-    try {
-      const updatedProfile = { ...profile, ...updates, updated_at: new Date().toISOString() };
+    console.log('📝 Updating profile:', Object.keys(updates));
 
+    const updatedProfile = { ...profile, ...updates, updated_at: new Date().toISOString() };
+
+    if (!supabase) {
+      console.warn('⚠️  Supabase not available, updating localStorage only');
+      const allProfiles = JSON.parse(localStorage.getItem('profiles') || '{}');
+      allProfiles[profile.id] = updatedProfile;
+      localStorage.setItem('profiles', JSON.stringify(allProfiles));
+      localStorage.setItem('currentProfile', JSON.stringify(updatedProfile));
+      setProfile(updatedProfile);
+      return { error: null };
+    }
+
+    try {
       const { error } = await supabase
         .from('profiles')
         .update(updates)
         .eq('id', profile.id);
 
       if (error) {
-        console.error('Error updating profile in Supabase:', error);
+        console.error('❌ Error updating profile in Supabase:', error);
+        console.warn('⚠️  Saving to localStorage as fallback');
         const allProfiles = JSON.parse(localStorage.getItem('profiles') || '{}');
         allProfiles[profile.id] = updatedProfile;
         localStorage.setItem('profiles', JSON.stringify(allProfiles));
+      } else {
+        console.log('✅ Profile updated successfully');
       }
 
       localStorage.setItem('currentProfile', JSON.stringify(updatedProfile));
       setProfile(updatedProfile);
       return { error: null };
     } catch (error) {
-      console.error('Update profile error:', error);
-      const updatedProfile = { ...profile, ...updates, updated_at: new Date().toISOString() };
+      console.error('❌ Update profile error:', error);
+      console.warn('⚠️  Saving to localStorage as fallback');
       const allProfiles = JSON.parse(localStorage.getItem('profiles') || '{}');
       allProfiles[profile.id] = updatedProfile;
       localStorage.setItem('profiles', JSON.stringify(allProfiles));
@@ -260,6 +370,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = async () => {
     if (!profile) return;
+
+    if (!supabase) {
+      const storedProfile = localStorage.getItem('currentProfile');
+      if (storedProfile) {
+        setProfile(JSON.parse(storedProfile));
+      }
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -278,7 +396,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (error) {
-      console.error('Error refreshing profile:', error);
       const storedProfile = localStorage.getItem('currentProfile');
       if (storedProfile) {
         setProfile(JSON.parse(storedProfile));
