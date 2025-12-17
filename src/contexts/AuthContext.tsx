@@ -78,32 +78,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    console.log('🔄 AuthContext: useEffect started');
+
+    const timeout = setTimeout(() => {
+      console.error('⏰ Auth initialization timeout - forcing loading to false');
+      setLoading(false);
+    }, 5000);
+
     const initAuth = async () => {
       console.log('🔄 AuthContext: Initializing auth...');
+
       if (!supabase) {
         console.error('❌ Supabase not configured');
+        console.log('Setting loading to false (no supabase)');
+        clearTimeout(timeout);
         setLoading(false);
         return;
       }
 
       try {
         console.log('📡 Fetching session...');
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error('❌ Session error:', sessionError);
+        }
+
         console.log('📡 Session:', session ? 'Found' : 'None');
 
         if (session?.user) {
+          console.log('Setting user state...');
           setUser({ id: session.user.id });
           setSession({ user: { id: session.user.id } });
 
-          const { data: profileData } = await supabase
+          console.log('Fetching profile...');
+          const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .maybeSingle();
 
+          if (profileError) {
+            console.error('❌ Profile error:', profileError);
+          }
+
           if (profileData) {
             setProfile(profileData);
             console.log('✅ Profile loaded:', profileData.username);
+          } else {
+            console.log('⚠️ No profile found');
           }
         } else {
           console.log('✅ No session - user not logged in');
@@ -111,7 +134,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('❌ Error loading session:', error);
       } finally {
-        console.log('✅ Auth initialization complete');
+        console.log('✅ Auth initialization complete - setting loading to FALSE');
+        clearTimeout(timeout);
         setLoading(false);
       }
     };
@@ -143,6 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, []);
