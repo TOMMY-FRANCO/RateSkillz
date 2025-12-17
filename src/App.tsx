@@ -23,13 +23,23 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   return !user ? <>{children}</> : <Navigate to="/dashboard" replace />;
 }
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HomePage } from './pages/HomePage';
+import { LoginPage } from './pages/LoginPage';
+import { SignupPage } from './pages/SignupPage';
+import { SuccessPage } from './pages/SuccessPage';
 
 function App() {
   console.log('🚀 App component rendering');
   return (
     <Router>
       <Routes>
-        <Route
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/success" element={<SuccessPage />} />
+      </Routes>
+    </Router>
           path="/"
           element={
             <PublicRoute>
