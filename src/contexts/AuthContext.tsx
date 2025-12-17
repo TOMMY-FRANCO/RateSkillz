@@ -168,16 +168,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (signUpError) throw signUpError;
       if (!authData.user) throw new Error('No user returned from signup');
 
-      await new Promise(resolve => setTimeout(resolve, 500));
+      let profileData = null;
+      for (let i = 0; i < 10; i++) {
+        await new Promise(resolve => setTimeout(resolve, 300));
 
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authData.user.id)
-        .maybeSingle();
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authData.user.id)
+          .maybeSingle();
 
-      if (profileError || !profileData) {
-        throw new Error('Profile was not created');
+        if (data) {
+          profileData = data;
+          break;
+        }
+      }
+
+      if (!profileData) {
+        const { data: insertedProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authData.user.id,
+            username,
+            full_name: fullName,
+            email,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            last_active: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        profileData = insertedProfile;
       }
 
       setUser({ id: authData.user.id });
@@ -205,14 +228,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (signInError) throw signInError;
       if (!authData.user) throw new Error('No user returned from signin');
 
-      const { data: profileData, error: profileError } = await supabase
+      let profileData = null;
+      const { data, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authData.user.id)
         .maybeSingle();
 
       if (profileError) throw profileError;
-      if (!profileData) throw new Error('Profile not found');
+
+      if (!data) {
+        const username = authData.user.user_metadata?.username || authData.user.email?.split('@')[0] || 'user';
+        const fullName = authData.user.user_metadata?.full_name || '';
+
+        const { data: insertedProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authData.user.id,
+            username,
+            full_name: fullName,
+            email: authData.user.email,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            last_active: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        profileData = insertedProfile;
+      } else {
+        profileData = data;
+      }
 
       await supabase
         .from('profiles')
