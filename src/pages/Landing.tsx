@@ -3,6 +3,7 @@ import { Star } from 'lucide-react';
 
 export default function Landing() {
   const navigate = useNavigate();
+  console.log('🏠 Landing page rendering');
 
   return (
     <div className="min-h-screen bg-black">

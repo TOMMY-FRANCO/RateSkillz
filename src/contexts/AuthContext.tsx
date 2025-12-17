@@ -79,14 +79,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const initAuth = async () => {
+      console.log('🔄 AuthContext: Initializing auth...');
       if (!supabase) {
-        console.error('Supabase not configured');
+        console.error('❌ Supabase not configured');
         setLoading(false);
         return;
       }
 
       try {
+        console.log('📡 Fetching session...');
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('📡 Session:', session ? 'Found' : 'None');
 
         if (session?.user) {
           setUser({ id: session.user.id });
@@ -100,11 +103,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           if (profileData) {
             setProfile(profileData);
+            console.log('✅ Profile loaded:', profileData.username);
           }
+        } else {
+          console.log('✅ No session - user not logged in');
         }
       } catch (error) {
-        console.error('Error loading session:', error);
+        console.error('❌ Error loading session:', error);
       } finally {
+        console.log('✅ Auth initialization complete');
         setLoading(false);
       }
     };
