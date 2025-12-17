@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PlayerCard, { Rating } from '../components/PlayerCard';
 import OnlineStatus from '../components/OnlineStatus';
-import { Settings, Users, LogOut, Edit, Bell, Trophy } from 'lucide-react';
+import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { getCoinBalance } from '../lib/coins';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -13,14 +14,25 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [rank, setRank] = useState<{ position: number; total: number } | undefined>();
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [coinBalance, setCoinBalance] = useState<number>(0);
 
   useEffect(() => {
     if (profile) {
       fetchRatings();
       calculateRank();
       fetchPendingRequests();
+      fetchCoinBalance();
     }
   }, [profile]);
+
+  const fetchCoinBalance = async () => {
+    try {
+      const balance = await getCoinBalance();
+      setCoinBalance(balance);
+    } catch (error) {
+      console.error('Error fetching coin balance:', error);
+    }
+  };
 
   const fetchPendingRequests = async () => {
     if (!profile) return;
@@ -144,6 +156,13 @@ export default function Dashboard() {
 
             <div className="flex items-center space-x-4">
               <button
+                onClick={() => navigate('/shop')}
+                className="text-gray-300 hover:text-yellow-400 transition-colors flex items-center space-x-2 bg-none border-none cursor-pointer px-3 py-1.5 rounded-lg hover:bg-yellow-400/10"
+              >
+                <Coins className="w-5 h-5 text-yellow-400" />
+                <span className="font-semibold text-white">{coinBalance.toFixed(2)}</span>
+              </button>
+              <button
                 onClick={() => navigate('/friends')}
                 className="text-gray-300 hover:text-cyan-400 transition-colors flex items-center space-x-2 bg-none border-none cursor-pointer relative"
               >
@@ -210,11 +229,56 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           <button
-            onClick={() => navigate('/leaderboard')}
+            onClick={() => navigate('/shop')}
             className="bg-gradient-to-br from-yellow-900/30 to-orange-900/30 border border-yellow-600/50 rounded-xl p-6 hover:border-yellow-500 transition-all group cursor-pointer text-left w-full"
           >
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <ShoppingBag className="w-6 h-6 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Coin Shop</h3>
+                <p className="text-gray-400 text-sm">Buy coins</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/watch-ad')}
+            className="bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-600/50 rounded-xl p-6 hover:border-green-500 transition-all group cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Tv className="w-6 h-6 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Watch & Earn</h3>
+                <p className="text-gray-400 text-sm">Get 10 coins/day</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/transactions')}
+            className="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 border border-blue-600/50 rounded-xl p-6 hover:border-blue-500 transition-all group cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <TrendingUp className="w-6 h-6 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Transactions</h3>
+                <p className="text-gray-400 text-sm">View history</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/leaderboard')}
+            className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 border border-purple-600/50 rounded-xl p-6 hover:border-purple-500 transition-all group cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Trophy className="w-6 h-6 text-black" />
               </div>
               <div>

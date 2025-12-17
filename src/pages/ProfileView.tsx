@@ -7,8 +7,9 @@ import ShareCardModal from '../components/ShareCardModal';
 import SocialLinks from '../components/SocialLinks';
 import EditSocialLinks from '../components/EditSocialLinks';
 import OnlineStatus from '../components/OnlineStatus';
-import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2 } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2, Coins } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
+import { awardCommentCoins } from '../lib/coins';
 
 interface Comment {
   id: string;
@@ -52,6 +53,7 @@ export default function ProfileView() {
   const [showEditSocialLinks, setShowEditSocialLinks] = useState(false);
   const [socialLinks, setSocialLinks] = useState<any>(null);
   const [commentVotes, setCommentVotes] = useState<Record<string, { is_upvote: boolean; vote_id: string }>>({});
+  const [coinEarned, setCoinEarned] = useState<number | null>(null);
 
   useEffect(() => {
     if (username) {
@@ -392,6 +394,16 @@ export default function ProfileView() {
       if (!error && data) {
         setComments([data, ...comments]);
         setNewComment('');
+
+        try {
+          const coinResult = await awardCommentCoins(profile.id, data.id);
+          if (coinResult.earned) {
+            setCoinEarned(coinResult.amount);
+            setTimeout(() => setCoinEarned(null), 3000);
+          }
+        } catch (coinError: any) {
+          console.log('Coin reward info:', coinError.message);
+        }
       }
     } catch (error) {
       console.error('Error submitting comment:', error);
@@ -783,24 +795,34 @@ export default function ProfileView() {
             {currentUser && profile.id !== currentUser.id && (
               <>
                 {friendStatus === 'accepted' ? (
-                  <form onSubmit={handleSubmitComment} className="mb-6">
-                    <div className="flex space-x-2">
-                      <input
-                        type="text"
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        placeholder="Add a comment..."
-                        className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                      />
-                      <button
-                        type="submit"
-                        disabled={!newComment.trim() || submitting}
-                        className="px-6 py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                      >
-                        <Send className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </form>
+                  <>
+                    <form onSubmit={handleSubmitComment} className="mb-6">
+                      <div className="flex space-x-2">
+                        <input
+                          type="text"
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          placeholder="Add a comment..."
+                          className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                        />
+                        <button
+                          type="submit"
+                          disabled={!newComment.trim() || submitting}
+                          className="px-6 py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                        >
+                          <Send className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </form>
+                    {coinEarned !== null && (
+                      <div className="mb-4 p-3 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/50 rounded-lg animate-pulse">
+                        <div className="flex items-center justify-center gap-2 text-yellow-400">
+                          <Coins className="w-5 h-5" />
+                          <span className="font-semibold">You earned {coinEarned.toFixed(2)} coins for commenting!</span>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="mb-6 p-4 bg-gray-800 border border-gray-700 rounded-lg text-center">
                     <p className="text-gray-400">Only friends can comment on this profile</p>

@@ -10,6 +10,9 @@ import Settings from './pages/Settings';
 import ProfileView from './pages/ProfileView';
 import Leaderboard from './pages/Leaderboard';
 import PublicCard from './pages/PublicCard';
+import Shop from './pages/Shop';
+import TransactionHistory from './pages/TransactionHistory';
+import WatchAd from './pages/WatchAd';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -95,6 +98,30 @@ function App() {
           element={
             <ProtectedRoute>
               <Leaderboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shop"
+          element={
+            <ProtectedRoute>
+              <Shop />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/transactions"
+          element={
+            <ProtectedRoute>
+              <TransactionHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/watch-ad"
+          element={
+            <ProtectedRoute>
+              <WatchAd />
             </ProtectedRoute>
           }
         />
