@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { Profile } from '../contexts/AuthContext';
 import { User, Download } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import { displayUsername } from '../lib/username';
 
 export interface Rating {
   id: string;
@@ -136,7 +137,7 @@ export default function PlayerCard({ profile, ratings = [], size = 'large', rank
 
           <div className="bg-gradient-to-r from-purple-900/90 via-purple-800/90 to-purple-900/90 backdrop-blur-sm px-4 py-3 rounded-lg border border-purple-400/30 mb-4">
             <h3 className="text-3xl font-black text-white text-center tracking-wide uppercase drop-shadow-lg">
-              {profile.full_name || profile.username}
+              {profile.full_name || displayUsername(profile.username)}
             </h3>
           </div>
 

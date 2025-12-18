@@ -5,6 +5,8 @@ import { ArrowLeft, LogOut, User, Users, Bell } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Profile } from '../contexts/AuthContext';
 import OnlineStatus from '../components/OnlineStatus';
+import UsernameChanger from '../components/UsernameChanger';
+import { displayUsername } from '../lib/username';
 
 export default function Settings() {
   const { profile, signOut } = useAuth();
@@ -105,7 +107,7 @@ export default function Settings() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">Username</label>
-                <p className="text-white">{profile.username}</p>
+                <p className="text-white font-semibold">{displayUsername(profile.username)}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">Full Name</label>
@@ -131,6 +133,8 @@ export default function Settings() {
               Edit Profile
             </button>
           </div>
+
+          <UsernameChanger />
 
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
             <h2 className="text-xl font-bold text-white mb-4">Actions</h2>
@@ -173,7 +177,7 @@ export default function Settings() {
                         )}
                       </div>
                       <div>
-                        <p className="text-white font-semibold">{p.username}</p>
+                        <p className="text-white font-semibold">{displayUsername(p.username)}</p>
                         <p className="text-gray-400 text-sm">
                           {p.position || 'No position'} {p.team ? `• ${p.team}` : ''}
                         </p>

@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PlayerCard, { Rating } from '../components/PlayerCard';
 import OnlineStatus from '../components/OnlineStatus';
+import FirstTimeUsernamePrompt from '../components/FirstTimeUsernamePrompt';
 import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getCoinBalance } from '../lib/coins';
+import { displayUsername } from '../lib/username';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -15,6 +17,7 @@ export default function Dashboard() {
   const [rank, setRank] = useState<{ position: number; total: number } | undefined>();
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [coinBalance, setCoinBalance] = useState<number>(0);
+  const [showUsernamePrompt, setShowUsernamePrompt] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -22,6 +25,10 @@ export default function Dashboard() {
       calculateRank();
       fetchPendingRequests();
       fetchCoinBalance();
+
+      if (!profile.username_customized) {
+        setShowUsernamePrompt(true);
+      }
     }
   }, [profile]);
 
@@ -201,7 +208,7 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-white mb-2">
-            Welcome, {profile.username}!
+            Welcome, {displayUsername(profile.username)}!
           </h2>
           <div className="flex items-center justify-center gap-2 mb-2">
             <OnlineStatus lastActive={profile.last_active} size="large" />
@@ -365,6 +372,12 @@ export default function Dashboard() {
           </button>
         </div>
       </main>
+
+      {showUsernamePrompt && (
+        <FirstTimeUsernamePrompt
+          onComplete={() => setShowUsernamePrompt(false)}
+        />
+      )}
     </div>
   );
 }

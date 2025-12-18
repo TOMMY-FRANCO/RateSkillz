@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, UserCheck, UserX, Clock, Eye, Bell } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
+import { displayUsername } from '../lib/username';
 
 interface FriendRequest {
   id: string;
@@ -254,12 +255,12 @@ export default function Friends() {
                           />
                         ) : (
                           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-cyan-500 flex items-center justify-center text-black font-bold text-2xl border-2 border-cyan-500">
-                            {request.profile.username.charAt(0).toUpperCase()}
+                            {displayUsername(request.profile.username).charAt(0)}
                           </div>
                         )}
                         <div>
                           <h3 className="text-white font-bold text-lg">
-                            {request.profile.username}
+                            {displayUsername(request.profile.username)}
                           </h3>
                           <p className="text-gray-400 text-sm">
                             Overall Rating: {calculateOverallRating(request.profile)}
@@ -312,12 +313,12 @@ export default function Friends() {
                           />
                         ) : (
                           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center text-white font-bold text-2xl">
-                            {request.profile.username.charAt(0).toUpperCase()}
+                            {displayUsername(request.profile.username).charAt(0)}
                           </div>
                         )}
                         <div>
                           <h3 className="text-white font-bold text-lg">
-                            {request.profile.username}
+                            {displayUsername(request.profile.username)}
                           </h3>
                           <div className="flex items-center space-x-2 text-gray-400 text-sm">
                             <Clock className="w-4 h-4" />
@@ -361,12 +362,12 @@ export default function Friends() {
                           />
                         ) : (
                           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-cyan-500 flex items-center justify-center text-black font-bold text-2xl border-2 border-green-500">
-                            {friend.profile.username.charAt(0).toUpperCase()}
+                            {displayUsername(friend.profile.username).charAt(0)}
                           </div>
                         )}
                         <div>
                           <h3 className="text-white font-bold text-lg">
-                            {friend.profile.username}
+                            {displayUsername(friend.profile.username)}
                           </h3>
                           <p className="text-gray-400 text-sm">
                             Overall Rating: {calculateOverallRating(friend.profile)}
