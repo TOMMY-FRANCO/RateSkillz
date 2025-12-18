@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PlayerCard, { Rating } from '../components/PlayerCard';
 import OnlineStatus from '../components/OnlineStatus';
-import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp } from 'lucide-react';
+import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getCoinBalance } from '../lib/coins';
 
@@ -213,7 +213,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="flex justify-center mb-12">
+        <div className="flex justify-center mb-8">
           {loading ? (
             <div className="text-white">Loading your card...</div>
           ) : (
@@ -225,6 +225,17 @@ export default function Dashboard() {
               overallRating={profile.overall_rating}
             />
           )}
+        </div>
+
+        <div className="flex justify-center mb-12">
+          <button
+            onClick={() => navigate(`/profile/${profile.username}?preview=true`)}
+            className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl hover:scale-105"
+          >
+            <Eye className="w-5 h-5" />
+            <span>Preview Profile</span>
+            <span className="text-sm opacity-80">See how others view your profile</span>
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">

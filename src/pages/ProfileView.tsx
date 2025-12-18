@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import PlayerCard, { Rating } from '../components/PlayerCard';
@@ -7,7 +7,7 @@ import ShareCardModal from '../components/ShareCardModal';
 import SocialLinks from '../components/SocialLinks';
 import EditSocialLinks from '../components/EditSocialLinks';
 import OnlineStatus from '../components/OnlineStatus';
-import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2, Coins } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2, Coins, Lock, X } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
 import { awardCommentCoins } from '../lib/coins';
 
@@ -33,6 +33,8 @@ export default function ProfileView() {
   const { username } = useParams<{ username: string }>();
   const { profile: currentUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isPreviewMode = searchParams.get('preview') === 'true';
   const [profile, setProfile] = useState<Profile | null>(null);
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -54,6 +56,9 @@ export default function ProfileView() {
   const [socialLinks, setSocialLinks] = useState<any>(null);
   const [commentVotes, setCommentVotes] = useState<Record<string, { is_upvote: boolean; vote_id: string }>>({});
   const [coinEarned, setCoinEarned] = useState<number | null>(null);
+
+  const isOwner = currentUser?.id === profile?.id;
+  const isEditingEnabled = !isPreviewMode && !isOwner;
 
   useEffect(() => {
     if (username) {
@@ -77,43 +82,30 @@ export default function ProfileView() {
 
       setProfile(profileData);
 
-      if (currentUser && profileData.id !== currentUser.id) {
-        await supabase.from('profile_views').insert({
-          profile_id: profileData.id,
-          viewer_id: currentUser.id,
-        });
+      setViewsCount(profileData.profile_views_count || 0);
 
-        await supabase.from('notifications').insert({
-          user_id: profileData.id,
-          actor_id: currentUser.id,
-          type: 'profile_view',
-          message: `${currentUser.username} viewed your profile`,
-          metadata: { profile_id: profileData.id },
-        });
-      }
-
-      const { data: viewsData } = await supabase
-        .from('profile_views')
-        .select('id')
-        .eq('profile_id', profileData.id);
-      setViewsCount(viewsData?.length || 0);
-      console.log('👁️ Total views for this profile:', viewsData?.length || 0);
-
-      if (currentUser && profileData.id !== currentUser.id) {
+      if (currentUser && profileData.id !== currentUser.id && !isPreviewMode) {
         console.log('📊 Recording profile view...');
-        const { error: viewError } = await supabase
-          .from('profile_views')
-          .insert({
-            profile_id: profileData.id,
-            viewer_id: currentUser.id,
-          });
+        const { data: viewResult, error: viewError } = await supabase.rpc('record_profile_view', {
+          p_profile_id: profileData.id,
+          p_viewer_id: currentUser.id,
+        });
 
         if (viewError) {
           console.error('❌ Error recording view:', viewError);
         } else {
-          console.log('✅ Profile view recorded successfully');
-          const updatedViewsCount = (viewsData?.length || 0) + 1;
-          setViewsCount(updatedViewsCount);
+          console.log('✅ Profile view recorded:', viewResult);
+          if (viewResult?.counted) {
+            setViewsCount(viewResult.new_count);
+
+            await supabase.from('notifications').insert({
+              user_id: profileData.id,
+              actor_id: currentUser.id,
+              type: 'profile_view',
+              message: `${currentUser.username} viewed your profile`,
+              metadata: { profile_id: profileData.id },
+            });
+          }
         }
       }
 
@@ -413,9 +405,13 @@ export default function ProfileView() {
   };
 
   const handleSkillClick = (skill: string, currentValue: number) => {
-    if (friendStatus !== 'accepted') return;
+    if (friendStatus !== 'accepted' || isPreviewMode) return;
     setEditingSkill(skill);
     setTempValue(currentValue.toString());
+  };
+
+  const exitPreviewMode = () => {
+    navigate(`/profile/${username}`);
   };
 
   const handleSkillUpdate = async (skill: string) => {
@@ -490,7 +486,7 @@ export default function ProfileView() {
   };
 
   const handleCommentVote = async (commentId: string, isUpvote: boolean) => {
-    if (!currentUser) return;
+    if (!currentUser || isPreviewMode) return;
 
     try {
       const existingVote = commentVotes[commentId];
@@ -564,7 +560,7 @@ export default function ProfileView() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => navigate('/settings')}
+                onClick={() => isPreviewMode ? exitPreviewMode() : navigate('/settings')}
                 className="text-gray-300 hover:text-cyan-400 transition-colors bg-none border-none cursor-pointer"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -577,6 +573,31 @@ export default function ProfileView() {
           </div>
         </div>
       </nav>
+
+      {isPreviewMode && isOwner && (
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 border-b border-blue-500">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center justify-center w-8 h-8 bg-white/20 rounded-full">
+                  <Eye className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold">Preview Mode</p>
+                  <p className="text-blue-100 text-sm">This is how other users see your profile</p>
+                </div>
+              </div>
+              <button
+                onClick={exitPreviewMode}
+                className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all"
+              >
+                <X className="w-4 h-4" />
+                <span>Exit Preview</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex justify-center mb-8">
@@ -600,7 +621,7 @@ export default function ProfileView() {
 
         <SocialLinks
           socialLinks={socialLinks}
-          isOwner={currentUser?.id === profile.id}
+          isOwner={currentUser?.id === profile.id && !isPreviewMode}
           onEdit={() => setShowEditSocialLinks(true)}
         />
 
@@ -634,7 +655,7 @@ export default function ProfileView() {
         </div>
 
         <div className="max-w-2xl mx-auto space-y-6">
-          {currentUser && profile.id !== currentUser.id && (
+          {currentUser && profile.id !== currentUser.id && !isPreviewMode && (
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
               <div className="flex items-center justify-center">
                 {friendStatus === 'none' && (
@@ -677,7 +698,7 @@ export default function ProfileView() {
             </div>
           )}
 
-          {currentUser && profile.id !== currentUser.id && (
+          {currentUser && profile.id !== currentUser.id && !isPreviewMode && (
             <>
               <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -691,7 +712,7 @@ export default function ProfileView() {
                 {friendStatus === 'accepted' ? (
                   <>
                     <p className="text-sm text-gray-400 mb-4">
-                      Click any skill to edit your rating. The player card above shows the average from all friends.
+                      {isPreviewMode ? 'Skill ratings from friends' : 'Click any skill to edit your rating. The player card above shows the average from all friends.'}
                     </p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     {[
@@ -792,7 +813,7 @@ export default function ProfileView() {
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
             <h3 className="text-xl font-bold text-white mb-4">Comments</h3>
 
-            {currentUser && profile.id !== currentUser.id && (
+            {currentUser && profile.id !== currentUser.id && !isPreviewMode && (
               <>
                 {friendStatus === 'accepted' ? (
                   <>
@@ -829,6 +850,15 @@ export default function ProfileView() {
                   </div>
                 )}
               </>
+            )}
+
+            {isPreviewMode && (
+              <div className="mb-6 p-4 bg-blue-900/20 border border-blue-600/50 rounded-lg text-center">
+                <div className="flex items-center justify-center gap-2 text-blue-400">
+                  <Lock className="w-4 h-4" />
+                  <p>Preview mode - commenting disabled</p>
+                </div>
+              </div>
             )}
 
             <div className="space-y-4">
