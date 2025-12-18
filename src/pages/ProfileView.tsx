@@ -7,9 +7,11 @@ import ShareCardModal from '../components/ShareCardModal';
 import SocialLinks from '../components/SocialLinks';
 import EditSocialLinks from '../components/EditSocialLinks';
 import OnlineStatus from '../components/OnlineStatus';
+import CardOwnershipStatus from '../components/CardOwnershipStatus';
 import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2, Coins, Lock, X } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
 import { awardCommentCoins } from '../lib/coins';
+import { getCardOwnership, type CardOwnership } from '../lib/cardTrading';
 
 interface Comment {
   id: string;
@@ -56,6 +58,7 @@ export default function ProfileView() {
   const [socialLinks, setSocialLinks] = useState<any>(null);
   const [commentVotes, setCommentVotes] = useState<Record<string, { is_upvote: boolean; vote_id: string }>>({});
   const [coinEarned, setCoinEarned] = useState<number | null>(null);
+  const [cardOwnership, setCardOwnership] = useState<CardOwnership | null>(null);
 
   const isOwner = currentUser?.id === profile?.id;
   const isEditingEnabled = !isPreviewMode && !isOwner;
@@ -215,10 +218,21 @@ export default function ProfileView() {
 
       setSocialLinks(socialLinksData);
 
+      const cardOwnershipData = await getCardOwnership(profileData.id);
+      setCardOwnership(cardOwnershipData);
+
       setLoading(false);
     } catch (error) {
       console.error('Error loading profile:', error);
       setLoading(false);
+    }
+  };
+
+  const handleCardOwnershipUpdate = async () => {
+    if (profile) {
+      const cardOwnershipData = await getCardOwnership(profile.id);
+      setCardOwnership(cardOwnershipData);
+      await loadProfile();
     }
   };
 
@@ -652,6 +666,15 @@ export default function ProfileView() {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="max-w-2xl mx-auto mb-8">
+          <CardOwnershipStatus
+            cardOwnership={cardOwnership}
+            currentUserId={currentUser?.id || null}
+            cardUserId={profile.id}
+            onUpdate={handleCardOwnershipUpdate}
+          />
         </div>
 
         <div className="max-w-2xl mx-auto space-y-6">

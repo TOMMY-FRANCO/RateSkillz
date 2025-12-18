@@ -15,6 +15,7 @@ import TransactionHistory from './pages/TransactionHistory';
 import WatchAd from './pages/WatchAd';
 import { Store } from './pages/Store';
 import { CheckoutSuccess } from './pages/CheckoutSuccess';
+import TradingDashboard from './pages/TradingDashboard';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -132,6 +133,14 @@ function App() {
           element={
             <ProtectedRoute>
               <WatchAd />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trading"
+          element={
+            <ProtectedRoute>
+              <TradingDashboard />
             </ProtectedRoute>
           }
         />

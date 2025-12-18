@@ -240,6 +240,21 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           <button
+            onClick={() => navigate('/trading')}
+            className="bg-gradient-to-br from-cyan-900/30 to-blue-900/30 border border-cyan-600/50 rounded-xl p-6 hover:border-cyan-500 transition-all group cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <ShoppingBag className="w-6 h-6 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Card Trading</h3>
+                <p className="text-gray-400 text-sm">Buy & sell cards</p>
+              </div>
+            </div>
+          </button>
+
+          <button
             onClick={() => navigate('/shop')}
             className="bg-gradient-to-br from-yellow-900/30 to-orange-900/30 border border-yellow-600/50 rounded-xl p-6 hover:border-yellow-500 transition-all group cursor-pointer text-left w-full"
           >
