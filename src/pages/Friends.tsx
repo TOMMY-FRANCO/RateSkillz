@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, UserCheck, UserX, Clock, Eye, Bell } from 'lucide-react';
+import { ArrowLeft, UserCheck, UserX, Clock, Eye, Bell, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
 import { displayUsername } from '../lib/username';
 
@@ -17,6 +17,11 @@ interface FriendRequest {
 
 type TabType = 'incoming' | 'outgoing' | 'friends';
 
+interface NotificationState {
+  type: 'success' | 'error' | 'info';
+  message: string;
+}
+
 export default function Friends() {
   const { profile: currentUser } = useAuth();
   const navigate = useNavigate();
@@ -25,6 +30,8 @@ export default function Friends() {
   const [outgoingRequests, setOutgoingRequests] = useState<FriendRequest[]>([]);
   const [friends, setFriends] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [notification, setNotification] = useState<NotificationState | null>(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -32,14 +39,23 @@ export default function Friends() {
     }
   }, [currentUser]);
 
+  const showNotification = (type: 'success' | 'error' | 'info', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
   const loadFriendData = async () => {
     if (!currentUser) return;
 
     try {
-      const { data: friendsData } = await supabase
+      const { data: friendsData, error: fetchError } = await supabase
         .from('friends')
         .select('*')
         .or(`user_id.eq.${currentUser.id},friend_id.eq.${currentUser.id}`);
+
+      if (fetchError) {
+        throw fetchError;
+      }
 
       if (friendsData) {
         const incoming: FriendRequest[] = [];
@@ -80,69 +96,102 @@ export default function Friends() {
       }
 
       setLoading(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading friend data:', error);
+      showNotification('error', 'Failed to load friends. Please refresh the page.');
       setLoading(false);
     }
   };
 
   const handleAcceptRequest = async (requestId: string) => {
+    setActionLoading(requestId);
     try {
       const { error } = await supabase
         .from('friends')
         .update({ status: 'accepted' })
         .eq('id', requestId);
 
-      if (!error) {
-        loadFriendData();
+      if (error) {
+        throw error;
       }
-    } catch (error) {
+
+      showNotification('success', 'Friend request accepted!');
+      await loadFriendData();
+    } catch (error: any) {
       console.error('Error accepting request:', error);
+      showNotification('error', 'Failed to accept friend request. Please try again.');
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const handleDeclineRequest = async (requestId: string) => {
+    setActionLoading(requestId);
     try {
       const { error } = await supabase
         .from('friends')
         .delete()
         .eq('id', requestId);
 
-      if (!error) {
-        loadFriendData();
+      if (error) {
+        throw error;
       }
-    } catch (error) {
+
+      showNotification('info', 'Friend request declined.');
+      await loadFriendData();
+    } catch (error: any) {
       console.error('Error declining request:', error);
+      showNotification('error', 'Failed to decline request. Please try again.');
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const handleCancelRequest = async (requestId: string) => {
+    setActionLoading(requestId);
     try {
       const { error } = await supabase
         .from('friends')
         .delete()
         .eq('id', requestId);
 
-      if (!error) {
-        loadFriendData();
+      if (error) {
+        throw error;
       }
-    } catch (error) {
+
+      showNotification('info', 'Friend request canceled.');
+      await loadFriendData();
+    } catch (error: any) {
       console.error('Error canceling request:', error);
+      showNotification('error', 'Failed to cancel request. Please try again.');
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const handleRemoveFriend = async (requestId: string) => {
+    if (!confirm('Are you sure you want to remove this friend?')) {
+      return;
+    }
+
+    setActionLoading(requestId);
     try {
       const { error } = await supabase
         .from('friends')
         .delete()
         .eq('id', requestId);
 
-      if (!error) {
-        loadFriendData();
+      if (error) {
+        throw error;
       }
-    } catch (error) {
+
+      showNotification('info', 'Friend removed.');
+      await loadFriendData();
+    } catch (error: any) {
       console.error('Error removing friend:', error);
+      showNotification('error', 'Failed to remove friend. Please try again.');
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -192,6 +241,33 @@ export default function Friends() {
           </div>
         </div>
       </nav>
+
+      {notification && (
+        <div className="fixed top-20 right-4 z-50 max-w-sm animate-slide-in">
+          <div className={`rounded-lg shadow-lg p-4 border ${
+            notification.type === 'success'
+              ? 'bg-green-50 border-green-200'
+              : notification.type === 'error'
+              ? 'bg-red-50 border-red-200'
+              : 'bg-blue-50 border-blue-200'
+          }`}>
+            <div className="flex items-center gap-2">
+              {notification.type === 'success' && <CheckCircle className="w-5 h-5 text-green-600" />}
+              {notification.type === 'error' && <XCircle className="w-5 h-5 text-red-600" />}
+              {notification.type === 'info' && <AlertCircle className="w-5 h-5 text-blue-600" />}
+              <p className={`text-sm font-medium ${
+                notification.type === 'success'
+                  ? 'text-green-800'
+                  : notification.type === 'error'
+                  ? 'text-red-800'
+                  : 'text-blue-800'
+              }`}>
+                {notification.message}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl overflow-hidden">

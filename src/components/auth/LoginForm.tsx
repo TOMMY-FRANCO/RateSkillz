@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { supabase } from '../../lib/supabase';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { Eye, EyeOff, Mail, Lock, CheckCircle } from 'lucide-react';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -8,30 +8,46 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!email || !password) {
+      setError('Please enter both email and password');
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    setSuccess(false);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { error: signInError } = await signIn(email, password);
 
-      if (error) {
-        setError(error.message);
+      if (signInError) {
+        if (signInError.message.includes('Invalid login credentials')) {
+          setError('Invalid email or password. Please try again.');
+        } else if (signInError.message.includes('Email not confirmed')) {
+          setError('Please confirm your email address before signing in.');
+        } else {
+          setError(signInError.message);
+        }
       } else {
-        onSuccess?.();
+        setSuccess(true);
+        setTimeout(() => {
+          onSuccess?.();
+        }, 1000);
       }
-    } catch (err) {
-      setError('An unexpected error occurred');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -47,6 +63,15 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
             <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+            <div className="flex items-center gap-2 text-green-700">
+              <CheckCircle className="w-5 h-5" />
+              <p className="text-sm font-medium">Successfully signed in!</p>
+            </div>
           </div>
         )}
 

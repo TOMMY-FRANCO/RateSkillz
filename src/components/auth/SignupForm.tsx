@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { supabase } from '../../lib/supabase';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { Eye, EyeOff, Mail, Lock, User, CheckCircle } from 'lucide-react';
 
 interface SignupFormProps {
   onSuccess?: () => void;
@@ -8,6 +8,7 @@ interface SignupFormProps {
 }
 
 export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
+  const { signUp } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -15,31 +16,52 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!email || !password || !username || !fullName) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    if (username.length < 3) {
+      setError('Username must be at least 3 characters long');
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    setSuccess(false);
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username,
-            full_name: fullName,
-          },
-        },
-      });
+      const { error: signUpError } = await signUp(email, password, username, fullName);
 
-      if (error) {
-        setError(error.message);
+      if (signUpError) {
+        if (signUpError.message.includes('already taken')) {
+          setError('Username is already taken. Please choose another.');
+        } else if (signUpError.message.includes('already registered')) {
+          setError('Email is already registered. Please sign in instead.');
+        } else if (signUpError.message.includes('invalid email')) {
+          setError('Please enter a valid email address.');
+        } else {
+          setError(signUpError.message);
+        }
       } else {
-        onSuccess?.();
+        setSuccess(true);
+        setTimeout(() => {
+          onSuccess?.();
+        }, 1500);
       }
-    } catch (err) {
-      setError('An unexpected error occurred');
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -55,6 +77,15 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
             <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+            <div className="flex items-center gap-2 text-green-700">
+              <CheckCircle className="w-5 h-5" />
+              <p className="text-sm font-medium">Account created successfully!</p>
+            </div>
           </div>
         )}
 
