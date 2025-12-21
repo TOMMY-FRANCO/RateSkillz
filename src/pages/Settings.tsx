@@ -193,7 +193,7 @@ export default function Settings() {
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
             <h2 className="text-xl font-bold text-white mb-4">About</h2>
             <p className="text-gray-400 text-sm">
-              RateSkillz - Create your FIFA-style player card and get rated by friends.
+              RatingSkill® - Create your personalized RatingSkill® card and get rated by friends.
             </p>
             <p className="text-gray-500 text-xs mt-4">Version 1.0.0</p>
           </div>

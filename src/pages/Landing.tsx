@@ -15,7 +15,7 @@ export default function Landing() {
                 <Star className="w-6 h-6 text-black" />
               </div>
               <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">
-                RateSkillz
+                RatingSkill.com
               </h1>
             </div>
             <div className="flex items-center space-x-4">
@@ -47,14 +47,12 @@ export default function Landing() {
           <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24 w-full">
             <div className="text-center">
               <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-white mb-6 leading-tight">
-                Create Your
-                <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">
-                  FIFA Player Card
+                  Turn Your Skills Into Stats
                 </span>
               </h1>
               <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">
-                Get rated by friends on your football skills. Build your ultimate player card and share it with the world.
+                Join RatingSkill® and create your personalized player card. Let friends rate your abilities, create your profile and watch your stats rise as you level up.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
@@ -62,7 +60,7 @@ export default function Landing() {
                   onClick={() => navigate('/signup')}
                   className="px-8 py-4 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-bold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all text-lg shadow-lg shadow-cyan-500/50 cursor-pointer border-none flex-1"
                 >
-                  Create Account
+                  Start Building Your Squad
                 </button>
                 <button
                   onClick={() => navigate('/login')}
@@ -88,7 +86,7 @@ export default function Landing() {
                   </div>
                   <h3 className="text-lg font-bold text-white mb-2">Build Your Card</h3>
                   <p className="text-gray-400 text-sm">
-                    Your ratings combine to create a unique FIFA-style player card with your stats
+                    Your ratings combine to create your unique RatingSkill® card with your stats
                   </p>
                 </div>
                 <div className="p-6 bg-gray-900/50 border border-gray-800 rounded-xl">
@@ -105,6 +103,27 @@ export default function Landing() {
           </div>
         </section>
       </main>
+
+      <footer className="bg-gray-900 border-t border-gray-800 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-2 mb-4">
+              <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-cyan-400 rounded-lg flex items-center justify-center">
+                <Star className="w-5 h-5 text-black" />
+              </div>
+              <span className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">
+                RatingSkill®
+              </span>
+            </div>
+            <p className="text-gray-400 text-sm mb-2">
+              Turn Your Skills Into Stats
+            </p>
+            <p className="text-gray-500 text-xs">
+              © {new Date().getFullYear()} RatingSkill.com - All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
