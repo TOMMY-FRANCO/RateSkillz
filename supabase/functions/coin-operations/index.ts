@@ -126,7 +126,7 @@ async function awardCommentCoins(supabase: any, userId: string, body: any) {
     .select('*')
     .single();
 
-  if (!pool || pool.remaining_coins < 0.01) {
+  if (!pool || pool.remaining_coins < 0.1) {
     return new Response(
       JSON.stringify({ error: 'Insufficient coins in pool' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -137,7 +137,7 @@ async function awardCommentCoins(supabase: any, userId: string, body: any) {
     p_user_id: userId,
     p_profile_user_id: profileUserId,
     p_comment_id: commentId,
-    p_coins: 0.01
+    p_coins: 0.1
   });
 
   if (updateError) {
@@ -147,7 +147,7 @@ async function awardCommentCoins(supabase: any, userId: string, body: any) {
         user_id: userId,
         profile_user_id: profileUserId,
         comment_id: commentId,
-        coins_awarded: 0.01
+        coins_awarded: 0.1
       });
 
     if (rewardError) {
@@ -159,14 +159,14 @@ async function awardCommentCoins(supabase: any, userId: string, body: any) {
 
     const { error: balanceError } = await supabase
       .from('profiles')
-      .update({ coin_balance: supabase.rpc('increment_coin_balance', { amount: 0.01 }) })
+      .update({ coin_balance: supabase.rpc('increment_coin_balance', { amount: 0.1 }) })
       .eq('id', userId);
 
     await supabase
       .from('coin_transactions')
       .insert({
         user_id: userId,
-        amount: 0.01,
+        amount: 0.1,
         transaction_type: 'comment_reward',
         description: 'Earned coins for commenting',
         reference_id: commentId
@@ -175,14 +175,14 @@ async function awardCommentCoins(supabase: any, userId: string, body: any) {
     await supabase
       .from('coin_pool')
       .update({
-        distributed_coins: pool.distributed_coins + 0.01,
-        remaining_coins: pool.remaining_coins - 0.01
+        distributed_coins: pool.distributed_coins + 0.1,
+        remaining_coins: pool.remaining_coins - 0.1
       })
       .eq('id', pool.id);
   }
 
   return new Response(
-    JSON.stringify({ success: true, earned: true, amount: 0.01 }),
+    JSON.stringify({ success: true, earned: true, amount: 0.1 }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }
