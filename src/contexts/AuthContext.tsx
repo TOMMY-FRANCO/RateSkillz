@@ -187,10 +187,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('[SignUp] Auth user created successfully:', authData.user.id);
-      console.log('[SignUp] Step 3: Waiting for profile creation by trigger...');
+      console.log('[SignUp] Step 3: Waiting for database trigger to create profile...');
 
       let profileData = null;
-      for (let i = 0; i < 15; i++) {
+      let attempts = 0;
+      const maxAttempts = 20;
+
+      while (attempts < maxAttempts && !profileData) {
+        attempts++;
         await new Promise(resolve => setTimeout(resolve, 500));
 
         const { data, error: profileError } = await supabase
@@ -200,61 +204,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .maybeSingle();
 
         if (profileError) {
-          console.error(`[SignUp] Error fetching profile (attempt ${i + 1}):`, profileError);
+          console.error(`[SignUp] Error fetching profile (attempt ${attempts}/${maxAttempts}):`, profileError);
+          if (attempts >= maxAttempts) {
+            throw new Error(`Database error: ${profileError.message}`);
+          }
+          continue;
         }
 
         if (data) {
-          console.log(`[SignUp] Profile found after ${i + 1} attempts`);
+          console.log(`[SignUp] ✅ Profile created successfully (attempt ${attempts}/${maxAttempts})`);
           profileData = data;
           break;
+        } else {
+          console.log(`[SignUp] ⏳ Waiting for trigger to complete... (${attempts}/${maxAttempts})`);
         }
       }
 
       if (!profileData) {
-        console.log('[SignUp] Step 4: Profile not created by trigger, creating manually...');
-
-        const { data: insertedProfile, error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            username: username.toLowerCase(),
-            full_name: fullName,
-            email,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            last_active: new Date().toISOString(),
-          })
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('[SignUp] Error inserting profile:', insertError);
-          throw new Error(`Failed to create profile: ${insertError.message}`);
-        }
-
-        console.log('[SignUp] Profile created manually');
-        profileData = insertedProfile;
-
-        console.log('[SignUp] Step 5: Creating card ownership...');
-        const { error: cardError } = await supabase
-          .from('card_ownership')
-          .insert({
-            card_user_id: authData.user.id,
-            owner_id: authData.user.id,
-            current_price: 20.00,
-            base_price: 20.00,
-          });
-
-        if (cardError) {
-          console.error('[SignUp] Error creating card ownership:', cardError);
-        } else {
-          console.log('[SignUp] Card ownership created successfully');
-        }
-      } else {
-        console.log('[SignUp] Profile created automatically by trigger');
+        console.error('[SignUp] ❌ CRITICAL: Profile not created after 10 seconds');
+        console.error('[SignUp] The database trigger "handle_new_user" may have failed');
+        throw new Error('Profile creation timed out. Please check database logs and try again.');
       }
 
-      console.log('[SignUp] Step 6: Setting user session...');
+      console.log('[SignUp] Step 4: Verifying card ownership...');
+      const { data: cardOwnership, error: cardError } = await supabase
+        .from('card_ownership')
+        .select('*')
+        .eq('card_user_id', authData.user.id)
+        .maybeSingle();
+
+      if (cardOwnership) {
+        console.log('[SignUp] ✅ Card ownership verified');
+      } else if (cardError) {
+        console.warn('[SignUp] ⚠️ Error checking card ownership:', cardError);
+      } else {
+        console.warn('[SignUp] ⚠️ Card ownership not found (will be created on first use)');
+      }
+
+      console.log('[SignUp] Step 5: Setting user session...');
       setUser({ id: authData.user.id });
       setSession({ user: { id: authData.user.id } });
       setProfile(profileData);
