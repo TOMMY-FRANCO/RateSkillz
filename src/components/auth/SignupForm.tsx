@@ -8,7 +8,7 @@ interface SignupFormProps {
 }
 
 export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
-  const { signUp } = useAuth();
+  const { signUp, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -17,6 +17,7 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,31 +40,46 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
     setLoading(true);
     setError(null);
     setSuccess(false);
+    setLoadingMessage('Creating your account...');
 
     try {
+      const interval = setInterval(() => {
+        setLoadingMessage((prev) => {
+          if (prev === 'Creating your account...') return 'Setting up your profile...';
+          if (prev === 'Setting up your profile...') return 'Almost done...';
+          return prev;
+        });
+      }, 3000);
+
       const { error: signUpError } = await signUp(email, password, username, fullName);
+
+      clearInterval(interval);
 
       if (signUpError) {
         if (signUpError.message.includes('already taken')) {
           setError('Username is already taken. Please choose another.');
         } else if (signUpError.message.includes('already registered')) {
-          setError('Email is already registered. Please sign in instead.');
-        } else if (signUpError.message.includes('invalid email')) {
+          setError('This email is already registered. Please sign in instead.');
+        } else if (signUpError.message.includes('invalid email') || signUpError.message.includes('Invalid email')) {
           setError('Please enter a valid email address.');
         } else {
           setError(signUpError.message);
         }
       } else {
+        setLoadingMessage('Account created successfully!');
         setSuccess(true);
         setTimeout(() => {
           onSuccess?.();
-        }, 1500);
+        }, 1000);
       }
     } catch (err: any) {
       console.error('Signup error:', err);
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
+      if (!success) {
+        setLoadingMessage('');
+      }
     }
   };
 
@@ -80,11 +96,20 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
           </div>
         )}
 
+        {loading && loadingMessage && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="flex items-center gap-2 text-blue-700">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700" />
+              <p className="text-sm font-medium">{loadingMessage}</p>
+            </div>
+          </div>
+        )}
+
         {success && (
           <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
             <div className="flex items-center gap-2 text-green-700">
               <CheckCircle className="w-5 h-5" />
-              <p className="text-sm font-medium">Account created successfully!</p>
+              <p className="text-sm font-medium">Account created successfully! Redirecting...</p>
             </div>
           </div>
         )}

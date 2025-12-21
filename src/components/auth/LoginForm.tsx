@@ -8,13 +8,14 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
-  const { signIn } = useAuth();
+  const { signIn, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,29 +28,46 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
     setLoading(true);
     setError(null);
     setSuccess(false);
+    setLoadingMessage('Signing in...');
 
     try {
+      const interval = setInterval(() => {
+        setLoadingMessage((prev) => {
+          if (prev === 'Signing in...') return 'Loading your profile...';
+          if (prev === 'Loading your profile...') return 'Almost there...';
+          return prev;
+        });
+      }, 2000);
+
       const { error: signInError } = await signIn(email, password);
 
+      clearInterval(interval);
+
       if (signInError) {
-        if (signInError.message.includes('Invalid login credentials')) {
-          setError('Invalid email or password. Please try again.');
+        if (signInError.message.includes('Invalid login credentials') || signInError.message.includes('Invalid')) {
+          setError('Invalid email or password. Please check your credentials.');
         } else if (signInError.message.includes('Email not confirmed')) {
           setError('Please confirm your email address before signing in.');
+        } else if (signInError.message.includes('Too many')) {
+          setError('Too many login attempts. Please try again later.');
         } else {
           setError(signInError.message);
         }
       } else {
+        setLoadingMessage('Welcome back!');
         setSuccess(true);
         setTimeout(() => {
           onSuccess?.();
-        }, 1000);
+        }, 800);
       }
     } catch (err: any) {
       console.error('Login error:', err);
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
+      if (!success) {
+        setLoadingMessage('');
+      }
     }
   };
 
@@ -66,11 +84,20 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
           </div>
         )}
 
+        {loading && loadingMessage && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="flex items-center gap-2 text-blue-700">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700" />
+              <p className="text-sm font-medium">{loadingMessage}</p>
+            </div>
+          </div>
+        )}
+
         {success && (
           <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
             <div className="flex items-center gap-2 text-green-700">
               <CheckCircle className="w-5 h-5" />
-              <p className="text-sm font-medium">Successfully signed in!</p>
+              <p className="text-sm font-medium">Welcome back! Redirecting...</p>
             </div>
           </div>
         )}

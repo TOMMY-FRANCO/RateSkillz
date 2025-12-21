@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import { ensureProfileExists } from '../lib/profileCreation';
 
 export interface Profile {
   id: string;
@@ -80,44 +81,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase) return;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({ id: session.user.id });
-        setSession({ user: { id: session.user.id } });
-
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle()
-          .then(({ data: profileData }) => {
-            if (profileData) {
-              setProfile(profileData);
-            }
-          });
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser({ id: session.user.id });
-        setSession({ user: { id: session.user.id } });
-
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle()
-          .then(({ data: profileData }) => {
-            if (profileData) {
-              setProfile(profileData);
-            }
-          });
-      } else {
+    const loadUserSession = async (session: any) => {
+      if (!session?.user) {
         setUser(null);
         setSession(null);
         setProfile(null);
+        return;
       }
+
+      try {
+        console.log('[Session] Loading user session:', session.user.id);
+        setUser({ id: session.user.id });
+        setSession({ user: { id: session.user.id } });
+
+        const username = session.user.user_metadata?.username ||
+          session.user.email?.split('@')[0]?.toLowerCase() || 'user';
+        const fullName = session.user.user_metadata?.full_name || '';
+
+        const profileData = await ensureProfileExists(
+          session.user.id,
+          session.user.email || '',
+          username,
+          fullName
+        );
+
+        if (profileData) {
+          setProfile(profileData);
+          console.log('[Session] Profile loaded successfully');
+        } else {
+          console.warn('[Session] Could not load profile');
+        }
+      } catch (error) {
+        console.error('[Session] Error loading profile:', error);
+      }
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      loadUserSession(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      loadUserSession(session);
     });
 
     return () => {
@@ -143,27 +147,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: new Error('Supabase not configured') };
     }
 
-    console.log('[SignUp] Starting sign-up process for:', { email, username, fullName });
+    setLoading(true);
+    console.log('========================================');
+    console.log('[SignUp] STARTING SIGN-UP PROCESS');
+    console.log(`  Email: ${email}`);
+    console.log(`  Username: ${username}`);
+    console.log(`  Full Name: ${fullName}`);
+    console.log('========================================');
 
     try {
-      console.log('[SignUp] Step 1: Checking username availability...');
+      console.log('[SignUp] [1/4] Checking username availability...');
       const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
         .select('username')
         .eq('username', username.toLowerCase())
         .maybeSingle();
 
-      if (checkError) {
-        console.error('[SignUp] Error checking username:', checkError);
-        throw new Error(`Database error checking username: ${checkError.message}`);
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('[SignUp] Database error checking username:', checkError);
+        throw new Error(`Database error: ${checkError.message}`);
       }
 
       if (existingProfile) {
-        console.log('[SignUp] Username already taken:', username);
-        return { error: new Error('Username already taken') };
+        console.log('[SignUp] ✗ Username already taken');
+        return { error: new Error('Username already taken. Please choose a different username.') };
       }
 
-      console.log('[SignUp] Step 2: Creating auth user...');
+      console.log('[SignUp] ✓ Username available');
+
+      console.log('[SignUp] [2/4] Creating authentication account...');
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -177,99 +189,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (signUpError) {
-        console.error('[SignUp] Auth sign-up error:', signUpError);
+        console.error('[SignUp] Authentication error:', signUpError);
         throw signUpError;
       }
 
       if (!authData.user) {
-        console.error('[SignUp] No user returned from signup');
-        throw new Error('No user returned from signup');
+        console.error('[SignUp] No user returned from authentication');
+        throw new Error('Account creation failed. Please try again.');
       }
 
-      console.log('[SignUp] Auth user created successfully:', authData.user.id);
-      console.log('[SignUp] Step 3: Waiting for database trigger to create profile...');
+      console.log('[SignUp] ✓ Authentication account created');
+      console.log(`  User ID: ${authData.user.id}`);
 
-      let profileData = null;
-      let attempts = 0;
-      const maxAttempts = 20;
+      console.log('[SignUp] [3/4] Setting up your profile...');
+      console.log('  Waiting for database trigger or creating manually if needed...');
 
-      while (attempts < maxAttempts && !profileData) {
-        attempts++;
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const { data, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authData.user.id)
-          .maybeSingle();
-
-        if (profileError) {
-          console.error(`[SignUp] Error fetching profile (attempt ${attempts}/${maxAttempts}):`, profileError);
-          if (attempts >= maxAttempts) {
-            throw new Error(`Database error: ${profileError.message}`);
-          }
-          continue;
-        }
-
-        if (data) {
-          console.log(`[SignUp] ✅ Profile created successfully (attempt ${attempts}/${maxAttempts})`);
-          profileData = data;
-          break;
-        } else {
-          console.log(`[SignUp] ⏳ Waiting for trigger to complete... (${attempts}/${maxAttempts})`);
-        }
-      }
+      const profileData = await ensureProfileExists(
+        authData.user.id,
+        email,
+        username,
+        fullName
+      );
 
       if (!profileData) {
-        console.error('[SignUp] ❌ CRITICAL: Profile not created after 10 seconds');
-        console.error('[SignUp] The database trigger "handle_new_user" may have failed');
-        throw new Error('Profile creation timed out. Please check database logs and try again.');
+        throw new Error('Profile setup failed. Please try logging in to complete setup.');
       }
 
-      console.log('[SignUp] Step 4: Verifying card ownership...');
-      const { data: cardOwnership, error: cardError } = await supabase
-        .from('card_ownership')
-        .select('*')
-        .eq('card_user_id', authData.user.id)
-        .maybeSingle();
+      console.log('[SignUp] ✓ Profile setup complete');
 
-      if (cardOwnership) {
-        console.log('[SignUp] ✅ Card ownership verified');
-      } else if (cardError) {
-        console.warn('[SignUp] ⚠️ Error checking card ownership:', cardError);
-      } else {
-        console.warn('[SignUp] ⚠️ Card ownership not found (will be created on first use)');
-      }
-
-      console.log('[SignUp] Step 5: Setting user session...');
+      console.log('[SignUp] [4/4] Finalizing account setup...');
       setUser({ id: authData.user.id });
       setSession({ user: { id: authData.user.id } });
       setProfile(profileData);
 
-      console.log('[SignUp] Sign-up completed successfully!');
+      console.log('========================================');
+      console.log('[SignUp] ✓ SIGN-UP COMPLETED SUCCESSFULLY');
+      console.log('========================================');
+
       return { error: null };
     } catch (error: any) {
-      console.error('[SignUp] Fatal error during signup:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        stack: error.stack
-      });
+      console.error('========================================');
+      console.error('[SignUp] ✗ SIGN-UP FAILED');
+      console.error('  Error:', error.message);
+      if (error.code) console.error('  Code:', error.code);
+      if (error.details) console.error('  Details:', error.details);
+      console.error('========================================');
 
-      let errorMessage = 'Failed to create account';
+      let errorMessage = 'Failed to create account. Please try again.';
 
-      if (error.message.includes('already registered')) {
-        errorMessage = 'Email already registered';
+      if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+        errorMessage = 'This email is already registered. Please sign in instead.';
       } else if (error.message.includes('Invalid email')) {
-        errorMessage = 'Invalid email address';
+        errorMessage = 'Please enter a valid email address.';
       } else if (error.message.includes('Password')) {
-        errorMessage = 'Password must be at least 6 characters';
+        errorMessage = 'Password must be at least 6 characters long.';
+      } else if (error.message.includes('Username already taken')) {
+        errorMessage = error.message;
       } else if (error.message) {
         errorMessage = error.message;
       }
 
       return { error: new Error(errorMessage) };
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -279,117 +261,98 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: new Error('Supabase not configured') };
     }
 
-    console.log('[SignIn] Starting sign-in process for:', email);
+    setLoading(true);
+    console.log('========================================');
+    console.log('[SignIn] STARTING SIGN-IN PROCESS');
+    console.log(`  Email: ${email}`);
+    console.log('========================================');
 
     try {
-      console.log('[SignIn] Step 1: Authenticating user...');
+      console.log('[SignIn] [1/3] Authenticating...');
       const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (signInError) {
-        console.error('[SignIn] Auth error:', signInError);
+        console.error('[SignIn] Authentication failed:', signInError);
         throw signInError;
       }
 
       if (!authData.user) {
-        console.error('[SignIn] No user returned from signin');
-        throw new Error('No user returned from signin');
+        console.error('[SignIn] No user data returned');
+        throw new Error('Sign in failed. Please try again.');
       }
 
-      console.log('[SignIn] Auth successful:', authData.user.id);
-      console.log('[SignIn] Step 2: Fetching profile...');
+      console.log('[SignIn] ✓ Authentication successful');
+      console.log(`  User ID: ${authData.user.id}`);
 
-      let profileData = null;
-      const { data, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authData.user.id)
-        .maybeSingle();
+      console.log('[SignIn] [2/3] Loading your profile...');
+      const username = (authData.user.user_metadata?.username || authData.user.email?.split('@')[0] || 'user').toLowerCase();
+      const fullName = authData.user.user_metadata?.full_name || '';
 
-      if (profileError) {
-        console.error('[SignIn] Error fetching profile:', profileError);
-        throw new Error(`Database error fetching profile: ${profileError.message}`);
+      const profileData = await ensureProfileExists(
+        authData.user.id,
+        authData.user.email || email,
+        username,
+        fullName
+      );
+
+      if (!profileData) {
+        throw new Error('Profile setup failed. Please contact support.');
       }
 
-      if (!data) {
-        console.log('[SignIn] Step 3: Profile not found, creating...');
-        const username = (authData.user.user_metadata?.username || authData.user.email?.split('@')[0] || 'user').toLowerCase();
-        const fullName = authData.user.user_metadata?.full_name || '';
+      console.log('[SignIn] ✓ Profile loaded');
 
-        const { data: insertedProfile, error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            username,
-            full_name: fullName,
-            email: authData.user.email,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            last_active: new Date().toISOString(),
-          })
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('[SignIn] Error creating profile:', insertError);
-          throw new Error(`Failed to create profile: ${insertError.message}`);
-        }
-
-        console.log('[SignIn] Profile created successfully');
-        profileData = insertedProfile;
-
-        console.log('[SignIn] Creating card ownership...');
-        const { error: cardError } = await supabase
-          .from('card_ownership')
-          .insert({
-            card_user_id: authData.user.id,
-            owner_id: authData.user.id,
-            current_price: 20.00,
-            base_price: 20.00,
-          });
-
-        if (cardError && !cardError.message.includes('duplicate')) {
-          console.error('[SignIn] Error creating card ownership:', cardError);
-        }
-      } else {
-        console.log('[SignIn] Profile found');
-        profileData = data;
-      }
-
-      console.log('[SignIn] Step 4: Updating last active...');
+      console.log('[SignIn] [3/3] Updating activity...');
+      const now = new Date().toISOString();
       await supabase
         .from('profiles')
-        .update({ last_active: new Date().toISOString() })
+        .update({ last_active: now })
         .eq('id', authData.user.id);
 
-      console.log('[SignIn] Step 5: Setting user session...');
+      await supabase
+        .from('user_presence')
+        .upsert({
+          user_id: authData.user.id,
+          last_seen: now,
+          updated_at: now,
+        }, {
+          onConflict: 'user_id'
+        });
+
       setUser({ id: authData.user.id });
       setSession({ user: { id: authData.user.id } });
-      setProfile({ ...profileData, last_active: new Date().toISOString() });
+      setProfile({ ...profileData, last_active: now });
 
-      console.log('[SignIn] Sign-in completed successfully!');
+      console.log('========================================');
+      console.log('[SignIn] ✓ SIGN-IN COMPLETED SUCCESSFULLY');
+      console.log(`  Welcome back, ${profileData.username}!`);
+      console.log('========================================');
+
       return { error: null };
     } catch (error: any) {
-      console.error('[SignIn] Fatal error during sign-in:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint
-      });
+      console.error('========================================');
+      console.error('[SignIn] ✗ SIGN-IN FAILED');
+      console.error('  Error:', error.message);
+      if (error.code) console.error('  Code:', error.code);
+      console.error('========================================');
 
-      let errorMessage = 'Failed to sign in';
+      let errorMessage = 'Failed to sign in. Please try again.';
 
-      if (error.message.includes('Invalid login credentials')) {
-        errorMessage = 'Invalid email or password';
+      if (error.message.includes('Invalid login credentials') || error.message.includes('Invalid')) {
+        errorMessage = 'Invalid email or password. Please check your credentials.';
       } else if (error.message.includes('Email not confirmed')) {
-        errorMessage = 'Please confirm your email';
+        errorMessage = 'Please confirm your email address before signing in.';
+      } else if (error.message.includes('Too many requests')) {
+        errorMessage = 'Too many login attempts. Please try again later.';
       } else if (error.message) {
         errorMessage = error.message;
       }
 
       return { error: new Error(errorMessage) };
+    } finally {
+      setLoading(false);
     }
   };
 
