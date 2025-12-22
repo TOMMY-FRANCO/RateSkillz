@@ -111,7 +111,7 @@ export default function Shop() {
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">Comment Rewards</h3>
                   <p className="text-white/60 text-sm mb-2">
-                    Earn <span className="text-yellow-400 font-semibold">0.1 coins</span> for your first comment on each player's profile
+                    Earn <span className="text-yellow-400 font-semibold">1 coin</span> for your first comment on each player's profile
                   </p>
                   <ul className="text-white/40 text-xs space-y-1">
                     <li>• Only first comment per profile</li>

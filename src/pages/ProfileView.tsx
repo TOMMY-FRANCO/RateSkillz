@@ -955,7 +955,7 @@ export default function ProfileView() {
                       <div className="mb-4 p-3 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/50 rounded-lg animate-pulse">
                         <div className="flex items-center justify-center gap-2 text-yellow-400">
                           <Coins className="w-5 h-5" />
-                          <span className="font-semibold">You earned {coinEarned.toFixed(2)} coins for commenting!</span>
+                          <span className="font-semibold">You earned {coinEarned === 1 ? '1 coin' : `${coinEarned.toFixed(2)} coins`} for commenting!</span>
                         </div>
                       </div>
                     )}
