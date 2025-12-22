@@ -4,9 +4,9 @@ import { useAuth } from '../contexts/AuthContext';
 import PlayerCard, { UserStats } from '../components/PlayerCard';
 import OnlineStatus from '../components/OnlineStatus';
 import FirstTimeUsernamePrompt from '../components/FirstTimeUsernamePrompt';
+import { CoinBalance } from '../components/CoinBalance';
 import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { getCoinBalance } from '../lib/coins';
 import { displayUsername } from '../lib/username';
 import { getUserStats } from '../lib/ratings';
 
@@ -17,7 +17,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [rank, setRank] = useState<{ position: number; total: number } | undefined>();
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
-  const [coinBalance, setCoinBalance] = useState<number>(0);
   const [showUsernamePrompt, setShowUsernamePrompt] = useState(false);
 
   useEffect(() => {
@@ -25,22 +24,12 @@ export default function Dashboard() {
       fetchUserStats();
       calculateRank();
       fetchPendingRequests();
-      fetchCoinBalance();
 
       if (!profile.username_customized) {
         setShowUsernamePrompt(true);
       }
     }
   }, [profile]);
-
-  const fetchCoinBalance = async () => {
-    try {
-      const balance = await getCoinBalance();
-      setCoinBalance(balance);
-    } catch (error) {
-      console.error('Error fetching coin balance:', error);
-    }
-  };
 
   const fetchPendingRequests = async () => {
     if (!profile) return;
@@ -116,10 +105,9 @@ export default function Dashboard() {
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate('/shop')}
-                className="text-gray-300 hover:text-yellow-400 transition-colors flex items-center space-x-2 bg-none border-none cursor-pointer px-3 py-1.5 rounded-lg hover:bg-yellow-400/10"
+                className="bg-none border-none cursor-pointer hover:scale-105 transition-transform"
               >
-                <Coins className="w-5 h-5 text-yellow-400" />
-                <span className="font-semibold text-white">{coinBalance.toFixed(2)}</span>
+                <CoinBalance />
               </button>
               <button
                 onClick={() => navigate('/friends')}

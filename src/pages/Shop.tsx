@@ -1,29 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Coins, CreditCard, ArrowLeft, Sparkles } from 'lucide-react';
 import { COIN_PACKAGES } from '../lib/coins';
-import { getCoinBalance } from '../lib/coins';
+import { useCoinBalance } from '../hooks/useCoinBalance';
+import { CoinPoolDisplay } from '../components/CoinPoolDisplay';
 
 export default function Shop() {
   const navigate = useNavigate();
-  const [balance, setBalance] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
+  const { balance, loading } = useCoinBalance();
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadBalance();
-  }, []);
-
-  async function loadBalance() {
-    try {
-      const bal = await getCoinBalance();
-      setBalance(bal);
-    } catch (error) {
-      console.error('Failed to load balance:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   function handlePurchase(packageId: string) {
     setSelectedPackage(packageId);
@@ -55,6 +40,10 @@ export default function Shop() {
             </span>
             <span className="text-white/60">coins</span>
           </div>
+        </div>
+
+        <div className="max-w-2xl mx-auto mb-8">
+          <CoinPoolDisplay />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
