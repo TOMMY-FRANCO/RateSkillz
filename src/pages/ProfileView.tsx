@@ -8,7 +8,8 @@ import SocialLinks from '../components/SocialLinks';
 import EditSocialLinks from '../components/EditSocialLinks';
 import OnlineStatus from '../components/OnlineStatus';
 import CardOwnershipStatus from '../components/CardOwnershipStatus';
-import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2, Coins, Lock, X } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2, Coins, Lock, X, Loader2 } from 'lucide-react';
+import { formatCoinBalance, formatCoinBalanceFull } from '../lib/formatBalance';
 import type { Profile } from '../contexts/AuthContext';
 import { awardCommentCoins } from '../lib/coins';
 import { getCardOwnership, type CardOwnership } from '../lib/cardTrading';
@@ -70,6 +71,8 @@ export default function ProfileView() {
   const [commentVotes, setCommentVotes] = useState<Record<string, { is_upvote: boolean; vote_id: string }>>({});
   const [coinEarned, setCoinEarned] = useState<number | null>(null);
   const [cardOwnership, setCardOwnership] = useState<CardOwnership | null>(null);
+  const [coinBalance, setCoinBalance] = useState<number>(0);
+  const [balanceLoading, setBalanceLoading] = useState(true);
 
   const isOwner = currentUser?.id === profile?.id;
   const isEditingEnabled = !isPreviewMode && !isOwner;
@@ -238,6 +241,15 @@ export default function ProfileView() {
 
       const cardOwnershipData = await getCardOwnership(profileData.id);
       setCardOwnership(cardOwnershipData);
+
+      const { data: balanceData } = await supabase
+        .from('coins')
+        .select('balance')
+        .eq('user_id', profileData.id)
+        .maybeSingle();
+
+      setCoinBalance(balanceData?.balance || 0);
+      setBalanceLoading(false);
 
       setLoading(false);
     } catch (error) {
@@ -635,27 +647,45 @@ export default function ProfileView() {
           onEdit={() => setShowEditSocialLinks(true)}
         />
 
-        <div className="max-w-2xl mx-auto mb-8">
+        <div className="max-w-3xl mx-auto mb-8">
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
-            <h3 className="text-lg font-bold text-white mb-4 text-center">Profile Stats</h3>
-            <div className="grid grid-cols-3 gap-6">
+            <h3 className="text-lg font-bold text-white mb-6 text-center">Profile Stats</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="flex flex-col items-center space-y-2">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-                  <Users className="w-6 h-6 text-white" />
+                <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                  <Coins className="w-7 h-7 text-white" />
+                </div>
+                {balanceLoading ? (
+                  <div className="flex items-center justify-center h-8">
+                    <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                      {formatCoinBalance(coinBalance)}
+                    </span>
+                    <span className="text-sm text-gray-400">{isOwner ? 'Your Balance' : 'Balance'}</span>
+                    <span className="text-xs text-gray-500">{formatCoinBalanceFull(coinBalance)} coins</span>
+                  </>
+                )}
+              </div>
+              <div className="flex flex-col items-center space-y-2">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg">
+                  <Users className="w-7 h-7 text-white" />
                 </div>
                 <span className="text-2xl font-bold text-white">{friendsCount}</span>
                 <span className="text-sm text-gray-400">Friends</span>
               </div>
               <div className="flex flex-col items-center space-y-2">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <Eye className="w-6 h-6 text-white" />
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                  <Eye className="w-7 h-7 text-white" />
                 </div>
                 <span className="text-2xl font-bold text-white">{viewsCount}</span>
                 <span className="text-sm text-gray-400">Views</span>
               </div>
               <div className="flex flex-col items-center space-y-2">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-                  <ThumbsUp className="w-6 h-6 text-white" />
+                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                  <ThumbsUp className="w-7 h-7 text-white" />
                 </div>
                 <span className="text-2xl font-bold text-white">{likes}</span>
                 <span className="text-sm text-gray-400">Likes</span>

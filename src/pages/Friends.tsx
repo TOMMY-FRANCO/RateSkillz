@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, UserCheck, UserX, Clock, Eye, Bell, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, UserCheck, UserX, Clock, Eye, Bell, CheckCircle, XCircle, AlertCircle, Coins } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
 import { displayUsername } from '../lib/username';
+import { getMultipleUserBalances } from '../lib/balances';
+import { formatCoinBalance } from '../lib/formatBalance';
 
 interface FriendRequest {
   id: string;
@@ -32,6 +34,7 @@ export default function Friends() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [notification, setNotification] = useState<NotificationState | null>(null);
+  const [userBalances, setUserBalances] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     if (currentUser) {
@@ -93,6 +96,16 @@ export default function Friends() {
         setIncomingRequests(incoming);
         setOutgoingRequests(outgoing);
         setFriends(accepted);
+
+        const allUserIds = new Set<string>();
+        [...incoming, ...outgoing, ...accepted].forEach(req => {
+          if (req.profile?.id) allUserIds.add(req.profile.id);
+        });
+
+        if (allUserIds.size > 0) {
+          const balances = await getMultipleUserBalances(Array.from(allUserIds));
+          setUserBalances(balances);
+        }
       }
 
       setLoading(false);
@@ -341,7 +354,15 @@ export default function Friends() {
                           <p className="text-gray-400 text-sm">
                             Overall Rating: {calculateOverallRating(request.profile)}
                           </p>
-                          <p className="text-gray-500 text-xs">
+                          {userBalances.has(request.profile.id) && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Coins className="w-3 h-3 text-yellow-500" />
+                              <span className="text-xs text-yellow-500 font-medium">
+                                {formatCoinBalance(userBalances.get(request.profile.id) || 0)} balance
+                              </span>
+                            </div>
+                          )}
+                          <p className="text-gray-500 text-xs mt-1">
                             Sent {new Date(request.created_at).toLocaleDateString()}
                           </p>
                         </div>
@@ -396,7 +417,15 @@ export default function Friends() {
                           <h3 className="text-white font-bold text-lg">
                             {displayUsername(request.profile.username)}
                           </h3>
-                          <div className="flex items-center space-x-2 text-gray-400 text-sm">
+                          {userBalances.has(request.profile.id) && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Coins className="w-3 h-3 text-yellow-500" />
+                              <span className="text-xs text-yellow-500 font-medium">
+                                {formatCoinBalance(userBalances.get(request.profile.id) || 0)} balance
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex items-center space-x-2 text-gray-400 text-sm mt-1">
                             <Clock className="w-4 h-4" />
                             <span>Pending...</span>
                           </div>
@@ -448,6 +477,14 @@ export default function Friends() {
                           <p className="text-gray-400 text-sm">
                             Overall Rating: {calculateOverallRating(friend.profile)}
                           </p>
+                          {userBalances.has(friend.profile.id) && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Coins className="w-3 h-3 text-yellow-500" />
+                              <span className="text-xs text-yellow-500 font-medium">
+                                {formatCoinBalance(userBalances.get(friend.profile.id) || 0)} balance
+                              </span>
+                            </div>
+                          )}
                           <div className="flex items-center space-x-2 mt-1">
                             <div
                               className={`w-2 h-2 rounded-full ${

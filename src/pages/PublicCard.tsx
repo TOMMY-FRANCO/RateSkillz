@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import PlayerCard, { UserStats } from '../components/PlayerCard';
 import SocialLinks from '../components/SocialLinks';
-import { Eye, Users, ThumbsUp } from 'lucide-react';
+import { Eye, Users, ThumbsUp, Coins, Loader2 } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
 import { getUserStats } from '../lib/ratings';
+import { formatCoinBalance, formatCoinBalanceFull } from '../lib/formatBalance';
 
 export default function PublicCard() {
   const { username } = useParams<{ username: string }>();
@@ -17,6 +18,8 @@ export default function PublicCard() {
   const [friendsCount, setFriendsCount] = useState(0);
   const [viewsCount, setViewsCount] = useState(0);
   const [likesCount, setLikesCount] = useState(0);
+  const [coinBalance, setCoinBalance] = useState<number>(0);
+  const [balanceLoading, setBalanceLoading] = useState(true);
 
   useEffect(() => {
     if (username) {
@@ -70,6 +73,15 @@ export default function PublicCard() {
         .eq('profile_id', profileData.id)
         .eq('is_like', true);
       setLikesCount(likesData?.length || 0);
+
+      const { data: balanceData } = await supabase
+        .from('coins')
+        .select('balance')
+        .eq('user_id', profileData.id)
+        .maybeSingle();
+
+      setCoinBalance(balanceData?.balance || 0);
+      setBalanceLoading(false);
 
       setLoading(false);
     } catch (error) {
@@ -128,27 +140,45 @@ export default function PublicCard() {
           />
         </div>
 
-        <div className="max-w-2xl mx-auto mb-8">
+        <div className="max-w-3xl mx-auto mb-8">
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
-            <h3 className="text-lg font-bold text-white mb-4 text-center">Profile Stats</h3>
-            <div className="grid grid-cols-3 gap-6">
+            <h3 className="text-lg font-bold text-white mb-6 text-center">Profile Stats</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="flex flex-col items-center space-y-2">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center">
-                  <Users className="w-6 h-6 text-white" />
+                <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                  <Coins className="w-7 h-7 text-white" />
+                </div>
+                {balanceLoading ? (
+                  <div className="flex items-center justify-center h-8">
+                    <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
+                      {formatCoinBalance(coinBalance)}
+                    </span>
+                    <span className="text-sm text-gray-400">Balance</span>
+                    <span className="text-xs text-gray-500">{formatCoinBalanceFull(coinBalance)} coins</span>
+                  </>
+                )}
+              </div>
+              <div className="flex flex-col items-center space-y-2">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg">
+                  <Users className="w-7 h-7 text-white" />
                 </div>
                 <span className="text-2xl font-bold text-white">{friendsCount}</span>
                 <span className="text-sm text-gray-400">Friends</span>
               </div>
               <div className="flex flex-col items-center space-y-2">
-                <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-red-500 rounded-full flex items-center justify-center">
-                  <Eye className="w-6 h-6 text-white" />
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                  <Eye className="w-7 h-7 text-white" />
                 </div>
                 <span className="text-2xl font-bold text-white">{viewsCount}</span>
                 <span className="text-sm text-gray-400">Views</span>
               </div>
               <div className="flex flex-col items-center space-y-2">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
-                  <ThumbsUp className="w-6 h-6 text-white" />
+                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                  <ThumbsUp className="w-7 h-7 text-white" />
                 </div>
                 <span className="text-2xl font-bold text-white">{likesCount}</span>
                 <span className="text-sm text-gray-400">Likes</span>

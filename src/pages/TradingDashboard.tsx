@@ -17,7 +17,9 @@ import {
   type CardOffer
 } from '../lib/cardTrading';
 import { useCoinBalance } from '../hooks/useCoinBalance';
-import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Bell, Trophy, Check, X, Store } from 'lucide-react';
+import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Bell, Trophy, Check, X, Store, User } from 'lucide-react';
+import { getMultipleUserBalances } from '../lib/balances';
+import { formatCoinBalance } from '../lib/formatBalance';
 
 export default function TradingDashboard() {
   const { profile } = useAuth();
@@ -32,6 +34,7 @@ export default function TradingDashboard() {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<'marketplace' | 'portfolio' | 'offers' | 'leaderboards'>('marketplace');
+  const [userBalances, setUserBalances] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     if (profile) {
@@ -59,6 +62,20 @@ export default function TradingDashboard() {
       setMostValuable(valuable);
       setMostTraded(traded);
       setListedCards(listed);
+
+      const allUserIds = new Set<string>();
+      listed.forEach(card => {
+        if (card.owner_id) allUserIds.add(card.owner_id);
+        if (card.card_user_id) allUserIds.add(card.card_user_id);
+      });
+      cards.forEach(card => {
+        if (card.card_user_id) allUserIds.add(card.card_user_id);
+      });
+
+      if (allUserIds.size > 0) {
+        const balances = await getMultipleUserBalances(Array.from(allUserIds));
+        setUserBalances(balances);
+      }
     } catch (error) {
       console.error('Error loading trading data:', error);
     } finally {
@@ -262,6 +279,14 @@ export default function TradingDashboard() {
                             {card.card_user?.full_name || card.card_user?.username}
                           </h3>
                           <p className="text-sm text-gray-400">@{card.card_user?.username}</p>
+                          {card.card_user_id && userBalances.has(card.card_user_id) && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <Coins className="w-3 h-3 text-yellow-500/70" />
+                              <span className="text-xs text-yellow-500/70">
+                                {formatCoinBalance(userBalances.get(card.card_user_id) || 0)} balance
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <button
                           onClick={() => navigate(`/profile/${card.card_user?.username}`)}
@@ -291,7 +316,7 @@ export default function TradingDashboard() {
                         <div className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg">
                           <span className="text-xs text-gray-400">After sale</span>
                           <span className="text-sm text-green-400 font-semibold">
-                            Value: {(card.current_price + 5).toFixed(2)} (+5)
+                            Value: {(card.current_price + 10).toFixed(2)} (+10)
                           </span>
                         </div>
 
@@ -505,6 +530,7 @@ export default function TradingDashboard() {
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Rank</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Player</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Balance</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Owner</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Value</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Trades</th>
@@ -525,6 +551,13 @@ export default function TradingDashboard() {
                             >
                               {card.card_user?.full_name || card.card_user?.username}
                             </button>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-yellow-500 font-medium">
+                              {card.card_user_id && userBalances.has(card.card_user_id)
+                                ? formatCoinBalance(userBalances.get(card.card_user_id) || 0)
+                                : '---'}
+                            </span>
                           </td>
                           <td className="px-6 py-4 text-gray-300">
                             {card.owner?.username}
@@ -553,6 +586,7 @@ export default function TradingDashboard() {
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Rank</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Player</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Balance</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Owner</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Trades</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400 uppercase">Value</th>
@@ -573,6 +607,13 @@ export default function TradingDashboard() {
                             >
                               {card.card_user?.full_name || card.card_user?.username}
                             </button>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-yellow-500 font-medium">
+                              {card.card_user_id && userBalances.has(card.card_user_id)
+                                ? formatCoinBalance(userBalances.get(card.card_user_id) || 0)
+                                : '---'}
+                            </span>
                           </td>
                           <td className="px-6 py-4 text-gray-300">
                             {card.owner?.username}
