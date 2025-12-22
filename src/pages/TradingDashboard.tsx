@@ -432,7 +432,7 @@ export default function TradingDashboard() {
                             onClick={() => navigate(`/profile/${card.card_user?.username}`)}
                             className="w-full px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold rounded-lg transition-all"
                           >
-                            List for Sale (Min: {card.current_price.toFixed(2)})
+                            List for Sale at {card.current_price.toFixed(2)} coins
                           </button>
                         )}
                       </div>

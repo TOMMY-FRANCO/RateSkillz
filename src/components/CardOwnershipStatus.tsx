@@ -21,7 +21,6 @@ export default function CardOwnershipStatus({
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showListModal, setShowListModal] = useState(false);
   const [offerAmount, setOfferAmount] = useState('');
-  const [listingPrice, setListingPrice] = useState('');
   const [offerMessage, setOfferMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -143,36 +142,20 @@ export default function CardOwnershipStatus({
   const handleListForSale = async () => {
     if (!cardOwnership || !currentUserId) return;
 
-    const price = parseFloat(listingPrice);
-    if (isNaN(price) || price <= 0) {
-      setError('Please enter a valid listing price');
-      return;
-    }
-
-    if (price < safeCardValue) {
-      setError(`Listing price must be at least ${safeCardValue.toFixed(2)} coins (current card value)`);
-      return;
-    }
-
     setLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
-      const result = await listCardForSale(cardUserId, currentUserId, price);
+      const result = await listCardForSale(cardUserId, currentUserId, safeCardValue);
 
       if (result.success) {
         setShowListModal(false);
-        setListingPrice('');
-        setSuccess('Card listed for sale successfully!');
+        setSuccess(`Card listed for sale at ${safeCardValue.toFixed(2)} coins!`);
         onUpdate();
         setTimeout(() => setSuccess(null), 5000);
       } else {
-        if (result.minimum_price) {
-          setError(`${result.error}. Minimum price: ${result.minimum_price.toFixed(2)} coins`);
-        } else {
-          setError(result.error || 'Failed to list card');
-        }
+        setError(result.error || 'Failed to list card');
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');
@@ -333,14 +316,11 @@ export default function CardOwnershipStatus({
               </div>
             ) : (
               <button
-                onClick={() => {
-                  setListingPrice(cardOwnership.current_price.toFixed(2));
-                  setShowListModal(true);
-                }}
+                onClick={() => setShowListModal(true)}
                 className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold rounded-lg transition-all"
               >
                 <Tag className="w-5 h-5" />
-                List for Sale
+                List for Sale at {cardOwnership.current_price.toFixed(2)} coins
               </button>
             )}
 
@@ -549,7 +529,7 @@ export default function CardOwnershipStatus({
       {showListModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-xl font-bold text-white mb-4">List Card for Sale</h3>
+            <h3 className="text-xl font-bold text-white mb-4">Confirm Listing</h3>
 
             <div className="space-y-4 mb-6">
               {cardOwnership.last_sale_price && (
@@ -561,33 +541,27 @@ export default function CardOwnershipStatus({
                 </div>
               )}
 
-              <div className="p-4 bg-blue-900/20 border border-blue-600/50 rounded-lg">
-                <p className="text-sm text-blue-300">Current Card Value (Minimum Price)</p>
-                <p className="text-xl font-bold text-blue-400">
+              <div className="p-4 bg-cyan-900/20 border border-cyan-600/50 rounded-lg">
+                <p className="text-sm text-cyan-300 mb-2">This card will be listed for sale at:</p>
+                <p className="text-3xl font-bold text-cyan-400 flex items-center gap-2">
+                  <Coins className="w-8 h-8" />
                   {cardOwnership.current_price.toFixed(2)} coins
+                </p>
+                <p className="text-xs text-cyan-300/70 mt-2">Fixed price based on current card value</p>
+              </div>
+
+              <div className="p-3 bg-blue-900/20 border border-blue-600/30 rounded-lg">
+                <p className="text-xs text-blue-300">
+                  Cards sell at their current value only. Price cannot be changed.
+                  After sale, the card value will increase by 10 coins.
                 </p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Asking Price (coins)
-                </label>
-                <input
-                  type="number"
-                  value={listingPrice}
-                  onChange={(e) => setListingPrice(e.target.value)}
-                  placeholder={`Minimum: ${cardOwnership.current_price.toFixed(2)}`}
-                  step="0.01"
-                  min={cardOwnership.current_price}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                />
-              </div>
-
-              {parseFloat(listingPrice) >= cardOwnership.current_price && cardOwnership.last_sale_price && (
+              {cardOwnership.last_sale_price && (
                 <div className="p-3 bg-green-900/20 border border-green-600/30 rounded-lg">
-                  <p className="text-sm text-green-300">Potential Profit</p>
+                  <p className="text-sm text-green-300">Your Profit When Sold</p>
                   <p className="text-lg font-bold text-green-400">
-                    +{calculatePotentialProfit(cardOwnership.last_sale_price, parseFloat(listingPrice)).toFixed(2)} coins
+                    +{calculatePotentialProfit(cardOwnership.last_sale_price, cardOwnership.current_price).toFixed(2)} coins
                   </p>
                 </div>
               )}
@@ -603,7 +577,6 @@ export default function CardOwnershipStatus({
               <button
                 onClick={() => {
                   setShowListModal(false);
-                  setListingPrice('');
                   setError(null);
                 }}
                 className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all"
@@ -615,7 +588,7 @@ export default function CardOwnershipStatus({
                 disabled={loading}
                 className="flex-1 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold rounded-lg transition-all disabled:opacity-50"
               >
-                {loading ? 'Listing...' : 'List for Sale'}
+                {loading ? 'Listing...' : 'Confirm Listing'}
               </button>
             </div>
           </div>
