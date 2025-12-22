@@ -12,21 +12,27 @@ import {
   listCardForSale,
   calculateMinimumPrice,
   calculatePotentialProfit,
+  getListedCardsForSale,
+  executeCardSale,
   type CardOwnership,
   type CardOffer
 } from '../lib/cardTrading';
-import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Bell, Trophy, Check, X } from 'lucide-react';
+import { useCoinBalance } from '../hooks/useCoinBalance';
+import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Bell, Trophy, Check, X, Store } from 'lucide-react';
 
 export default function TradingDashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const { balance, refetch: refetchBalance } = useCoinBalance();
   const [ownedCards, setOwnedCards] = useState<CardOwnership[]>([]);
   const [pendingOffers, setPendingOffers] = useState<CardOffer[]>([]);
+  const [listedCards, setListedCards] = useState<CardOwnership[]>([]);
   const [portfolioValue, setPortfolioValue] = useState(0);
   const [mostValuable, setMostValuable] = useState<CardOwnership[]>([]);
   const [mostTraded, setMostTraded] = useState<CardOwnership[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState<'portfolio' | 'offers' | 'leaderboards'>('portfolio');
+  const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState<'marketplace' | 'portfolio' | 'offers' | 'leaderboards'>('marketplace');
 
   useEffect(() => {
     if (profile) {
@@ -39,12 +45,13 @@ export default function TradingDashboard() {
 
     setLoading(true);
     try {
-      const [cards, offers, value, valuable, traded] = await Promise.all([
+      const [cards, offers, value, valuable, traded, listed] = await Promise.all([
         getCardsOwnedByUser(profile.id),
         getPendingCardOffers(profile.id),
         getPortfolioValue(profile.id),
         getMostValuableCards(10),
-        getMostTradedCards(10)
+        getMostTradedCards(10),
+        getListedCardsForSale()
       ]);
 
       setOwnedCards(cards);
@@ -52,6 +59,7 @@ export default function TradingDashboard() {
       setPortfolioValue(value);
       setMostValuable(valuable);
       setMostTraded(traded);
+      setListedCards(listed);
     } catch (error) {
       console.error('Error loading trading data:', error);
     } finally {
@@ -78,6 +86,37 @@ export default function TradingDashboard() {
       loadData();
     } else {
       alert(`Error: ${result.error}`);
+    }
+  };
+
+  const handlePurchaseCard = async (card: CardOwnership) => {
+    if (!profile || !card.asking_price) return;
+
+    if (balance < card.asking_price) {
+      alert(`Insufficient coins! You have ${balance.toFixed(2)} coins but need ${card.asking_price.toFixed(2)} coins.`);
+      return;
+    }
+
+    const confirmMsg = `Purchase this card for ${card.asking_price.toFixed(2)} coins?\n\nCurrent card value: ${card.current_price.toFixed(2)} coins\nAfter purchase, card value will be: ${(card.current_price + 5).toFixed(2)} coins`;
+
+    if (!confirm(confirmMsg)) return;
+
+    setPurchasing(card.id);
+    try {
+      const result = await executeCardSale(card.card_user_id, profile.id, card.asking_price);
+
+      if (result.success) {
+        alert(`Card purchased successfully!\n\nYou paid: ${result.sale_price?.toFixed(2)} coins\nCard value increased: ${result.previous_value?.toFixed(2)} → ${result.new_value?.toFixed(2)} coins (+5 coins)`);
+        refetchBalance();
+        loadData();
+      } else {
+        alert(`Purchase failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error purchasing card:', error);
+      alert('Purchase failed. Please try again.');
+    } finally {
+      setPurchasing(null);
     }
   };
 
@@ -142,10 +181,20 @@ export default function TradingDashboard() {
           </div>
         </div>
 
-        <div className="mb-6 flex gap-4 border-b border-gray-800">
+        <div className="mb-6 flex gap-4 border-b border-gray-800 overflow-x-auto">
+          <button
+            onClick={() => setSelectedTab('marketplace')}
+            className={`px-6 py-3 font-semibold transition-all whitespace-nowrap ${
+              selectedTab === 'marketplace'
+                ? 'text-cyan-400 border-b-2 border-cyan-400'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Marketplace
+          </button>
           <button
             onClick={() => setSelectedTab('portfolio')}
-            className={`px-6 py-3 font-semibold transition-all ${
+            className={`px-6 py-3 font-semibold transition-all whitespace-nowrap ${
               selectedTab === 'portfolio'
                 ? 'text-cyan-400 border-b-2 border-cyan-400'
                 : 'text-gray-400 hover:text-white'
@@ -155,7 +204,7 @@ export default function TradingDashboard() {
           </button>
           <button
             onClick={() => setSelectedTab('offers')}
-            className={`px-6 py-3 font-semibold transition-all relative ${
+            className={`px-6 py-3 font-semibold transition-all relative whitespace-nowrap ${
               selectedTab === 'offers'
                 ? 'text-cyan-400 border-b-2 border-cyan-400'
                 : 'text-gray-400 hover:text-white'
@@ -170,7 +219,7 @@ export default function TradingDashboard() {
           </button>
           <button
             onClick={() => setSelectedTab('leaderboards')}
-            className={`px-6 py-3 font-semibold transition-all ${
+            className={`px-6 py-3 font-semibold transition-all whitespace-nowrap ${
               selectedTab === 'leaderboards'
                 ? 'text-cyan-400 border-b-2 border-cyan-400'
                 : 'text-gray-400 hover:text-white'
@@ -179,6 +228,115 @@ export default function TradingDashboard() {
             Leaderboards
           </button>
         </div>
+
+        {selectedTab === 'marketplace' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                <Store className="w-6 h-6 text-cyan-400" />
+                Cards for Sale
+              </h2>
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 rounded-full border border-yellow-500/20">
+                <Coins className="w-5 h-5 text-yellow-500" />
+                <span className="text-lg font-bold text-yellow-500">{balance.toFixed(2)}</span>
+              </div>
+            </div>
+
+            {listedCards.length === 0 ? (
+              <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-12 text-center">
+                <Store className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-400 text-lg">No cards listed for sale</p>
+                <p className="text-gray-500 text-sm mt-2">Check back later or list your own cards!</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {listedCards.map((card) => {
+                  const isPurchasing = purchasing === card.id;
+                  const canAfford = balance >= (card.asking_price || 0);
+                  const isOwnCard = card.owner_id === profile?.id;
+
+                  return (
+                    <div key={card.id} className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6 hover:border-cyan-500/50 transition-all">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-bold text-white mb-1">
+                            {card.card_user?.full_name || card.card_user?.username}
+                          </h3>
+                          <p className="text-sm text-gray-400">@{card.card_user?.username}</p>
+                        </div>
+                        <button
+                          onClick={() => navigate(`/profile/${card.card_user?.username}`)}
+                          className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-all"
+                        >
+                          View
+                        </button>
+                      </div>
+
+                      <div className="space-y-3 mb-4">
+                        <div className="flex justify-between items-center p-3 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 rounded-lg border border-yellow-500/30">
+                          <span className="text-sm text-yellow-300 font-semibold">Card Value</span>
+                          <div className="flex items-center gap-1">
+                            <Coins className="w-4 h-4 text-yellow-400" />
+                            <span className="font-bold text-yellow-400">{card.current_price.toFixed(2)}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center p-3 bg-cyan-900/20 rounded-lg border border-cyan-600/30">
+                          <span className="text-sm text-cyan-300 font-semibold">Asking Price</span>
+                          <div className="flex items-center gap-1">
+                            <Coins className="w-4 h-4 text-cyan-400" />
+                            <span className="font-bold text-cyan-400 text-lg">{card.asking_price?.toFixed(2)}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg">
+                          <span className="text-xs text-gray-400">After sale</span>
+                          <span className="text-sm text-green-400 font-semibold">
+                            Value: {(card.current_price + 5).toFixed(2)} (+5)
+                          </span>
+                        </div>
+
+                        {card.times_traded > 0 && (
+                          <div className="flex justify-between items-center p-2 bg-purple-900/20 rounded-lg">
+                            <span className="text-xs text-purple-300">Traded {card.times_traded} times</span>
+                            <TrendingUp className="w-4 h-4 text-purple-400" />
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => handlePurchaseCard(card)}
+                        disabled={isPurchasing || !canAfford || isOwnCard}
+                        className={`w-full px-4 py-3 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                          isOwnCard
+                            ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                            : !canAfford
+                            ? 'bg-red-600/50 text-red-200 cursor-not-allowed'
+                            : isPurchasing
+                            ? 'bg-gray-700 text-gray-300 cursor-wait'
+                            : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white'
+                        }`}
+                      >
+                        {isPurchasing ? (
+                          <>Processing...</>
+                        ) : isOwnCard ? (
+                          <>Your Card</>
+                        ) : !canAfford ? (
+                          <>Insufficient Coins</>
+                        ) : (
+                          <>
+                            <ShoppingCart className="w-5 h-5" />
+                            Buy for {card.asking_price?.toFixed(2)}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {selectedTab === 'portfolio' && (
           <div className="space-y-6">

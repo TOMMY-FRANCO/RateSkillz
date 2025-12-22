@@ -30,6 +30,20 @@ export interface CardTransaction {
   sale_price: number;
   transaction_type: string;
   created_at: string;
+  card_value_at_sale?: number;
+  previous_value?: number;
+  new_value?: number;
+}
+
+export interface CardSaleResult {
+  success: boolean;
+  error?: string;
+  transaction_id?: string;
+  previous_value?: number;
+  new_value?: number;
+  sale_price?: number;
+  seller_id?: string;
+  buyer_id?: string;
 }
 
 export interface CardOffer {
@@ -280,6 +294,65 @@ export async function getMostTradedCards(limit: number = 10): Promise<CardOwners
 
   if (error) {
     console.error('Error fetching most traded cards:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function executeCardSale(
+  cardUserId: string,
+  buyerId: string,
+  salePrice: number
+): Promise<CardSaleResult> {
+  try {
+    const { data, error } = await supabase.rpc('execute_card_sale', {
+      p_card_user_id: cardUserId,
+      p_buyer_id: buyerId,
+      p_sale_price: salePrice
+    });
+
+    if (error) {
+      console.error('Error executing card sale:', error);
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: false, error: 'No response from sale transaction' };
+    }
+
+    return {
+      success: data.success,
+      error: data.error,
+      transaction_id: data.transaction_id,
+      previous_value: data.previous_value,
+      new_value: data.new_value,
+      sale_price: data.sale_price,
+      seller_id: data.seller_id,
+      buyer_id: data.buyer_id
+    };
+  } catch (err) {
+    console.error('Exception executing card sale:', err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Unknown error occurred'
+    };
+  }
+}
+
+export async function getListedCardsForSale(): Promise<CardOwnership[]> {
+  const { data, error } = await supabase
+    .from('card_ownership')
+    .select(`
+      *,
+      card_user:profiles!card_ownership_card_user_id_fkey(username, full_name, avatar_url),
+      owner:profiles!card_ownership_owner_id_fkey(username, full_name)
+    `)
+    .eq('is_listed_for_sale', true)
+    .order('asking_price', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching listed cards:', error);
     return [];
   }
 

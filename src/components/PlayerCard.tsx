@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Profile } from '../contexts/AuthContext';
-import { User, Download } from 'lucide-react';
+import { User, Download, Coins } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { displayUsername } from '../lib/username';
 
@@ -41,9 +41,10 @@ interface PlayerCardProps {
   rank?: { position: number; total: number };
   showDownloadButton?: boolean;
   overallRating?: number;
+  cardValue?: number;
 }
 
-export default function PlayerCard({ profile, ratings = [], userStats, size = 'large', rank, showDownloadButton = false, overallRating }: PlayerCardProps) {
+export default function PlayerCard({ profile, ratings = [], userStats, size = 'large', rank, showDownloadButton = false, overallRating, cardValue }: PlayerCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   const stats = userStats ? {
@@ -108,6 +109,18 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
             </div>
 
             <div className="flex flex-col gap-3">
+              {cardValue && (
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-amber-500 rounded-xl blur-sm"></div>
+                  <div className="relative bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500 px-4 py-2.5 rounded-xl text-black font-black text-sm border-2 border-yellow-200 shadow-2xl">
+                    <div className="flex items-center gap-1.5 justify-center">
+                      <Coins className="w-4 h-4" />
+                      <span className="text-lg leading-none">{cardValue}</span>
+                    </div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-center mt-0.5">VALUE</div>
+                  </div>
+                </div>
+              )}
               {profile.team && (
                 <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-5 py-3 rounded-xl text-white font-black text-base border-2 border-purple-300 text-center shadow-xl">
                   {profile.team}
