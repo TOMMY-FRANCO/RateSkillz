@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import PlayerCard, { Rating } from '../components/PlayerCard';
+import PlayerCard, { UserStats } from '../components/PlayerCard';
 import OnlineStatus from '../components/OnlineStatus';
 import FirstTimeUsernamePrompt from '../components/FirstTimeUsernamePrompt';
 import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { getCoinBalance } from '../lib/coins';
 import { displayUsername } from '../lib/username';
+import { getUserStats } from '../lib/ratings';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const [ratings, setRatings] = useState<Rating[]>([]);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [rank, setRank] = useState<{ position: number; total: number } | undefined>();
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
@@ -21,7 +22,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (profile) {
-      fetchRatings();
+      fetchUserStats();
       calculateRank();
       fetchPendingRequests();
       fetchCoinBalance();
@@ -62,28 +63,15 @@ export default function Dashboard() {
     navigate('/');
   };
 
-  const fetchRatings = async () => {
+  const fetchUserStats = async () => {
     if (!profile) return;
 
     try {
-      const { data, error } = await supabase
-        .from('ratings')
-        .select('*')
-        .eq('player_id', profile.id);
-
-      if (error) throw error;
-
-      setRatings(data || []);
-      setLoading(false);
+      const stats = await getUserStats(profile.id);
+      setUserStats(stats);
     } catch (error) {
-      console.error('Error fetching ratings from Supabase:', error);
-
-      const allRatings = JSON.parse(localStorage.getItem('ratings') || '{}');
-      const userRatings = Object.values(allRatings).filter(
-        (rating: any) => rating.player_id === profile.id
-      ) as Rating[];
-
-      setRatings(userRatings);
+      console.error('Error fetching user stats:', error);
+    } finally {
       setLoading(false);
     }
   };
@@ -226,7 +214,7 @@ export default function Dashboard() {
           ) : (
             <PlayerCard
               profile={profile}
-              ratings={ratings}
+              userStats={userStats}
               rank={rank}
               showDownloadButton={true}
               overallRating={profile.overall_rating}

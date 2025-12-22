@@ -18,34 +18,51 @@ export interface Rating {
   created_at: string;
 }
 
+export interface UserStats {
+  id: string;
+  user_id: string;
+  pac: number;
+  sho: number;
+  pas: number;
+  dri: number;
+  def: number;
+  phy: number;
+  overall: number;
+  rating_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
 interface PlayerCardProps {
   profile: Profile;
   ratings?: Rating[];
+  userStats?: UserStats | null;
   size?: 'small' | 'medium' | 'large';
   rank?: { position: number; total: number };
   showDownloadButton?: boolean;
   overallRating?: number;
 }
 
-export default function PlayerCard({ profile, ratings = [], size = 'large', rank, showDownloadButton = false, overallRating }: PlayerCardProps) {
+export default function PlayerCard({ profile, ratings = [], userStats, size = 'large', rank, showDownloadButton = false, overallRating }: PlayerCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const calculateAverageRating = (attribute: keyof Omit<Rating, 'id' | 'rater_id' | 'player_id' | 'comment' | 'created_at'>) => {
-    if (ratings.length === 0) return 50;
-    const sum = ratings.reduce((acc, rating) => acc + rating[attribute], 0);
-    return Math.round(sum / ratings.length);
+  const stats = userStats ? {
+    PAC: userStats.pac,
+    SHO: userStats.sho,
+    PAS: userStats.pas,
+    DRI: userStats.dri,
+    DEF: userStats.def,
+    PHY: userStats.phy,
+  } : {
+    PAC: 50,
+    SHO: 50,
+    PAS: 50,
+    DRI: 50,
+    DEF: 50,
+    PHY: 50,
   };
 
-  const stats = {
-    PAC: calculateAverageRating('pac'),
-    SHO: calculateAverageRating('sho'),
-    PAS: calculateAverageRating('pas'),
-    DRI: calculateAverageRating('dri'),
-    DEF: calculateAverageRating('def'),
-    PHY: calculateAverageRating('phy'),
-  };
-
-  const overall = overallRating ?? Math.round(Object.values(stats).reduce((a, b) => a + b, 0) / 6);
+  const overall = overallRating ?? (userStats?.overall || profile.overall_rating || 50);
 
   const sizeClasses = {
     small: 'w-64',

@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import PlayerCard, { Rating } from '../components/PlayerCard';
+import PlayerCard, { UserStats } from '../components/PlayerCard';
 import SocialLinks from '../components/SocialLinks';
 import { Eye, Users, ThumbsUp } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
+import { getUserStats } from '../lib/ratings';
 
 export default function PublicCard() {
   const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [ratings, setRatings] = useState<Rating[]>([]);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [socialLinks, setSocialLinks] = useState<any>(null);
   const [friendsCount, setFriendsCount] = useState(0);
@@ -39,12 +40,8 @@ export default function PublicCard() {
 
       setProfile(profileData);
 
-      const { data: ratingsData } = await supabase
-        .from('ratings')
-        .select('*')
-        .eq('player_id', profileData.id);
-
-      setRatings(ratingsData || []);
+      const stats = await getUserStats(profileData.id);
+      setUserStats(stats);
 
       const { data: socialLinksData } = await supabase
         .from('social_links')
@@ -125,7 +122,7 @@ export default function PublicCard() {
         <div className="flex justify-center mb-8">
           <PlayerCard
             profile={profile}
-            ratings={ratings}
+            userStats={userStats}
             showDownloadButton={false}
             overallRating={profile.overall_rating}
           />
