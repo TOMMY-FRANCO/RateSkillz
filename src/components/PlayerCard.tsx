@@ -1,8 +1,9 @@
 import { useRef } from 'react';
 import { Profile } from '../contexts/AuthContext';
-import { User, Download, Coins } from 'lucide-react';
+import { User, Download, Coins, Award } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { displayUsername } from '../lib/username';
+import { calculateOverallRating, getCardTier, getTierBadgeColors } from '../lib/cardTiers';
 
 export interface Rating {
   id: string;
@@ -63,7 +64,10 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
     PHY: 50,
   };
 
-  const overall = overallRating ?? (userStats?.overall || profile.overall_rating || 50);
+  const calculatedOverall = calculateOverallRating(stats);
+  const overall = overallRating ?? (userStats?.overall || profile.overall_rating || calculatedOverall);
+  const tier = getCardTier(overall);
+  const tierBadgeColors = getTierBadgeColors(tier);
 
   const sizeClasses = {
     small: 'w-64',
@@ -92,14 +96,14 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div ref={cardRef} className={`${sizeClasses[size]} relative`}>
-        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-purple-600 via-purple-700 to-gray-900 shadow-2xl border-4 border-purple-400/30">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-pink-400/20 via-transparent to-transparent"></div>
+      <div ref={cardRef} className={`${sizeClasses[size]} relative transition-all duration-700`}>
+        <div className={`relative rounded-2xl overflow-hidden bg-gradient-to-br ${tier.gradient} shadow-2xl border-4 ${tier.borderColor} transition-all duration-700`}>
+        <div className={`absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] ${tier.glowColor} via-transparent to-transparent transition-all duration-700`}></div>
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMDMiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
 
         <div className="relative p-6">
           <div className="flex items-start justify-between mb-4">
-            <div className="flex flex-col items-center space-y-1 bg-purple-900/50 rounded-lg px-4 py-3 backdrop-blur-sm border border-purple-400/30">
+            <div className="flex flex-col items-center space-y-1 bg-black/40 rounded-lg px-4 py-3 backdrop-blur-sm border border-white/20 transition-all duration-700">
               <div className="text-6xl font-black text-white drop-shadow-lg">
                 {overall}
               </div>
@@ -122,8 +126,16 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
                 </div>
               )}
               {profile.team && (
-                <div className="bg-gradient-to-r from-purple-600 to-purple-700 px-5 py-3 rounded-xl text-white font-black text-base border-2 border-purple-300 text-center shadow-xl">
+                <div className="bg-black/50 backdrop-blur-sm px-5 py-3 rounded-xl text-white font-black text-base border-2 border-white/30 text-center shadow-xl transition-all duration-700">
                   {profile.team}
+                </div>
+              )}
+              {tier.name !== 'Default' && (
+                <div className={`${tierBadgeColors} px-4 py-2.5 rounded-xl font-black text-xs border-2 text-center shadow-xl transition-all duration-700`}>
+                  <div className="flex items-center gap-1.5 justify-center">
+                    <Award className="w-3.5 h-3.5" />
+                    <span className="uppercase tracking-wider">{tier.name}</span>
+                  </div>
                 </div>
               )}
               {rank && (
@@ -165,16 +177,16 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-purple-900/90 via-purple-800/90 to-purple-900/90 backdrop-blur-sm px-4 py-3 rounded-lg border border-purple-400/30 mb-4">
+          <div className="bg-gradient-to-r from-black/70 via-black/60 to-black/70 backdrop-blur-sm px-4 py-3 rounded-lg border border-white/20 mb-4 transition-all duration-700">
             <h3 className="text-3xl font-black text-white text-center tracking-wide uppercase drop-shadow-lg">
               {profile.full_name || displayUsername(profile.username)}
             </h3>
           </div>
 
-          <div className="grid grid-cols-6 gap-2 bg-gradient-to-r from-purple-950/80 via-black/80 to-purple-950/80 backdrop-blur-sm p-4 rounded-lg border border-purple-400/30">
+          <div className="grid grid-cols-6 gap-2 bg-gradient-to-r from-black/70 via-black/80 to-black/70 backdrop-blur-sm p-4 rounded-lg border border-white/20 transition-all duration-700">
             {Object.entries(stats).map(([key, value]) => (
               <div key={key} className="flex flex-col items-center">
-                <span className="text-xs font-bold text-purple-200 uppercase tracking-wide">{key}</span>
+                <span className="text-xs font-bold text-gray-300 uppercase tracking-wide">{key}</span>
                 <span className="text-2xl font-black text-white drop-shadow-lg">{value}</span>
               </div>
             ))}
@@ -182,8 +194,8 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
 
           {ratings.length > 0 && (
             <div className="mt-4 text-center">
-              <div className="inline-block bg-purple-900/50 px-4 py-2 rounded-full border border-purple-400/30">
-                <p className="text-sm text-purple-100 font-semibold">
+              <div className="inline-block bg-black/40 px-4 py-2 rounded-full border border-white/20 transition-all duration-700">
+                <p className="text-sm text-white font-semibold">
                   Rated by {ratings.length}
                 </p>
               </div>
@@ -191,7 +203,7 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
           )}
         </div>
 
-        <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-white/5 pointer-events-none rounded-2xl"></div>
+        <div className={`absolute inset-0 bg-gradient-to-t ${tier.shimmerGradient} pointer-events-none rounded-2xl transition-all duration-700`}></div>
         </div>
       </div>
 
