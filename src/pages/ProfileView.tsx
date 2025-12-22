@@ -80,9 +80,19 @@ export default function ProfileView() {
   const isEditingEnabled = !isPreviewMode && !isOwner;
 
   useEffect(() => {
+    let commentsChannel: any = null;
+
     if (username) {
-      loadProfile();
+      loadProfile().then((channel) => {
+        commentsChannel = channel;
+      });
     }
+
+    return () => {
+      if (commentsChannel) {
+        commentsChannel.unsubscribe();
+      }
+    };
   }, [username]);
 
   const loadProfile = async () => {
@@ -105,19 +115,19 @@ export default function ProfileView() {
       setCommentsCount(profileData.comments_count || 0);
 
       if (currentUser && profileData.id !== currentUser.id && !isPreviewMode) {
-        const viewResult = await recordUniqueProfileView(profileData.id, currentUser.id);
+        recordUniqueProfileView(profileData.id, currentUser.id).then((viewResult) => {
+          if (viewResult.success && viewResult.counted && viewResult.new_count) {
+            setViewsCount(viewResult.new_count);
 
-        if (viewResult.success && viewResult.counted && viewResult.new_count) {
-          setViewsCount(viewResult.new_count);
-
-          await supabase.from('notifications').insert({
-            user_id: profileData.id,
-            actor_id: currentUser.id,
-            type: 'profile_view',
-            message: `${currentUser.username} viewed your profile`,
-            metadata: { profile_id: profileData.id },
-          });
-        }
+            supabase.from('notifications').insert({
+              user_id: profileData.id,
+              actor_id: currentUser.id,
+              type: 'profile_view',
+              message: `${currentUser.username} viewed your profile`,
+              metadata: { profile_id: profileData.id },
+            }).catch(err => console.error('Error creating notification:', err));
+          }
+        }).catch(err => console.error('Error recording view:', err));
       }
 
       const { data: friendsData } = await supabase
@@ -194,32 +204,6 @@ export default function ProfileView() {
 
       setComments(commentsData || []);
 
-      const commentsChannel = supabase
-        .channel(`comments:${profileData.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'comments',
-            filter: `profile_id=eq.${profileData.id}`
-          },
-          async (payload) => {
-            if (payload.eventType === 'INSERT') {
-              setComments(prev => [payload.new as Comment, ...prev]);
-              setCommentsCount(prev => prev + 1);
-            } else if (payload.eventType === 'DELETE') {
-              setComments(prev => prev.filter(c => c.id !== payload.old.id));
-              setCommentsCount(prev => Math.max(0, prev - 1));
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        commentsChannel.unsubscribe();
-      };
-
       if (currentUser && commentsData) {
         const { data: votesData } = await supabase
           .from('comment_votes')
@@ -272,9 +256,34 @@ export default function ProfileView() {
       setBalanceLoading(false);
 
       setLoading(false);
+
+      const commentsChannel = supabase
+        .channel(`comments:${profileData.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'comments',
+            filter: `profile_id=eq.${profileData.id}`
+          },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              setComments(prev => [payload.new as Comment, ...prev]);
+              setCommentsCount(prev => prev + 1);
+            } else if (payload.eventType === 'DELETE') {
+              setComments(prev => prev.filter(c => c.id !== payload.old.id));
+              setCommentsCount(prev => Math.max(0, prev - 1));
+            }
+          }
+        )
+        .subscribe();
+
+      return commentsChannel;
     } catch (error) {
       console.error('Error loading profile:', error);
       setLoading(false);
+      return null;
     }
   };
 
