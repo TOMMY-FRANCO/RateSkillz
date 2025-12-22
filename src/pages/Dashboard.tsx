@@ -90,43 +90,7 @@ export default function Dashboard() {
       const position = (profiles || []).findIndex((p) => p.id === profile.id) + 1;
       setRank({ position, total: profiles?.length || 0 });
     } catch (error) {
-      console.error('Error calculating rank from Supabase:', error);
-
-      try {
-        const allProfilesData = JSON.parse(localStorage.getItem('profiles') || '{}');
-        const profiles = Object.values(allProfilesData).map((p: any) => ({ id: p.id }));
-
-        const allRatingsData = JSON.parse(localStorage.getItem('ratings') || '{}');
-
-        const profileOveralls = profiles.map((p) => {
-          const playerRatings = Object.values(allRatingsData).filter(
-            (rating: any) => rating.player_id === p.id
-          ) as Rating[];
-
-          if (playerRatings.length === 0) {
-            return { id: p.id, overall: 50 };
-          }
-
-          const stats = {
-            pac: playerRatings.reduce((acc, r) => acc + r.pac, 0) / playerRatings.length,
-            sho: playerRatings.reduce((acc, r) => acc + r.sho, 0) / playerRatings.length,
-            pas: playerRatings.reduce((acc, r) => acc + r.pas, 0) / playerRatings.length,
-            dri: playerRatings.reduce((acc, r) => acc + r.dri, 0) / playerRatings.length,
-            def: playerRatings.reduce((acc, r) => acc + r.def, 0) / playerRatings.length,
-            phy: playerRatings.reduce((acc, r) => acc + r.phy, 0) / playerRatings.length,
-          };
-
-          const overall = Math.round(Object.values(stats).reduce((a, b) => a + b, 0) / 6);
-          return { id: p.id, overall };
-        });
-
-        profileOveralls.sort((a, b) => b.overall - a.overall);
-
-        const position = profileOveralls.findIndex((p) => p.id === profile.id) + 1;
-        setRank({ position, total: profileOveralls.length });
-      } catch (localError) {
-        console.error('Error calculating rank from localStorage:', localError);
-      }
+      console.error('Error calculating rank:', error);
     }
   };
 
@@ -202,9 +166,9 @@ export default function Dashboard() {
             <OnlineStatus lastActive={profile.last_active} size="large" />
           </div>
           <p className="text-gray-400">
-            {ratings.length === 0
+            {(userStats?.rating_count || 0) === 0
               ? 'Invite friends to rate your player card'
-              : `Your card has been rated by ${ratings.length} ${ratings.length === 1 ? 'friend' : 'friends'}`}
+              : `Your card has been rated by ${userStats?.rating_count || 0} ${userStats?.rating_count === 1 ? 'friend' : 'friends'}`}
           </p>
         </div>
 
