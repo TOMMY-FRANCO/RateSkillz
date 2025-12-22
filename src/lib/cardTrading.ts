@@ -22,6 +22,23 @@ export interface CardOwnership {
   };
 }
 
+export function getSafeCardValue(card: CardOwnership | null | undefined): number {
+  if (!card) return 20.00;
+  if (card.current_price && card.current_price >= 20) return card.current_price;
+  if (card.base_price && card.base_price >= 20) return card.base_price;
+  return 20.00;
+}
+
+export function getSafeTimesTrade(card: CardOwnership | null | undefined): number {
+  if (!card) return 0;
+  return card.times_traded || 0;
+}
+
+export function getSafeLastSalePrice(card: CardOwnership | null | undefined): number | null {
+  if (!card) return null;
+  return card.last_sale_price || null;
+}
+
 export interface CardTransaction {
   id: string;
   card_user_id: string;
@@ -83,7 +100,15 @@ export async function getCardOwnership(cardUserId: string): Promise<CardOwnershi
     return null;
   }
 
-  return data;
+  if (!data) return null;
+
+  return {
+    ...data,
+    current_price: data.current_price || data.base_price || 20.00,
+    base_price: data.base_price || 20.00,
+    times_traded: data.times_traded || 0,
+    last_sale_price: data.last_sale_price || null
+  };
 }
 
 export async function getCardsOwnedByUser(userId: string): Promise<CardOwnership[]> {
@@ -102,7 +127,13 @@ export async function getCardsOwnedByUser(userId: string): Promise<CardOwnership
     return [];
   }
 
-  return data || [];
+  return (data || []).map(card => ({
+    ...card,
+    current_price: card.current_price || card.base_price || 20.00,
+    base_price: card.base_price || 20.00,
+    times_traded: card.times_traded || 0,
+    last_sale_price: card.last_sale_price || null
+  }));
 }
 
 export async function createCardOffer(
@@ -252,7 +283,7 @@ export function calculatePotentialProfit(purchasePrice: number, sellingPrice: nu
 
 export async function getPortfolioValue(userId: string): Promise<number> {
   const cards = await getCardsOwnedByUser(userId);
-  return cards.reduce((total, card) => total + (card.current_price || 0), 0);
+  return cards.reduce((total, card) => total + getSafeCardValue(card), 0);
 }
 
 export async function getMostValuableCards(limit: number = 10): Promise<CardOwnership[]> {

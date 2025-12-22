@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Coins, ShoppingCart, TrendingUp, Tag, X, Check, DollarSign, Lock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Coins, ShoppingCart, TrendingUp, Tag, X, Check, DollarSign, Lock, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import type { CardOwnership } from '../lib/cardTrading';
-import { createCardOffer, listCardForSale, unlistCardFromSale, calculatePotentialProfit } from '../lib/cardTrading';
+import { createCardOffer, listCardForSale, unlistCardFromSale, calculatePotentialProfit, getSafeCardValue } from '../lib/cardTrading';
 import { getCoinBalance } from '../lib/coins';
 
 interface CardOwnershipStatusProps {
@@ -25,42 +25,67 @@ export default function CardOwnershipStatus({
   const [offerMessage, setOfferMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [userBalance, setUserBalance] = useState<number>(0);
+  const [balanceLoading, setBalanceLoading] = useState(false);
 
   const isOwner = cardOwnership?.owner_id === currentUserId;
   const isCardOfCurrentUser = cardUserId === currentUserId;
   const isListed = cardOwnership?.is_listed_for_sale || false;
+  const safeCardValue = getSafeCardValue(cardOwnership);
 
   const loadBalance = async () => {
     if (currentUserId) {
-      const balance = await getCoinBalance();
-      setUserBalance(balance);
+      setBalanceLoading(true);
+      try {
+        const balance = await getCoinBalance();
+        setUserBalance(balance);
+      } catch (err) {
+        console.error('Error loading balance:', err);
+      } finally {
+        setBalanceLoading(false);
+      }
     }
   };
+
+  useEffect(() => {
+    if (showBuyModal || showOfferModal) {
+      loadBalance();
+    }
+  }, [showBuyModal, showOfferModal]);
 
   const handleBuyCard = async () => {
     if (!cardOwnership || !currentUserId) return;
 
+    const purchasePrice = cardOwnership.asking_price || safeCardValue;
+
+    if (userBalance < purchasePrice) {
+      setError(`Insufficient coins. You need ${purchasePrice.toFixed(2)} coins but only have ${userBalance.toFixed(2)} coins.`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const result = await createCardOffer(
         cardUserId,
         currentUserId,
-        cardOwnership.asking_price || cardOwnership.current_price,
+        purchasePrice,
         'purchase_request'
       );
 
       if (result.success) {
         setShowBuyModal(false);
-        alert('Purchase request sent! Waiting for owner approval.');
+        setSuccess('Purchase request sent successfully!');
         onUpdate();
+        setTimeout(() => setSuccess(null), 5000);
       } else {
         setError(result.error || 'Failed to create purchase request');
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -75,8 +100,19 @@ export default function CardOwnershipStatus({
       return;
     }
 
+    if (amount > userBalance) {
+      setError(`Insufficient coins. You need ${amount.toFixed(2)} coins but only have ${userBalance.toFixed(2)} coins.`);
+      return;
+    }
+
+    if (amount < safeCardValue) {
+      setError(`Offer must be at least ${safeCardValue.toFixed(2)} coins (current card value)`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const result = await createCardOffer(
@@ -91,13 +127,14 @@ export default function CardOwnershipStatus({
         setShowOfferModal(false);
         setOfferAmount('');
         setOfferMessage('');
-        alert('Offer sent! Waiting for owner approval.');
+        setSuccess('Offer sent successfully!');
         onUpdate();
+        setTimeout(() => setSuccess(null), 5000);
       } else {
         setError(result.error || 'Failed to create offer');
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -112,8 +149,14 @@ export default function CardOwnershipStatus({
       return;
     }
 
+    if (price < safeCardValue) {
+      setError(`Listing price must be at least ${safeCardValue.toFixed(2)} coins (current card value)`);
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const result = await listCardForSale(cardUserId, currentUserId, price);
@@ -121,8 +164,9 @@ export default function CardOwnershipStatus({
       if (result.success) {
         setShowListModal(false);
         setListingPrice('');
-        alert('Card listed for sale successfully!');
+        setSuccess('Card listed for sale successfully!');
         onUpdate();
+        setTimeout(() => setSuccess(null), 5000);
       } else {
         if (result.minimum_price) {
           setError(`${result.error}. Minimum price: ${result.minimum_price.toFixed(2)} coins`);
@@ -131,7 +175,7 @@ export default function CardOwnershipStatus({
         }
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -144,19 +188,20 @@ export default function CardOwnershipStatus({
 
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const result = await unlistCardFromSale(cardUserId, currentUserId);
 
       if (result.success) {
-        alert('Card removed from sale!');
+        setSuccess('Card removed from sale successfully!');
         onUpdate();
+        setTimeout(() => setSuccess(null), 5000);
       } else {
         setError(result.error || 'Failed to unlist card');
-        alert(result.error);
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -180,6 +225,20 @@ export default function CardOwnershipStatus({
         <ShoppingCart className="w-5 h-5 text-cyan-400" />
         Card Trading
       </h3>
+
+      {success && (
+        <div className="mb-4 p-3 bg-green-900/30 border border-green-600/50 rounded-lg flex items-start gap-2">
+          <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+          <p className="text-green-300 text-sm">{success}</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-900/30 border border-red-600/50 rounded-lg flex items-start gap-2">
+          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+          <p className="text-red-300 text-sm">{error}</p>
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg">
@@ -275,7 +334,7 @@ export default function CardOwnershipStatus({
             ) : (
               <button
                 onClick={() => {
-                  setListingPrice(minPrice.toFixed(2));
+                  setListingPrice(cardOwnership.current_price.toFixed(2));
                   setShowListModal(true);
                 }}
                 className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold rounded-lg transition-all"
@@ -293,7 +352,7 @@ export default function CardOwnershipStatus({
                   +{potentialProfit.toFixed(2)} coins
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  You paid: {cardOwnership.last_sale_price.toFixed(2)} | Min sell: {minPrice.toFixed(2)}
+                  You paid: {cardOwnership.last_sale_price.toFixed(2)} | Current value: {cardOwnership.current_price.toFixed(2)}
                 </p>
               </div>
             )}
@@ -330,9 +389,16 @@ export default function CardOwnershipStatus({
 
               <div className="p-4 bg-gray-800 rounded-lg">
                 <p className="text-sm text-gray-400">Your Balance</p>
-                <p className="text-lg font-semibold text-white">
-                  {userBalance.toFixed(2)} coins
-                </p>
+                {balanceLoading ? (
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Loading...</span>
+                  </div>
+                ) : (
+                  <p className="text-lg font-semibold text-white">
+                    {userBalance.toFixed(2)} coins
+                  </p>
+                )}
               </div>
 
               <div className="p-4 bg-blue-900/20 border border-blue-600/50 rounded-lg">
@@ -357,10 +423,11 @@ export default function CardOwnershipStatus({
               </button>
               <button
                 onClick={handleBuyCard}
-                disabled={loading || userBalance < (cardOwnership.asking_price || 0)}
-                className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading || balanceLoading || userBalance < (cardOwnership.asking_price || 0)}
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {loading ? 'Sending...' : 'Confirm Purchase'}
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {loading ? 'Processing...' : 'Confirm Purchase'}
               </button>
             </div>
           </div>
