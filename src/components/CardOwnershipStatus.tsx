@@ -407,27 +407,37 @@ export default function CardOwnershipStatus({
                 {cardOwnership.times_traded === 0 ? (
                   <div className="space-y-1">
                     <p className="text-sm text-gray-300">
-                      Seller receives: <span className="font-semibold text-white">{safeCardValue.toFixed(2)} coins</span>
+                      Seller receives: <span className="font-semibold text-white">{safeCardValue.toFixed(2)} coins</span> (100%)
                     </p>
-                    <p className="text-xs text-gray-400 italic">First time this card is being sold</p>
+                    <p className="text-xs text-gray-400 italic">First time this card is being sold - seller is the original owner</p>
                   </div>
                 ) : (
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <p className="text-sm text-gray-300">
                       Current seller receives: <span className="font-semibold text-white">{(safeCardValue - 5).toFixed(2)} coins</span>
+                    </p>
+                    <p className="text-xs text-gray-400 ml-4">
+                      = Their investment + 5 coin profit
                     </p>
                     <p className="text-sm text-gray-300">
                       Original owner royalty: <span className="font-semibold text-green-400">+5.00 coins</span>
                     </p>
-                    <p className="text-xs text-gray-400 italic mt-1">Your payment is split between both parties</p>
+                    <div className="pt-2 mt-2 border-t border-purple-600/30">
+                      <p className="text-xs text-gray-400 italic">Your {safeCardValue.toFixed(2)} coins split: {(safeCardValue - 5).toFixed(2)} to seller + 5.00 to original owner</p>
+                    </div>
                   </div>
                 )}
               </div>
 
               <div className="p-4 bg-blue-900/20 border border-blue-600/50 rounded-lg">
                 <p className="text-sm text-blue-300">
-                  After purchase, card value becomes <span className="font-bold">{(safeCardValue + 5).toFixed(2)} coins</span>
+                  After purchase, card value increases by <span className="font-bold">10 coins</span> to <span className="font-bold">{(safeCardValue + 10).toFixed(2)} coins</span>
                 </p>
+                {cardOwnership.times_traded > 0 && (
+                  <p className="text-xs text-blue-300/70 mt-1">
+                    When you resell, you'll get your {safeCardValue.toFixed(2)} back + 5 coin profit
+                  </p>
+                )}
               </div>
 
               {error && (

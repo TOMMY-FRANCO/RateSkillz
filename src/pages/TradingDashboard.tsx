@@ -349,7 +349,10 @@ export default function TradingDashboard() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {ownedCards.map((card) => {
-                  const profit = card.last_sale_price ? calculatePotentialProfit(card.last_sale_price, card.current_price) : 0;
+                  const purchasePrice = card.last_purchase_price || card.last_sale_price || 20;
+                  const isFirstSale = card.times_traded === 0;
+                  const potentialEarnings = isFirstSale ? card.current_price : purchasePrice + 5;
+                  const profit = isFirstSale ? card.current_price : 5;
 
                   return (
                     <div key={card.id} className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
@@ -374,16 +377,19 @@ export default function TradingDashboard() {
                           <span className="font-semibold text-cyan-400">{card.current_price.toFixed(2)} coins</span>
                         </div>
 
-                        {card.last_sale_price && (
-                          <div className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg">
-                            <span className="text-sm text-gray-400">You Paid</span>
-                            <span className="font-semibold text-white">{card.last_sale_price.toFixed(2)} coins</span>
-                          </div>
-                        )}
+                        <div className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg">
+                          <span className="text-sm text-gray-400">You Paid</span>
+                          <span className="font-semibold text-white">{purchasePrice.toFixed(2)} coins</span>
+                        </div>
+
+                        <div className="flex justify-between items-center p-3 bg-blue-900/20 rounded-lg border border-blue-600/30">
+                          <span className="text-sm text-blue-300">If You Sell at {card.current_price.toFixed(2)}</span>
+                          <span className="font-semibold text-blue-400">{potentialEarnings.toFixed(2)} coins</span>
+                        </div>
 
                         {profit > 0 && (
                           <div className="flex justify-between items-center p-3 bg-green-900/20 rounded-lg border border-green-600/30">
-                            <span className="text-sm text-green-300">Potential Profit</span>
+                            <span className="text-sm text-green-300">Your Profit</span>
                             <span className="font-semibold text-green-400">+{profit.toFixed(2)} coins</span>
                           </div>
                         )}

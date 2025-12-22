@@ -10,6 +10,7 @@ export interface CardOwnership {
   asking_price: number | null;
   times_traded: number;
   last_sale_price: number | null;
+  last_purchase_price?: number | null;
   acquired_at: string;
   card_user?: {
     username: string;
@@ -58,9 +59,18 @@ export interface CardSaleResult {
   transaction_id?: string;
   previous_value?: number;
   new_value?: number;
+  price_increase?: number;
   sale_price?: number;
+  seller_payment?: number;
+  seller_profit?: number;
+  seller_purchase_price?: number;
+  royalty_payment?: number;
   seller_id?: string;
   buyer_id?: string;
+  original_owner_id?: string;
+  is_first_sale?: boolean;
+  royalty_paid?: boolean;
+  transaction_type?: string;
 }
 
 export interface CardOffer {
