@@ -28,10 +28,10 @@ export function CoinPoolDisplay() {
         <div>
           <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-1">
             <Coins className="w-5 h-5 text-yellow-500" />
-            Global Coin Pool
+            Coin Pool Distribution
           </h3>
           <p className="text-sm text-gray-600">
-            Tracking total coins in circulation
+            Coins distributed to users from pool
           </p>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 rounded-full border border-green-500/20">
@@ -44,7 +44,7 @@ export function CoinPoolDisplay() {
 
       <div className="space-y-3">
         <div className="flex justify-between items-baseline">
-          <span className="text-sm text-gray-600">Distributed</span>
+          <span className="text-sm text-gray-600">Distributed to Users</span>
           <span className="text-2xl font-bold text-yellow-600">
             {distributedFormatted}
           </span>
@@ -60,15 +60,19 @@ export function CoinPoolDisplay() {
         </div>
 
         <div className="flex justify-between items-baseline text-xs text-gray-500">
-          <span>Out of {totalFormatted} total</span>
+          <span>Total supply: {totalFormatted}</span>
           <span className="font-medium">
             {stats.remaining_coins.toLocaleString('en-US', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}{' '}
-            remaining
+            available
           </span>
         </div>
+
+        <p className="text-xs text-gray-500 italic pt-2 border-t border-gray-200">
+          Coins are distributed through ads, comments, and purchases. Once distributed, they circulate between users forever.
+        </p>
       </div>
     </div>
   );

@@ -381,9 +381,10 @@ export default function CardOwnershipStatus({
 
             <div className="space-y-4 mb-6">
               <div className="p-4 bg-gray-800 rounded-lg">
-                <p className="text-sm text-gray-400">Card Price</p>
-                <p className="text-2xl font-bold text-cyan-400">
-                  {cardOwnership.asking_price?.toFixed(2)} coins
+                <p className="text-sm text-gray-400">You Will Pay</p>
+                <p className="text-2xl font-bold text-cyan-400 flex items-center gap-2">
+                  <Coins className="w-6 h-6" />
+                  {(cardOwnership.asking_price || safeCardValue).toFixed(2)} coins
                 </p>
               </div>
 
@@ -401,9 +402,31 @@ export default function CardOwnershipStatus({
                 )}
               </div>
 
+              <div className="p-4 bg-purple-900/20 border border-purple-600/50 rounded-lg space-y-2">
+                <p className="text-sm font-semibold text-purple-300">Payment Breakdown:</p>
+                {cardOwnership.times_traded === 0 ? (
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-300">
+                      Seller receives: <span className="font-semibold text-white">{safeCardValue.toFixed(2)} coins</span>
+                    </p>
+                    <p className="text-xs text-gray-400 italic">First time this card is being sold</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <p className="text-sm text-gray-300">
+                      Current seller receives: <span className="font-semibold text-white">{(safeCardValue - 5).toFixed(2)} coins</span>
+                    </p>
+                    <p className="text-sm text-gray-300">
+                      Original owner royalty: <span className="font-semibold text-green-400">+5.00 coins</span>
+                    </p>
+                    <p className="text-xs text-gray-400 italic mt-1">Your payment is split between both parties</p>
+                  </div>
+                )}
+              </div>
+
               <div className="p-4 bg-blue-900/20 border border-blue-600/50 rounded-lg">
                 <p className="text-sm text-blue-300">
-                  After purchase, card value will increase to {(cardOwnership.current_price + 5).toFixed(2)} coins
+                  After purchase, card value becomes <span className="font-bold">{(safeCardValue + 5).toFixed(2)} coins</span>
                 </p>
               </div>
 
