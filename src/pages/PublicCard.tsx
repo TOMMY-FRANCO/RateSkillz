@@ -43,6 +43,8 @@ export default function PublicCard() {
 
       setProfile(profileData);
 
+      setViewsCount(profileData.profile_views_count || 0);
+
       const stats = await getUserStats(profileData.id);
       setUserStats(stats);
 
@@ -53,12 +55,6 @@ export default function PublicCard() {
         .maybeSingle();
 
       setSocialLinks(socialLinksData);
-
-      const { data: viewsData } = await supabase
-        .from('profile_views')
-        .select('id')
-        .eq('profile_id', profileData.id);
-      setViewsCount(viewsData?.length || 0);
 
       const { data: friendsData } = await supabase
         .from('friends')

@@ -8,12 +8,13 @@ import SocialLinks from '../components/SocialLinks';
 import EditSocialLinks from '../components/EditSocialLinks';
 import OnlineStatus from '../components/OnlineStatus';
 import CardOwnershipStatus from '../components/CardOwnershipStatus';
-import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2, Coins, Lock, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2, Coins, Lock, X, Loader2, MessageSquare } from 'lucide-react';
 import { formatCoinBalance, formatCoinBalanceFull } from '../lib/formatBalance';
 import type { Profile } from '../contexts/AuthContext';
 import { awardCommentCoins } from '../lib/coins';
 import { getCardOwnership, type CardOwnership } from '../lib/cardTrading';
 import { saveRating, getMyRatingForUser, getUserStats, type PlayerRating, type UserStats } from '../lib/ratings';
+import { recordUniqueProfileView } from '../lib/viewTracking';
 
 interface Comment {
   id: string;
@@ -73,6 +74,7 @@ export default function ProfileView() {
   const [cardOwnership, setCardOwnership] = useState<CardOwnership | null>(null);
   const [coinBalance, setCoinBalance] = useState<number>(0);
   const [balanceLoading, setBalanceLoading] = useState(true);
+  const [commentsCount, setCommentsCount] = useState<number>(0);
 
   const isOwner = currentUser?.id === profile?.id;
   const isEditingEnabled = !isPreviewMode && !isOwner;
@@ -100,29 +102,21 @@ export default function ProfileView() {
       setProfile(profileData);
 
       setViewsCount(profileData.profile_views_count || 0);
+      setCommentsCount(profileData.comments_count || 0);
 
       if (currentUser && profileData.id !== currentUser.id && !isPreviewMode) {
-        console.log('📊 Recording profile view...');
-        const { data: viewResult, error: viewError } = await supabase.rpc('record_profile_view', {
-          p_profile_id: profileData.id,
-          p_viewer_id: currentUser.id,
-        });
+        const viewResult = await recordUniqueProfileView(profileData.id, currentUser.id);
 
-        if (viewError) {
-          console.error('❌ Error recording view:', viewError);
-        } else {
-          console.log('✅ Profile view recorded:', viewResult);
-          if (viewResult?.counted) {
-            setViewsCount(viewResult.new_count);
+        if (viewResult.success && viewResult.counted && viewResult.new_count) {
+          setViewsCount(viewResult.new_count);
 
-            await supabase.from('notifications').insert({
-              user_id: profileData.id,
-              actor_id: currentUser.id,
-              type: 'profile_view',
-              message: `${currentUser.username} viewed your profile`,
-              metadata: { profile_id: profileData.id },
-            });
-          }
+          await supabase.from('notifications').insert({
+            user_id: profileData.id,
+            actor_id: currentUser.id,
+            type: 'profile_view',
+            message: `${currentUser.username} viewed your profile`,
+            metadata: { profile_id: profileData.id },
+          });
         }
       }
 
@@ -199,6 +193,32 @@ export default function ProfileView() {
         .order('created_at', { ascending: false });
 
       setComments(commentsData || []);
+
+      const commentsChannel = supabase
+        .channel(`comments:${profileData.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'comments',
+            filter: `profile_id=eq.${profileData.id}`
+          },
+          async (payload) => {
+            if (payload.eventType === 'INSERT') {
+              setComments(prev => [payload.new as Comment, ...prev]);
+              setCommentsCount(prev => prev + 1);
+            } else if (payload.eventType === 'DELETE') {
+              setComments(prev => prev.filter(c => c.id !== payload.old.id));
+              setCommentsCount(prev => Math.max(0, prev - 1));
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        commentsChannel.unsubscribe();
+      };
 
       if (currentUser && commentsData) {
         const { data: votesData } = await supabase
@@ -890,7 +910,15 @@ export default function ProfileView() {
           )}
 
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
-            <h3 className="text-xl font-bold text-white mb-4">Comments</h3>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <h3 className="text-xl font-bold text-white">Comments</h3>
+                <div className="flex items-center gap-2 px-3 py-1 bg-cyan-500/20 border border-cyan-500/30 rounded-full">
+                  <MessageSquare className="w-4 h-4 text-cyan-400" />
+                  <span className="text-sm font-bold text-cyan-400">{commentsCount}</span>
+                </div>
+              </div>
+            </div>
 
             {currentUser && profile.id !== currentUser.id && !isPreviewMode && (
               <>
