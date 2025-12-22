@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Coins, ShoppingCart, TrendingUp, Tag, X, Check, DollarSign, Lock } from 'lucide-react';
 import type { CardOwnership } from '../lib/cardTrading';
-import { createCardOffer, listCardForSale, unlistCardFromSale, calculateMinimumPrice, calculatePotentialProfit } from '../lib/cardTrading';
+import { createCardOffer, listCardForSale, unlistCardFromSale, calculatePotentialProfit } from '../lib/cardTrading';
 import { getCoinBalance } from '../lib/coins';
 
 interface CardOwnershipStatusProps {
@@ -170,9 +170,8 @@ export default function CardOwnershipStatus({
     );
   }
 
-  const minPrice = calculateMinimumPrice(cardOwnership.last_sale_price, cardOwnership.base_price);
   const potentialProfit = cardOwnership.last_sale_price
-    ? calculatePotentialProfit(cardOwnership.last_sale_price, minPrice)
+    ? calculatePotentialProfit(cardOwnership.last_sale_price, cardOwnership.current_price)
     : 0;
 
   return (
@@ -338,7 +337,7 @@ export default function CardOwnershipStatus({
 
               <div className="p-4 bg-blue-900/20 border border-blue-600/50 rounded-lg">
                 <p className="text-sm text-blue-300">
-                  After purchase, card will be auto-listed at {(cardOwnership.base_price * 1.10 * 1.20).toFixed(2)} coins
+                  After purchase, card value will increase to {(cardOwnership.current_price + 5).toFixed(2)} coins
                 </p>
               </div>
 
@@ -463,9 +462,9 @@ export default function CardOwnershipStatus({
               )}
 
               <div className="p-4 bg-blue-900/20 border border-blue-600/50 rounded-lg">
-                <p className="text-sm text-blue-300">Minimum Price (20% markup)</p>
+                <p className="text-sm text-blue-300">Current Card Value (Minimum Price)</p>
                 <p className="text-xl font-bold text-blue-400">
-                  {minPrice.toFixed(2)} coins
+                  {cardOwnership.current_price.toFixed(2)} coins
                 </p>
               </div>
 
@@ -477,14 +476,14 @@ export default function CardOwnershipStatus({
                   type="number"
                   value={listingPrice}
                   onChange={(e) => setListingPrice(e.target.value)}
-                  placeholder={`Minimum: ${minPrice.toFixed(2)}`}
+                  placeholder={`Minimum: ${cardOwnership.current_price.toFixed(2)}`}
                   step="0.01"
-                  min={minPrice}
+                  min={cardOwnership.current_price}
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
 
-              {parseFloat(listingPrice) >= minPrice && cardOwnership.last_sale_price && (
+              {parseFloat(listingPrice) >= cardOwnership.current_price && cardOwnership.last_sale_price && (
                 <div className="p-3 bg-green-900/20 border border-green-600/30 rounded-lg">
                   <p className="text-sm text-green-300">Potential Profit</p>
                   <p className="text-lg font-bold text-green-400">

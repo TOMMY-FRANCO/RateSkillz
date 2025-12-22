@@ -10,7 +10,6 @@ import {
   acceptCardOffer,
   denyCardOffer,
   listCardForSale,
-  calculateMinimumPrice,
   calculatePotentialProfit,
   getListedCardsForSale,
   executeCardSale,
@@ -350,8 +349,7 @@ export default function TradingDashboard() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {ownedCards.map((card) => {
-                  const minPrice = calculateMinimumPrice(card.last_sale_price, card.base_price);
-                  const profit = card.last_sale_price ? calculatePotentialProfit(card.last_sale_price, minPrice) : 0;
+                  const profit = card.last_sale_price ? calculatePotentialProfit(card.last_sale_price, card.current_price) : 0;
 
                   return (
                     <div key={card.id} className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
@@ -385,7 +383,7 @@ export default function TradingDashboard() {
 
                         {profit > 0 && (
                           <div className="flex justify-between items-center p-3 bg-green-900/20 rounded-lg border border-green-600/30">
-                            <span className="text-sm text-green-300">Min Profit (20% markup)</span>
+                            <span className="text-sm text-green-300">Potential Profit</span>
                             <span className="font-semibold text-green-400">+{profit.toFixed(2)} coins</span>
                           </div>
                         )}
@@ -403,7 +401,7 @@ export default function TradingDashboard() {
                             onClick={() => navigate(`/profile/${card.card_user?.username}`)}
                             className="w-full px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-semibold rounded-lg transition-all"
                           >
-                            List for Sale (Min: {minPrice.toFixed(2)})
+                            List for Sale (Min: {card.current_price.toFixed(2)})
                           </button>
                         )}
                       </div>

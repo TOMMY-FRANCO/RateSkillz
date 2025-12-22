@@ -246,13 +246,6 @@ export async function getCardTransactionHistory(cardUserId: string): Promise<Car
   return data || [];
 }
 
-export function calculateMinimumPrice(lastSalePrice: number | null, basePrice: number): number {
-  if (lastSalePrice) {
-    return Math.round(lastSalePrice * 1.20 * 100) / 100;
-  }
-  return Math.round(basePrice * 1.20 * 100) / 100;
-}
-
 export function calculatePotentialProfit(purchasePrice: number, sellingPrice: number): number {
   return Math.round((sellingPrice - purchasePrice) * 100) / 100;
 }
