@@ -70,12 +70,17 @@ export default function PublicCard() {
         .eq('is_like', true);
       setLikesCount(likesData?.length || 0);
 
-      const { data: balanceData } = await supabase
+      const { data: balanceData, error: balanceError } = await supabase
         .from('coins')
         .select('balance')
         .eq('user_id', profileData.id)
         .maybeSingle();
 
+      if (balanceError) {
+        console.error('Error loading coin balance:', balanceError);
+      }
+
+      console.log(`Coin balance for ${profileData.username}:`, balanceData?.balance || 0);
       setCoinBalance(balanceData?.balance || 0);
       setBalanceLoading(false);
 
