@@ -74,15 +74,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           onConflict: 'user_id'
         });
 
-      await supabase
-        .from('user_status')
-        .upsert({
-          user_id: profile.id,
-          is_online: true,
-          last_seen: now,
-          updated_at: now,
-        });
-
       setProfile({ ...profile, last_active: now });
     } catch (error) {
       console.error('Error updating activity:', error);
@@ -332,15 +323,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           onConflict: 'user_id'
         });
 
-      await supabase
-        .from('user_status')
-        .upsert({
-          user_id: authData.user.id,
-          is_online: true,
-          last_seen: now,
-          updated_at: now,
-        });
-
       setUser({ id: authData.user.id });
       setSession({ user: { id: authData.user.id } });
       setProfile({ ...profileData, last_active: now });
@@ -378,13 +360,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     if (supabase && user) {
+      const now = new Date().toISOString();
       await supabase
-        .from('user_status')
+        .from('user_presence')
         .upsert({
           user_id: user.id,
-          is_online: false,
-          last_seen: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          last_seen: now,
+          updated_at: now,
+        }, {
+          onConflict: 'user_id'
         });
 
       await supabase.auth.signOut();

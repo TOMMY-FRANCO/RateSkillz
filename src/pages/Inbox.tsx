@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Conversation, getUserConversations, formatTimestamp, getUserStatus } from '../lib/messaging';
+import { Conversation, getUserConversations, formatTimestamp } from '../lib/messaging';
 import { MessageCircle, ArrowLeft, User } from 'lucide-react';
 import { displayUsername } from '../lib/username';
+import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
+import OnlineStatus from '../components/OnlineStatus';
 
 export default function Inbox() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+  const [userPresence, setUserPresence] = useState<Map<string, UserPresence>>(new Map());
 
   useEffect(() => {
     if (!user) return;
@@ -21,9 +23,10 @@ export default function Inbox() {
       setConversations(convs);
 
       const userIds = convs.map((c) => c.other_user?.id).filter(Boolean) as string[];
-      const statuses = await Promise.all(userIds.map((id) => getUserStatus(id)));
-      const online = new Set(statuses.filter((s) => s?.is_online).map((s) => s!.user_id));
-      setOnlineUsers(online);
+      if (userIds.length > 0) {
+        const presence = await getMultipleUserPresence(userIds);
+        setUserPresence(presence);
+      }
 
       setLoading(false);
     };
@@ -88,7 +91,7 @@ export default function Inbox() {
                 className="w-full bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4 hover:bg-white/10 transition-all text-left group"
               >
                 <div className="flex items-center gap-4">
-                  <div className="relative flex-shrink-0">
+                  <div className="flex-shrink-0">
                     {conversation.other_user?.avatar_url ? (
                       <img
                         src={conversation.other_user.avatar_url}
@@ -100,17 +103,23 @@ export default function Inbox() {
                         <User className="w-7 h-7 text-white" />
                       </div>
                     )}
-                    {conversation.other_user && onlineUsers.has(conversation.other_user.id) && (
-                      <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-900"></div>
-                    )}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-bold text-white text-lg truncate">
-                        {conversation.other_user?.full_name ||
-                          displayUsername(conversation.other_user?.username || '')}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-white text-lg truncate">
+                          {conversation.other_user?.full_name ||
+                            displayUsername(conversation.other_user?.username || '')}
+                        </h3>
+                        {conversation.other_user && (
+                          <OnlineStatus
+                            lastActive={userPresence.get(conversation.other_user.id)?.last_seen}
+                            showText={false}
+                            size="small"
+                          />
+                        )}
+                      </div>
                       <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
                         {formatTimestamp(conversation.last_message_at)}
                       </span>

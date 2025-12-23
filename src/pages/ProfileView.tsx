@@ -16,6 +16,7 @@ import { getCardOwnership, type CardOwnership } from '../lib/cardTrading';
 import { saveRating, getMyRatingForUser, getUserStats, type PlayerRating, type UserStats } from '../lib/ratings';
 import { recordUniqueProfileView } from '../lib/viewTracking';
 import { getOrCreateConversation, checkAreFriends } from '../lib/messaging';
+import { getUserPresence } from '../lib/presence';
 
 interface Comment {
   id: string;
@@ -76,6 +77,7 @@ export default function ProfileView() {
   const [coinBalance, setCoinBalance] = useState<number>(0);
   const [balanceLoading, setBalanceLoading] = useState(true);
   const [commentsCount, setCommentsCount] = useState<number>(0);
+  const [userPresenceData, setUserPresenceData] = useState<string | undefined>();
 
   const isOwner = currentUser?.id === profile?.id;
   const isEditingEnabled = !isPreviewMode && !isOwner;
@@ -114,6 +116,11 @@ export default function ProfileView() {
 
       setViewsCount(profileData.profile_views_count || 0);
       setCommentsCount(profileData.comments_count || 0);
+
+      const presence = await getUserPresence(profileData.id);
+      if (presence) {
+        setUserPresenceData(presence.last_seen);
+      }
 
       if (currentUser && profileData.id !== currentUser.id && !isPreviewMode) {
         recordUniqueProfileView(profileData.id, currentUser.id).then((viewResult) => {
@@ -624,7 +631,7 @@ export default function ProfileView() {
               </button>
               <div className="flex items-center gap-3">
                 <h1 className="text-xl font-bold text-white">{profile.username}'s Profile</h1>
-                <OnlineStatus lastActive={profile.last_active} size="medium" />
+                <OnlineStatus lastActive={userPresenceData || profile.last_active} size="medium" />
               </div>
             </div>
           </div>

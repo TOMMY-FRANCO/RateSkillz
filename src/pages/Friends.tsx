@@ -7,6 +7,8 @@ import type { Profile } from '../contexts/AuthContext';
 import { displayUsername } from '../lib/username';
 import { getMultipleUserBalances } from '../lib/balances';
 import { formatCoinBalance } from '../lib/formatBalance';
+import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
+import OnlineStatus from '../components/OnlineStatus';
 
 interface FriendRequest {
   id: string;
@@ -35,6 +37,7 @@ export default function Friends() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [notification, setNotification] = useState<NotificationState | null>(null);
   const [userBalances, setUserBalances] = useState<Map<string, number>>(new Map());
+  const [userPresence, setUserPresence] = useState<Map<string, UserPresence>>(new Map());
 
   useEffect(() => {
     if (currentUser) {
@@ -105,6 +108,9 @@ export default function Friends() {
         if (allUserIds.size > 0) {
           const balances = await getMultipleUserBalances(Array.from(allUserIds));
           setUserBalances(balances);
+
+          const presence = await getMultipleUserPresence(Array.from(allUserIds));
+          setUserPresence(presence);
         }
       }
 
@@ -351,7 +357,11 @@ export default function Friends() {
                           <h3 className="text-white font-bold text-lg">
                             {displayUsername(request.profile.username)}
                           </h3>
-                          <p className="text-gray-400 text-sm">
+                          <OnlineStatus
+                            lastActive={userPresence.get(request.profile.id)?.last_seen}
+                            size="small"
+                          />
+                          <p className="text-gray-400 text-sm mt-1">
                             Overall Rating: {calculateOverallRating(request.profile)}
                           </p>
                           {userBalances.has(request.profile.id) && (
@@ -417,6 +427,10 @@ export default function Friends() {
                           <h3 className="text-white font-bold text-lg">
                             {displayUsername(request.profile.username)}
                           </h3>
+                          <OnlineStatus
+                            lastActive={userPresence.get(request.profile.id)?.last_seen}
+                            size="small"
+                          />
                           {userBalances.has(request.profile.id) && (
                             <div className="flex items-center gap-1 mt-1">
                               <Coins className="w-3 h-3 text-yellow-500" />
@@ -474,7 +488,11 @@ export default function Friends() {
                           <h3 className="text-white font-bold text-lg">
                             {displayUsername(friend.profile.username)}
                           </h3>
-                          <p className="text-gray-400 text-sm">
+                          <OnlineStatus
+                            lastActive={userPresence.get(friend.profile.id)?.last_seen}
+                            size="small"
+                          />
+                          <p className="text-gray-400 text-sm mt-1">
                             Overall Rating: {calculateOverallRating(friend.profile)}
                           </p>
                           {userBalances.has(friend.profile.id) && (
@@ -485,20 +503,9 @@ export default function Friends() {
                               </span>
                             </div>
                           )}
-                          <div className="flex items-center space-x-2 mt-1">
-                            <div
-                              className={`w-2 h-2 rounded-full ${
-                                friend.profile.is_online ? 'bg-green-500' : 'bg-gray-500'
-                              }`}
-                            />
-                            <span className="text-xs text-gray-500">
-                              {friend.profile.is_online ? 'Online' : 'Offline'}
-                            </span>
-                            <span className="text-gray-600">•</span>
-                            <span className="text-xs text-gray-500">
-                              Friends since {new Date(friend.created_at).toLocaleDateString()}
-                            </span>
-                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Friends since {new Date(friend.created_at).toLocaleDateString()}
+                          </p>
                         </div>
                       </div>
                       <div className="flex space-x-3">

@@ -169,13 +169,15 @@ export async function getUnreadCount(userId: string): Promise<number> {
 
 export async function updateUserStatus(userId: string, isOnline: boolean): Promise<void> {
   try {
+    const now = new Date().toISOString();
     const { error } = await supabase
-      .from('user_status')
+      .from('user_presence')
       .upsert({
         user_id: userId,
-        is_online: isOnline,
-        last_seen: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        last_seen: now,
+        updated_at: now,
+      }, {
+        onConflict: 'user_id'
       });
 
     if (error) throw error;
@@ -187,13 +189,25 @@ export async function updateUserStatus(userId: string, isOnline: boolean): Promi
 export async function getUserStatus(userId: string): Promise<UserStatus | null> {
   try {
     const { data, error } = await supabase
-      .from('user_status')
+      .from('user_presence')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
-    return data;
+
+    if (!data) return null;
+
+    const now = Date.now();
+    const lastSeen = new Date(data.last_seen).getTime();
+    const isOnline = (now - lastSeen) < 5 * 60 * 1000;
+
+    return {
+      user_id: data.user_id,
+      is_online: isOnline,
+      last_seen: data.last_seen,
+      updated_at: data.updated_at,
+    };
   } catch (error) {
     console.error('Error getting user status:', error);
     return null;

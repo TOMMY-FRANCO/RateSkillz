@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, User } from 'lucide-react';
+import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
+import OnlineStatus from '../components/OnlineStatus';
 
 interface LeaderboardEntry {
   rank: number;
@@ -21,6 +23,7 @@ export default function Leaderboard() {
   const navigate = useNavigate();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userPresence, setUserPresence] = useState<Map<string, UserPresence>>(new Map());
 
   useEffect(() => {
     fetchLeaderboard();
@@ -36,6 +39,13 @@ export default function Leaderboard() {
       if (error) throw error;
 
       setEntries(data || []);
+
+      if (data && data.length > 0) {
+        const userIds = data.map(entry => entry.profile_id);
+        const presence = await getMultipleUserPresence(userIds);
+        setUserPresence(presence);
+      }
+
       setLoading(false);
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
@@ -173,6 +183,11 @@ export default function Leaderboard() {
                         </>
                       )}
                     </div>
+                    <OnlineStatus
+                      lastActive={userPresence.get(entry.profile_id)?.last_seen}
+                      size="small"
+                      className="mt-1"
+                    />
                   </div>
 
                   <div className="flex items-center gap-4 flex-shrink-0">
