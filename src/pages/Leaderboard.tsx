@@ -31,7 +31,7 @@ export default function Leaderboard() {
       const { data, error } = await supabase
         .from('leaderboard')
         .select('*')
-        .order('rank', { ascending: false });
+        .order('rank', { ascending: true });
 
       if (error) throw error;
 
