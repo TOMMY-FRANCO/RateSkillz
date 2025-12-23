@@ -104,7 +104,10 @@ export default function WatchAd() {
               </div>
             </button>
 
-            <p className="text-white/40 text-sm mt-6">Limit: One ad per day</p>
+            <div className="mt-6 space-y-2">
+              <p className="text-white/40 text-sm">Limit: One ad per day</p>
+              <p className="text-white/30 text-xs">Resets daily at midnight GMT (00:00 UK time)</p>
+            </div>
           </div>
         )}
 
@@ -175,7 +178,15 @@ export default function WatchAd() {
           <div className="bg-red-500/10 backdrop-blur-sm rounded-2xl p-12 border border-red-500/20 text-center">
             <div className="text-6xl mb-4">⏰</div>
             <h2 className="text-2xl font-bold text-white mb-2">Already Watched Today</h2>
-            <p className="text-white/60 mb-8">{error}</p>
+            <p className="text-white/60 mb-4">{error}</p>
+
+            <div className="bg-white/5 rounded-xl p-6 mb-8 border border-white/10">
+              <p className="text-white/80 text-sm mb-2">Ad viewing resets daily at:</p>
+              <p className="text-cyan-400 text-2xl font-bold mb-2">00:00 GMT (Midnight UK Time)</p>
+              <p className="text-white/60 text-xs">
+                Current GMT time: {new Date().toLocaleString('en-GB', { timeZone: 'UTC', hour12: false })}
+              </p>
+            </div>
 
             <button
               onClick={() => navigate('/dashboard')}
