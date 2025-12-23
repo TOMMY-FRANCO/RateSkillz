@@ -5,10 +5,11 @@ import PlayerCard, { UserStats } from '../components/PlayerCard';
 import OnlineStatus from '../components/OnlineStatus';
 import FirstTimeUsernamePrompt from '../components/FirstTimeUsernamePrompt';
 import { CoinBalance } from '../components/CoinBalance';
-import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp, Eye } from 'lucide-react';
+import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { displayUsername } from '../lib/username';
 import { getUserStats } from '../lib/ratings';
+import { useUnreadMessages } from '../hooks/useUnreadMessages';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [rank, setRank] = useState<{ position: number; total: number } | undefined>();
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [showUsernamePrompt, setShowUsernamePrompt] = useState(false);
+  const unreadMessagesCount = useUnreadMessages();
 
   useEffect(() => {
     if (profile) {
@@ -110,6 +112,18 @@ export default function Dashboard() {
                 <CoinBalance />
               </button>
               <button
+                onClick={() => navigate('/inbox')}
+                className="text-gray-300 hover:text-cyan-400 transition-colors flex items-center space-x-2 bg-none border-none cursor-pointer relative"
+              >
+                <MessageCircle className="w-5 h-5" />
+                {unreadMessagesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
+                    {unreadMessagesCount}
+                  </span>
+                )}
+                <span className="hidden sm:inline">Messages</span>
+              </button>
+              <button
                 onClick={() => navigate('/friends')}
                 className="text-gray-300 hover:text-cyan-400 transition-colors flex items-center space-x-2 bg-none border-none cursor-pointer relative"
               >
@@ -186,6 +200,26 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          <button
+            onClick={() => navigate('/inbox')}
+            className="bg-gradient-to-br from-pink-900/30 to-rose-900/30 border border-pink-600/50 rounded-xl p-6 hover:border-pink-500 transition-all group cursor-pointer text-left w-full relative"
+          >
+            {unreadMessagesCount > 0 && (
+              <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                {unreadMessagesCount}
+              </span>
+            )}
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <MessageCircle className="w-6 h-6 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Messages</h3>
+                <p className="text-gray-400 text-sm">Chat with friends</p>
+              </div>
+            </div>
+          </button>
+
           <button
             onClick={() => navigate('/trading')}
             className="bg-gradient-to-br from-cyan-900/30 to-blue-900/30 border border-cyan-600/50 rounded-xl p-6 hover:border-cyan-500 transition-all group cursor-pointer text-left w-full"

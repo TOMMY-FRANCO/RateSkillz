@@ -16,6 +16,8 @@ import WatchAd from './pages/WatchAd';
 import { Store } from './pages/Store';
 import { CheckoutSuccess } from './pages/CheckoutSuccess';
 import TradingDashboard from './pages/TradingDashboard';
+import Inbox from './pages/Inbox';
+import Chat from './pages/Chat';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -151,6 +153,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <CheckoutSuccess />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/inbox"
+            element={
+              <ProtectedRoute>
+                <Inbox />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/inbox/:conversationId"
+            element={
+              <ProtectedRoute>
+                <Chat />
               </ProtectedRoute>
             }
           />

@@ -8,13 +8,14 @@ import SocialLinks from '../components/SocialLinks';
 import EditSocialLinks from '../components/EditSocialLinks';
 import OnlineStatus from '../components/OnlineStatus';
 import CardOwnershipStatus from '../components/CardOwnershipStatus';
-import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2, Coins, Lock, X, Loader2, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2, Coins, Lock, X, Loader2, MessageSquare, MessageCircle } from 'lucide-react';
 import { formatCoinBalance, formatCoinBalanceFull } from '../lib/formatBalance';
 import type { Profile } from '../contexts/AuthContext';
 import { awardCommentCoins } from '../lib/coins';
 import { getCardOwnership, type CardOwnership } from '../lib/cardTrading';
 import { saveRating, getMyRatingForUser, getUserStats, type PlayerRating, type UserStats } from '../lib/ratings';
 import { recordUniqueProfileView } from '../lib/viewTracking';
+import { getOrCreateConversation, checkAreFriends } from '../lib/messaging';
 
 interface Comment {
   id: string;
@@ -735,7 +736,7 @@ export default function ProfileView() {
         <div className="max-w-2xl mx-auto space-y-6">
           {currentUser && profile.id !== currentUser.id && !isPreviewMode && (
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-center gap-4">
                 {friendStatus === 'none' && (
                   <button
                     onClick={handleFriendRequest}
@@ -764,13 +765,37 @@ export default function ProfileView() {
                   </button>
                 )}
                 {friendStatus === 'accepted' && (
-                  <button
-                    onClick={handleFriendRequest}
-                    className="px-8 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-500 transition-all flex items-center space-x-2"
-                  >
-                    <UserX className="w-5 h-5" />
-                    <span>Remove Friend</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={async () => {
+                        if (!currentUser || !profile) return;
+                        const conversationId = await getOrCreateConversation(currentUser.id, profile.id);
+                        if (conversationId) {
+                          navigate(`/inbox/${conversationId}`, {
+                            state: {
+                              otherUser: {
+                                id: profile.id,
+                                username: profile.username,
+                                full_name: profile.full_name,
+                                avatar_url: profile.avatar_url,
+                              },
+                            },
+                          });
+                        }
+                      }}
+                      className="px-8 py-3 bg-gradient-to-r from-pink-600 to-purple-600 text-white font-semibold rounded-lg hover:from-pink-500 hover:to-purple-500 transition-all flex items-center space-x-2"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      <span>Send Message</span>
+                    </button>
+                    <button
+                      onClick={handleFriendRequest}
+                      className="px-8 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-500 transition-all flex items-center space-x-2"
+                    >
+                      <UserX className="w-5 h-5" />
+                      <span>Remove Friend</span>
+                    </button>
+                  </>
                 )}
               </div>
             </div>

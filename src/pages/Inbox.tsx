@@ -1,0 +1,137 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { Conversation, getUserConversations, formatTimestamp, getUserStatus } from '../lib/messaging';
+import { MessageCircle, ArrowLeft, User } from 'lucide-react';
+import { displayUsername } from '../lib/username';
+
+export default function Inbox() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!user) return;
+
+    const loadConversations = async () => {
+      setLoading(true);
+      const convs = await getUserConversations(user.id);
+      setConversations(convs);
+
+      const userIds = convs.map((c) => c.other_user?.id).filter(Boolean) as string[];
+      const statuses = await Promise.all(userIds.map((id) => getUserStatus(id)));
+      const online = new Set(statuses.filter((s) => s?.is_online).map((s) => s!.user_id));
+      setOnlineUsers(online);
+
+      setLoading(false);
+    };
+
+    loadConversations();
+  }, [user]);
+
+  const handleConversationClick = (conversation: Conversation) => {
+    if (conversation.other_user) {
+      navigate(`/inbox/${conversation.id}`, {
+        state: { otherUser: conversation.other_user },
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="flex items-center gap-4 mb-8">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+            >
+              <ArrowLeft className="w-6 h-6 text-white" />
+            </button>
+            <h1 className="text-3xl font-black text-white">Messages</h1>
+          </div>
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="flex items-center gap-4 mb-8">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+          >
+            <ArrowLeft className="w-6 h-6 text-white" />
+          </button>
+          <h1 className="text-3xl font-black text-white">Messages</h1>
+        </div>
+
+        {conversations.length === 0 ? (
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-12 text-center">
+            <MessageCircle className="w-16 h-16 text-white/30 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-white mb-2">No messages yet</h2>
+            <p className="text-gray-300">Start chatting with your friends!</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {conversations.map((conversation) => (
+              <button
+                key={conversation.id}
+                onClick={() => handleConversationClick(conversation)}
+                className="w-full bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4 hover:bg-white/10 transition-all text-left group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="relative flex-shrink-0">
+                    {conversation.other_user?.avatar_url ? (
+                      <img
+                        src={conversation.other_user.avatar_url}
+                        alt={conversation.other_user.username}
+                        className="w-14 h-14 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                        <User className="w-7 h-7 text-white" />
+                      </div>
+                    )}
+                    {conversation.other_user && onlineUsers.has(conversation.other_user.id) && (
+                      <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-900"></div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-bold text-white text-lg truncate">
+                        {conversation.other_user?.full_name ||
+                          displayUsername(conversation.other_user?.username || '')}
+                      </h3>
+                      <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
+                        {formatTimestamp(conversation.last_message_at)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-gray-300 truncate">
+                        {conversation.last_message_preview || 'No messages yet'}
+                      </p>
+                      {conversation.unread_count && conversation.unread_count > 0 && (
+                        <span className="ml-2 flex-shrink-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                          {conversation.unread_count}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
