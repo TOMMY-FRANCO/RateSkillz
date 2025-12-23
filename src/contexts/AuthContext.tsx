@@ -21,6 +21,8 @@ export interface Profile {
   created_at?: string;
   updated_at?: string;
   last_active?: string;
+  terms_accepted_at?: string;
+  username_customized?: boolean;
 }
 
 export function isUserOnline(lastActive?: string): boolean {

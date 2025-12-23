@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, LogOut, User, Users, Bell } from 'lucide-react';
+import { ArrowLeft, LogOut, User, Users, Bell, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Profile } from '../contexts/AuthContext';
 import OnlineStatus from '../components/OnlineStatus';
@@ -191,7 +191,19 @@ export default function Settings() {
           </div>
 
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-white mb-4">About</h2>
+            <h2 className="text-xl font-bold text-white mb-4">Legal & About</h2>
+            <div className="space-y-3 mb-4">
+              <button
+                onClick={() => navigate('/terms')}
+                className="w-full flex items-center gap-3 p-4 bg-gray-800 hover:bg-gray-750 border border-gray-700 hover:border-cyan-500/50 rounded-lg transition-all cursor-pointer text-left"
+              >
+                <FileText className="w-5 h-5 text-cyan-400" />
+                <div>
+                  <p className="text-white font-semibold">Terms of Service</p>
+                  <p className="text-gray-400 text-sm">Review our terms and policies</p>
+                </div>
+              </button>
+            </div>
             <p className="text-gray-400 text-sm">
               RatingSkill® - Create your personalized RatingSkill® card and get rated by friends.
             </p>

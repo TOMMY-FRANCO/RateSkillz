@@ -18,6 +18,7 @@ import { CheckoutSuccess } from './pages/CheckoutSuccess';
 import TradingDashboard from './pages/TradingDashboard';
 import Inbox from './pages/Inbox';
 import Chat from './pages/Chat';
+import TermsOfService from './pages/TermsOfService';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -173,6 +174,8 @@ function App() {
             }
           />
           <Route path="/card/:username" element={<PublicCard />} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

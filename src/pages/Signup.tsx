@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
 
 export default function Signup() {
@@ -8,6 +8,7 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
@@ -26,6 +27,12 @@ export default function Signup() {
 
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
+      setLoading(false);
+      return;
+    }
+
+    if (!termsAccepted) {
+      setError('You must accept the Terms of Service to create an account');
       setLoading(false);
       return;
     }
@@ -116,6 +123,28 @@ export default function Signup() {
               />
               <p className="mt-1 text-xs text-gray-500">Minimum 6 characters</p>
             </div>
+          </div>
+
+          <div>
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="w-5 h-5 mt-0.5 rounded border-2 border-gray-600 bg-gray-800 checked:bg-cyan-600 checked:border-cyan-600 cursor-pointer"
+              />
+              <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                I agree to the{' '}
+                <Link
+                  to="/terms"
+                  target="_blank"
+                  className="text-cyan-400 hover:text-cyan-300 underline"
+                >
+                  Terms of Service
+                </Link>
+                {' '}and understand that virtual coins have no real-world value and cannot be withdrawn or exchanged for money.
+              </span>
+            </label>
           </div>
 
           {error && (

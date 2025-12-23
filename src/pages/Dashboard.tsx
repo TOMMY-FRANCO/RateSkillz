@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import PlayerCard, { UserStats } from '../components/PlayerCard';
 import OnlineStatus from '../components/OnlineStatus';
 import FirstTimeUsernamePrompt from '../components/FirstTimeUsernamePrompt';
+import TermsAcceptanceModal from '../components/TermsAcceptanceModal';
 import { CoinBalance } from '../components/CoinBalance';
 import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -19,6 +20,7 @@ export default function Dashboard() {
   const [rank, setRank] = useState<{ position: number; total: number } | undefined>();
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [showUsernamePrompt, setShowUsernamePrompt] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const unreadMessagesCount = useUnreadMessages();
 
   useEffect(() => {
@@ -27,7 +29,9 @@ export default function Dashboard() {
       calculateRank();
       fetchPendingRequests();
 
-      if (!profile.username_customized) {
+      if (!profile.terms_accepted_at) {
+        setShowTermsModal(true);
+      } else if (!profile.username_customized) {
         setShowUsernamePrompt(true);
       }
     }
@@ -347,7 +351,16 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {showUsernamePrompt && (
+      {showTermsModal && (
+        <TermsAcceptanceModal
+          onAccept={() => {
+            setShowTermsModal(false);
+            window.location.reload();
+          }}
+        />
+      )}
+
+      {showUsernamePrompt && !showTermsModal && (
         <FirstTimeUsernamePrompt
           onComplete={() => setShowUsernamePrompt(false)}
         />

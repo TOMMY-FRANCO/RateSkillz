@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Star } from 'lucide-react';
 
 export default function Landing() {
@@ -118,6 +118,14 @@ export default function Landing() {
             <p className="text-gray-400 text-sm mb-2">
               Turn Your Skills Into Stats
             </p>
+            <div className="flex justify-center gap-4 mb-2">
+              <Link
+                to="/terms"
+                className="text-gray-400 hover:text-cyan-400 text-sm transition-colors"
+              >
+                Terms of Service
+              </Link>
+            </div>
             <p className="text-gray-500 text-xs">
               © {new Date().getFullYear()} RatingSkill.com - All rights reserved.
             </p>
