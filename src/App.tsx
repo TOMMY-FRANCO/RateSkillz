@@ -16,6 +16,7 @@ import WatchAd from './pages/WatchAd';
 import { Store } from './pages/Store';
 import { CheckoutSuccess } from './pages/CheckoutSuccess';
 import TradingDashboard from './pages/TradingDashboard';
+import BattleMode from './pages/BattleMode';
 import Inbox from './pages/Inbox';
 import Chat from './pages/Chat';
 import TermsOfService from './pages/TermsOfService';
@@ -146,6 +147,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <TradingDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/battle-mode"
+            element={
+              <ProtectedRoute>
+                <BattleMode />
               </ProtectedRoute>
             }
           />

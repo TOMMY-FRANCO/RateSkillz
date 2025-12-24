@@ -138,6 +138,14 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
                   </div>
                 </div>
               )}
+              {profile.is_manager && (
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-orange-500 rounded-full blur-sm"></div>
+                  <div className="relative bg-gradient-to-r from-red-500 via-orange-500 to-red-600 rounded-full w-10 h-10 flex items-center justify-center border-2 border-yellow-300 shadow-lg mx-auto">
+                    <span className="text-white font-black text-xl drop-shadow-lg">M</span>
+                  </div>
+                </div>
+              )}
               {rank && (
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg blur-sm"></div>
