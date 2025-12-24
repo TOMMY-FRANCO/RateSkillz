@@ -19,74 +19,88 @@ export default function TransactionHistory() {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const { balance: currentBalance } = useCoinBalance();
+  const { balance: currentBalance, loading: balanceLoading } = useCoinBalance();
   const [balanceValidation, setBalanceValidation] = useState<{ isValid: boolean; message: string } | null>(null);
 
   useEffect(() => {
     loadTransactions();
   }, []);
 
+  useEffect(() => {
+    if (transactions.length > 0 && !balanceLoading) {
+      validateBalance();
+    }
+  }, [currentBalance, transactions, balanceLoading]);
+
   async function loadTransactions() {
     try {
       const txs = await getTransactions();
       console.log('[TransactionHistory] Loaded transactions:', txs.length);
       console.log('[TransactionHistory] First transaction:', txs[0]);
-      console.log('[TransactionHistory] Current balance:', currentBalance);
 
       setTransactions(txs);
-
-      // Validate that transaction sum matches current balance
-      if (txs.length > 0 && currentBalance !== undefined && currentBalance !== null) {
-        const amounts = txs.map(tx => {
-          const amount = typeof tx.amount === 'string' ? parseFloat(tx.amount) : tx.amount;
-          const parsed = isNaN(amount) ? 0 : amount;
-          console.log(`[TransactionHistory] TX ${tx.id.substring(0, 8)}: amount=${tx.amount} (${typeof tx.amount}), parsed=${parsed}`);
-          return parsed;
-        });
-
-        const transactionSum = amounts.reduce((sum, amount) => sum + amount, 0);
-
-        console.log('[TransactionHistory] Validation:', {
-          transactionCount: txs.length,
-          transactionSum,
-          currentBalance,
-          typeoCurrentBalance: typeof currentBalance,
-          rawDiscrepancy: currentBalance - transactionSum,
-        });
-
-        const discrepancy = Math.abs(currentBalance - transactionSum);
-
-        console.log('[TransactionHistory] Discrepancy:', discrepancy);
-
-        if (discrepancy < 0.01) {
-          console.log('[TransactionHistory] Balance VERIFIED');
-          setBalanceValidation({ isValid: true, message: 'Balance verified' });
-        } else {
-          console.error('[TransactionHistory] DISCREPANCY DETECTED:', {
-            transactionSum,
-            currentBalance,
-            discrepancy,
-            transactionCount: txs.length,
-            firstTx: txs[0],
-            lastTx: txs[txs.length - 1],
-            allAmounts: amounts,
-          });
-          setBalanceValidation({
-            isValid: false,
-            message: `Transaction Balance discrepancy detected: ${discrepancy.toFixed(2)} coins difference`
-          });
-        }
-      } else {
-        console.log('[TransactionHistory] Skipping validation:', {
-          hasTxs: txs.length > 0,
-          hasBalance: currentBalance !== undefined && currentBalance !== null,
-          currentBalance,
-        });
-      }
     } catch (error) {
       console.error('[TransactionHistory] Failed to load transactions:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  function validateBalance() {
+    console.log('[TransactionHistory] Running validation...');
+    console.log('[TransactionHistory] Current balance:', currentBalance);
+    console.log('[TransactionHistory] Balance loading:', balanceLoading);
+
+    if (transactions.length === 0) {
+      console.log('[TransactionHistory] No transactions to validate');
+      return;
+    }
+
+    if (balanceLoading) {
+      console.log('[TransactionHistory] Balance still loading, skipping validation');
+      return;
+    }
+
+    const amounts = transactions.map(tx => {
+      const amount = typeof tx.amount === 'string' ? parseFloat(tx.amount) : tx.amount;
+      const parsed = isNaN(amount) ? 0 : amount;
+      console.log(`[TransactionHistory] TX ${tx.id.substring(0, 8)}: amount=${tx.amount} (${typeof tx.amount}), parsed=${parsed}`);
+      return parsed;
+    });
+
+    const transactionSum = amounts.reduce((sum, amount) => sum + amount, 0);
+
+    console.log('[TransactionHistory] Validation:', {
+      transactionCount: transactions.length,
+      transactionSum,
+      currentBalance,
+      typeoCurrentBalance: typeof currentBalance,
+      rawDiscrepancy: currentBalance - transactionSum,
+    });
+
+    const discrepancy = Math.abs(currentBalance - transactionSum);
+
+    console.log('[TransactionHistory] Discrepancy:', discrepancy);
+
+    const isBalanceVerified = discrepancy < 0.01;
+
+    if (isBalanceVerified) {
+      console.log('[TransactionHistory] Balance VERIFIED ✓');
+      setBalanceValidation({ isValid: true, message: 'Balance verified' });
+    } else {
+      console.error('[TransactionHistory] DISCREPANCY DETECTED ✗', {
+        transactionSum,
+        currentBalance,
+        discrepancy,
+        transactionCount: transactions.length,
+        firstTx: transactions[0],
+        lastTx: transactions[transactions.length - 1],
+        allAmounts: amounts,
+      });
+      setBalanceValidation({
+        isValid: false,
+        message: `Transaction Balance discrepancy detected: ${discrepancy.toFixed(2)} coins difference`
+      });
     }
   }
 
