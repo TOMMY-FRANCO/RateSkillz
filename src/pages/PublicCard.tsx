@@ -7,6 +7,7 @@ import { Eye, Users, ThumbsUp, Coins, Loader2 } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
 import { getUserStats } from '../lib/ratings';
 import { formatCoinBalance, formatCoinBalanceFull } from '../lib/formatBalance';
+import { updateMetaTags, getAbsoluteImageUrl, getProfileCardUrl } from '../lib/metaTags';
 
 export default function PublicCard() {
   const { username } = useParams<{ username: string }>();
@@ -83,6 +84,14 @@ export default function PublicCard() {
       console.log(`Coin balance for ${profileData.username}:`, balanceData?.balance || 0);
       setCoinBalance(balanceData?.balance || 0);
       setBalanceLoading(false);
+
+      updateMetaTags({
+        title: `${profileData.username}'s Football Player Card - RatingSkill`,
+        description: `Check out ${profileData.full_name || profileData.username}'s Card! Overall Rating: ${profileData.overall_rating || 'Not Rated'}. Rate me on RatingSkill!`,
+        image: getAbsoluteImageUrl(profileData.profile_picture_url),
+        url: getProfileCardUrl(profileData.username),
+        type: 'profile',
+      });
 
       setLoading(false);
     } catch (error) {

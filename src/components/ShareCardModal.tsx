@@ -1,5 +1,6 @@
 import { X, Twitter, MessageCircle, Facebook, Instagram, Link2, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
+import { getProfileCardUrl } from '../lib/metaTags';
 
 interface ShareCardModalProps {
   isOpen: boolean;
@@ -11,8 +12,8 @@ interface ShareCardModalProps {
 
 export default function ShareCardModal({ isOpen, onClose, username, fullName, overallRating }: ShareCardModalProps) {
   const [copied, setCopied] = useState(false);
-  const shareUrl = `${window.location.origin}/card/${username}`;
-  const shareText = `Check out ${fullName}'s Football Player Card! Overall Rating: ${overallRating}. Rate me on PlayerCard!`;
+  const shareUrl = getProfileCardUrl(username);
+  const shareText = `Check out ${fullName}'s Football Player Card! Overall Rating: ${overallRating}. Rate me on RatingSkill!`;
 
   const handleCopyLink = async () => {
     try {
