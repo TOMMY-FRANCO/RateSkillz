@@ -131,10 +131,10 @@ async function awardCommentCoins(supabase: any, userId: string, body: any) {
   }
 
   return new Response(
-    JSON.stringify({ 
-      success: true, 
-      earned: true, 
-      amount: 1.0,
+    JSON.stringify({
+      success: true,
+      earned: true,
+      amount: 0.1,
       message: data.message
     }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

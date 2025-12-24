@@ -91,27 +91,3 @@ export const COIN_PACKAGES: CoinPackage[] = [
   { id: 'premium', price: 20.00, coins: 2000 },
   { id: 'ultimate', price: 50.00, coins: 5000 },
 ];
-
-export interface PageViewRewardStats {
-  total_views_received: number;
-  total_coins_earned: number;
-  unique_viewers: number;
-}
-
-export async function getPageViewRewardStats(userId: string): Promise<PageViewRewardStats | null> {
-  try {
-    const { data, error } = await supabase.rpc('get_page_view_reward_stats', {
-      p_user_id: userId
-    });
-
-    if (error) {
-      console.error('Error fetching page view reward stats:', error);
-      return null;
-    }
-
-    return data && data.length > 0 ? data[0] : null;
-  } catch (error) {
-    console.error('Exception fetching page view reward stats:', error);
-    return null;
-  }
-}
