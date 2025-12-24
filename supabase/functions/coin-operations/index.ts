@@ -178,24 +178,47 @@ async function awardAdCoins(supabase: any, userId: string) {
 async function getTransactions(supabase: any, userId: string) {
   const { data, error } = await supabase
     .from('coin_transactions')
-    .select('*')
+    .select(`
+      id,
+      user_id,
+      amount::numeric,
+      transaction_type,
+      description,
+      payment_provider,
+      payment_amount::numeric,
+      created_at,
+      balance_after::numeric
+    `)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
     .limit(50);
 
   if (error) {
+    console.error('Error fetching transactions:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
-  const transactions = (data || []).map((tx: any) => ({
-    ...tx,
-    amount: parseFloat(tx.amount || 0),
-    balance_after: tx.balance_after ? parseFloat(tx.balance_after) : undefined,
-    payment_amount: tx.payment_amount ? parseFloat(tx.payment_amount) : undefined,
-  }));
+  const transactions = (data || []).map((tx: any) => {
+    const parsedTx = {
+      id: tx.id,
+      user_id: tx.user_id,
+      amount: typeof tx.amount === 'string' ? parseFloat(tx.amount) : (tx.amount || 0),
+      transaction_type: tx.transaction_type,
+      description: tx.description,
+      payment_provider: tx.payment_provider,
+      payment_amount: tx.payment_amount ? (typeof tx.payment_amount === 'string' ? parseFloat(tx.payment_amount) : tx.payment_amount) : undefined,
+      created_at: tx.created_at,
+      balance_after: tx.balance_after ? (typeof tx.balance_after === 'string' ? parseFloat(tx.balance_after) : tx.balance_after) : undefined,
+    };
+    return parsedTx;
+  });
+
+  console.log(`Fetched ${transactions.length} transactions for user ${userId}`);
+  console.log('Sample transaction:', transactions[0]);
+  console.log('Transaction sum:', transactions.reduce((sum, tx) => sum + tx.amount, 0));
 
   return new Response(
     JSON.stringify({ transactions }),

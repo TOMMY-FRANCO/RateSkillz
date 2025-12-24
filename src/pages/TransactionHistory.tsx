@@ -29,36 +29,62 @@ export default function TransactionHistory() {
   async function loadTransactions() {
     try {
       const txs = await getTransactions();
+      console.log('[TransactionHistory] Loaded transactions:', txs.length);
+      console.log('[TransactionHistory] First transaction:', txs[0]);
+      console.log('[TransactionHistory] Current balance:', currentBalance);
+
       setTransactions(txs);
 
       // Validate that transaction sum matches current balance
       if (txs.length > 0 && currentBalance !== undefined && currentBalance !== null) {
-        const transactionSum = txs.reduce((sum: number, tx: Transaction) => {
+        const amounts = txs.map(tx => {
           const amount = typeof tx.amount === 'string' ? parseFloat(tx.amount) : tx.amount;
-          return sum + (isNaN(amount) ? 0 : amount);
-        }, 0);
+          const parsed = isNaN(amount) ? 0 : amount;
+          console.log(`[TransactionHistory] TX ${tx.id.substring(0, 8)}: amount=${tx.amount} (${typeof tx.amount}), parsed=${parsed}`);
+          return parsed;
+        });
+
+        const transactionSum = amounts.reduce((sum, amount) => sum + amount, 0);
+
+        console.log('[TransactionHistory] Validation:', {
+          transactionCount: txs.length,
+          transactionSum,
+          currentBalance,
+          typeoCurrentBalance: typeof currentBalance,
+          rawDiscrepancy: currentBalance - transactionSum,
+        });
 
         const discrepancy = Math.abs(currentBalance - transactionSum);
 
+        console.log('[TransactionHistory] Discrepancy:', discrepancy);
+
         if (discrepancy < 0.01) {
+          console.log('[TransactionHistory] Balance VERIFIED');
           setBalanceValidation({ isValid: true, message: 'Balance verified' });
         } else {
-          setBalanceValidation({
-            isValid: false,
-            message: `Transaction Balance discrepancy detected: ${discrepancy.toFixed(2)} coins difference`
-          });
-          console.error('Balance mismatch:', {
+          console.error('[TransactionHistory] DISCREPANCY DETECTED:', {
             transactionSum,
             currentBalance,
             discrepancy,
             transactionCount: txs.length,
             firstTx: txs[0],
-            lastTx: txs[txs.length - 1]
+            lastTx: txs[txs.length - 1],
+            allAmounts: amounts,
+          });
+          setBalanceValidation({
+            isValid: false,
+            message: `Transaction Balance discrepancy detected: ${discrepancy.toFixed(2)} coins difference`
           });
         }
+      } else {
+        console.log('[TransactionHistory] Skipping validation:', {
+          hasTxs: txs.length > 0,
+          hasBalance: currentBalance !== undefined && currentBalance !== null,
+          currentBalance,
+        });
       }
     } catch (error) {
-      console.error('Failed to load transactions:', error);
+      console.error('[TransactionHistory] Failed to load transactions:', error);
     } finally {
       setLoading(false);
     }
