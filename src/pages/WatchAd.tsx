@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Coins, Tv, CheckCircle, Clock } from 'lucide-react';
-import { awardAdCoins, getCoinBalance } from '../lib/coins';
+import { ArrowLeft, Coins, Tv, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { awardAdCoins, getCoinBalance, canWatchAdToday } from '../lib/coins';
 
 export default function WatchAd() {
   const navigate = useNavigate();
@@ -11,9 +11,13 @@ export default function WatchAd() {
   const [error, setError] = useState<string | null>(null);
   const [earning, setEarning] = useState(false);
   const [balance, setBalance] = useState<number>(0);
+  const [canWatch, setCanWatch] = useState<boolean | null>(null);
+  const [checkingAvailability, setCheckingAvailability] = useState(true);
+  const [nextAvailable, setNextAvailable] = useState<string | null>(null);
 
   useEffect(() => {
     loadBalance();
+    checkAdAvailability();
   }, []);
 
   useEffect(() => {
@@ -34,7 +38,29 @@ export default function WatchAd() {
     }
   }
 
+  async function checkAdAvailability() {
+    setCheckingAvailability(true);
+    try {
+      const result = await canWatchAdToday();
+      setCanWatch(result.can_watch);
+      if (!result.can_watch) {
+        setError('You have already watched an ad today. Come back tomorrow at midnight GMT!');
+        setNextAvailable(result.next_available_gmt || null);
+      }
+    } catch (error) {
+      console.error('Failed to check ad availability:', error);
+      setCanWatch(true);
+    } finally {
+      setCheckingAvailability(false);
+    }
+  }
+
   async function startAd() {
+    if (!canWatch) {
+      setError('You have already watched an ad today. Come back tomorrow at midnight GMT!');
+      return;
+    }
+
     setWatching(true);
     setError(null);
     setCountdown(30);
@@ -48,12 +74,14 @@ export default function WatchAd() {
       const result = await awardAdCoins();
       if (result.earned) {
         setCompleted(true);
+        setCanWatch(false);
         await loadBalance();
       } else {
-        setError('Already watched ad today. Come back tomorrow!');
+        setError(result.message || 'Already watched ad today. Come back tomorrow at midnight GMT!');
+        setCanWatch(false);
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to award coins');
+      setError(err.message || 'Failed to award coins. Please try again.');
     } finally {
       setEarning(false);
     }
@@ -84,7 +112,14 @@ export default function WatchAd() {
           </div>
         </div>
 
-        {!watching && !completed && !error && (
+        {checkingAvailability && (
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 border border-white/20 text-center">
+            <div className="animate-spin w-12 h-12 border-4 border-white/20 border-t-white rounded-full mx-auto mb-4"></div>
+            <p className="text-white text-lg">Checking ad availability...</p>
+          </div>
+        )}
+
+        {!checkingAvailability && !watching && !completed && !error && canWatch && (
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 border border-white/20 text-center">
             <div className="mb-8">
               <div className="inline-flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl shadow-lg mb-4">
@@ -176,24 +211,42 @@ export default function WatchAd() {
 
         {error && (
           <div className="bg-red-500/10 backdrop-blur-sm rounded-2xl p-12 border border-red-500/20 text-center">
-            <div className="text-6xl mb-4">⏰</div>
+            <div className="w-24 h-24 mx-auto mb-6 bg-red-500/20 rounded-full flex items-center justify-center">
+              <AlertCircle className="w-12 h-12 text-red-400" />
+            </div>
             <h2 className="text-2xl font-bold text-white mb-2">Already Watched Today</h2>
-            <p className="text-white/60 mb-4">{error}</p>
+            <p className="text-white/60 mb-6">{error}</p>
 
             <div className="bg-white/5 rounded-xl p-6 mb-8 border border-white/10">
               <p className="text-white/80 text-sm mb-2">Ad viewing resets daily at:</p>
               <p className="text-cyan-400 text-2xl font-bold mb-2">00:00 GMT (Midnight UK Time)</p>
-              <p className="text-white/60 text-xs">
+              <p className="text-white/60 text-xs mb-3">
                 Current GMT time: {new Date().toLocaleString('en-GB', { timeZone: 'UTC', hour12: false })}
               </p>
+              {nextAvailable && (
+                <p className="text-green-400 text-sm">
+                  Next available: {new Date(nextAvailable).toLocaleString('en-GB', { timeZone: 'UTC', hour12: false })} GMT
+                </p>
+              )}
             </div>
 
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="px-6 py-3 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition-all"
-            >
-              Back to Dashboard
-            </button>
+            <div className="space-x-4">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="px-6 py-3 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition-all"
+              >
+                Back to Dashboard
+              </button>
+              <button
+                onClick={() => {
+                  setError(null);
+                  checkAdAvailability();
+                }}
+                className="px-6 py-3 bg-gradient-to-r from-blue-400 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+              >
+                Check Again
+              </button>
+            </div>
           </div>
         )}
       </div>

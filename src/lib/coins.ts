@@ -47,7 +47,20 @@ export async function awardCommentCoins(profileUserId: string, commentId: string
   return await response.json();
 }
 
-export async function awardAdCoins(): Promise<{ earned: boolean; amount: number }> {
+export async function canWatchAdToday(): Promise<{ can_watch: boolean; message: string; next_available_gmt?: string }> {
+  const { data, error } = await supabase.rpc('can_watch_ad_today', {
+    p_user_id: (await supabase.auth.getUser()).data.user?.id
+  });
+
+  if (error) {
+    console.error('Error checking ad availability:', error);
+    return { can_watch: false, message: 'Error checking availability' };
+  }
+
+  return data;
+}
+
+export async function awardAdCoins(): Promise<{ earned: boolean; amount: number; message?: string; error?: string }> {
   const headers = await getAuthHeaders();
   const response = await fetch(`${COIN_OPERATIONS_URL}/award-ad`, {
     method: 'POST',
