@@ -2,10 +2,10 @@
  * Card Tier System
  *
  * Defines tier badges based on overall player rating.
- * Each tier has a unique name, color scheme, and visual effects.
+ * Each tier has a unique name, colour scheme, and visual effects.
  *
  * Tier Structure:
- * - Under 60: Default (no special color)
+ * - Under 60: Default (no special colour)
  * - 60-69: EXCEPTIONAL (Metallic Blue)
  * - 70-79: REMARKABLE (Metallic Rich Red)
  * - 80-89: UNIQUE (Metallic Silver)

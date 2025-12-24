@@ -111,7 +111,7 @@ export default function Shop() {
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">Comment Rewards</h3>
                   <p className="text-white/60 text-sm mb-2">
-                    Earn <span className="text-yellow-400 font-semibold">1 coin</span> for your first comment on each player's profile
+                    Earn <span className="text-yellow-400 font-semibold">0.1 coin</span> for your first comment on each player's profile
                   </p>
                   <ul className="text-white/40 text-xs space-y-1">
                     <li>• Only first comment per profile</li>
@@ -127,12 +127,12 @@ export default function Shop() {
                   <span className="text-2xl">📺</span>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-2">Watch Ads</h3>
+                  <h3 className="text-lg font-semibold text-white mb-2">Watch Adverts</h3>
                   <p className="text-white/60 text-sm mb-2">
-                    Earn <span className="text-yellow-400 font-semibold">10 coins</span> per ad viewed
+                    Earn <span className="text-yellow-400 font-semibold">10 coins</span> per advert viewed
                   </p>
                   <ul className="text-white/40 text-xs space-y-1">
-                    <li>• One ad per day limit</li>
+                    <li>• One advert per day limit</li>
                     <li>• Quick 30-second videos</li>
                   </ul>
                 </div>

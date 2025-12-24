@@ -44,7 +44,7 @@ export default function WatchAd() {
       const result = await canWatchAdToday();
       setCanWatch(result.can_watch);
       if (!result.can_watch) {
-        setError('You have already watched an ad today. Come back tomorrow at midnight GMT!');
+        setError('You have already watched an advert today. Come back tomorrow at midnight GMT!');
         setNextAvailable(result.next_available_gmt || null);
       }
     } catch (error) {
@@ -77,7 +77,7 @@ export default function WatchAd() {
         setCanWatch(false);
         await loadBalance();
       } else {
-        setError(result.message || 'Already watched ad today. Come back tomorrow at midnight GMT!');
+        setError(result.message || 'Already watched advert today. Come back tomorrow at midnight GMT!');
         setCanWatch(false);
       }
     } catch (err: any) {
@@ -103,7 +103,7 @@ export default function WatchAd() {
             <Tv className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">Watch & Earn</h1>
-          <p className="text-white/60 text-lg">Watch a short ad and earn 10 coins</p>
+          <p className="text-white/60 text-lg">Watch a short advert and earn 10 coins</p>
 
           <div className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
             <Coins className="w-5 h-5 text-yellow-400" />
@@ -115,7 +115,7 @@ export default function WatchAd() {
         {checkingAvailability && (
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 border border-white/20 text-center">
             <div className="animate-spin w-12 h-12 border-4 border-white/20 border-t-white rounded-full mx-auto mb-4"></div>
-            <p className="text-white text-lg">Checking ad availability...</p>
+            <p className="text-white text-lg">Checking advert availability...</p>
           </div>
         )}
 
@@ -126,7 +126,7 @@ export default function WatchAd() {
                 <Coins className="w-8 h-8 text-white" />
                 <span className="text-3xl font-bold text-white">+10 coins</span>
               </div>
-              <p className="text-white/60 mt-4">Watch a 30-second ad to earn coins</p>
+              <p className="text-white/60 mt-4">Watch a 30-second advert to earn coins</p>
             </div>
 
             <button
@@ -140,7 +140,7 @@ export default function WatchAd() {
             </button>
 
             <div className="mt-6 space-y-2">
-              <p className="text-white/40 text-sm">Limit: One ad per day</p>
+              <p className="text-white/40 text-sm">Limit: One advert per day</p>
               <p className="text-white/30 text-xs">Resets daily at midnight GMT (00:00 UK time)</p>
             </div>
           </div>
@@ -218,7 +218,7 @@ export default function WatchAd() {
             <p className="text-white/60 mb-6">{error}</p>
 
             <div className="bg-white/5 rounded-xl p-6 mb-8 border border-white/10">
-              <p className="text-white/80 text-sm mb-2">Ad viewing resets daily at:</p>
+              <p className="text-white/80 text-sm mb-2">Advert viewing resets daily at:</p>
               <p className="text-cyan-400 text-2xl font-bold mb-2">00:00 GMT (Midnight UK Time)</p>
               <p className="text-white/60 text-xs mb-3">
                 Current GMT time: {new Date().toLocaleString('en-GB', { timeZone: 'UTC', hour12: false })}

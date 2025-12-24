@@ -13,12 +13,12 @@ export function CoinPoolDisplay() {
     );
   }
 
-  const distributedFormatted = stats.distributed_coins.toLocaleString('en-US', {
+  const distributedFormatted = stats.distributed_coins.toLocaleString('en-GB', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
-  const totalFormatted = stats.total_coins.toLocaleString('en-US');
+  const totalFormatted = stats.total_coins.toLocaleString('en-GB');
 
   const progressPercentage = (stats.distributed_coins / stats.total_coins) * 100;
 
@@ -62,7 +62,7 @@ export function CoinPoolDisplay() {
         <div className="flex justify-between items-baseline text-xs text-gray-500">
           <span>Total supply: {totalFormatted}</span>
           <span className="font-medium">
-            {stats.remaining_coins.toLocaleString('en-US', {
+            {stats.remaining_coins.toLocaleString('en-GB', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}{' '}
@@ -71,7 +71,7 @@ export function CoinPoolDisplay() {
         </div>
 
         <p className="text-xs text-gray-500 italic pt-2 border-t border-gray-200">
-          Coins are distributed through ads, comments, and purchases. Once distributed, they circulate between users forever.
+          Coins are distributed through adverts, comments, and purchases. Once distributed, they circulate between users forever.
         </p>
       </div>
     </div>
