@@ -31,13 +31,7 @@ export default function BattleMode() {
 
     setLoading(true);
     const managerStatus = await checkManagerStatus(user.id);
-
-    if (!managerStatus) {
-      navigate('/dashboard');
-      return;
-    }
-
-    setIsManager(true);
+    setIsManager(managerStatus);
 
     const [cards, challenges, battles] = await Promise.all([
       getUserCards(user.id),
@@ -67,23 +61,6 @@ export default function BattleMode() {
     );
   }
 
-  if (!isManager) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Manager Status Required</h1>
-          <p className="text-gray-400 mb-6">You need to own 5+ cards to become a manager and access Battle Mode.</p>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="px-6 py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-bold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all"
-          >
-            Back to Dashboard
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   if (activeBattle) {
     return <BattleArena battle={activeBattle} onExit={() => { setActiveBattle(null); loadData(); }} />;
   }
@@ -105,15 +82,48 @@ export default function BattleMode() {
                 <h1 className="text-2xl font-bold text-white">Battle Mode</h1>
               </div>
             </div>
-            <div className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg">
-              <Trophy className="w-5 h-5 text-black" />
-              <span className="text-black font-bold">Manager</span>
-            </div>
+            {isManager && (
+              <div className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg">
+                <Trophy className="w-5 h-5 text-black" />
+                <span className="text-black font-bold">Manager</span>
+              </div>
+            )}
           </div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {!isManager && (
+          <div className="bg-gradient-to-r from-orange-900/40 to-red-900/40 border-2 border-orange-500/50 rounded-2xl p-6 mb-8">
+            <div className="flex items-start space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <Trophy className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-white mb-2">Upgrade to Manager</h3>
+                <p className="text-gray-300 mb-3">
+                  Collect 5 cards to unlock Battle Mode participation and earn rewards! You currently own {userCards.length} {userCards.length === 1 ? 'card' : 'cards'}.
+                </p>
+                <div className="flex items-center space-x-2">
+                  <div className="flex-1 bg-gray-800 rounded-full h-3 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-500"
+                      style={{ width: `${Math.min((userCards.length / 5) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-white font-bold text-sm">{userCards.length}/5</span>
+                </div>
+                <button
+                  onClick={() => navigate('/trading')}
+                  className="mt-4 px-6 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-lg hover:from-orange-400 hover:to-red-400 transition-all"
+                >
+                  Visit Card Trading
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6 mb-8">
           <h2 className="text-xl font-bold text-white mb-4">How Battle Mode Works</h2>
           <div className="grid md:grid-cols-3 gap-6 text-sm">
@@ -195,6 +205,7 @@ export default function BattleMode() {
             userCards={userCards}
             onRefresh={loadData}
             onBattleStart={handleBattleStart}
+            isManager={isManager}
           />
         )}
 
@@ -210,16 +221,21 @@ export default function BattleMode() {
         {activeTab === 'create' && (
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-8">
             <div className="text-center max-w-2xl mx-auto">
-              <Swords className="w-16 h-16 text-green-500 mx-auto mb-4" />
+              <Swords className={`w-16 h-16 mx-auto mb-4 ${isManager ? 'text-green-500' : 'text-gray-600'}`} />
               <h2 className="text-2xl font-bold text-white mb-4">Create a Battle Challenge</h2>
               <p className="text-gray-400 mb-6">
-                Select 5 cards from your collection and set your wager amount. Other managers will see your challenge and can accept it to battle.
+                {isManager
+                  ? 'Select 5 cards from your collection and set your wager amount. Other managers will see your challenge and can accept it to battle.'
+                  : 'Become a manager by collecting 5 cards to create battle challenges and compete with other managers.'
+                }
               </p>
               <button
                 onClick={handleCreateChallenge}
-                className="px-8 py-4 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-bold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all hover:scale-105 shadow-lg"
+                disabled={!isManager}
+                title={!isManager ? 'Collect 5 cards to become a manager and unlock this feature' : ''}
+                className="px-8 py-4 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-bold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                Select Cards & Create Challenge
+                {isManager ? 'Select Cards & Create Challenge' : 'Become a Manager to Create Challenges'}
               </button>
             </div>
           </div>

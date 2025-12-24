@@ -10,9 +10,10 @@ interface BattleChallengesListProps {
   userCards: any[];
   onRefresh: () => void;
   onBattleStart: (battle: Battle) => void;
+  isManager: boolean;
 }
 
-export default function BattleChallengesList({ challenges, userCards, onRefresh, onBattleStart }: BattleChallengesListProps) {
+export default function BattleChallengesList({ challenges, userCards, onRefresh, onBattleStart, isManager }: BattleChallengesListProps) {
   const { user } = useAuth();
   const { balance } = useCoinBalance();
   const [selectedChallenge, setSelectedChallenge] = useState<Battle | null>(null);
@@ -76,10 +77,13 @@ export default function BattleChallengesList({ challenges, userCards, onRefresh,
 
             <button
               onClick={() => setSelectedChallenge(challenge)}
-              disabled={balance < challenge.wager_amount}
+              disabled={!isManager || balance < challenge.wager_amount}
+              title={!isManager ? 'Collect 5 cards to become a manager and accept challenges' : balance < challenge.wager_amount ? 'Not enough coins' : ''}
               className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-bold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {balance < challenge.wager_amount
+              {!isManager
+                ? 'Become a Manager to Accept'
+                : balance < challenge.wager_amount
                 ? 'Insufficient Balance'
                 : 'Accept Challenge'}
             </button>

@@ -239,25 +239,27 @@ export default function Dashboard() {
             </div>
           </button>
 
-          {profile.is_manager && (
-            <button
-              onClick={() => navigate('/battle-mode')}
-              className="bg-gradient-to-br from-red-900/30 to-orange-900/30 border-2 border-red-600/50 rounded-xl p-6 hover:border-red-500 transition-all group cursor-pointer text-left w-full relative"
-            >
+          <button
+            onClick={() => navigate('/battle-mode')}
+            className="bg-gradient-to-br from-red-900/30 to-orange-900/30 border-2 border-red-600/50 rounded-xl p-6 hover:border-red-500 transition-all group cursor-pointer text-left w-full relative"
+          >
+            {profile.is_manager && (
               <span className="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-bold rounded">
                 MANAGER
               </span>
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Swords className="w-6 h-6 text-black" />
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold">Battle Mode</h3>
-                  <p className="text-gray-400 text-sm">Card battles & wagers</p>
-                </div>
+            )}
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Swords className="w-6 h-6 text-black" />
               </div>
-            </button>
-          )}
+              <div>
+                <h3 className="text-white font-semibold">Battle Mode</h3>
+                <p className="text-gray-400 text-sm">
+                  {profile.is_manager ? 'Card battles & wagers' : 'View battles & challenges'}
+                </p>
+              </div>
+            </div>
+          </button>
 
           <button
             onClick={() => navigate('/shop')}
