@@ -190,8 +190,15 @@ async function getTransactions(supabase: any, userId: string) {
     );
   }
 
+  const transactions = (data || []).map((tx: any) => ({
+    ...tx,
+    amount: parseFloat(tx.amount || 0),
+    balance_after: tx.balance_after ? parseFloat(tx.balance_after) : undefined,
+    payment_amount: tx.payment_amount ? parseFloat(tx.payment_amount) : undefined,
+  }));
+
   return new Response(
-    JSON.stringify({ transactions: data }),
+    JSON.stringify({ transactions }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }

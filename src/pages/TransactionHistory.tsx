@@ -32,8 +32,12 @@ export default function TransactionHistory() {
       setTransactions(txs);
 
       // Validate that transaction sum matches current balance
-      if (txs.length > 0 && currentBalance !== undefined) {
-        const transactionSum = txs.reduce((sum: number, tx: Transaction) => sum + tx.amount, 0);
+      if (txs.length > 0 && currentBalance !== undefined && currentBalance !== null) {
+        const transactionSum = txs.reduce((sum: number, tx: Transaction) => {
+          const amount = typeof tx.amount === 'string' ? parseFloat(tx.amount) : tx.amount;
+          return sum + (isNaN(amount) ? 0 : amount);
+        }, 0);
+
         const discrepancy = Math.abs(currentBalance - transactionSum);
 
         if (discrepancy < 0.01) {
@@ -41,9 +45,16 @@ export default function TransactionHistory() {
         } else {
           setBalanceValidation({
             isValid: false,
-            message: `Balance discrepancy detected: ${discrepancy.toFixed(2)} coins difference`
+            message: `Transaction Balance discrepancy detected: ${discrepancy.toFixed(2)} coins difference`
           });
-          console.error('Balance mismatch:', { transactionSum, currentBalance, discrepancy });
+          console.error('Balance mismatch:', {
+            transactionSum,
+            currentBalance,
+            discrepancy,
+            transactionCount: txs.length,
+            firstTx: txs[0],
+            lastTx: txs[txs.length - 1]
+          });
         }
       }
     } catch (error) {
