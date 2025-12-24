@@ -3,6 +3,9 @@ import { supabase } from './supabase';
 export interface ViewTrackingResult {
   success: boolean;
   counted: boolean;
+  coins_awarded?: boolean;
+  coin_amount?: string;
+  new_balance?: string;
   new_count?: number;
   current_count?: number;
   message?: string;
@@ -18,6 +21,7 @@ export async function recordUniqueProfileView(
       return {
         success: true,
         counted: false,
+        coins_awarded: false,
         message: 'Anonymous views are not counted'
       };
     }
@@ -26,11 +30,12 @@ export async function recordUniqueProfileView(
       return {
         success: true,
         counted: false,
+        coins_awarded: false,
         message: 'Self-views are not counted'
       };
     }
 
-    const { data, error } = await supabase.rpc('record_unique_profile_view', {
+    const { data, error } = await supabase.rpc('record_unique_profile_view_with_reward', {
       p_profile_id: profileId,
       p_viewer_id: viewerId
     });
@@ -40,6 +45,7 @@ export async function recordUniqueProfileView(
       return {
         success: false,
         counted: false,
+        coins_awarded: false,
         error: error.message
       };
     }
@@ -50,6 +56,7 @@ export async function recordUniqueProfileView(
     return {
       success: false,
       counted: false,
+      coins_awarded: false,
       error: error instanceof Error ? error.message : 'Unknown error'
     };
   }

@@ -78,6 +78,7 @@ export default function ProfileView() {
   const [balanceLoading, setBalanceLoading] = useState(true);
   const [commentsCount, setCommentsCount] = useState<number>(0);
   const [userPresenceData, setUserPresenceData] = useState<string | undefined>();
+  const [viewRewardNotification, setViewRewardNotification] = useState<string | null>(null);
 
   const isOwner = currentUser?.id === profile?.id;
   const isEditingEnabled = !isPreviewMode && !isOwner;
@@ -126,6 +127,12 @@ export default function ProfileView() {
         recordUniqueProfileView(profileData.id, currentUser.id).then((viewResult) => {
           if (viewResult.success && viewResult.counted && viewResult.new_count) {
             setViewsCount(viewResult.new_count);
+
+            if (viewResult.coins_awarded && viewResult.coin_amount) {
+              const amount = parseFloat(viewResult.coin_amount);
+              setViewRewardNotification(`${profileData.username} earned ${amount} coins from your view!`);
+              setTimeout(() => setViewRewardNotification(null), 5000);
+            }
 
             supabase.from('notifications').insert({
               user_id: profileData.id,
@@ -658,6 +665,19 @@ export default function ProfileView() {
                 <X className="w-4 h-4" />
                 <span>Exit Preview</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewRewardNotification && (
+        <div className="bg-gradient-to-r from-green-600 to-emerald-600 border-b border-green-500">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex items-center justify-center space-x-3">
+              <div className="flex items-center justify-center w-8 h-8 bg-white/20 rounded-full animate-pulse">
+                <Coins className="w-4 h-4 text-white" />
+              </div>
+              <p className="text-white font-semibold">{viewRewardNotification}</p>
             </div>
           </div>
         </div>
