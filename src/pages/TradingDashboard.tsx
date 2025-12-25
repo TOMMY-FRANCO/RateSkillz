@@ -17,10 +17,11 @@ import {
   type CardOffer
 } from '../lib/cardTrading';
 import { useCoinBalance } from '../hooks/useCoinBalance';
-import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Bell, Trophy, Check, X, Store, User, Repeat } from 'lucide-react';
+import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Bell, Trophy, Check, X, Store, User, Repeat, Trash2 } from 'lucide-react';
 import { getMultipleUserBalances } from '../lib/balances';
 import { formatCoinBalance } from '../lib/formatBalance';
 import CardSwapTab from '../components/CardSwapTab';
+import CardDiscardTab from '../components/CardDiscardTab';
 import { markNotificationsRead } from '../lib/notifications';
 
 export default function TradingDashboard() {
@@ -35,7 +36,7 @@ export default function TradingDashboard() {
   const [mostTraded, setMostTraded] = useState<CardOwnership[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'marketplace' | 'portfolio' | 'offers' | 'swap' | 'leaderboards'>('marketplace');
+  const [selectedTab, setSelectedTab] = useState<'marketplace' | 'portfolio' | 'offers' | 'swap' | 'discard' | 'leaderboards'>('marketplace');
   const [userBalances, setUserBalances] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
@@ -248,6 +249,17 @@ export default function TradingDashboard() {
           >
             <Repeat className="w-4 h-4 inline mr-1" />
             Swap
+          </button>
+          <button
+            onClick={() => setSelectedTab('discard')}
+            className={`px-6 py-3 font-semibold transition-all whitespace-nowrap ${
+              selectedTab === 'discard'
+                ? 'text-cyan-400 border-b-2 border-cyan-400'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Trash2 className="w-4 h-4 inline mr-1" />
+            Discard
           </button>
           <button
             onClick={() => setSelectedTab('leaderboards')}
@@ -539,6 +551,10 @@ export default function TradingDashboard() {
               loadData();
             }}
           />
+        )}
+
+        {selectedTab === 'discard' && (
+          <CardDiscardTab />
         )}
 
         {selectedTab === 'leaderboards' && (
