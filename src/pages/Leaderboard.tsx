@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, User } from 'lucide-react';
+import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, User, Coins, Crown } from 'lucide-react';
 import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
+import PriceOfCardsTab from '../components/leaderboard/PriceOfCardsTab';
+import TopManagersTab from '../components/leaderboard/TopManagersTab';
+import { markNotificationsRead } from '../lib/notifications';
 
 interface LeaderboardEntry {
   rank: number;
@@ -18,16 +21,24 @@ interface LeaderboardEntry {
   team: string | null;
 }
 
+type TabType = 'global' | 'prices' | 'managers';
+
 export default function Leaderboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [userPresence, setUserPresence] = useState<Map<string, UserPresence>>(new Map());
+  const [activeTab, setActiveTab] = useState<TabType>('global');
 
   useEffect(() => {
-    fetchLeaderboard();
-  }, []);
+    if (activeTab === 'global') {
+      fetchLeaderboard();
+    }
+    if (profile) {
+      markNotificationsRead(profile.id, 'rank_update');
+    }
+  }, [activeTab, profile]);
 
   const fetchLeaderboard = async () => {
     try {
@@ -93,7 +104,7 @@ export default function Leaderboard() {
             </button>
 
             <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500">
-              Top 150 Leaderboard
+              Leaderboards
             </h1>
 
             <div className="w-20"></div>
@@ -101,19 +112,50 @@ export default function Leaderboard() {
         </div>
       </nav>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-8 text-center">
-          <div className="inline-flex items-center gap-3 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl px-6 py-4">
-            <Trophy className="w-8 h-8 text-yellow-400" />
-            <div className="text-left">
-              <h2 className="text-xl font-bold text-white">Global Rankings</h2>
-              <p className="text-sm text-gray-400">Top {entries.length} players by overall rating</p>
-            </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="mb-8">
+          <div className="flex justify-center gap-2">
+            <button
+              onClick={() => setActiveTab('global')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
+                activeTab === 'global'
+                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              <Trophy className="w-5 h-5" />
+              <span>Global Rankings</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('prices')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
+                activeTab === 'prices'
+                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              <Coins className="w-5 h-5" />
+              <span>Price of Cards</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('managers')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
+                activeTab === 'managers'
+                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black'
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              }`}
+            >
+              <Crown className="w-5 h-5" />
+              <span>Top Managers</span>
+            </button>
           </div>
         </div>
 
-        <div className="space-y-2">
-          {entries.map((entry) => {
+        {activeTab === 'global' && (
+          <div className="space-y-2">
+            {entries.map((entry) => {
             const isCurrentUser = profile?.id === entry.profile_id;
             const rankChange = getRankChange(entry);
             const rankBadgeColor = getRankBadgeColor(entry.rank);
@@ -223,16 +265,21 @@ export default function Leaderboard() {
                 </div>
               </div>
             );
-          })}
-        </div>
+            })}
 
-        {entries.length === 0 && (
-          <div className="text-center py-12">
-            <Trophy className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-gray-400 mb-2">No rankings yet</h3>
-            <p className="text-gray-500">Be the first to get rated by your friends!</p>
+            {entries.length === 0 && (
+              <div className="text-center py-12">
+                <Trophy className="w-16 h-16 text-gray-700 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-gray-400 mb-2">No rankings yet</h3>
+                <p className="text-gray-500">Be the first to get rated by your friends!</p>
+              </div>
+            )}
           </div>
         )}
+
+        {activeTab === 'prices' && <PriceOfCardsTab />}
+
+        {activeTab === 'managers' && <TopManagersTab />}
       </main>
     </div>
   );
