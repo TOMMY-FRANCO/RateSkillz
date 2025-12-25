@@ -14,15 +14,21 @@ import {
   getListedCardsForSale,
   executeCardSale,
   checkCardPurchaseRestriction,
+  getPendingPurchaseRequests,
+  approvePurchaseRequest,
+  declinePurchaseRequest,
   type CardOwnership,
-  type CardOffer
+  type CardOffer,
+  type PurchaseRequest
 } from '../lib/cardTrading';
 import { useCoinBalance } from '../hooks/useCoinBalance';
-import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Bell, Trophy, Check, X, Store, User, Repeat, Trash2 } from 'lucide-react';
+import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Bell, Trophy, Check, X, Store, User, Repeat, Trash2, Star, Users } from 'lucide-react';
 import { getMultipleUserBalances } from '../lib/balances';
 import { formatCoinBalance } from '../lib/formatBalance';
 import CardSwapTab from '../components/CardSwapTab';
 import CardDiscardTab from '../components/CardDiscardTab';
+import NotBoughtCardsTab from '../components/NotBoughtCardsTab';
+import NoManagerCardsTab from '../components/NoManagerCardsTab';
 import { markNotificationsRead } from '../lib/notifications';
 
 export default function TradingDashboard() {
@@ -31,13 +37,14 @@ export default function TradingDashboard() {
   const { balance, refetch: refetchBalance } = useCoinBalance();
   const [ownedCards, setOwnedCards] = useState<CardOwnership[]>([]);
   const [pendingOffers, setPendingOffers] = useState<CardOffer[]>([]);
+  const [pendingPurchaseRequests, setPendingPurchaseRequests] = useState<PurchaseRequest[]>([]);
   const [listedCards, setListedCards] = useState<CardOwnership[]>([]);
   const [portfolioValue, setPortfolioValue] = useState(0);
   const [mostValuable, setMostValuable] = useState<CardOwnership[]>([]);
   const [mostTraded, setMostTraded] = useState<CardOwnership[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'marketplace' | 'portfolio' | 'offers' | 'swap' | 'discard' | 'leaderboards'>('marketplace');
+  const [selectedTab, setSelectedTab] = useState<'marketplace' | 'portfolio' | 'offers' | 'swap' | 'discard' | 'leaderboards' | 'not-bought' | 'no-manager'>('marketplace');
   const [userBalances, setUserBalances] = useState<Map<string, number>>(new Map());
   const [restrictedCards, setRestrictedCards] = useState<Map<string, string>>(new Map());
 
@@ -46,6 +53,7 @@ export default function TradingDashboard() {
       loadData();
       markNotificationsRead(profile.id, 'swap_offer');
       markNotificationsRead(profile.id, 'purchase_offer');
+      markNotificationsRead(profile.id, 'purchase_request');
       markNotificationsRead(profile.id, 'card_sold');
     }
   }, [profile]);
@@ -55,9 +63,10 @@ export default function TradingDashboard() {
 
     setLoading(true);
     try {
-      const [cards, offers, value, valuable, traded, listed] = await Promise.all([
+      const [cards, offers, purchaseReqs, value, valuable, traded, listed] = await Promise.all([
         getCardsOwnedByUser(profile.id),
         getPendingCardOffers(profile.id),
+        getPendingPurchaseRequests(profile.id),
         getPortfolioValue(profile.id),
         getMostValuableCards(10),
         getMostTradedCards(10),
@@ -66,6 +75,7 @@ export default function TradingDashboard() {
 
       setOwnedCards(cards);
       setPendingOffers(offers);
+      setPendingPurchaseRequests(purchaseReqs);
       setPortfolioValue(value);
       setMostValuable(valuable);
       setMostTraded(traded);
@@ -159,6 +169,29 @@ export default function TradingDashboard() {
     }
   };
 
+  const handleApprovePurchaseRequest = async (requestId: string) => {
+    if (!confirm('Approve this purchase request? The card will be transferred to the buyer.')) return;
+
+    const result = await approvePurchaseRequest(requestId);
+    if (result.success) {
+      alert('Purchase request approved! Card transferred successfully.');
+      refetchBalance();
+      loadData();
+    } else {
+      alert(`Error: ${result.error}`);
+    }
+  };
+
+  const handleDeclinePurchaseRequest = async (requestId: string) => {
+    const result = await declinePurchaseRequest(requestId);
+    if (result.success) {
+      alert('Purchase request declined.');
+      loadData();
+    } else {
+      alert(`Error: ${result.error}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -213,9 +246,9 @@ export default function TradingDashboard() {
                 <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                   <Bell className="w-5 h-5 text-black" />
                 </div>
-                <span className="text-sm text-gray-400">Pending Offers</span>
+                <span className="text-sm text-gray-400">Pending Requests</span>
               </div>
-              <p className="text-3xl font-bold text-white">{pendingOffers.length}</p>
+              <p className="text-3xl font-bold text-white">{pendingOffers.length + pendingPurchaseRequests.length}</p>
             </div>
           </div>
         </div>
@@ -230,6 +263,28 @@ export default function TradingDashboard() {
             }`}
           >
             Marketplace
+          </button>
+          <button
+            onClick={() => setSelectedTab('not-bought')}
+            className={`px-6 py-3 font-semibold transition-all whitespace-nowrap ${
+              selectedTab === 'not-bought'
+                ? 'text-cyan-400 border-b-2 border-cyan-400'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Star className="w-4 h-4 inline mr-1" />
+            Not Bought
+          </button>
+          <button
+            onClick={() => setSelectedTab('no-manager')}
+            className={`px-6 py-3 font-semibold transition-all whitespace-nowrap ${
+              selectedTab === 'no-manager'
+                ? 'text-cyan-400 border-b-2 border-cyan-400'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Users className="w-4 h-4 inline mr-1" />
+            No Manager
           </button>
           <button
             onClick={() => setSelectedTab('portfolio')}
@@ -249,10 +304,10 @@ export default function TradingDashboard() {
                 : 'text-gray-400 hover:text-white'
             }`}
           >
-            Offers
-            {pendingOffers.length > 0 && (
+            Requests
+            {(pendingOffers.length + pendingPurchaseRequests.length) > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                {pendingOffers.length}
+                {pendingOffers.length + pendingPurchaseRequests.length}
               </span>
             )}
           </button>
@@ -518,17 +573,85 @@ export default function TradingDashboard() {
           </div>
         )}
 
+        {selectedTab === 'not-bought' && (
+          <NotBoughtCardsTab onRequestSent={() => {
+            refetchBalance();
+            loadData();
+          }} />
+        )}
+
+        {selectedTab === 'no-manager' && (
+          <NoManagerCardsTab onRequestSent={() => {
+            refetchBalance();
+            loadData();
+          }} />
+        )}
+
         {selectedTab === 'offers' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white mb-4">Pending Offers</h2>
-            {pendingOffers.length === 0 ? (
-              <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-12 text-center">
-                <Bell className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">No pending offers</p>
-                <p className="text-gray-500 text-sm mt-2">When someone wants to buy your cards, you'll see their offers here</p>
-              </div>
-            ) : (
+            <h2 className="text-2xl font-bold text-white mb-4">Pending Requests</h2>
+
+            {pendingPurchaseRequests.length > 0 && (
               <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-cyan-400 flex items-center gap-2">
+                  <Star className="w-5 h-5" />
+                  Purchase Requests
+                </h3>
+                {pendingPurchaseRequests.map((request) => (
+                  <div key={request.id} className="bg-gradient-to-br from-gray-900 to-gray-800 border border-yellow-600/50 rounded-2xl p-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-full flex items-center justify-center">
+                            <Star className="w-5 h-5 text-black" />
+                          </div>
+                          <div>
+                            <p className="text-white font-semibold">
+                              {request.buyer?.username} wants to buy {request.card_user?.full_name || request.card_user?.username}'s card
+                            </p>
+                            <p className="text-sm text-gray-400">
+                              {new Date(request.created_at).toLocaleDateString()} at {new Date(request.created_at).toLocaleTimeString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 p-4 bg-gray-800/50 rounded-lg">
+                          <p className="text-sm text-gray-400 mb-1">Request Amount</p>
+                          <p className="text-2xl font-bold text-yellow-400">{request.requested_price.toFixed(2)} coins</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {request.request_type === 'not_bought' ? 'First sale (Fixed price)' : 'Current card price'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex md:flex-col gap-3">
+                        <button
+                          onClick={() => handleApprovePurchaseRequest(request.id)}
+                          className="flex-1 md:w-32 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-semibold rounded-lg transition-all"
+                        >
+                          <Check className="w-5 h-5" />
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleDeclinePurchaseRequest(request.id)}
+                          className="flex-1 md:w-32 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg transition-all"
+                        >
+                          <X className="w-5 h-5" />
+                          Decline
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {pendingOffers.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-purple-400 flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5" />
+                  Marketplace Offers
+                </h3>
                 {pendingOffers.map((offer) => (
                   <div key={offer.id} className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -579,6 +702,14 @@ export default function TradingDashboard() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {pendingOffers.length === 0 && pendingPurchaseRequests.length === 0 && (
+              <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-12 text-center">
+                <Bell className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-400 text-lg">No pending requests</p>
+                <p className="text-gray-500 text-sm mt-2">When someone wants to buy your cards, you'll see their requests here</p>
               </div>
             )}
           </div>

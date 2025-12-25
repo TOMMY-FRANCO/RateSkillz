@@ -437,3 +437,256 @@ export async function getListedCardsForSale(): Promise<CardOwnership[]> {
 
   return data || [];
 }
+
+export interface CardWithRatings extends CardOwnership {
+  pac?: number;
+  sho?: number;
+  pas?: number;
+  dri?: number;
+  def?: number;
+  phy?: number;
+  position?: string;
+  team?: string;
+  overall_rating?: number;
+  tier_badge?: string;
+}
+
+export interface PurchaseRequest {
+  id: string;
+  card_user_id: string;
+  buyer_id: string;
+  seller_id: string;
+  requested_price: number;
+  status: string;
+  request_type: string;
+  created_at: string;
+  response_date: string | null;
+  buyer?: {
+    username: string;
+    full_name: string;
+  };
+  seller?: {
+    username: string;
+    full_name: string;
+  };
+  card_user?: {
+    username: string;
+    full_name: string;
+  };
+}
+
+export async function getNotBoughtCards(): Promise<CardWithRatings[]> {
+  const { data, error } = await supabase
+    .from('card_ownership')
+    .select(`
+      *,
+      card_user:profiles!card_ownership_card_user_id_fkey(
+        id,
+        username,
+        full_name,
+        avatar_url,
+        position,
+        team,
+        overall_rating
+      )
+    `)
+    .eq('times_traded', 0)
+    .filter('owner_id', 'eq', supabase.raw('card_user_id'))
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching not bought cards:', error);
+    return [];
+  }
+
+  const cardsWithRatings = await Promise.all(
+    (data || []).map(async (card) => {
+      const { data: avgRatings } = await supabase
+        .from('ratings')
+        .select('pac, sho, pas, dri, def, phy')
+        .eq('rated_user_id', card.card_user_id);
+
+      let ratings = { pac: 50, sho: 50, pas: 50, dri: 50, def: 50, phy: 50 };
+      if (avgRatings && avgRatings.length > 0) {
+        const sum = (key: string) => avgRatings.reduce((acc, r: any) => acc + (r[key] || 0), 0);
+        const count = avgRatings.length;
+        ratings = {
+          pac: Math.round(sum('pac') / count),
+          sho: Math.round(sum('sho') / count),
+          pas: Math.round(sum('pas') / count),
+          dri: Math.round(sum('dri') / count),
+          def: Math.round(sum('def') / count),
+          phy: Math.round(sum('phy') / count),
+        };
+      }
+
+      const { data: tierData } = await supabase
+        .from('tier_badges')
+        .select('badge_tier')
+        .eq('user_id', card.card_user_id)
+        .maybeSingle();
+
+      return {
+        ...card,
+        ...ratings,
+        position: card.card_user?.position || 'N/A',
+        team: card.card_user?.team || 'N/A',
+        overall_rating: card.card_user?.overall_rating || 50,
+        tier_badge: tierData?.badge_tier || null,
+      };
+    })
+  );
+
+  return cardsWithRatings;
+}
+
+export async function getNoManagerCards(): Promise<CardWithRatings[]> {
+  const { data, error } = await supabase
+    .from('card_ownership')
+    .select(`
+      *,
+      card_user:profiles!card_ownership_card_user_id_fkey(
+        id,
+        username,
+        full_name,
+        avatar_url,
+        position,
+        team,
+        overall_rating
+      ),
+      owner:profiles!card_ownership_owner_id_fkey(
+        id,
+        username,
+        full_name,
+        is_manager
+      )
+    `)
+    .gt('times_traded', 0)
+    .or('is_manager.is.false,is_manager.is.null', { foreignTable: 'owner' })
+    .order('current_price', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching no manager cards:', error);
+    return [];
+  }
+
+  const cardsWithRatings = await Promise.all(
+    (data || []).map(async (card) => {
+      const { data: avgRatings } = await supabase
+        .from('ratings')
+        .select('pac, sho, pas, dri, def, phy')
+        .eq('rated_user_id', card.card_user_id);
+
+      let ratings = { pac: 50, sho: 50, pas: 50, dri: 50, def: 50, phy: 50 };
+      if (avgRatings && avgRatings.length > 0) {
+        const sum = (key: string) => avgRatings.reduce((acc, r: any) => acc + (r[key] || 0), 0);
+        const count = avgRatings.length;
+        ratings = {
+          pac: Math.round(sum('pac') / count),
+          sho: Math.round(sum('sho') / count),
+          pas: Math.round(sum('pas') / count),
+          dri: Math.round(sum('dri') / count),
+          def: Math.round(sum('def') / count),
+          phy: Math.round(sum('phy') / count),
+        };
+      }
+
+      const { data: tierData } = await supabase
+        .from('tier_badges')
+        .select('badge_tier')
+        .eq('user_id', card.card_user_id)
+        .maybeSingle();
+
+      return {
+        ...card,
+        ...ratings,
+        position: card.card_user?.position || 'N/A',
+        team: card.card_user?.team || 'N/A',
+        overall_rating: card.card_user?.overall_rating || 50,
+        tier_badge: tierData?.badge_tier || null,
+      };
+    })
+  );
+
+  return cardsWithRatings;
+}
+
+export async function createPurchaseRequest(
+  cardUserId: string,
+  buyerId: string,
+  requestedPrice: number,
+  requestType: string = 'not_bought'
+): Promise<{ success: boolean; error?: string; request_id?: string }> {
+  const { data, error } = await supabase.rpc('create_purchase_request', {
+    p_card_user_id: cardUserId,
+    p_buyer_id: buyerId,
+    p_requested_price: requestedPrice,
+    p_request_type: requestType
+  });
+
+  if (error) {
+    console.error('Error creating purchase request:', error);
+    return { success: false, error: error.message };
+  }
+
+  if (!data.success) {
+    return { success: false, error: data.error };
+  }
+
+  return { success: true, request_id: data.request_id };
+}
+
+export async function approvePurchaseRequest(requestId: string): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('approve_purchase_request', {
+    p_request_id: requestId
+  });
+
+  if (error) {
+    console.error('Error approving purchase request:', error);
+    return { success: false, error: error.message };
+  }
+
+  if (!data.success) {
+    return { success: false, error: data.error };
+  }
+
+  return { success: true };
+}
+
+export async function declinePurchaseRequest(requestId: string): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase.rpc('decline_purchase_request', {
+    p_request_id: requestId
+  });
+
+  if (error) {
+    console.error('Error declining purchase request:', error);
+    return { success: false, error: error.message };
+  }
+
+  if (!data.success) {
+    return { success: false, error: data.error };
+  }
+
+  return { success: true };
+}
+
+export async function getPendingPurchaseRequests(userId: string): Promise<PurchaseRequest[]> {
+  const { data, error } = await supabase
+    .from('purchase_requests')
+    .select(`
+      *,
+      buyer:profiles!purchase_requests_buyer_id_fkey(username, full_name),
+      seller:profiles!purchase_requests_seller_id_fkey(username, full_name),
+      card_user:profiles!purchase_requests_card_user_id_fkey(username, full_name)
+    `)
+    .eq('seller_id', userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching pending purchase requests:', error);
+    return [];
+  }
+
+  return data || [];
+}
