@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, LogOut, User, Users, Bell, FileText } from 'lucide-react';
+import { ArrowLeft, LogOut, User, Users, Bell, FileText, Shield, UserCheck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Profile } from '../contexts/AuthContext';
 import OnlineStatus from '../components/OnlineStatus';
 import UsernameChanger from '../components/UsernameChanger';
 import { displayUsername } from '../lib/username';
+import { WhatsAppVerification } from '../components/WhatsAppVerification';
+import { VerificationBadge } from '../components/VerificationBadge';
 
 export default function Settings() {
   const { profile, signOut } = useAuth();
@@ -14,13 +16,37 @@ export default function Settings() {
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [isVerified, setIsVerified] = useState(false);
+  const [hasSocialBadge, setHasSocialBadge] = useState(false);
+  const [friendCount, setFriendCount] = useState(0);
 
   useEffect(() => {
     loadProfiles();
     if (profile) {
       fetchPendingRequests();
+      fetchVerificationStatus();
     }
   }, [profile]);
+
+  const fetchVerificationStatus = async () => {
+    if (!profile) return;
+
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('is_verified, has_social_badge, friend_count')
+        .eq('id', profile.id)
+        .single();
+
+      if (data) {
+        setIsVerified(data.is_verified || false);
+        setHasSocialBadge(data.has_social_badge || false);
+        setFriendCount(data.friend_count || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching verification status:', error);
+    }
+  };
 
   const fetchPendingRequests = async () => {
     if (!profile) return;
@@ -132,6 +158,59 @@ export default function Settings() {
             >
               Edit Profile
             </button>
+          </div>
+
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center space-x-2">
+              <Shield className="w-6 h-6" />
+              <span>Profile Verification</span>
+            </h2>
+
+            <div className="space-y-4 mb-4">
+              <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700">
+                <div className="flex items-center gap-3">
+                  <VerificationBadge
+                    isVerified={isVerified}
+                    hasSocialBadge={hasSocialBadge}
+                    size="lg"
+                  />
+                  <div>
+                    <p className="text-white font-semibold">
+                      {!isVerified && 'Not Verified'}
+                      {isVerified && !hasSocialBadge && 'Verified'}
+                      {isVerified && hasSocialBadge && 'Verified + Social Badge'}
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      {!isVerified && 'Share your profile to get verified'}
+                      {isVerified && !hasSocialBadge && `${friendCount}/5 friends for social badge`}
+                      {isVerified && hasSocialBadge && `${friendCount} friends connected`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {isVerified && !hasSocialBadge && (
+                <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <UserCheck className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-yellow-200 font-semibold text-sm mb-1">
+                        Get the Social Badge
+                      </p>
+                      <p className="text-yellow-300/80 text-xs">
+                        Connect with {5 - friendCount} more friend{5 - friendCount !== 1 ? 's' : ''} to unlock the yellow circle around your blue checkmark!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <WhatsAppVerification
+              isVerified={isVerified}
+              username={profile.username}
+              onVerificationComplete={fetchVerificationStatus}
+            />
           </div>
 
           <UsernameChanger />

@@ -4,6 +4,7 @@ import { User, Download, Coins, Award } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { displayUsername } from '../lib/username';
 import { calculateOverallRating, getCardTier, getTierBadgeColors } from '../lib/cardTiers';
+import { VerificationBadge } from './VerificationBadge';
 
 export interface Rating {
   id: string;
@@ -43,9 +44,11 @@ interface PlayerCardProps {
   showDownloadButton?: boolean;
   overallRating?: number;
   cardValue?: number;
+  isVerified?: boolean;
+  hasSocialBadge?: boolean;
 }
 
-export default function PlayerCard({ profile, ratings = [], userStats, size = 'large', rank, showDownloadButton = false, overallRating, cardValue }: PlayerCardProps) {
+export default function PlayerCard({ profile, ratings = [], userStats, size = 'large', rank, showDownloadButton = false, overallRating, cardValue, isVerified = false, hasSocialBadge = false }: PlayerCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   const stats = userStats ? {
@@ -186,9 +189,16 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
           </div>
 
           <div className="bg-gradient-to-r from-black/70 via-black/60 to-black/70 backdrop-blur-sm px-4 py-3 rounded-lg border border-white/20 mb-4 transition-all duration-700">
-            <h3 className="text-3xl font-black text-white text-center tracking-wide uppercase drop-shadow-lg">
-              {profile.full_name || displayUsername(profile.username)}
-            </h3>
+            <div className="flex items-center justify-center gap-2">
+              <h3 className="text-3xl font-black text-white text-center tracking-wide uppercase drop-shadow-lg">
+                {profile.full_name || displayUsername(profile.username)}
+              </h3>
+              <VerificationBadge
+                isVerified={isVerified}
+                hasSocialBadge={hasSocialBadge}
+                size="md"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-6 gap-2 bg-gradient-to-r from-black/70 via-black/80 to-black/70 backdrop-blur-sm p-4 rounded-lg border border-white/20 transition-all duration-700">

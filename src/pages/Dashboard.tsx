@@ -21,6 +21,8 @@ export default function Dashboard() {
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [showUsernamePrompt, setShowUsernamePrompt] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [hasSocialBadge, setHasSocialBadge] = useState(false);
   const unreadMessagesCount = useUnreadMessages();
 
   useEffect(() => {
@@ -28,6 +30,7 @@ export default function Dashboard() {
       fetchUserStats();
       calculateRank();
       fetchPendingRequests();
+      fetchVerificationStatus();
 
       if (!profile.terms_accepted_at) {
         setShowTermsModal(true);
@@ -36,6 +39,25 @@ export default function Dashboard() {
       }
     }
   }, [profile]);
+
+  const fetchVerificationStatus = async () => {
+    if (!profile) return;
+
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('is_verified, has_social_badge')
+        .eq('id', profile.id)
+        .single();
+
+      if (data) {
+        setIsVerified(data.is_verified || false);
+        setHasSocialBadge(data.has_social_badge || false);
+      }
+    } catch (error) {
+      console.error('Error fetching verification status:', error);
+    }
+  };
 
   const fetchPendingRequests = async () => {
     if (!profile) return;
@@ -188,6 +210,8 @@ export default function Dashboard() {
               rank={rank}
               showDownloadButton={true}
               overallRating={profile.overall_rating}
+              isVerified={isVerified}
+              hasSocialBadge={hasSocialBadge}
             />
           )}
         </div>

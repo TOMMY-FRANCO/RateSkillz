@@ -78,6 +78,8 @@ export default function ProfileView() {
   const [balanceLoading, setBalanceLoading] = useState(true);
   const [commentsCount, setCommentsCount] = useState<number>(0);
   const [userPresenceData, setUserPresenceData] = useState<string | undefined>();
+  const [isVerified, setIsVerified] = useState(false);
+  const [hasSocialBadge, setHasSocialBadge] = useState(false);
 
   const isOwner = currentUser?.id === profile?.id;
   const isEditingEnabled = !isPreviewMode && !isOwner;
@@ -113,6 +115,8 @@ export default function ProfileView() {
       }
 
       setProfile(profileData);
+      setIsVerified(profileData.is_verified || false);
+      setHasSocialBadge(profileData.has_social_badge || false);
 
       setViewsCount(profileData.profile_views_count || 0);
       setCommentsCount(profileData.comments_count || 0);
@@ -670,6 +674,8 @@ export default function ProfileView() {
             userStats={userStats}
             showDownloadButton={false}
             overallRating={profile.overall_rating}
+            isVerified={isVerified}
+            hasSocialBadge={hasSocialBadge}
           />
         </div>
 

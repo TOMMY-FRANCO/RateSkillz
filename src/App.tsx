@@ -20,6 +20,7 @@ import BattleMode from './pages/BattleMode';
 import Inbox from './pages/Inbox';
 import Chat from './pages/Chat';
 import TermsOfService from './pages/TermsOfService';
+import { VerifyProfile } from './pages/VerifyProfile';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -183,6 +184,7 @@ function App() {
             }
           />
           <Route path="/card/:username" element={<PublicCard />} />
+          <Route path="/verify/:token" element={<VerifyProfile />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="*" element={<Navigate to="/" replace />} />

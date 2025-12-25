@@ -21,6 +21,8 @@ export default function PublicCard() {
   const [likesCount, setLikesCount] = useState(0);
   const [coinBalance, setCoinBalance] = useState<number>(0);
   const [balanceLoading, setBalanceLoading] = useState(true);
+  const [isVerified, setIsVerified] = useState(false);
+  const [hasSocialBadge, setHasSocialBadge] = useState(false);
 
   useEffect(() => {
     if (username) {
@@ -43,6 +45,8 @@ export default function PublicCard() {
       }
 
       setProfile(profileData);
+      setIsVerified(profileData.is_verified || false);
+      setHasSocialBadge(profileData.has_social_badge || false);
 
       setViewsCount(profileData.profile_views_count || 0);
 
@@ -147,6 +151,8 @@ export default function PublicCard() {
             userStats={userStats}
             showDownloadButton={false}
             overallRating={profile.overall_rating}
+            isVerified={isVerified}
+            hasSocialBadge={hasSocialBadge}
           />
         </div>
 
