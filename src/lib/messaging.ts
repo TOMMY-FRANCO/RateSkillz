@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { updateUserActivity } from './activityTracking';
 
 export interface Message {
   id: string;
@@ -135,6 +136,9 @@ export async function sendMessage(
       .single();
 
     if (error) throw error;
+
+    await updateUserActivity(senderId);
+
     return data;
   } catch (error) {
     console.error('Error sending message:', error);

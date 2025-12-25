@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { updateUserActivity } from './activityTracking';
 
 export interface BattleCard {
   id: string;
@@ -109,6 +110,8 @@ export async function createBattleChallenge(
 
     if (error) throw error;
 
+    await updateUserActivity(managerId);
+
     return data;
   } catch (error: any) {
     console.error('Error creating battle challenge:', error);
@@ -129,6 +132,8 @@ export async function acceptBattleChallenge(
     });
 
     if (error) throw error;
+
+    await updateUserActivity(managerId);
 
     return data === true;
   } catch (error: any) {
