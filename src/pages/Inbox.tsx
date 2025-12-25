@@ -6,6 +6,7 @@ import { MessageCircle, ArrowLeft, User } from 'lucide-react';
 import { displayUsername } from '../lib/username';
 import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
+import { markNotificationsRead } from '../lib/notifications';
 
 export default function Inbox() {
   const { user } = useAuth();
@@ -32,6 +33,12 @@ export default function Inbox() {
     };
 
     loadConversations();
+
+    if (user) {
+      markNotificationsRead(user.id, 'message');
+      markNotificationsRead(user.id, 'coin_received');
+      markNotificationsRead(user.id, 'coin_request');
+    }
   }, [user]);
 
   const handleConversationClick = (conversation: Conversation) => {

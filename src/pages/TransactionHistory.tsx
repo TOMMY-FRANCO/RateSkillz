@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Coins, TrendingUp, ShoppingBag, MessageSquare, Tv, Crown, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { getTransactions } from '../lib/coins';
 import { useCoinBalance } from '../hooks/useCoinBalance';
+import { useAuth } from '../hooks/useAuth';
+import { markNotificationsRead } from '../lib/notifications';
 
 interface Transaction {
   id: string;
@@ -17,6 +19,7 @@ interface Transaction {
 
 export default function TransactionHistory() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const { balance: currentBalance, loading: balanceLoading } = useCoinBalance();
@@ -24,7 +27,10 @@ export default function TransactionHistory() {
 
   useEffect(() => {
     loadTransactions();
-  }, []);
+    if (user) {
+      markNotificationsRead(user.id, 'transaction');
+    }
+  }, [user]);
 
   useEffect(() => {
     if (transactions.length > 0 && !balanceLoading) {

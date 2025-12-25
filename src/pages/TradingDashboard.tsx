@@ -21,6 +21,7 @@ import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Bell, Trophy, Check, X
 import { getMultipleUserBalances } from '../lib/balances';
 import { formatCoinBalance } from '../lib/formatBalance';
 import CardSwapTab from '../components/CardSwapTab';
+import { markNotificationsRead } from '../lib/notifications';
 
 export default function TradingDashboard() {
   const { profile } = useAuth();
@@ -40,6 +41,9 @@ export default function TradingDashboard() {
   useEffect(() => {
     if (profile) {
       loadData();
+      markNotificationsRead(profile.id, 'swap_offer');
+      markNotificationsRead(profile.id, 'purchase_offer');
+      markNotificationsRead(profile.id, 'card_sold');
     }
   }, [profile]);
 

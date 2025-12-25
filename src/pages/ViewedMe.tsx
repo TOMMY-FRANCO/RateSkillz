@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Eye, UserPlus, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { sendFriendRequest } from '../lib/friendRequests';
 import { useTierBadges } from '../hooks/useTierBadges';
+import { markNotificationsRead } from '../lib/notifications';
 
 interface ViewerData {
   viewer_id: string;
@@ -51,6 +52,7 @@ export default function ViewedMe() {
   useEffect(() => {
     if (user) {
       fetchViewers();
+      markNotificationsRead(user.id, 'profile_view');
     }
   }, [user, currentPage]);
 

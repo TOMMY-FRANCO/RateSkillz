@@ -11,6 +11,8 @@ import { supabase } from '../lib/supabase';
 import { displayUsername } from '../lib/username';
 import { getUserStats } from '../lib/ratings';
 import { useUnreadMessages } from '../hooks/useUnreadMessages';
+import { useNotifications } from '../hooks/useNotifications';
+import NotificationBadge from '../components/NotificationBadge';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -24,6 +26,7 @@ export default function Dashboard() {
   const [isVerified, setIsVerified] = useState(false);
   const [hasSocialBadge, setHasSocialBadge] = useState(false);
   const unreadMessagesCount = useUnreadMessages();
+  const { counts: notificationCounts, getCount } = useNotifications(profile?.id);
 
   useEffect(() => {
     if (profile) {
@@ -232,11 +235,7 @@ export default function Dashboard() {
             onClick={() => navigate('/inbox')}
             className="bg-gradient-to-br from-pink-900/30 to-rose-900/30 border border-pink-600/50 rounded-xl p-6 hover:border-pink-500 transition-all group cursor-pointer text-left w-full relative"
           >
-            {unreadMessagesCount > 0 && (
-              <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                {unreadMessagesCount}
-              </span>
-            )}
+            <NotificationBadge count={getCount(['message', 'coin_received', 'coin_request'])} />
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                 <MessageCircle className="w-6 h-6 text-black" />
@@ -265,8 +264,9 @@ export default function Dashboard() {
 
           <button
             onClick={() => navigate('/trading')}
-            className="bg-gradient-to-br from-cyan-900/30 to-blue-900/30 border border-cyan-600/50 rounded-xl p-6 hover:border-cyan-500 transition-all group cursor-pointer text-left w-full"
+            className="bg-gradient-to-br from-cyan-900/30 to-blue-900/30 border border-cyan-600/50 rounded-xl p-6 hover:border-cyan-500 transition-all group cursor-pointer text-left w-full relative"
           >
+            <NotificationBadge count={getCount(['swap_offer', 'purchase_offer', 'card_sold'])} />
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                 <ShoppingBag className="w-6 h-6 text-black" />
@@ -282,6 +282,7 @@ export default function Dashboard() {
             onClick={() => navigate('/battle-mode')}
             className="bg-gradient-to-br from-red-900/30 to-orange-900/30 border-2 border-red-600/50 rounded-xl p-6 hover:border-red-500 transition-all group cursor-pointer text-left w-full relative"
           >
+            <NotificationBadge count={getCount(['battle_request'])} className={profile.is_manager ? 'top-12' : ''} />
             {profile.is_manager && (
               <span className="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-bold rounded">
                 MANAGER
@@ -317,8 +318,9 @@ export default function Dashboard() {
 
           <button
             onClick={() => navigate('/watch-ad')}
-            className="bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-600/50 rounded-xl p-6 hover:border-green-500 transition-all group cursor-pointer text-left w-full"
+            className="bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-600/50 rounded-xl p-6 hover:border-green-500 transition-all group cursor-pointer text-left w-full relative"
           >
+            <NotificationBadge count={notificationCounts.ad_available} />
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Tv className="w-6 h-6 text-black" />
@@ -332,8 +334,9 @@ export default function Dashboard() {
 
           <button
             onClick={() => navigate('/transactions')}
-            className="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 border border-blue-600/50 rounded-xl p-6 hover:border-blue-500 transition-all group cursor-pointer text-left w-full"
+            className="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 border border-blue-600/50 rounded-xl p-6 hover:border-blue-500 transition-all group cursor-pointer text-left w-full relative"
           >
+            <NotificationBadge count={getCount(['transaction'])} />
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                 <TrendingUp className="w-6 h-6 text-black" />
@@ -347,8 +350,9 @@ export default function Dashboard() {
 
           <button
             onClick={() => navigate('/leaderboard')}
-            className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 border border-purple-600/50 rounded-xl p-6 hover:border-purple-500 transition-all group cursor-pointer text-left w-full"
+            className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 border border-purple-600/50 rounded-xl p-6 hover:border-purple-500 transition-all group cursor-pointer text-left w-full relative"
           >
+            <NotificationBadge count={getCount(['rank_update'])} />
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Trophy className="w-6 h-6 text-black" />
@@ -382,8 +386,9 @@ export default function Dashboard() {
 
           <button
             onClick={() => navigate('/viewed-me')}
-            className="bg-gradient-to-br from-teal-900/30 to-cyan-900/30 border border-teal-600/50 rounded-xl p-6 hover:border-teal-500 transition-all group cursor-pointer text-left w-full"
+            className="bg-gradient-to-br from-teal-900/30 to-cyan-900/30 border border-teal-600/50 rounded-xl p-6 hover:border-teal-500 transition-all group cursor-pointer text-left w-full relative"
           >
+            <NotificationBadge count={getCount(['profile_view'])} />
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Eye className="w-6 h-6 text-black" />
@@ -412,8 +417,9 @@ export default function Dashboard() {
 
           <button
             onClick={() => navigate('/settings')}
-            className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-6 hover:border-cyan-500/50 transition-all group cursor-pointer text-left w-full"
+            className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-6 hover:border-cyan-500/50 transition-all group cursor-pointer text-left w-full relative"
           >
+            <NotificationBadge count={getCount(['setting_change'])} />
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Settings className="w-6 h-6 text-black" />

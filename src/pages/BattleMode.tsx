@@ -7,6 +7,7 @@ import CardSelectionModal from '../components/battle/CardSelectionModal';
 import BattleChallengesList from '../components/battle/BattleChallengesList';
 import BattleHistoryList from '../components/battle/BattleHistoryList';
 import BattleArena from '../components/battle/BattleArena';
+import { markNotificationsRead } from '../lib/notifications';
 
 export default function BattleMode() {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export default function BattleMode() {
   useEffect(() => {
     if (user) {
       loadData();
+      markNotificationsRead(user.id, 'battle_request');
     }
   }, [user]);
 
