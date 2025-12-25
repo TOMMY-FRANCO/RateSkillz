@@ -105,63 +105,71 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMDMiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
 
         <div className="relative p-6">
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex flex-col items-center space-y-0.5 bg-black/40 rounded-lg px-2 py-1.5 backdrop-blur-sm border border-white/20 transition-all duration-700">
-              <div className="text-3xl font-black text-white drop-shadow-lg leading-none">
-                {overall}
-              </div>
-              <div className="text-[10px] font-bold text-white uppercase tracking-wider">
-                {profile.position || 'RW'}
+          <div className="flex flex-wrap items-center justify-center gap-1.5 mb-4">
+            <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 transition-all duration-300">
+              <div className="flex flex-col items-center">
+                <span className="text-xl font-black text-white leading-none">{overall}</span>
+                <span className="text-[8px] font-bold text-gray-300 uppercase">OVR</span>
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              {cardValue && (
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-amber-500 rounded-lg blur-sm"></div>
-                  <div className="relative bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500 px-2 py-1.5 rounded-lg text-black font-black border border-yellow-200 shadow-lg">
-                    <div className="flex items-center gap-1 justify-center">
-                      <Coins className="w-3 h-3" />
-                      <span className="text-sm leading-none">{cardValue}</span>
-                    </div>
-                    <div className="text-[8px] font-bold uppercase tracking-wider text-center">VALUE</div>
-                  </div>
-                </div>
-              )}
-              {profile.team && (
-                <div className="bg-black/50 backdrop-blur-sm px-2 py-1.5 rounded-lg text-white font-black text-xs border border-white/30 text-center shadow-lg transition-all duration-700">
-                  {profile.team}
-                </div>
-              )}
-              {tier.name !== 'Default' && (
-                <div className={`${tierBadgeColors} px-2 py-1.5 rounded-lg font-black text-[10px] border text-center shadow-lg transition-all duration-700`}>
-                  <div className="flex items-center gap-1 justify-center">
-                    <Award className="w-2.5 h-2.5" />
-                    <span className="uppercase tracking-wider">{tier.name}</span>
-                  </div>
-                </div>
-              )}
-              {profile.is_manager && (
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-orange-500 rounded-full blur-sm"></div>
-                  <div className="relative bg-gradient-to-r from-red-500 via-orange-500 to-red-600 rounded-full w-10 h-10 flex items-center justify-center border-2 border-yellow-300 shadow-lg mx-auto">
-                    <span className="text-white font-black text-xl drop-shadow-lg">M</span>
-                  </div>
-                </div>
-              )}
-              {rank && (
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg blur-sm"></div>
-                  <div className="relative bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 px-2 py-1.5 rounded-lg text-black font-black border border-yellow-200 text-center shadow-lg">
-                    <div className="flex flex-col items-center">
-                      <span className="text-[8px] font-black uppercase tracking-widest leading-none">RANK</span>
-                      <span className="text-sm leading-none font-black">#{rank.position}</span>
-                      <span className="text-[8px] font-bold leading-none">of {rank.total}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+            <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 flex items-center justify-center transition-all duration-300">
+              <VerificationBadge
+                isVerified={isVerified}
+                hasSocialBadge={hasSocialBadge}
+                size="sm"
+              />
             </div>
+
+            {tier.name !== 'Default' && (
+              <div className={`${tierBadgeColors} px-2.5 py-1.5 rounded-md border transition-all duration-300`}>
+                <div className="flex items-center gap-1">
+                  <Award className="w-3 h-3" />
+                  <span className="text-[9px] font-black uppercase">{tier.name}</span>
+                </div>
+              </div>
+            )}
+
+            {profile.is_manager && (
+              <div className="bg-gradient-to-r from-red-500 to-orange-500 px-2.5 py-1.5 rounded-md border-2 border-yellow-300 transition-all duration-300">
+                <span className="text-white font-black text-sm">M</span>
+              </div>
+            )}
+
+            {profile.position && (
+              <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 transition-all duration-300">
+                <span className="text-[9px] font-black text-white uppercase">{profile.position}</span>
+              </div>
+            )}
+
+            {profile.number && (
+              <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 transition-all duration-300">
+                <span className="text-[9px] font-black text-white">#{profile.number}</span>
+              </div>
+            )}
+
+            {profile.team && (
+              <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 transition-all duration-300">
+                <span className="text-[9px] font-black text-white uppercase truncate max-w-[80px]">{profile.team}</span>
+              </div>
+            )}
+
+            {cardValue && (
+              <div className="bg-gradient-to-r from-yellow-400 to-amber-500 px-2.5 py-1.5 rounded-md border border-yellow-200 transition-all duration-300">
+                <div className="flex items-center gap-0.5">
+                  <Coins className="w-3 h-3 text-black" />
+                  <span className="text-[9px] font-black text-black">{cardValue}</span>
+                </div>
+              </div>
+            )}
+
+            {rank && (
+              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 px-2.5 py-1.5 rounded-md border border-yellow-200 transition-all duration-300">
+                <div className="flex items-center gap-0.5">
+                  <span className="text-[9px] font-black text-black">#{rank.position}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="relative h-64 mb-4">
@@ -189,16 +197,9 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
           </div>
 
           <div className="bg-gradient-to-r from-black/70 via-black/60 to-black/70 backdrop-blur-sm px-4 py-3 rounded-lg border border-white/20 mb-4 transition-all duration-700">
-            <div className="flex items-center justify-center gap-2">
-              <h3 className="text-3xl font-black text-white text-center tracking-wide uppercase drop-shadow-lg">
-                {profile.full_name || displayUsername(profile.username)}
-              </h3>
-              <VerificationBadge
-                isVerified={isVerified}
-                hasSocialBadge={hasSocialBadge}
-                size="md"
-              />
-            </div>
+            <h3 className="text-3xl font-black text-white text-center tracking-wide uppercase drop-shadow-lg">
+              {profile.full_name || displayUsername(profile.username)}
+            </h3>
           </div>
 
           <div className="grid grid-cols-6 gap-2 bg-gradient-to-r from-black/70 via-black/80 to-black/70 backdrop-blur-sm p-4 rounded-lg border border-white/20 transition-all duration-700">
