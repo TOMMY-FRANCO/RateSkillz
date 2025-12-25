@@ -374,6 +374,51 @@ export async function executeCardSale(
   }
 }
 
+export async function checkManagerOwnsBuyerOriginalCard(
+  managerId: string,
+  buyerId: string
+): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.rpc('check_manager_owns_buyer_original_card', {
+      p_manager_id: managerId,
+      p_buyer_id: buyerId
+    });
+
+    if (error) {
+      console.error('Error checking manager ownership restriction:', error);
+      return false;
+    }
+
+    return data === true;
+  } catch (error) {
+    console.error('Error checking manager ownership restriction:', error);
+    return false;
+  }
+}
+
+export interface CardPurchaseRestriction {
+  isRestricted: boolean;
+  reason?: string;
+}
+
+export async function checkCardPurchaseRestriction(
+  cardOwnerId: string,
+  buyerId: string
+): Promise<CardPurchaseRestriction> {
+  const managerOwnsOriginalCard = await checkManagerOwnsBuyerOriginalCard(cardOwnerId, buyerId);
+
+  if (managerOwnsOriginalCard) {
+    return {
+      isRestricted: true,
+      reason: 'This manager owns one of your original cards. You cannot purchase from them.'
+    };
+  }
+
+  return {
+    isRestricted: false
+  };
+}
+
 export async function getListedCardsForSale(): Promise<CardOwnership[]> {
   const { data, error } = await supabase
     .from('card_ownership')

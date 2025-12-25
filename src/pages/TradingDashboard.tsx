@@ -13,6 +13,7 @@ import {
   calculatePotentialProfit,
   getListedCardsForSale,
   executeCardSale,
+  checkCardPurchaseRestriction,
   type CardOwnership,
   type CardOffer
 } from '../lib/cardTrading';
@@ -38,6 +39,7 @@ export default function TradingDashboard() {
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<'marketplace' | 'portfolio' | 'offers' | 'swap' | 'discard' | 'leaderboards'>('marketplace');
   const [userBalances, setUserBalances] = useState<Map<string, number>>(new Map());
+  const [restrictedCards, setRestrictedCards] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
     if (profile) {
@@ -81,6 +83,21 @@ export default function TradingDashboard() {
       if (allUserIds.size > 0) {
         const balances = await getMultipleUserBalances(Array.from(allUserIds));
         setUserBalances(balances);
+      }
+
+      if (listed.length > 0 && profile) {
+        const restrictions = new Map<string, string>();
+        await Promise.all(
+          listed.map(async (card) => {
+            if (card.owner_id && card.owner_id !== profile.id) {
+              const restriction = await checkCardPurchaseRestriction(card.owner_id, profile.id);
+              if (restriction.isRestricted) {
+                restrictions.set(card.id, restriction.reason || 'Restricted');
+              }
+            }
+          })
+        );
+        setRestrictedCards(restrictions);
       }
     } catch (error) {
       console.error('Error loading trading data:', error);
@@ -298,9 +315,13 @@ export default function TradingDashboard() {
                   const isPurchasing = purchasing === card.id;
                   const canAfford = balance >= (card.asking_price || 0);
                   const isOwnCard = card.owner_id === profile?.id;
+                  const isRestricted = restrictedCards.has(card.id);
+                  const restrictionReason = restrictedCards.get(card.id);
 
                   return (
-                    <div key={card.id} className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6 hover:border-cyan-500/50 transition-all">
+                    <div key={card.id} className={`bg-gradient-to-br from-gray-900 to-gray-800 border rounded-2xl p-6 transition-all ${
+                      isRestricted ? 'border-red-500/50' : 'border-gray-700 hover:border-cyan-500/50'
+                    }`}>
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                           <h3 className="text-lg font-bold text-white mb-1">
@@ -354,13 +375,27 @@ export default function TradingDashboard() {
                             <TrendingUp className="w-4 h-4 text-purple-400" />
                           </div>
                         )}
+
+                        {isRestricted && (
+                          <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-lg">
+                            <div className="flex items-start gap-2">
+                              <X className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                              <div>
+                                <p className="text-xs font-semibold text-red-300 mb-1">Purchase Restricted</p>
+                                <p className="text-xs text-red-200">{restrictionReason}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <button
                         onClick={() => handlePurchaseCard(card)}
-                        disabled={isPurchasing || !canAfford || isOwnCard}
+                        disabled={isPurchasing || !canAfford || isOwnCard || isRestricted}
                         className={`w-full px-4 py-3 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${
-                          isOwnCard
+                          isRestricted
+                            ? 'bg-red-600/30 text-red-300 cursor-not-allowed border border-red-500/30'
+                            : isOwnCard
                             ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                             : !canAfford
                             ? 'bg-red-600/50 text-red-200 cursor-not-allowed'
@@ -371,6 +406,11 @@ export default function TradingDashboard() {
                       >
                         {isPurchasing ? (
                           <>Processing...</>
+                        ) : isRestricted ? (
+                          <>
+                            <X className="w-5 h-5" />
+                            Purchase Restricted
+                          </>
                         ) : isOwnCard ? (
                           <>Your Card</>
                         ) : !canAfford ? (
