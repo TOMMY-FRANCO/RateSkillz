@@ -6,7 +6,7 @@ import OnlineStatus from '../components/OnlineStatus';
 import FirstTimeUsernamePrompt from '../components/FirstTimeUsernamePrompt';
 import TermsAcceptanceModal from '../components/TermsAcceptanceModal';
 import { CoinBalance } from '../components/CoinBalance';
-import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords } from 'lucide-react';
+import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { displayUsername } from '../lib/username';
 import { getUserStats } from '../lib/ratings';
@@ -244,6 +244,21 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-white font-semibold">Messages</h3>
                 <p className="text-gray-400 text-sm">Chat with friends</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/search-friends')}
+            className="bg-gradient-to-br from-indigo-900/30 to-violet-900/30 border border-indigo-600/50 rounded-xl p-6 hover:border-indigo-500 transition-all group cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Search className="w-6 h-6 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Search Friends</h3>
+                <p className="text-gray-400 text-sm">Find & connect</p>
               </div>
             </div>
           </button>

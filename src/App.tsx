@@ -21,6 +21,7 @@ import Inbox from './pages/Inbox';
 import Chat from './pages/Chat';
 import TermsOfService from './pages/TermsOfService';
 import { VerifyProfile } from './pages/VerifyProfile';
+import SearchFriends from './pages/SearchFriends';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -84,6 +85,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Friends />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/search-friends"
+            element={
+              <ProtectedRoute>
+                <SearchFriends />
               </ProtectedRoute>
             }
           />
