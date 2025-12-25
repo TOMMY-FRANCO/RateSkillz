@@ -13,8 +13,11 @@ import {
   getUserStatus,
   formatTimestamp,
 } from '../lib/messaging';
-import { ArrowLeft, Send, User, Check, CheckCheck } from 'lucide-react';
+import { ArrowLeft, Send, User, Check, CheckCheck, Coins } from 'lucide-react';
 import { displayUsername } from '../lib/username';
+import SendCoinsModal from '../components/SendCoinsModal';
+import { checkCanSendCoins, subscribeToCoinTransfers } from '../lib/coinTransfers';
+import { supabase } from '../lib/supabase';
 
 export default function Chat() {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -36,7 +39,15 @@ export default function Chat() {
     username: string;
     full_name: string | null;
     avatar_url: string | null;
+    is_verified?: boolean;
   };
+
+  const [showSendCoinsModal, setShowSendCoinsModal] = useState(false);
+  const [canSendCoins, setCanSendCoins] = useState(false);
+  const [sendCoinsTooltip, setSendCoinsTooltip] = useState('');
+  const [coinTransferNotifications, setCoinTransferNotifications] = useState<
+    Array<{ id: string; amount: number; sender_id: string; recipient_id: string; created_at: string }>
+  >([]);
 
   useEffect(() => {
     if (!user || !conversationId) return;
@@ -98,6 +109,43 @@ export default function Chat() {
   }, [otherUser]);
 
   useEffect(() => {
+    if (!user || !otherUser || !conversationId) return;
+
+    const checkEligibility = async () => {
+      const result = await checkCanSendCoins(user.id, otherUser.id);
+      setCanSendCoins(result.canSend);
+      setSendCoinsTooltip(result.reason || '');
+    };
+
+    checkEligibility();
+
+    const loadOtherUserVerification = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('is_verified')
+        .eq('id', otherUser.id)
+        .maybeSingle();
+
+      if (data) {
+        otherUser.is_verified = data.is_verified;
+      }
+    };
+
+    loadOtherUserVerification();
+
+    const unsubscribeTransfers = subscribeToCoinTransfers(conversationId, (transfer) => {
+      setCoinTransferNotifications((prev) => [...prev, transfer]);
+      setTimeout(() => {
+        setCoinTransferNotifications((prev) => prev.filter((t) => t.id !== transfer.id));
+      }, 5000);
+    });
+
+    return () => {
+      unsubscribeTransfers();
+    };
+  }, [user, otherUser, conversationId]);
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
@@ -132,6 +180,17 @@ export default function Chat() {
       clearTimeout(typingTimeoutRef.current);
     }
     setTypingStatus(user.id, conversationId, false);
+  };
+
+  const handleTransferComplete = async (amount: number) => {
+    if (!user || !conversationId || !otherUser) return;
+
+    await sendMessage(
+      conversationId,
+      user.id,
+      otherUser.id,
+      `Sent ${amount} coins`
+    );
   };
 
   if (loading || !otherUser) {
@@ -202,6 +261,8 @@ export default function Chat() {
         <div className="space-y-4">
           {messages.map((message) => {
             const isSentByMe = message.sender_id === user?.id;
+            const isCoinTransfer = message.content.includes('Sent') && message.content.includes('coins');
+
             return (
               <div
                 key={message.id}
@@ -209,11 +270,21 @@ export default function Chat() {
               >
                 <div
                   className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                    isSentByMe
+                    isCoinTransfer
+                      ? isSentByMe
+                        ? 'bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-br-none'
+                        : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-bl-none'
+                      : isSentByMe
                       ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-br-none'
                       : 'bg-white/10 backdrop-blur-sm text-white rounded-bl-none border border-white/20'
                   }`}
                 >
+                  {isCoinTransfer && (
+                    <div className="flex items-center gap-2 mb-1">
+                      <Coins className="w-4 h-4" />
+                      <span className="text-xs font-semibold">Coin Transfer</span>
+                    </div>
+                  )}
                   <p className="break-words">{message.content}</p>
                   <div className="flex items-center justify-end gap-1 mt-1">
                     <span className="text-xs opacity-70">
@@ -237,6 +308,20 @@ export default function Chat() {
             );
           })}
 
+          {coinTransferNotifications.map((notification) => (
+            <div
+              key={notification.id}
+              className="flex justify-center animate-fade-in"
+            >
+              <div className="bg-yellow-500/20 border border-yellow-500/50 px-4 py-2 rounded-full text-yellow-300 text-sm font-semibold flex items-center gap-2">
+                <Coins className="w-4 h-4" />
+                {notification.sender_id === user?.id
+                  ? `You sent ${notification.amount} coins`
+                  : `Received ${notification.amount} coins`}
+              </div>
+            </div>
+          ))}
+
           {otherUserTyping && (
             <div className="flex justify-start">
               <div className="bg-white/10 backdrop-blur-sm px-4 py-3 rounded-2xl rounded-bl-none border border-white/20">
@@ -255,6 +340,28 @@ export default function Chat() {
       <div className="bg-black/20 backdrop-blur-sm border-t border-white/10">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <form onSubmit={handleSend} className="flex gap-3">
+            <div className="relative group">
+              <button
+                type="button"
+                onClick={() => canSendCoins && setShowSendCoinsModal(true)}
+                disabled={!canSendCoins}
+                className={`bg-white/10 text-white p-3 rounded-xl font-bold transition-all flex items-center justify-center ${
+                  canSendCoins
+                    ? 'hover:bg-yellow-500/20 hover:text-yellow-400'
+                    : 'opacity-50 cursor-not-allowed'
+                }`}
+                title={canSendCoins ? 'Send coins' : sendCoinsTooltip}
+              >
+                <Coins className="w-5 h-5" />
+              </button>
+              {!canSendCoins && sendCoinsTooltip && (
+                <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-10">
+                  <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 whitespace-nowrap border border-white/20">
+                    {sendCoinsTooltip}
+                  </div>
+                </div>
+              )}
+            </div>
             <input
               type="text"
               value={newMessage}
@@ -277,6 +384,19 @@ export default function Chat() {
           </form>
         </div>
       </div>
+
+      {conversationId && otherUser && (
+        <SendCoinsModal
+          isOpen={showSendCoinsModal}
+          onClose={() => setShowSendCoinsModal(false)}
+          recipientId={otherUser.id}
+          recipientUsername={otherUser.username}
+          recipientFullName={otherUser.full_name}
+          recipientIsVerified={otherUser.is_verified || false}
+          conversationId={conversationId}
+          onTransferComplete={handleTransferComplete}
+        />
+      )}
     </div>
   );
 }
