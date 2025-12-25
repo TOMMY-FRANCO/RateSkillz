@@ -40,7 +40,13 @@ export default function ViewedMe() {
   const [totalViewers, setTotalViewers] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [sendingRequest, setSendingRequest] = useState<string | null>(null);
-  const { getTierForRating } = useTierBadges();
+  const { tiers } = useTierBadges();
+
+  const getTierForRating = (rating: number) => {
+    return tiers.find(tier =>
+      rating >= tier.overall_rating_min && rating <= tier.overall_rating_max
+    );
+  };
 
   useEffect(() => {
     if (user) {
