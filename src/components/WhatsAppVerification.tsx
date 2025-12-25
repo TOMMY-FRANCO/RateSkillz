@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { CheckCircle, Share2, Loader2, X } from 'lucide-react';
+import { CheckCircle, Share2, Loader2, X, Gift } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { claimWhatsAppVerificationReward } from '../lib/rewards';
 
 interface WhatsAppVerificationProps {
   isVerified: boolean;
@@ -17,6 +18,8 @@ export function WhatsAppVerification({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verificationToken, setVerificationToken] = useState<string | null>(null);
+  const [rewardClaimed, setRewardClaimed] = useState(false);
+  const [showRewardMessage, setShowRewardMessage] = useState(false);
 
   const handleOpenModal = () => {
     setShowModal(true);
@@ -63,11 +66,19 @@ export function WhatsAppVerification({
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('is_verified')
+        .select('id, is_verified')
         .eq('verification_share_token', token)
         .single();
 
       if (profile?.is_verified) {
+        const rewardResult = await claimWhatsAppVerificationReward(profile.id);
+
+        if (rewardResult.success) {
+          setRewardClaimed(true);
+          setShowRewardMessage(true);
+          setTimeout(() => setShowRewardMessage(false), 5000);
+        }
+
         handleCloseModal();
         if (onVerificationComplete) {
           onVerificationComplete();
@@ -89,6 +100,18 @@ export function WhatsAppVerification({
 
   return (
     <>
+      {showRewardMessage && (
+        <div className="fixed top-4 right-4 z-[60] bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-lg shadow-2xl animate-slide-in">
+          <div className="flex items-center gap-3">
+            <Gift className="w-6 h-6" />
+            <div>
+              <p className="font-bold">Verification Successful!</p>
+              <p className="text-sm">You earned 10 coins! 🎉</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <button
         onClick={handleOpenModal}
         className="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-medium rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
@@ -120,8 +143,12 @@ export function WhatsAppVerification({
             </div>
 
             <div className="space-y-4 mb-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">Benefits of Verification:</h3>
+              <div className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-300 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Gift className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-semibold text-blue-900">Verification Reward:</h3>
+                </div>
+                <p className="text-lg font-bold text-blue-900 mb-3">🎁 Earn 10 Coins!</p>
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• Blue checkmark badge on your card</li>
                   <li>• Increased trust and credibility</li>

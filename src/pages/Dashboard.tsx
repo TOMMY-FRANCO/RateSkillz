@@ -13,6 +13,8 @@ import { getUserStats } from '../lib/ratings';
 import { useUnreadMessages } from '../hooks/useUnreadMessages';
 import { useNotifications } from '../hooks/useNotifications';
 import NotificationBadge from '../components/NotificationBadge';
+import { SocialSharingReward } from '../components/SocialSharingReward';
+import { FriendMilestoneReward } from '../components/FriendMilestoneReward';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -228,6 +230,14 @@ export default function Dashboard() {
             <span>Preview Profile</span>
             <span className="text-sm opacity-80">See how others view your profile</span>
           </button>
+        </div>
+
+        <div className="max-w-2xl mx-auto mb-12 space-y-6">
+          <SocialSharingReward
+            username={profile.username}
+            profileUrl={`${window.location.origin}/profile/${profile.username}`}
+          />
+          <FriendMilestoneReward />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
