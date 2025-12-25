@@ -75,7 +75,7 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
   const sizeClasses = {
     small: 'w-64',
     medium: 'w-80',
-    large: 'w-[500px]',
+    large: 'w-[90vw] sm:w-[700px] max-w-[700px]',
   };
 
   const handleDownload = async () => {
@@ -105,15 +105,18 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMDMiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
 
         <div className="relative p-6">
-          <div className="flex flex-wrap items-center justify-center gap-1.5 mb-4">
-            <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 transition-all duration-300">
+          {/* Card Info Grid - 4 elements per line, no wrapping */}
+          <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-2 justify-items-center max-w-full">
+            {/* Element 1: Overall Score */}
+            <div className="bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-md border border-white/30 transition-all duration-300">
               <div className="flex flex-col items-center">
-                <span className="text-lg font-black text-white leading-none">{overall}</span>
-                <span className="text-[8px] font-bold text-gray-300 uppercase">OVR</span>
+                <span className="text-xl font-black text-white leading-none">{overall}</span>
+                <span className="text-[10px] font-bold text-gray-300 uppercase">OVR</span>
               </div>
             </div>
 
-            <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 flex items-center justify-center transition-all duration-300">
+            {/* Element 2: Verification Badge */}
+            <div className="bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-md border border-white/30 flex items-center justify-center transition-all duration-300">
               <VerificationBadge
                 isVerified={isVerified}
                 hasSocialBadge={hasSocialBadge}
@@ -121,46 +124,52 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
               />
             </div>
 
+            {/* Element 3: Tier Name */}
             {tier.name !== 'Default' && (
-              <div className={`${tierBadgeColors} px-2.5 py-1.5 rounded-md border transition-all duration-300`}>
+              <div className={`${tierBadgeColors} px-3 py-1.5 rounded-md border transition-all duration-300`}>
                 <div className="flex items-center gap-1">
-                  <Award className="w-3 h-3" />
-                  <span className="text-[8px] font-black uppercase">{tier.name}</span>
+                  <Award className="w-4 h-4" />
+                  <span className="text-[10px] font-black uppercase whitespace-nowrap">{tier.name}</span>
                 </div>
               </div>
             )}
 
+            {/* Element 4: Manager Badge */}
             {profile.is_manager && (
-              <div className="bg-gradient-to-r from-red-500 to-orange-500 px-2.5 py-1.5 rounded-md border-2 border-yellow-300 transition-all duration-300">
-                <span className="text-white font-black text-sm">M</span>
+              <div className="bg-gradient-to-r from-red-500 to-orange-500 px-3 py-1.5 rounded-md border-2 border-yellow-300 transition-all duration-300">
+                <span className="text-white font-black text-base">M</span>
               </div>
             )}
 
+            {/* Element 5: Position */}
             {profile.position && (
-              <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 transition-all duration-300">
-                <span className="text-[8px] font-black text-white uppercase">{profile.position}</span>
+              <div className="bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-md border border-white/30 transition-all duration-300">
+                <span className="text-[10px] font-black text-white uppercase">{profile.position}</span>
               </div>
             )}
 
+            {/* Element 6: Team */}
             {profile.team && (
-              <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 transition-all duration-300">
-                <span className="text-[8px] font-black text-white uppercase truncate max-w-[80px]">{profile.team}</span>
+              <div className="bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-md border border-white/30 transition-all duration-300">
+                <span className="text-[10px] font-black text-white uppercase truncate max-w-[140px]">{profile.team}</span>
               </div>
             )}
 
+            {/* Element 7: Card Worth */}
             {cardValue && (
-              <div className="bg-gradient-to-r from-yellow-400 to-amber-500 px-2.5 py-1.5 rounded-md border border-yellow-200 transition-all duration-300">
-                <div className="flex items-center gap-0.5">
-                  <Coins className="w-3 h-3 text-black" />
-                  <span className="text-[8px] font-black text-black">{cardValue}</span>
+              <div className="bg-gradient-to-r from-yellow-400 to-amber-500 px-3 py-1.5 rounded-md border border-yellow-200 transition-all duration-300">
+                <div className="flex items-center gap-1">
+                  <Coins className="w-4 h-4 text-black" />
+                  <span className="text-[10px] font-black text-black">{cardValue}</span>
                 </div>
               </div>
             )}
 
+            {/* Element 8: Global Leaderboard Rank */}
             {rank && (
-              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 px-2.5 py-1.5 rounded-md border border-yellow-200 transition-all duration-300">
-                <div className="flex items-center gap-0.5">
-                  <span className="text-[8px] font-black text-black">#{rank.position}</span>
+              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 px-3 py-1.5 rounded-md border border-yellow-200 transition-all duration-300">
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] font-black text-black">#{rank.position}</span>
                 </div>
               </div>
             )}
