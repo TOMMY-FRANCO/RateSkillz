@@ -75,7 +75,7 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
   const sizeClasses = {
     small: 'w-64',
     medium: 'w-80',
-    large: 'w-[420px]',
+    large: 'w-[500px]',
   };
 
   const handleDownload = async () => {
@@ -105,71 +105,67 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMDMiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
 
         <div className="relative p-6">
-          <div className="flex flex-wrap items-center justify-center gap-1.5 mb-4">
-            <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 transition-all duration-300">
-              <div className="flex flex-col items-center">
-                <span className="text-xl font-black text-white leading-none">{overall}</span>
-                <span className="text-[8px] font-bold text-gray-300 uppercase">OVR</span>
+          <div className="overflow-x-auto mb-4 -mx-6 px-6">
+            <div className="flex items-center justify-center gap-1.5 min-w-max">
+              <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 transition-all duration-300">
+                <div className="flex flex-col items-center">
+                  <span className="text-lg font-black text-white leading-none">{overall}</span>
+                  <span className="text-[8px] font-bold text-gray-300 uppercase">OVR</span>
+                </div>
               </div>
+
+              <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 flex items-center justify-center transition-all duration-300">
+                <VerificationBadge
+                  isVerified={isVerified}
+                  hasSocialBadge={hasSocialBadge}
+                  size="sm"
+                />
+              </div>
+
+              {tier.name !== 'Default' && (
+                <div className={`${tierBadgeColors} px-2.5 py-1.5 rounded-md border transition-all duration-300`}>
+                  <div className="flex items-center gap-1">
+                    <Award className="w-3 h-3" />
+                    <span className="text-[8px] font-black uppercase">{tier.name}</span>
+                  </div>
+                </div>
+              )}
+
+              {profile.is_manager && (
+                <div className="bg-gradient-to-r from-red-500 to-orange-500 px-2.5 py-1.5 rounded-md border-2 border-yellow-300 transition-all duration-300">
+                  <span className="text-white font-black text-sm">M</span>
+                </div>
+              )}
+
+              {profile.position && (
+                <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 transition-all duration-300">
+                  <span className="text-[8px] font-black text-white uppercase">{profile.position}</span>
+                </div>
+              )}
+
+              {profile.team && (
+                <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 transition-all duration-300">
+                  <span className="text-[8px] font-black text-white uppercase truncate max-w-[80px]">{profile.team}</span>
+                </div>
+              )}
+
+              {cardValue && (
+                <div className="bg-gradient-to-r from-yellow-400 to-amber-500 px-2.5 py-1.5 rounded-md border border-yellow-200 transition-all duration-300">
+                  <div className="flex items-center gap-0.5">
+                    <Coins className="w-3 h-3 text-black" />
+                    <span className="text-[8px] font-black text-black">{cardValue}</span>
+                  </div>
+                </div>
+              )}
+
+              {rank && (
+                <div className="bg-gradient-to-r from-yellow-400 to-orange-500 px-2.5 py-1.5 rounded-md border border-yellow-200 transition-all duration-300">
+                  <div className="flex items-center gap-0.5">
+                    <span className="text-[8px] font-black text-black">#{rank.position}</span>
+                  </div>
+                </div>
+              )}
             </div>
-
-            <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 flex items-center justify-center transition-all duration-300">
-              <VerificationBadge
-                isVerified={isVerified}
-                hasSocialBadge={hasSocialBadge}
-                size="sm"
-              />
-            </div>
-
-            {tier.name !== 'Default' && (
-              <div className={`${tierBadgeColors} px-2.5 py-1.5 rounded-md border transition-all duration-300`}>
-                <div className="flex items-center gap-1">
-                  <Award className="w-3 h-3" />
-                  <span className="text-[9px] font-black uppercase">{tier.name}</span>
-                </div>
-              </div>
-            )}
-
-            {profile.is_manager && (
-              <div className="bg-gradient-to-r from-red-500 to-orange-500 px-2.5 py-1.5 rounded-md border-2 border-yellow-300 transition-all duration-300">
-                <span className="text-white font-black text-sm">M</span>
-              </div>
-            )}
-
-            {profile.position && (
-              <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 transition-all duration-300">
-                <span className="text-[9px] font-black text-white uppercase">{profile.position}</span>
-              </div>
-            )}
-
-            {profile.number && (
-              <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 transition-all duration-300">
-                <span className="text-[9px] font-black text-white">#{profile.number}</span>
-              </div>
-            )}
-
-            {profile.team && (
-              <div className="bg-black/60 backdrop-blur-sm px-2.5 py-1.5 rounded-md border border-white/30 transition-all duration-300">
-                <span className="text-[9px] font-black text-white uppercase truncate max-w-[80px]">{profile.team}</span>
-              </div>
-            )}
-
-            {cardValue && (
-              <div className="bg-gradient-to-r from-yellow-400 to-amber-500 px-2.5 py-1.5 rounded-md border border-yellow-200 transition-all duration-300">
-                <div className="flex items-center gap-0.5">
-                  <Coins className="w-3 h-3 text-black" />
-                  <span className="text-[9px] font-black text-black">{cardValue}</span>
-                </div>
-              </div>
-            )}
-
-            {rank && (
-              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 px-2.5 py-1.5 rounded-md border border-yellow-200 transition-all duration-300">
-                <div className="flex items-center gap-0.5">
-                  <span className="text-[9px] font-black text-black">#{rank.position}</span>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className="relative h-64 mb-4">
