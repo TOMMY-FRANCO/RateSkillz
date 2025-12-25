@@ -381,6 +381,21 @@ export default function Dashboard() {
           </button>
 
           <button
+            onClick={() => navigate('/viewed-me')}
+            className="bg-gradient-to-br from-teal-900/30 to-cyan-900/30 border border-teal-600/50 rounded-xl p-6 hover:border-teal-500 transition-all group cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Eye className="w-6 h-6 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">Viewed Me</h3>
+                <p className="text-gray-400 text-sm">See who visited</p>
+              </div>
+            </div>
+          </button>
+
+          <button
             onClick={() => navigate('/edit-profile')}
             className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-6 hover:border-cyan-500/50 transition-all group cursor-pointer text-left w-full"
           >

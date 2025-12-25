@@ -22,6 +22,7 @@ import Chat from './pages/Chat';
 import TermsOfService from './pages/TermsOfService';
 import { VerifyProfile } from './pages/VerifyProfile';
 import SearchFriends from './pages/SearchFriends';
+import ViewedMe from './pages/ViewedMe';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -93,6 +94,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <SearchFriends />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/viewed-me"
+            element={
+              <ProtectedRoute>
+                <ViewedMe />
               </ProtectedRoute>
             }
           />
