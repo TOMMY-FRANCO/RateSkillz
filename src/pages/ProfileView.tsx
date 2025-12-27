@@ -142,12 +142,7 @@ export default function ProfileView() {
         }).catch(err => console.error('Error recording view:', err));
       }
 
-      const { data: friendsData } = await supabase
-        .from('friends')
-        .select('id')
-        .eq('status', 'accepted')
-        .or(`user_id.eq.${profileData.id},friend_id.eq.${profileData.id}`);
-      setFriendsCount(friendsData?.length || 0);
+      setFriendsCount(profileData.friend_count || 0);
 
       if (currentUser && profileData.id !== currentUser.id) {
         console.log('🔍 Loading friend status...');

@@ -61,12 +61,7 @@ export default function PublicCard() {
 
       setSocialLinks(socialLinksData);
 
-      const { data: friendsData } = await supabase
-        .from('friends')
-        .select('id')
-        .eq('status', 'accepted')
-        .or(`user_id.eq.${profileData.id},friend_id.eq.${profileData.id}`);
-      setFriendsCount(friendsData?.length || 0);
+      setFriendsCount(profileData.friend_count || 0);
 
       const { data: likesData } = await supabase
         .from('profile_likes')
