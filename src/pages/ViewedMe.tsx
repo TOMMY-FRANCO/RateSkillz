@@ -53,8 +53,25 @@ export default function ViewedMe() {
     if (user) {
       fetchViewers();
       markNotificationsRead(user.id, 'profile_view');
+      markProfileViewsAsRead();
     }
   }, [user, currentPage]);
+
+  const markProfileViewsAsRead = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase.rpc('mark_profile_views_read', {
+        p_user_id: user.id
+      });
+
+      if (error) {
+        console.error('Error marking profile views as read:', error);
+      }
+    } catch (error) {
+      console.error('Exception marking profile views as read:', error);
+    }
+  };
 
   const fetchViewers = async () => {
     if (!user) return;

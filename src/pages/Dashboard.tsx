@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [hasSocialBadge, setHasSocialBadge] = useState(false);
+  const [unreadProfileViews, setUnreadProfileViews] = useState(0);
   const unreadMessagesCount = useUnreadMessages();
   const { counts: notificationCounts, getCount } = useNotifications(profile?.id);
 
@@ -37,6 +38,7 @@ export default function Dashboard() {
       calculateRank();
       fetchPendingRequests();
       fetchVerificationStatus();
+      fetchUnreadProfileViews();
 
       if (!profile.terms_accepted_at) {
         setShowTermsModal(true);
@@ -45,6 +47,23 @@ export default function Dashboard() {
       }
     }
   }, [profile]);
+
+  const fetchUnreadProfileViews = async () => {
+    if (!profile) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('unread_profile_views')
+        .eq('id', profile.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      setUnreadProfileViews(data?.unread_profile_views || 0);
+    } catch (error) {
+      console.error('Error fetching unread profile views:', error);
+    }
+  };
 
   const fetchVerificationStatus = async () => {
     if (!profile) return;
@@ -403,7 +422,7 @@ export default function Dashboard() {
             onClick={() => navigate('/viewed-me')}
             className="bg-gradient-to-br from-teal-900/30 to-cyan-900/30 border border-teal-600/50 rounded-xl p-6 hover:border-teal-500 transition-all group cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={getCount(['profile_view'])} />
+            <NotificationBadge count={unreadProfileViews} />
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Eye className="w-6 h-6 text-black" />
