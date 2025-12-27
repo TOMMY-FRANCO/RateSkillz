@@ -123,6 +123,11 @@ export default function TransactionHistory() {
         return <ArrowUpCircle className="w-5 h-5 text-green-400" />;
       case 'card_royalty':
         return <Crown className="w-5 h-5 text-yellow-400" />;
+      case 'whatsapp_share':
+      case 'reward_whatsapp':
+      case 'reward_social_share':
+      case 'reward_friend_milestone':
+        return <TrendingUp className="w-5 h-5 text-emerald-400" />;
       default:
         return <Coins className="w-5 h-5 text-yellow-400" />;
     }
@@ -166,6 +171,16 @@ export default function TransactionHistory() {
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Transaction History</h1>
           <p className="text-white/60">Track all your coin earnings and purchases</p>
+
+          {!balanceLoading && (
+            <div className="mt-6 inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-6 py-4">
+              <Coins className="w-6 h-6 text-yellow-400" />
+              <div className="text-left">
+                <p className="text-white/60 text-sm">Current Balance</p>
+                <p className="text-2xl font-bold text-white">{currentBalance.toFixed(2)} <span className="text-lg text-white/60">coins</span></p>
+              </div>
+            </div>
+          )}
 
           {balanceValidation && (
             <div className={`mt-4 px-4 py-2 rounded-lg ${balanceValidation.isValid ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
