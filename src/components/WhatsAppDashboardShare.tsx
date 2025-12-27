@@ -14,10 +14,35 @@ export function WhatsAppDashboardShare({ username, profileUrl }: WhatsAppDashboa
   const [claiming, setClaiming] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fullName, setFullName] = useState('');
+  const [overallRating, setOverallRating] = useState(0);
+  const [newBalance, setNewBalance] = useState<number | null>(null);
 
   useEffect(() => {
     checkClaimStatus();
+    fetchProfileData();
   }, [user]);
+
+  const fetchProfileData = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name, overall_rating')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setFullName(data.full_name || username);
+        setOverallRating(data.overall_rating || 0);
+      }
+    } catch (err) {
+      console.error('Error fetching profile data:', err);
+    }
+  };
 
   const checkClaimStatus = async () => {
     if (!user) return;
@@ -60,8 +85,9 @@ export function WhatsAppDashboardShare({ username, profileUrl }: WhatsAppDashboa
 
       setClaimed(true);
       setShowSuccess(true);
+      setNewBalance(data.new_balance);
 
-      const shareText = `Check out my player card on RatingSkill! @${username}`;
+      const shareText = `Check out ${fullName}'s Football Player Card! Overall Rating: ${overallRating}. Rate me on RatingSkill!`;
       const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + profileUrl)}`;
 
       window.open(whatsappUrl, '_blank');
@@ -103,13 +129,15 @@ export function WhatsAppDashboardShare({ username, profileUrl }: WhatsAppDashboa
 
       {showSuccess && (
         <div className="mb-4 bg-green-500/20 border border-green-500/50 rounded-lg p-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-2">
             <Coins className="w-5 h-5 text-yellow-400" />
             <p className="text-green-200 font-semibold">
-              You've earned 10 coins! Share this link via WhatsApp
+              You've earned 10 coins! Your new balance: {newBalance} coins
             </p>
           </div>
-          <p className="text-sm text-green-300/80 mt-2 break-all">{profileUrl}</p>
+          <p className="text-sm text-green-300/80">
+            Share this link: <span className="font-mono break-all">{profileUrl}</span>
+          </p>
         </div>
       )}
 
