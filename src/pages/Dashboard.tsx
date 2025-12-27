@@ -15,6 +15,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import NotificationBadge from '../components/NotificationBadge';
 import { SocialSharingReward } from '../components/SocialSharingReward';
 import { FriendMilestoneReward } from '../components/FriendMilestoneReward';
+import { WhatsAppDashboardShare } from '../components/WhatsAppDashboardShare';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -233,6 +234,10 @@ export default function Dashboard() {
         </div>
 
         <div className="max-w-2xl mx-auto mb-12 space-y-6">
+          <WhatsAppDashboardShare
+            username={profile.username}
+            profileUrl={`${window.location.origin}/profile/${profile.username}`}
+          />
           <SocialSharingReward
             username={profile.username}
             profileUrl={`${window.location.origin}/profile/${profile.username}`}
