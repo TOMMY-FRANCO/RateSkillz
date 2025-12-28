@@ -72,9 +72,9 @@ Deno.serve(async (req: Request) => {
 
 async function getBalance(supabase: any, userId: string) {
   const { data, error } = await supabase
-    .from('profiles')
-    .select('coin_balance')
-    .eq('id', userId)
+    .from('coins')
+    .select('balance')
+    .eq('user_id', userId)
     .maybeSingle();
 
   if (error) {
@@ -85,7 +85,7 @@ async function getBalance(supabase: any, userId: string) {
   }
 
   return new Response(
-    JSON.stringify({ balance: parseFloat(data?.coin_balance || 0) }),
+    JSON.stringify({ balance: parseFloat(data?.balance || 0) }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }

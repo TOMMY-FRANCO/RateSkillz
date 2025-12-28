@@ -2,12 +2,12 @@ import { supabase } from './supabase';
 
 export async function getUserBalance(userId: string): Promise<number> {
   const { data } = await supabase
-    .from('profiles')
-    .select('coin_balance')
-    .eq('id', userId)
+    .from('coins')
+    .select('balance')
+    .eq('user_id', userId)
     .maybeSingle();
 
-  return Number(data?.coin_balance || 0);
+  return data?.balance || 0;
 }
 
 export async function getMultipleUserBalances(userIds: string[]): Promise<Map<string, number>> {
@@ -16,14 +16,14 @@ export async function getMultipleUserBalances(userIds: string[]): Promise<Map<st
   }
 
   const { data } = await supabase
-    .from('profiles')
-    .select('id, coin_balance')
-    .in('id', userIds);
+    .from('coins')
+    .select('user_id, balance')
+    .in('user_id', userIds);
 
   const balanceMap = new Map<string, number>();
 
   data?.forEach((row) => {
-    balanceMap.set(row.id, Number(row.coin_balance || 0));
+    balanceMap.set(row.user_id, row.balance || 0);
   });
 
   userIds.forEach((userId) => {
