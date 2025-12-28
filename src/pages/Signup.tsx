@@ -48,129 +48,136 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-cyan-400 rounded-xl flex items-center justify-center">
-              <UserPlus className="w-8 h-8 text-black" />
-            </div>
-          </div>
-          <h2 className="text-4xl font-bold text-white mb-2">Create Account</h2>
-          <p className="text-gray-400">Join and create your player card</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="absolute inset-0">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#00FF85]/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#38BDF8]/10 rounded-full blur-3xl"></div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-300 mb-2">
-                Full Name
-              </label>
-              <input
-                id="fullName"
-                type="text"
-                required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                placeholder="John Doe"
-              />
+      <div className="max-w-md w-full space-y-8 relative z-10">
+        <div className="glass-container p-8 animate-fade-in">
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center shadow-lg shadow-[#00FF85]/30">
+                <UserPlus className="w-8 h-8 text-black" />
+              </div>
             </div>
-
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
-                Username
-              </label>
-              <input
-                id="username"
-                type="text"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                placeholder="johndoe"
-              />
-              <p className="mt-1 text-xs text-gray-500">Lowercase letters, numbers, and underscores only</p>
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                placeholder="your@email.com"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                placeholder="••••••••"
-              />
-              <p className="mt-1 text-xs text-gray-500">Minimum 6 characters</p>
-            </div>
+            <h2 className="text-4xl font-bold text-white mb-2 heading-glow">Create Account</h2>
+            <p className="text-[#B0B8C8]">Join and create your player card</p>
           </div>
 
-          <div>
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={termsAccepted}
-                onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="w-5 h-5 mt-0.5 rounded border-2 border-gray-600 bg-gray-800 checked:bg-cyan-600 checked:border-cyan-600 cursor-pointer"
-              />
-              <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                I agree to the{' '}
-                <Link
-                  to="/terms"
-                  target="_blank"
-                  className="text-cyan-400 hover:text-cyan-300 underline"
-                >
-                  Terms of Service
-                </Link>
-                {' '}and understand that virtual coins have no real-world value and cannot be withdrawn or exchanged for money.
-              </span>
-            </label>
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="fullName" className="block text-sm font-semibold text-white mb-2 uppercase tracking-wider">
+                  Full Name
+                </label>
+                <input
+                  id="fullName"
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full"
+                  placeholder="John Doe"
+                />
+              </div>
 
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3">
-              <p className="text-red-400 text-sm">{error}</p>
+              <div>
+                <label htmlFor="username" className="block text-sm font-semibold text-white mb-2 uppercase tracking-wider">
+                  Username
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                  className="w-full"
+                  placeholder="johndoe"
+                />
+                <p className="mt-1 text-xs text-[#6B7280]">Lowercase letters, numbers, and underscores only</p>
+              </div>
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-semibold text-white mb-2 uppercase tracking-wider">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full"
+                  placeholder="your@email.com"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-semibold text-white mb-2 uppercase tracking-wider">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full"
+                  placeholder="••••••••"
+                />
+                <p className="mt-1 text-xs text-[#6B7280]">Minimum 6 characters</p>
+              </div>
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold rounded-lg hover:from-green-400 hover:to-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Creating account...' : 'Create Account'}
-          </button>
+            <div>
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="w-5 h-5 mt-0.5 rounded border-2 border-[#B0B8C8] bg-[rgba(255,255,255,0.08)] checked:bg-[#00E0FF] checked:border-[#00E0FF] cursor-pointer"
+                />
+                <span className="text-sm text-[#B0B8C8] group-hover:text-white transition-colors">
+                  I agree to the{' '}
+                  <Link
+                    to="/terms"
+                    target="_blank"
+                    className="text-[#00E0FF] hover:text-[#00FF85] underline"
+                  >
+                    Terms of Service
+                  </Link>
+                  {' '}and understand that virtual coins have no real-world value and cannot be withdrawn or exchanged for money.
+                </span>
+              </label>
+            </div>
 
-          <p className="text-center text-gray-400">
-            Already have an account?{' '}
+            {error && (
+              <div className="glass-container bg-red-500/10 border-red-500/50 p-4">
+                <p className="text-red-400 text-sm">{error}</p>
+              </div>
+            )}
+
             <button
-              onClick={() => navigate('/login')}
-              className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors bg-none border-none cursor-pointer"
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign in
+              {loading ? 'Creating account...' : 'Create Account'}
             </button>
-          </p>
-        </form>
+
+            <p className="text-center text-[#B0B8C8]">
+              Already have an account?{' '}
+              <button
+                onClick={() => navigate('/login')}
+                className="text-[#00E0FF] hover:text-[#00FF85] font-semibold transition-colors bg-transparent border-none cursor-pointer"
+              >
+                Sign in
+              </button>
+            </p>
+          </form>
+        </div>
       </div>
     </div>
   );

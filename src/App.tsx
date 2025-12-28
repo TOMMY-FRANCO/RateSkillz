@@ -24,10 +24,18 @@ import { VerifyProfile } from './pages/VerifyProfile';
 import SearchFriends from './pages/SearchFriends';
 import ViewedMe from './pages/ViewedMe';
 import ErrorBoundary from './components/ErrorBoundary';
+import FloatingNav from './components/FloatingNav';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  return user ? <>{children}</> : <Navigate to="/" replace />;
+  return user ? (
+    <>
+      {children}
+      <FloatingNav />
+    </>
+  ) : (
+    <Navigate to="/" replace />
+  );
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {

@@ -138,20 +138,20 @@ export default function Dashboard() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-white">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      <nav className="bg-gray-900 border-b border-gray-800">
+    <div className="min-h-screen pb-24">
+      <div className="glass-container rounded-none border-l-0 border-r-0 border-t-0 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">
-                RatingSkill.com
+              <h1 className="text-xl font-bold text-white heading-glow">
+                RatingSkill®
               </h1>
             </div>
 
@@ -163,62 +163,25 @@ export default function Dashboard() {
                 <CoinBalance />
               </button>
               <button
-                onClick={() => navigate('/inbox')}
-                className="text-gray-300 hover:text-cyan-400 transition-colors flex items-center space-x-2 bg-none border-none cursor-pointer relative"
-              >
-                <MessageCircle className="w-5 h-5" />
-                {unreadMessagesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
-                    {unreadMessagesCount}
-                  </span>
-                )}
-                <span className="hidden sm:inline">Messages</span>
-              </button>
-              <button
-                onClick={() => navigate('/friends')}
-                className="text-gray-300 hover:text-cyan-400 transition-colors flex items-center space-x-2 bg-none border-none cursor-pointer relative"
-              >
-                <Bell className="w-5 h-5" />
-                {pendingRequestsCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center">
-                    {pendingRequestsCount}
-                  </span>
-                )}
-                <span className="hidden sm:inline">Notifications</span>
-              </button>
-              <button
-                onClick={() => navigate('/edit-profile')}
-                className="text-gray-300 hover:text-cyan-400 transition-colors flex items-center space-x-2 bg-none border-none cursor-pointer"
-              >
-                <Edit className="w-5 h-5" />
-                <span className="hidden sm:inline">Edit Profile</span>
-              </button>
-              <button
-                onClick={() => navigate('/settings')}
-                className="text-gray-300 hover:text-cyan-400 transition-colors bg-none border-none cursor-pointer"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
-              <button
                 onClick={handleSignOut}
-                className="text-gray-300 hover:text-red-400 transition-colors bg-none border-none cursor-pointer"
+                className="text-[#B0B8C8] hover:text-red-400 transition-colors bg-none border-none cursor-pointer"
               >
                 <LogOut className="w-5 h-5" />
               </button>
             </div>
           </div>
         </div>
-      </nav>
+      </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-white mb-2">
+        <div className="text-center mb-8 animate-fade-in">
+          <h2 className="text-4xl font-bold text-white mb-2 heading-glow">
             Welcome, {displayUsername(profile.username)}!
           </h2>
           <div className="flex items-center justify-center gap-2 mb-2">
             <OnlineStatus lastActive={profile.last_active} size="large" />
           </div>
-          <p className="text-gray-400">
+          <p className="text-[#B0B8C8] text-lg">
             {(userStats?.rating_count || 0) === 0
               ? 'Invite friends to rate your player card'
               : `Your card has been rated by ${userStats?.rating_count || 0} ${userStats?.rating_count === 1 ? 'friend' : 'friends'}`}
@@ -244,7 +207,7 @@ export default function Dashboard() {
         <div className="flex justify-center mb-12">
           <button
             onClick={() => navigate(`/profile/${profile.username}?preview=true`)}
-            className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl hover:scale-105"
+            className="btn-secondary flex items-center gap-3 px-8 py-4"
           >
             <Eye className="w-5 h-5" />
             <span>Preview Profile</span>
@@ -267,68 +230,68 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           <button
             onClick={() => navigate('/inbox')}
-            className="bg-gradient-to-br from-pink-900/30 to-rose-900/30 border border-pink-600/50 rounded-xl p-6 hover:border-pink-500 transition-all group cursor-pointer text-left w-full relative"
+            className="glass-card p-6 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge count={getCount(['message', 'coin_received', 'coin_request'])} />
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#FF6B9D] to-[#C44569] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
                 <MessageCircle className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Messages</h3>
-                <p className="text-gray-400 text-sm">Chat with friends</p>
+                <h3 className="text-white font-bold">Messages</h3>
+                <p className="text-[#B0B8C8] text-sm">Chat with friends</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/search-friends')}
-            className="bg-gradient-to-br from-indigo-900/30 to-violet-900/30 border border-indigo-600/50 rounded-xl p-6 hover:border-indigo-500 transition-all group cursor-pointer text-left w-full"
+            className="glass-card p-6 cursor-pointer text-left w-full"
           >
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <Search className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Search Friends</h3>
-                <p className="text-gray-400 text-sm">Find & connect</p>
+                <h3 className="text-white font-bold">Search Friends</h3>
+                <p className="text-[#B0B8C8] text-sm">Find & connect</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/trading')}
-            className="bg-gradient-to-br from-cyan-900/30 to-blue-900/30 border border-cyan-600/50 rounded-xl p-6 hover:border-cyan-500 transition-all group cursor-pointer text-left w-full relative"
+            className="glass-card p-6 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge count={getCount(['swap_offer', 'purchase_offer', 'card_sold'])} />
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
                 <ShoppingBag className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Card Trading</h3>
-                <p className="text-gray-400 text-sm">Buy & sell cards</p>
+                <h3 className="text-white font-bold">Card Trading</h3>
+                <p className="text-[#B0B8C8] text-sm">Buy & sell cards</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/battle-mode')}
-            className="bg-gradient-to-br from-red-900/30 to-orange-900/30 border-2 border-red-600/50 rounded-xl p-6 hover:border-red-500 transition-all group cursor-pointer text-left w-full relative"
+            className="glass-card p-6 border-2 border-[#38BDF8]/50 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge count={getCount(['battle_request'])} className={profile.is_manager ? 'top-12' : ''} />
             {profile.is_manager && (
-              <span className="absolute top-2 right-2 px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-bold rounded">
-                MANAGER
+              <span className="absolute top-2 right-2 px-3 py-1 bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black text-xs font-bold rounded-lg shadow-lg shadow-[#FFD700]/30 uppercase tracking-wider">
+                Manager
               </span>
             )}
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#38BDF8] to-[#0EA5E9] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
                 <Swords className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Battle Mode</h3>
-                <p className="text-gray-400 text-sm">
+                <h3 className="text-white font-bold">Battle Mode</h3>
+                <p className="text-[#B0B8C8] text-sm">
                   {profile.is_manager ? 'Card battles & wagers' : 'View battles & challenges'}
                 </p>
               </div>
@@ -337,130 +300,130 @@ export default function Dashboard() {
 
           <button
             onClick={() => navigate('/shop')}
-            className="bg-gradient-to-br from-yellow-900/30 to-orange-900/30 border border-yellow-600/50 rounded-xl p-6 hover:border-yellow-500 transition-all group cursor-pointer text-left w-full"
+            className="glass-card p-6 cursor-pointer text-left w-full"
           >
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#FFD700] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FFD700]/30">
                 <ShoppingBag className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Coin Shop</h3>
-                <p className="text-gray-400 text-sm">Buy coins</p>
+                <h3 className="text-white font-bold">Coin Shop</h3>
+                <p className="text-[#B0B8C8] text-sm">Buy coins</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/watch-ad')}
-            className="bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-600/50 rounded-xl p-6 hover:border-green-500 transition-all group cursor-pointer text-left w-full relative"
+            className="glass-card p-6 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge count={notificationCounts.ad_available} />
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#00FF85] to-[#00D67A] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <Tv className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Watch & Earn</h3>
-                <p className="text-gray-400 text-sm">Get 10 coins/day</p>
+                <h3 className="text-white font-bold">Watch & Earn</h3>
+                <p className="text-[#B0B8C8] text-sm">Get 10 coins/day</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/transactions')}
-            className="bg-gradient-to-br from-blue-900/30 to-cyan-900/30 border border-blue-600/50 rounded-xl p-6 hover:border-blue-500 transition-all group cursor-pointer text-left w-full relative"
+            className="glass-card p-6 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge count={getCount(['transaction'])} />
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#38BDF8] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
                 <TrendingUp className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Transactions</h3>
-                <p className="text-gray-400 text-sm">View history</p>
+                <h3 className="text-white font-bold">Transactions</h3>
+                <p className="text-[#B0B8C8] text-sm">View history</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/leaderboard')}
-            className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 border border-purple-600/50 rounded-xl p-6 hover:border-purple-500 transition-all group cursor-pointer text-left w-full relative"
+            className="glass-card p-6 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge count={getCount(['rank_update'])} />
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#FFD700] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FFD700]/30">
                 <Trophy className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Leaderboard</h3>
-                <p className="text-gray-400 text-sm">Top 150 rankings</p>
+                <h3 className="text-white font-bold">Leaderboard</h3>
+                <p className="text-[#B0B8C8] text-sm">Top 150 rankings</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/friends')}
-            className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-6 hover:border-cyan-500/50 transition-all group cursor-pointer text-left w-full relative"
+            className="glass-card p-6 cursor-pointer text-left w-full relative"
           >
             {pendingRequestsCount > 0 && (
-              <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+              <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg shadow-red-500/50">
                 {pendingRequestsCount}
               </span>
             )}
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <Bell className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Notifications</h3>
-                <p className="text-gray-400 text-sm">Friend requests</p>
+                <h3 className="text-white font-bold">Notifications</h3>
+                <p className="text-[#B0B8C8] text-sm">Friend requests</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/viewed-me')}
-            className="bg-gradient-to-br from-teal-900/30 to-cyan-900/30 border border-teal-600/50 rounded-xl p-6 hover:border-teal-500 transition-all group cursor-pointer text-left w-full relative"
+            className="glass-card p-6 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge count={unreadProfileViews} />
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
                 <Eye className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Viewed Me</h3>
-                <p className="text-gray-400 text-sm">See who visited</p>
+                <h3 className="text-white font-bold">Viewed Me</h3>
+                <p className="text-[#B0B8C8] text-sm">See who visited</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/edit-profile')}
-            className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-6 hover:border-cyan-500/50 transition-all group cursor-pointer text-left w-full"
+            className="glass-card p-6 cursor-pointer text-left w-full"
           >
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <Edit className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Edit Profile</h3>
-                <p className="text-gray-400 text-sm">Update your info</p>
+                <h3 className="text-white font-bold">Edit Profile</h3>
+                <p className="text-[#B0B8C8] text-sm">Update your info</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/settings')}
-            className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-xl p-6 hover:border-cyan-500/50 transition-all group cursor-pointer text-left w-full relative"
+            className="glass-card p-6 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge count={getCount(['setting_change'])} />
             <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-cyan-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <Settings className="w-6 h-6 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-semibold">Settings</h3>
-                <p className="text-gray-400 text-sm">Account options</p>
+                <h3 className="text-white font-bold">Settings</h3>
+                <p className="text-[#B0B8C8] text-sm">Account options</p>
               </div>
             </div>
           </button>

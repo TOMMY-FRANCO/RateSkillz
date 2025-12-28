@@ -27,75 +27,82 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-cyan-400 rounded-xl flex items-center justify-center">
-              <LogIn className="w-8 h-8 text-black" />
-            </div>
-          </div>
-          <h2 className="text-4xl font-bold text-white mb-2">Welcome Back</h2>
-          <p className="text-gray-400">Sign in to view your player card</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="absolute inset-0">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#00FF85]/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#38BDF8]/10 rounded-full blur-3xl"></div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                placeholder="your@email.com"
-              />
+      <div className="max-w-md w-full space-y-8 relative z-10">
+        <div className="glass-container p-8 animate-fade-in">
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center shadow-lg shadow-[#00FF85]/30">
+                <LogIn className="w-8 h-8 text-black" />
+              </div>
             </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                placeholder="••••••••"
-              />
-            </div>
+            <h2 className="text-4xl font-bold text-white mb-2 heading-glow">Welcome Back</h2>
+            <p className="text-[#B0B8C8]">Sign in to view your player card</p>
           </div>
 
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3">
-              <p className="text-red-400 text-sm">{error}</p>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="email" className="block text-sm font-semibold text-white mb-2 uppercase tracking-wider">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full"
+                  placeholder="your@email.com"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-semibold text-white mb-2 uppercase tracking-wider">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold rounded-lg hover:from-green-400 hover:to-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-black transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
+            {error && (
+              <div className="glass-container bg-red-500/10 border-red-500/50 p-4">
+                <p className="text-red-400 text-sm">{error}</p>
+              </div>
+            )}
 
-          <p className="text-center text-gray-400">
-            Don't have an account?{' '}
             <button
-              onClick={() => navigate('/signup')}
-              className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors bg-none border-none cursor-pointer"
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign up
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
-          </p>
-        </form>
+
+            <p className="text-center text-[#B0B8C8]">
+              Don't have an account?{' '}
+              <button
+                onClick={() => navigate('/signup')}
+                className="text-[#00E0FF] hover:text-[#00FF85] font-semibold transition-colors bg-transparent border-none cursor-pointer"
+              >
+                Sign up
+              </button>
+            </p>
+          </form>
+        </div>
       </div>
     </div>
   );

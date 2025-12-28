@@ -84,26 +84,26 @@ export default function Leaderboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-white text-xl">Loading leaderboard...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      <nav className="bg-gray-900 border-b border-gray-800 sticky top-0 z-50">
+    <div className="min-h-screen pb-24">
+      <nav className="glass-container rounded-none border-l-0 border-r-0 border-t-0 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <button
               onClick={() => navigate('/dashboard')}
-              className="flex items-center space-x-2 text-gray-300 hover:text-cyan-400 transition-colors"
+              className="flex items-center space-x-2 text-[#B0B8C8] hover:text-[#00E0FF] transition-colors bg-transparent border-none cursor-pointer"
             >
               <ArrowLeft className="w-5 h-5" />
               <span className="font-semibold">Back</span>
             </button>
 
-            <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500">
+            <h1 className="text-2xl font-bold text-white heading-glow">
               Leaderboards
             </h1>
 
@@ -114,13 +114,13 @@ export default function Leaderboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-8">
-          <div className="flex justify-center gap-2">
+          <div className="flex justify-center gap-2 flex-wrap">
             <button
               onClick={() => setActiveTab('global')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
+              className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
                 activeTab === 'global'
-                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  ? 'btn-primary'
+                  : 'btn-ghost'
               }`}
             >
               <Trophy className="w-5 h-5" />
@@ -129,10 +129,10 @@ export default function Leaderboard() {
 
             <button
               onClick={() => setActiveTab('prices')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
+              className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
                 activeTab === 'prices'
-                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  ? 'btn-primary'
+                  : 'btn-ghost'
               }`}
             >
               <Coins className="w-5 h-5" />
@@ -141,10 +141,10 @@ export default function Leaderboard() {
 
             <button
               onClick={() => setActiveTab('managers')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${
+              className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
                 activeTab === 'managers'
-                  ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black'
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  ? 'btn-primary'
+                  : 'btn-ghost'
               }`}
             >
               <Crown className="w-5 h-5" />
@@ -154,7 +154,7 @@ export default function Leaderboard() {
         </div>
 
         {activeTab === 'global' && (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {entries.map((entry) => {
             const isCurrentUser = profile?.id === entry.profile_id;
             const rankChange = getRankChange(entry);
@@ -165,10 +165,10 @@ export default function Leaderboard() {
                 key={entry.rank}
                 onClick={() => navigate(`/profile/${entry.username}`)}
                 className={`
-                  bg-gradient-to-r rounded-xl p-4 transition-all cursor-pointer
+                  glass-card p-4 transition-all cursor-pointer
                   ${isCurrentUser
-                    ? 'from-cyan-900/40 to-green-900/40 border-2 border-cyan-400/50 shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40'
-                    : 'from-gray-900/80 to-gray-800/80 border border-gray-700 hover:border-gray-600'
+                    ? 'border-2 border-[#00FF85]/50 shadow-lg shadow-[#00FF85]/20 hover:shadow-[#00FF85]/40'
+                    : ''
                   }
                 `}
               >
