@@ -73,9 +73,9 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
   const tierBadgeColors = getTierBadgeColors(tier);
 
   const sizeClasses = {
-    small: 'w-64',
-    medium: 'w-80',
-    large: 'w-[90vw] sm:w-[700px] max-w-[700px]',
+    small: 'w-[240px]',
+    medium: 'w-[260px]',
+    large: 'w-[280px]',
   };
 
   const handleDownload = async () => {
@@ -104,120 +104,128 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
         <div className={`absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] ${tier.glowColor} via-transparent to-transparent transition-all duration-700`}></div>
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMDMiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
 
-        <div className="relative p-6">
-          {/* Card Info Grid - 4 elements per line, no wrapping */}
-          <div className="mb-4 grid grid-cols-2 sm:grid-cols-4 gap-2 justify-items-center max-w-full">
-            {/* Element 1: Overall Score */}
-            <div className="bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-md border border-white/30 transition-all duration-300">
-              <div className="flex flex-col items-center">
-                <span className="text-xl font-black text-white leading-none">{overall}</span>
-                <span className="text-[10px] font-bold text-gray-300 uppercase">OVR</span>
-              </div>
-            </div>
-
-            {/* Element 2: Verification Badge */}
-            <div className="bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-md border border-white/30 flex items-center justify-center transition-all duration-300">
-              <VerificationBadge
-                isVerified={isVerified}
-                hasSocialBadge={hasSocialBadge}
-                size="sm"
-              />
-            </div>
-
-            {/* Element 3: Tier Name */}
-            {tier.name !== 'Default' && (
-              <div className={`${tierBadgeColors} px-3 py-1.5 rounded-md border transition-all duration-300`}>
-                <div className="flex items-center gap-1">
-                  <Award className="w-4 h-4" />
-                  <span className="text-[10px] font-black uppercase whitespace-nowrap">{tier.name}</span>
+        <div className="relative p-4">
+          {/* Card Info - Clean 2-Line Layout */}
+          <div className="mb-3 space-y-1.5">
+            {/* Line 1: Overall Score | Verification | Tier | Manager */}
+            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+              {/* Overall Score */}
+              <div className="glass-container px-2 py-1 rounded-lg border border-white/20 min-w-[45px]">
+                <div className="flex flex-col items-center">
+                  <span className="text-base font-black text-white leading-none stats-number">{overall}</span>
+                  <span className="text-[8px] font-bold text-[#B0B8C8] uppercase">OVR</span>
                 </div>
               </div>
-            )}
 
-            {/* Element 4: Manager Badge */}
-            {profile.is_manager && (
-              <div className="bg-gradient-to-r from-red-500 to-orange-500 px-3 py-1.5 rounded-md border-2 border-yellow-300 transition-all duration-300">
-                <span className="text-white font-black text-base">M</span>
-              </div>
-            )}
-
-            {/* Element 5: Position */}
-            {profile.position && (
-              <div className="bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-md border border-white/30 transition-all duration-300">
-                <span className="text-[10px] font-black text-white uppercase">{profile.position}</span>
-              </div>
-            )}
-
-            {/* Element 6: Team */}
-            {profile.team && (
-              <div className="bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-md border border-white/30 transition-all duration-300">
-                <span className="text-[10px] font-black text-white uppercase truncate max-w-[140px]">{profile.team}</span>
-              </div>
-            )}
-
-            {/* Element 7: Card Worth */}
-            {cardValue && (
-              <div className="bg-gradient-to-r from-yellow-400 to-amber-500 px-3 py-1.5 rounded-md border border-yellow-200 transition-all duration-300">
-                <div className="flex items-center gap-1">
-                  <Coins className="w-4 h-4 text-black" />
-                  <span className="text-[10px] font-black text-black">{cardValue}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Element 8: Global Leaderboard Rank */}
-            {rank && (
-              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 px-3 py-1.5 rounded-md border border-yellow-200 transition-all duration-300">
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] font-black text-black">#{rank.position}</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="relative h-64 mb-4">
-            <div className="w-full h-full mx-auto flex items-end justify-center">
-              {profile.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt={profile.username}
-                  className="object-contain max-h-full"
-                  style={
-                    profile.avatar_position
-                      ? {
-                          transform: `translate(${profile.avatar_position.x}px, ${profile.avatar_position.y}px) scale(${profile.avatar_position.scale})`,
-                          transformOrigin: 'center bottom',
-                        }
-                      : undefined
-                  }
+              {/* Verification Badge */}
+              <div className="glass-container px-2 py-1 rounded-lg border border-white/20 flex items-center justify-center min-w-[32px]">
+                <VerificationBadge
+                  isVerified={isVerified}
+                  hasSocialBadge={hasSocialBadge}
+                  size="sm"
                 />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <User className="w-32 h-32 text-purple-300/30" />
+              </div>
+
+              {/* Tier Name */}
+              {tier.name !== 'Default' && (
+                <div className={`${tierBadgeColors} px-2 py-1 rounded-lg border`}>
+                  <div className="flex items-center gap-0.5">
+                    <Award className="w-3 h-3" />
+                    <span className="text-[8px] font-black uppercase whitespace-nowrap">{tier.name}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Manager Badge */}
+              {profile.is_manager && (
+                <div className="bg-gradient-to-r from-[#FFD700] to-[#FFA500] px-2 py-1 rounded-lg border border-yellow-300 shadow-lg shadow-yellow-500/30">
+                  <span className="text-black font-black text-[10px] uppercase">MGR</span>
+                </div>
+              )}
+            </div>
+
+            {/* Line 2: Position | Team | Card Worth | Rank */}
+            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+              {/* Position */}
+              {profile.position && (
+                <div className="glass-container px-2 py-1 rounded-lg border border-white/20">
+                  <span className="text-[8px] font-black text-white uppercase">{profile.position}</span>
+                </div>
+              )}
+
+              {/* Team */}
+              {profile.team && (
+                <div className="glass-container px-2 py-1 rounded-lg border border-white/20 max-w-[80px]">
+                  <span className="text-[8px] font-black text-white uppercase truncate block">{profile.team}</span>
+                </div>
+              )}
+
+              {/* Card Worth */}
+              {cardValue && (
+                <div className="bg-gradient-to-r from-[#FFD700] to-[#FFA500] px-2 py-1 rounded-lg border border-yellow-300 shadow-lg shadow-yellow-500/30">
+                  <div className="flex items-center gap-0.5">
+                    <Coins className="w-3 h-3 text-black" />
+                    <span className="text-[8px] font-black text-black">{cardValue}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Global Leaderboard Rank */}
+              {rank && (
+                <div className="bg-gradient-to-r from-[#00FF85] to-[#00E0FF] px-2 py-1 rounded-lg border border-[#00FF85]/50 shadow-lg shadow-[#00FF85]/30">
+                  <span className="text-[8px] font-black text-black">#{rank.position}</span>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-black/70 via-black/60 to-black/70 backdrop-blur-sm px-4 py-3 rounded-lg border border-white/20 mb-4 transition-all duration-700">
-            <h3 className="text-3xl font-black text-white text-center tracking-wide uppercase drop-shadow-lg">
+          {/* Profile Picture - 120x120px centered */}
+          <div className="flex justify-center mb-3">
+            <div className="relative w-[120px] h-[120px] rounded-full overflow-hidden border-4 border-white/20 shadow-xl">
+              {profile.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={profile.username}
+                  className="w-full h-full object-cover"
+                  style={
+                    profile.avatar_position
+                      ? {
+                          transform: `translate(${profile.avatar_position.x}px, ${profile.avatar_position.y}px) scale(${profile.avatar_position.scale})`,
+                          transformOrigin: 'center',
+                        }
+                      : undefined
+                  }
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-black/40">
+                  <User className="w-16 h-16 text-white/30" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Player Name */}
+          <div className="glass-container px-3 py-2 rounded-lg border border-white/20 mb-3">
+            <h3 className="text-lg font-black text-white text-center tracking-wide uppercase">
               {profile.full_name || displayUsername(profile.username)}
             </h3>
           </div>
 
-          <div className="grid grid-cols-6 gap-2 bg-gradient-to-r from-black/70 via-black/80 to-black/70 backdrop-blur-sm p-4 rounded-lg border border-white/20 transition-all duration-700">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 gap-2 glass-container p-3 rounded-lg border border-white/20 mb-2">
             {Object.entries(stats).map(([key, value]) => (
               <div key={key} className="flex flex-col items-center">
-                <span className="text-xs font-bold text-gray-300 uppercase tracking-wide">{key}</span>
-                <span className="text-2xl font-black text-white drop-shadow-lg">{value}</span>
+                <span className="text-[9px] font-bold text-[#B0B8C8] uppercase tracking-wide">{key}</span>
+                <span className="text-xl font-black text-white stats-number">{value}</span>
               </div>
             ))}
           </div>
 
+          {/* Ratings Count */}
           {ratings.length > 0 && (
-            <div className="mt-4 text-center">
-              <div className="inline-block bg-black/40 px-4 py-2 rounded-full border border-white/20 transition-all duration-700">
-                <p className="text-sm text-white font-semibold">
+            <div className="text-center">
+              <div className="inline-block glass-container px-3 py-1 rounded-full border border-white/20">
+                <p className="text-[10px] text-white font-semibold">
                   Rated by {ratings.length}
                 </p>
               </div>
@@ -232,7 +240,7 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
       {showDownloadButton && (
         <button
           onClick={handleDownload}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-bold rounded-lg hover:from-green-600 hover:to-cyan-600 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+          className="btn-primary flex items-center gap-2"
         >
           <Download className="w-5 h-5" />
           Download PNG
