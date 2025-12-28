@@ -89,6 +89,14 @@ export default function TradingDashboard() {
       cards.forEach(card => {
         if (card.card_user_id) allUserIds.add(card.card_user_id);
       });
+      valuable.forEach(card => {
+        if (card.owner_id) allUserIds.add(card.owner_id);
+        if (card.card_user_id) allUserIds.add(card.card_user_id);
+      });
+      traded.forEach(card => {
+        if (card.owner_id) allUserIds.add(card.owner_id);
+        if (card.card_user_id) allUserIds.add(card.card_user_id);
+      });
 
       if (allUserIds.size > 0) {
         const balances = await getMultipleUserBalances(Array.from(allUserIds));
