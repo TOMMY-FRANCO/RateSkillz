@@ -312,17 +312,17 @@ export async function resolveBattle(battleId: string, winnerId: string | null): 
     const managerProfit = wagerAmount - totalRoyalties;
 
     const { data: loserBalance } = await supabase
-      .from('coins')
-      .select('balance')
-      .eq('user_id', loserId)
+      .from('profiles')
+      .select('coin_balance')
+      .eq('id', loserId)
       .maybeSingle();
 
-    const loserCurrentBalance = loserBalance?.balance || 0;
+    const loserCurrentBalance = Number(loserBalance?.coin_balance || 0);
 
     await supabase
-      .from('coins')
-      .update({ balance: loserCurrentBalance - wagerAmount })
-      .eq('user_id', loserId);
+      .from('profiles')
+      .update({ coin_balance: loserCurrentBalance - wagerAmount })
+      .eq('id', loserId);
 
     await supabase.from('coin_transactions').insert({
       user_id: loserId,
@@ -333,17 +333,17 @@ export async function resolveBattle(battleId: string, winnerId: string | null): 
     });
 
     const { data: winnerBalance } = await supabase
-      .from('coins')
-      .select('balance')
-      .eq('user_id', winnerId)
+      .from('profiles')
+      .select('coin_balance')
+      .eq('id', winnerId)
       .maybeSingle();
 
-    const winnerCurrentBalance = winnerBalance?.balance || 0;
+    const winnerCurrentBalance = Number(winnerBalance?.coin_balance || 0);
 
     await supabase
-      .from('coins')
-      .update({ balance: winnerCurrentBalance + managerProfit })
-      .eq('user_id', winnerId);
+      .from('profiles')
+      .update({ coin_balance: winnerCurrentBalance + managerProfit })
+      .eq('id', winnerId);
 
     await supabase.from('coin_transactions').insert({
       user_id: winnerId,
@@ -355,17 +355,17 @@ export async function resolveBattle(battleId: string, winnerId: string | null): 
 
     for (const card of winnerCards) {
       const { data: ownerBalance } = await supabase
-        .from('coins')
-        .select('balance')
-        .eq('user_id', card.card_user_id)
+        .from('profiles')
+        .select('coin_balance')
+        .eq('id', card.card_user_id)
         .maybeSingle();
 
-      const ownerCurrentBalance = ownerBalance?.balance || 0;
+      const ownerCurrentBalance = Number(ownerBalance?.coin_balance || 0);
 
       await supabase
-        .from('coins')
-        .update({ balance: ownerCurrentBalance + royaltyAmount })
-        .eq('user_id', card.card_user_id);
+        .from('profiles')
+        .update({ coin_balance: ownerCurrentBalance + royaltyAmount })
+        .eq('id', card.card_user_id);
 
       await supabase.from('coin_transactions').insert({
         user_id: card.card_user_id,

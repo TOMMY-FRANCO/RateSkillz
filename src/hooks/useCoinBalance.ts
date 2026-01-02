@@ -20,14 +20,14 @@ export function useCoinBalance() {
       setError(null);
 
       const { data, error: fetchError } = await supabase
-        .from('coins')
-        .select('balance')
-        .eq('user_id', user.id)
+        .from('profiles')
+        .select('coin_balance')
+        .eq('id', user.id)
         .maybeSingle();
 
       if (fetchError) throw fetchError;
 
-      setBalance(data?.balance || 0);
+      setBalance(Number(data?.coin_balance || 0));
     } catch (err) {
       console.error('Error fetching coin balance:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch balance');
