@@ -71,7 +71,7 @@ export function CoinPoolDisplay() {
         </div>
 
         <p className="text-xs text-gray-500 italic pt-2 border-t border-gray-200">
-          Coins are distributed through adverts, comments, and purchases. Once distributed, they circulate between users forever.
+          Coins are distributed through adverts, comments and purchases. Once distributed, they circulate between users.
         </p>
       </div>
     </div>
