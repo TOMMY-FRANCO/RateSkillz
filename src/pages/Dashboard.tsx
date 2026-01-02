@@ -6,7 +6,9 @@ import OnlineStatus from '../components/OnlineStatus';
 import FirstTimeUsernamePrompt from '../components/FirstTimeUsernamePrompt';
 import TermsAcceptanceModal from '../components/TermsAcceptanceModal';
 import { CoinBalance } from '../components/CoinBalance';
-import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search } from 'lucide-react';
+import Tutorial from '../components/Tutorial';
+import TutorialPrompt from '../components/TutorialPrompt';
+import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search, BookOpen } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { displayUsername } from '../lib/username';
 import { getUserStats } from '../lib/ratings';
@@ -29,6 +31,9 @@ export default function Dashboard() {
   const [isVerified, setIsVerified] = useState(false);
   const [hasSocialBadge, setHasSocialBadge] = useState(false);
   const [unreadProfileViews, setUnreadProfileViews] = useState(0);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [showTutorialPrompt, setShowTutorialPrompt] = useState(false);
+  const [tutorialCompleted, setTutorialCompleted] = useState(false);
   const { unreadCount: unreadMessagesCount } = useUnreadMessages();
   const { counts: notificationCounts, getCount } = useNotifications(profile?.id);
 
@@ -39,6 +44,7 @@ export default function Dashboard() {
       fetchPendingRequests();
       fetchVerificationStatus();
       fetchUnreadProfileViews();
+      checkTutorialStatus();
 
       if (!profile.terms_accepted_at) {
         setShowTermsModal(true);
@@ -97,6 +103,35 @@ export default function Dashboard() {
       setPendingRequestsCount(data?.length || 0);
     } catch (error) {
       console.error('Error fetching pending requests:', error);
+    }
+  };
+
+  const checkTutorialStatus = async () => {
+    if (!profile) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('tutorial_completions')
+        .select('id')
+        .eq('user_id', profile.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking tutorial status:', error);
+        return;
+      }
+
+      const completed = !!data;
+      setTutorialCompleted(completed);
+
+      const hasSeenPrompt = localStorage.getItem(`tutorial_prompt_dismissed_${profile.id}`);
+      if (!completed && !hasSeenPrompt && profile.terms_accepted_at && profile.username_customized) {
+        setTimeout(() => {
+          setShowTutorialPrompt(true);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error checking tutorial status:', error);
     }
   };
 
@@ -427,6 +462,28 @@ export default function Dashboard() {
               </div>
             </div>
           </button>
+
+          <button
+            onClick={() => setShowTutorial(true)}
+            className="glass-card p-6 cursor-pointer text-left w-full relative border-2 border-blue-500/30"
+          >
+            {!tutorialCompleted && (
+              <span className="absolute top-2 right-2 px-3 py-1 bg-gradient-to-r from-blue-500 to-green-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-blue-500/30 uppercase tracking-wider animate-pulse">
+                +5 Coins
+              </span>
+            )}
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/30">
+                <BookOpen className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold">Tutorial</h3>
+                <p className="text-[#B0B8C8] text-sm">
+                  {tutorialCompleted ? 'Review guide' : 'Learn & earn 5 coins'}
+                </p>
+              </div>
+            </div>
+          </button>
         </div>
       </main>
 
@@ -444,6 +501,29 @@ export default function Dashboard() {
           onComplete={() => setShowUsernamePrompt(false)}
         />
       )}
+
+      <TutorialPrompt
+        isOpen={showTutorialPrompt}
+        onStartTutorial={() => {
+          setShowTutorialPrompt(false);
+          setShowTutorial(true);
+        }}
+        onDismiss={() => {
+          setShowTutorialPrompt(false);
+          if (profile) {
+            localStorage.setItem(`tutorial_prompt_dismissed_${profile.id}`, 'true');
+          }
+        }}
+      />
+
+      <Tutorial
+        isOpen={showTutorial}
+        onClose={() => setShowTutorial(false)}
+        onComplete={() => {
+          setTutorialCompleted(true);
+          checkTutorialStatus();
+        }}
+      />
     </div>
   );
 }
