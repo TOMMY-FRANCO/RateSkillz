@@ -85,19 +85,9 @@ export default function ProfileView() {
   const isEditingEnabled = !isPreviewMode && !isOwner;
 
   useEffect(() => {
-    let commentsChannel: any = null;
-
     if (username) {
-      loadProfile().then((channel) => {
-        commentsChannel = channel;
-      });
+      loadProfile();
     }
-
-    return () => {
-      if (commentsChannel) {
-        commentsChannel.unsubscribe();
-      }
-    };
   }, [username]);
 
   const loadProfile = async () => {
@@ -268,30 +258,6 @@ export default function ProfileView() {
       setBalanceLoading(false);
 
       setLoading(false);
-
-      const commentsChannel = supabase
-        .channel(`comments:${profileData.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'comments',
-            filter: `profile_id=eq.${profileData.id}`
-          },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              setComments(prev => [payload.new as Comment, ...prev]);
-              setCommentsCount(prev => prev + 1);
-            } else if (payload.eventType === 'DELETE') {
-              setComments(prev => prev.filter(c => c.id !== payload.old.id));
-              setCommentsCount(prev => Math.max(0, prev - 1));
-            }
-          }
-        )
-        .subscribe();
-
-      return commentsChannel;
     } catch (error) {
       console.error('Error loading profile:', error);
       setLoading(false);

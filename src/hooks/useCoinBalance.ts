@@ -39,26 +39,6 @@ export function useCoinBalance() {
 
   useEffect(() => {
     fetchBalance();
-
-    const channel = supabase
-      .channel('coin_balance_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'coins',
-          filter: `user_id=eq.${user?.id}`,
-        },
-        () => {
-          fetchBalance();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [user?.id]);
 
   return { balance, loading, error, refetch: fetchBalance };

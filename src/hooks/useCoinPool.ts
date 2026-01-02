@@ -42,25 +42,6 @@ export function useCoinPool() {
 
   useEffect(() => {
     fetchStats();
-
-    const channel = supabase
-      .channel('coin_pool_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'coin_pool',
-        },
-        () => {
-          fetchStats();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   return { stats, loading, error, refetch: fetchStats };

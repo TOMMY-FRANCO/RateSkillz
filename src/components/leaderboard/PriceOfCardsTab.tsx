@@ -166,27 +166,6 @@ export default function PriceOfCardsTab() {
     fetchCards();
   }, [currentPage, searchTerm, positionFilter, teamFilter, tierFilter, minRating, maxRating]);
 
-  useEffect(() => {
-    const channel = supabase
-      .channel('card-prices')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'card_ownership',
-        },
-        () => {
-          fetchCards();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentPage, searchTerm, positionFilter, teamFilter, tierFilter, minRating, maxRating]);
-
   const totalPages = Math.ceil(totalCards / CARDS_PER_PAGE);
 
   const getTimeSinceUpdate = () => {

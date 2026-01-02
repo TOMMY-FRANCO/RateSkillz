@@ -29,7 +29,7 @@ export default function Dashboard() {
   const [isVerified, setIsVerified] = useState(false);
   const [hasSocialBadge, setHasSocialBadge] = useState(false);
   const [unreadProfileViews, setUnreadProfileViews] = useState(0);
-  const unreadMessagesCount = useUnreadMessages();
+  const { unreadCount: unreadMessagesCount } = useUnreadMessages();
   const { counts: notificationCounts, getCount } = useNotifications(profile?.id);
 
   useEffect(() => {

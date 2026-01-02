@@ -44,30 +44,6 @@ export function useNotifications(userId: string | undefined) {
     fetchCounts();
   }, [fetchCounts]);
 
-  useEffect(() => {
-    if (!userId) return;
-
-    const channel = supabase
-      .channel('notification-counts')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notification_counts',
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          fetchCounts();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId, fetchCounts]);
-
   const markAsRead = useCallback(
     async (notificationType: NotificationType) => {
       if (!userId) return;

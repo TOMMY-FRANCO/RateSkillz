@@ -1,45 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getUnreadCount, subscribeToMessages } from '../lib/messaging';
-import { supabase } from '../lib/supabase';
+import { getUnreadCount } from '../lib/messaging';
 
 export function useUnreadMessages() {
   const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  useEffect(() => {
+  const fetchUnreadCount = async () => {
     if (!user) {
       setUnreadCount(0);
       return;
     }
+    const count = await getUnreadCount(user.id);
+    setUnreadCount(count);
+  };
 
-    const fetchUnreadCount = async () => {
-      const count = await getUnreadCount(user.id);
-      setUnreadCount(count);
-    };
-
+  useEffect(() => {
     fetchUnreadCount();
-
-    const channel = supabase
-      .channel('unread_messages')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'messages',
-          filter: `recipient_id=eq.${user.id}`,
-        },
-        () => {
-          fetchUnreadCount();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [user]);
 
-  return unreadCount;
+  return { unreadCount, refetch: fetchUnreadCount };
 }

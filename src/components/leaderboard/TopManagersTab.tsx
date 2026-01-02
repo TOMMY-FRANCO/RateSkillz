@@ -108,39 +108,6 @@ export default function TopManagersTab() {
     fetchManagers();
   }, [currentPage, searchTerm, winsFilter, ratingFilter, teamFilter, verifiedFilter]);
 
-  useEffect(() => {
-    const channel = supabase
-      .channel('manager-rankings')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: 'is_manager=eq.true',
-        },
-        () => {
-          fetchManagers();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'battles',
-        },
-        () => {
-          fetchManagers();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [currentPage, searchTerm, winsFilter, ratingFilter, teamFilter, verifiedFilter]);
-
   const totalPages = Math.ceil(totalManagers / MANAGERS_PER_PAGE);
 
   const getWinLossRatio = (wins: number, losses: number) => {
