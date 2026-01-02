@@ -23,6 +23,7 @@ import TermsOfService from './pages/TermsOfService';
 import { VerifyProfile } from './pages/VerifyProfile';
 import SearchFriends from './pages/SearchFriends';
 import ViewedMe from './pages/ViewedMe';
+import BalanceRecovery from './pages/BalanceRecovery';
 import ErrorBoundary from './components/ErrorBoundary';
 import FloatingNav from './components/FloatingNav';
 
@@ -206,6 +207,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Chat />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/balance-recovery"
+            element={
+              <ProtectedRoute>
+                <BalanceRecovery />
               </ProtectedRoute>
             }
           />
