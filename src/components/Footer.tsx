@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="text-gray-400 text-sm">
-            © 2024 RatingSkill®. All rights reserved.
+            © 2026 RatingSkill®. All rights reserved.
           </div>
           <div className="flex gap-6">
             <Link
