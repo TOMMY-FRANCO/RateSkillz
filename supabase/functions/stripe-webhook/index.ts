@@ -129,70 +129,78 @@ async function handleCoinPurchase(paymentIntent: Stripe.PaymentIntent) {
 
     // Extract metadata from payment intent
     const metadata = paymentIntent.metadata || {};
-    const userId = metadata.user_id || metadata.userId;
+    let userId = metadata.user_id || metadata.userId;
     const coinsAmount = parseInt(metadata.coins_purchased || metadata.coins || '100');
-    const priceGBP = paymentIntent.amount / 100; // Convert from pence to pounds
+    const priceGBP = paymentIntent.amount / 100;
+    const customerId = typeof paymentIntent.customer === 'string' ? paymentIntent.customer : null;
+
+    // If no user_id in metadata, try to lookup from stripe_customers table
+    if (!userId && customerId) {
+      console.log(`[${timestamp}] No user_id in metadata, looking up from customer_id: ${customerId}`);
+
+      const { data: customerData, error: customerError } = await supabase
+        .rpc('get_user_from_stripe_customer', { p_customer_id: customerId });
+
+      if (customerError) {
+        console.error(`[${timestamp}] Error looking up user from customer_id:`, customerError);
+      } else if (customerData) {
+        userId = customerData;
+        console.log(`[${timestamp}] Found user_id from customer: ${userId}`);
+      }
+    }
 
     if (!userId) {
-      console.error(`[${timestamp}] No user_id found in payment_intent metadata: ${paymentIntent.id}`);
+      console.error(`[${timestamp}] ERROR: No user_id found in metadata or stripe_customers for payment: ${paymentIntent.id}`);
+      console.error(`[${timestamp}] Customer ID: ${customerId || 'none'}`);
+      console.error(`[${timestamp}] Metadata: ${JSON.stringify(metadata)}`);
       return;
     }
 
-    console.log(`[${timestamp}] Adding ${coinsAmount} coins to user ${userId} (Payment: £${priceGBP})`);
+    console.log(`[${timestamp}] Processing ${coinsAmount} coins for user ${userId} (Payment: £${priceGBP})`);
 
-    // Check if coin pool has enough coins
-    const { data: poolData, error: poolError } = await supabase
+    // Use the database function to process the purchase (includes duplicate check)
+    const { data: result, error: purchaseError } = await supabase
+      .rpc('process_stripe_coin_purchase', {
+        p_user_id: userId,
+        p_coins_amount: coinsAmount,
+        p_price_gbp: priceGBP,
+        p_payment_intent_id: paymentIntent.id,
+        p_customer_id: customerId
+      });
+
+    if (purchaseError) {
+      console.error(`[${timestamp}] ERROR: Failed to process coin purchase:`, purchaseError);
+      throw new Error(`Failed to process coin purchase: ${purchaseError.message}`);
+    }
+
+    if (!result.success) {
+      if (result.duplicate) {
+        console.log(`[${timestamp}] ⚠ Duplicate payment detected, skipping: ${paymentIntent.id}`);
+      } else {
+        console.error(`[${timestamp}] ERROR: Purchase processing failed: ${result.message}`);
+      }
+      return;
+    }
+
+    console.log(`[${timestamp}] ✓ SUCCESS: Added ${result.coins_added} coins to user ${userId}`);
+    console.log(`[${timestamp}] Transaction ID: ${result.transaction_id}`);
+    console.log(`[${timestamp}] New balance: ${result.new_balance} coins`);
+
+    // Check updated coin pool status
+    const { data: poolData } = await supabase
       .from('coin_pool')
-      .select('remaining_coins, distributed_coins, total_coins')
-      .limit(1)
+      .select('remaining_coins, distributed_coins')
+      .eq('id', '00000000-0000-0000-0000-000000000001')
       .maybeSingle();
 
-    if (poolError) {
-      console.error(`[${timestamp}] Error checking coin pool:`, poolError);
-      // Don't block the purchase, just log the warning
-    } else if (poolData && poolData.remaining_coins < coinsAmount) {
-      console.warn(`[${timestamp}] COIN POOL LOW: Only ${poolData.remaining_coins} coins remaining, but user purchased ${coinsAmount}`);
-      // Continue anyway - don't punish user for pool misconfiguration
-    }
-
-    // Insert transaction record - triggers will automatically update balance and pool
-    const { data: transaction, error: transactionError } = await supabase
-      .from('coin_transactions')
-      .insert({
-        user_id: userId,
-        amount: coinsAmount,
-        transaction_type: 'purchase',
-        description: `Purchased ${coinsAmount} coins for £${priceGBP.toFixed(2)}`,
-        reference_id: paymentIntent.id,
-        payment_provider: 'stripe',
-        payment_amount: priceGBP,
-      })
-      .select()
-      .single();
-
-    if (transactionError) {
-      console.error(`[${timestamp}] ERROR: Failed to create coin transaction:`, transactionError);
-      throw new Error(`Failed to record coin purchase: ${transactionError.message}`);
-    }
-
-    console.log(`[${timestamp}] ✓ Successfully added ${coinsAmount} coins to user ${userId}`);
-    console.log(`[${timestamp}] Transaction ID: ${transaction.id}`);
-
-    // Verify balance was updated (optional check)
-    const { data: updatedBalance, error: balanceError } = await supabase
-      .from('profiles')
-      .select('coin_balance')
-      .eq('id', userId)
-      .single();
-
-    if (!balanceError && updatedBalance) {
-      console.log(`[${timestamp}] User ${userId} new balance: ${updatedBalance.coin_balance} coins`);
+    if (poolData) {
+      console.log(`[${timestamp}] Coin Pool: ${poolData.remaining_coins} remaining, ${poolData.distributed_coins} distributed`);
     }
 
   } catch (error: any) {
     const timestamp = new Date().toISOString();
-    console.error(`[${timestamp}] ERROR in handleCoinPurchase:`, error.message);
-    // Log to error tracking (you could add an error_logs table here)
+    console.error(`[${timestamp}] CRITICAL ERROR in handleCoinPurchase:`, error.message);
+    console.error(`[${timestamp}] Stack:`, error.stack);
     throw error;
   }
 }
@@ -207,14 +215,9 @@ async function handleCoinPurchaseSession(session: Stripe.Checkout.Session) {
     console.log(`[${timestamp}] Processing coin purchase from session: ${session.id}`);
 
     const metadata = session.metadata || {};
-    const userId = metadata.user_id || metadata.userId;
+    let userId = metadata.user_id || metadata.userId;
     const coinsAmount = parseInt(metadata.coins_purchased || metadata.coins || '100');
     const customerId = typeof session.customer === 'string' ? session.customer : null;
-
-    if (!userId) {
-      console.error(`[${timestamp}] No user_id found in session metadata: ${session.id}`);
-      return;
-    }
 
     // If payment intent is available, wait for payment_intent.succeeded event
     // This avoids double-processing
@@ -223,31 +226,57 @@ async function handleCoinPurchaseSession(session: Stripe.Checkout.Session) {
       return;
     }
 
-    // If no payment intent, process here (shouldn't normally happen for card payments)
-    const priceGBP = (session.amount_total || 0) / 100;
+    // Try to lookup user from stripe_customers if not in metadata
+    if (!userId && customerId) {
+      console.log(`[${timestamp}] No user_id in session metadata, looking up from customer_id: ${customerId}`);
 
-    console.log(`[${timestamp}] Adding ${coinsAmount} coins to user ${userId} (Session payment: £${priceGBP})`);
+      const { data: customerData, error: customerError } = await supabase
+        .rpc('get_user_from_stripe_customer', { p_customer_id: customerId });
 
-    const { data: transaction, error: transactionError } = await supabase
-      .from('coin_transactions')
-      .insert({
-        user_id: userId,
-        amount: coinsAmount,
-        transaction_type: 'purchase',
-        description: `Purchased ${coinsAmount} coins for £${priceGBP.toFixed(2)}`,
-        reference_id: session.id,
-        payment_provider: 'stripe',
-        payment_amount: priceGBP,
-      })
-      .select()
-      .single();
-
-    if (transactionError) {
-      console.error(`[${timestamp}] ERROR: Failed to create coin transaction:`, transactionError);
-      throw new Error(`Failed to record coin purchase: ${transactionError.message}`);
+      if (customerError) {
+        console.error(`[${timestamp}] Error looking up user from customer_id:`, customerError);
+      } else if (customerData) {
+        userId = customerData;
+        console.log(`[${timestamp}] Found user_id from customer: ${userId}`);
+      }
     }
 
-    console.log(`[${timestamp}] ✓ Successfully processed session coin purchase`);
+    if (!userId) {
+      console.error(`[${timestamp}] ERROR: No user_id found in session metadata or stripe_customers: ${session.id}`);
+      console.error(`[${timestamp}] Customer ID: ${customerId || 'none'}`);
+      return;
+    }
+
+    const priceGBP = (session.amount_total || 0) / 100;
+
+    console.log(`[${timestamp}] Processing ${coinsAmount} coins for user ${userId} (Session payment: £${priceGBP})`);
+
+    // Use the database function to process the purchase (includes duplicate check)
+    const { data: result, error: purchaseError } = await supabase
+      .rpc('process_stripe_coin_purchase', {
+        p_user_id: userId,
+        p_coins_amount: coinsAmount,
+        p_price_gbp: priceGBP,
+        p_payment_intent_id: session.id,
+        p_customer_id: customerId
+      });
+
+    if (purchaseError) {
+      console.error(`[${timestamp}] ERROR: Failed to process coin purchase:`, purchaseError);
+      throw new Error(`Failed to process coin purchase: ${purchaseError.message}`);
+    }
+
+    if (!result.success) {
+      if (result.duplicate) {
+        console.log(`[${timestamp}] ⚠ Duplicate payment detected, skipping: ${session.id}`);
+      } else {
+        console.error(`[${timestamp}] ERROR: Purchase processing failed: ${result.message}`);
+      }
+      return;
+    }
+
+    console.log(`[${timestamp}] ✓ SUCCESS: Processed session coin purchase - ${result.coins_added} coins added`);
+    console.log(`[${timestamp}] New balance: ${result.new_balance} coins`);
 
   } catch (error: any) {
     const timestamp = new Date().toISOString();
