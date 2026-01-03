@@ -21,11 +21,12 @@ export function ProductCard({ product }: ProductCardProps) {
 
     setLoading(true);
     try {
+      const baseUrl = 'https://ratingskill.com';
       const { url } = await createCheckoutSession({
         priceId: product.priceId,
         mode: product.mode,
-        successUrl: `${window.location.origin}/success`,
-        cancelUrl: window.location.href,
+        successUrl: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${baseUrl}/store`,
       });
 
       if (url) {

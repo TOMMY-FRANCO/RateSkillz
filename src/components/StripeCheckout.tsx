@@ -12,24 +12,25 @@ export function StripeCheckout({ product, onSuccess }: StripeCheckoutProps) {
 
   const handleCheckout = async () => {
     setLoading(true);
-    
+
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
+      const baseUrl = 'https://ratingskill.com';
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          priceId: product.priceId,
+          price_id: product.priceId,
           mode: product.mode,
-          successUrl: `${window.location.origin}/checkout/success`,
-          cancelUrl: window.location.href,
+          success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${baseUrl}/store`,
         }),
       });
 
       const { url } = await response.json();
-      
+
       if (url) {
         window.location.href = url;
       }

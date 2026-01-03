@@ -50,17 +50,15 @@ export async function createCheckoutSession(params: CreateCheckoutSessionParams)
  * @returns Checkout session with redirect URL
  */
 export async function createCoinPurchaseCheckout(coins: number, priceGBP: number): Promise<CheckoutSessionResponse> {
-  // Note: You need to create Stripe Price IDs for each coin package in your Stripe Dashboard
-  // For now, using a placeholder - replace with actual price IDs from Stripe
   const priceId = getCoinPriceId(coins, priceGBP);
 
-  const currentUrl = window.location.origin;
+  const baseUrl = 'https://ratingskill.com';
 
   return createCheckoutSession({
     priceId,
     mode: 'payment',
-    successUrl: `${currentUrl}/checkout/success?coins=${coins}`,
-    cancelUrl: `${currentUrl}/shop`,
+    successUrl: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&coins=${coins}`,
+    cancelUrl: `${baseUrl}/shop`,
     metadata: {
       coins_purchased: coins.toString(),
       price_gbp: priceGBP.toString(),
