@@ -15,7 +15,6 @@ const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPAB
 
 Deno.serve(async (req) => {
   try {
-    // Handle OPTIONS request for CORS preflight
     if (req.method === 'OPTIONS') {
       return new Response(null, { status: 204 });
     }
@@ -24,17 +23,14 @@ Deno.serve(async (req) => {
       return new Response('Method not allowed', { status: 405 });
     }
 
-    // get the signature from the header
     const signature = req.headers.get('stripe-signature');
 
     if (!signature) {
       return new Response('No signature found', { status: 400 });
     }
 
-    // get the raw body
     const body = await req.text();
 
-    // verify the webhook signature
     let event: Stripe.Event;
 
     try {
@@ -55,7 +51,10 @@ Deno.serve(async (req) => {
 
 async function handleEvent(event: Stripe.Event) {
   const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] Processing event: ${event.type}`);
+  console.log(`\n${'='.repeat(80)}`);
+  console.log(`[${timestamp}] WEBHOOK EVENT RECEIVED: ${event.type}`);
+  console.log(`[${timestamp}] Event ID: ${event.id}`);
+  console.log(`${'='.repeat(80)}\n`);
 
   const stripeData = event?.data?.object ?? {};
 
@@ -64,101 +63,118 @@ async function handleEvent(event: Stripe.Event) {
     return;
   }
 
-  // Handle payment_intent.succeeded for coin purchases
   if (event.type === 'payment_intent.succeeded') {
     const paymentIntent = stripeData as Stripe.PaymentIntent;
+    console.log(`[${timestamp}] Payment Intent Succeeded - ID: ${paymentIntent.id}`);
+    console.log(`[${timestamp}] Amount: ${paymentIntent.amount / 100} ${paymentIntent.currency.toUpperCase()}`);
+    console.log(`[${timestamp}] Invoice: ${paymentIntent.invoice || 'null (one-time payment)'}`);
 
-    // Only process non-invoice payments (one-time coin purchases)
     if (paymentIntent.invoice === null) {
+      console.log(`[${timestamp}] This is a one-time payment - processing as coin purchase`);
       await handleCoinPurchase(paymentIntent);
       return;
+    } else {
+      console.log(`[${timestamp}] This is an invoice payment - skipping coin purchase logic`);
     }
   }
 
-  // Handle checkout.session.completed for both subscriptions and coin purchases
   if (event.type === 'checkout.session.completed') {
     const session = stripeData as Stripe.Checkout.Session;
+    console.log(`[${timestamp}] Checkout Session Completed - ID: ${session.id}`);
+    console.log(`[${timestamp}] Mode: ${session.mode}`);
+    console.log(`[${timestamp}] Payment Status: ${session.payment_status}`);
 
     if (session.mode === 'payment') {
-      // This is a one-time payment (coin purchase)
+      console.log(`[${timestamp}] This is a one-time payment - processing coin purchase`);
       await handleCoinPurchaseSession(session);
       return;
     } else if (session.mode === 'subscription') {
-      // Handle subscription
+      console.log(`[${timestamp}] This is a subscription - syncing customer`);
       if (session.customer && typeof session.customer === 'string') {
-        console.info(`Starting subscription sync for customer: ${session.customer}`);
         await syncCustomerFromStripe(session.customer);
       }
       return;
     }
   }
 
-  // Legacy handling for other subscription events
   if (!('customer' in stripeData)) {
+    console.log(`[${timestamp}] No customer in event data - skipping`);
     return;
   }
 
   const { customer: customerId } = stripeData;
 
   if (!customerId || typeof customerId !== 'string') {
-    console.error(`No customer received on event: ${JSON.stringify(event)}`);
+    console.error(`[${timestamp}] No valid customer received on event: ${JSON.stringify(event)}`);
   } else {
     let isSubscription = true;
 
     if (event.type === 'checkout.session.completed') {
       const { mode } = stripeData as Stripe.Checkout.Session;
       isSubscription = mode === 'subscription';
-      console.info(`Processing ${isSubscription ? 'subscription' : 'one-time payment'} checkout session`);
     }
 
     if (isSubscription) {
-      console.info(`Starting subscription sync for customer: ${customerId}`);
+      console.info(`[${timestamp}] Starting subscription sync for customer: ${customerId}`);
       await syncCustomerFromStripe(customerId);
     }
   }
 }
 
-/**
- * Handles coin purchase when payment_intent.succeeded event is received
- * This is called after the payment is confirmed by Stripe
- */
 async function handleCoinPurchase(paymentIntent: Stripe.PaymentIntent) {
-  try {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] Processing coin purchase from payment_intent: ${paymentIntent.id}`);
+  const timestamp = new Date().toISOString();
 
-    // Extract metadata from payment intent
+  try {
+    console.log(`\n${'*'.repeat(80)}`);
+    console.log(`[${timestamp}] PROCESSING COIN PURCHASE FROM PAYMENT INTENT`);
+    console.log(`[${timestamp}] Payment Intent ID: ${paymentIntent.id}`);
+    console.log(`${'*'.repeat(80)}\n`);
+
     const metadata = paymentIntent.metadata || {};
+    console.log(`[${timestamp}] Metadata received:`, JSON.stringify(metadata, null, 2));
+
     let userId = metadata.user_id || metadata.userId;
     const coinsAmount = parseInt(metadata.coins_purchased || metadata.coins || '100');
     const priceGBP = paymentIntent.amount / 100;
     const customerId = typeof paymentIntent.customer === 'string' ? paymentIntent.customer : null;
 
-    // If no user_id in metadata, try to lookup from stripe_customers table
+    console.log(`[${timestamp}] Initial user_id from metadata: ${userId || 'NOT FOUND'}`);
+    console.log(`[${timestamp}] Coins amount: ${coinsAmount}`);
+    console.log(`[${timestamp}] Price: £${priceGBP}`);
+    console.log(`[${timestamp}] Customer ID: ${customerId || 'NOT FOUND'}`);
+
     if (!userId && customerId) {
-      console.log(`[${timestamp}] No user_id in metadata, looking up from customer_id: ${customerId}`);
+      console.log(`[${timestamp}] No user_id in metadata - attempting customer lookup...`);
 
       const { data: customerData, error: customerError } = await supabase
         .rpc('get_user_from_stripe_customer', { p_customer_id: customerId });
 
       if (customerError) {
-        console.error(`[${timestamp}] Error looking up user from customer_id:`, customerError);
+        console.error(`[${timestamp}] ❌ Error looking up user from customer_id:`, customerError);
       } else if (customerData) {
         userId = customerData;
-        console.log(`[${timestamp}] Found user_id from customer: ${userId}`);
+        console.log(`[${timestamp}] ✅ Found user_id from customer lookup: ${userId}`);
+      } else {
+        console.error(`[${timestamp}] ❌ No user found for customer_id: ${customerId}`);
       }
     }
 
     if (!userId) {
-      console.error(`[${timestamp}] ERROR: No user_id found in metadata or stripe_customers for payment: ${paymentIntent.id}`);
+      console.error(`\n${'!'.repeat(80)}`);
+      console.error(`[${timestamp}] CRITICAL ERROR: NO USER_ID FOUND`);
+      console.error(`[${timestamp}] Payment Intent: ${paymentIntent.id}`);
       console.error(`[${timestamp}] Customer ID: ${customerId || 'none'}`);
       console.error(`[${timestamp}] Metadata: ${JSON.stringify(metadata)}`);
+      console.error(`${'!'.repeat(80)}\n`);
       return;
     }
 
-    console.log(`[${timestamp}] Processing ${coinsAmount} coins for user ${userId} (Payment: £${priceGBP})`);
+    console.log(`\n[${timestamp}] Calling database function to process purchase...`);
+    console.log(`[${timestamp}] User ID: ${userId}`);
+    console.log(`[${timestamp}] Coins: ${coinsAmount}`);
+    console.log(`[${timestamp}] Price: £${priceGBP}`);
+    console.log(`[${timestamp}] Reference: ${paymentIntent.id}`);
 
-    // Use the database function to process the purchase (includes duplicate check)
     const { data: result, error: purchaseError } = await supabase
       .rpc('process_stripe_coin_purchase', {
         p_user_id: userId,
@@ -169,24 +185,44 @@ async function handleCoinPurchase(paymentIntent: Stripe.PaymentIntent) {
       });
 
     if (purchaseError) {
-      console.error(`[${timestamp}] ERROR: Failed to process coin purchase:`, purchaseError);
+      console.error(`\n${'!'.repeat(80)}`);
+      console.error(`[${timestamp}] DATABASE ERROR:`, purchaseError);
+      console.error(`[${timestamp}] Error message: ${purchaseError.message}`);
+      console.error(`[${timestamp}] Error details:`, JSON.stringify(purchaseError, null, 2));
+      console.error(`${'!'.repeat(80)}\n`);
       throw new Error(`Failed to process coin purchase: ${purchaseError.message}`);
+    }
+
+    console.log(`\n[${timestamp}] Database function result:`, JSON.stringify(result, null, 2));
+
+    if (!result) {
+      console.error(`[${timestamp}] ❌ No result returned from database function`);
+      return;
     }
 
     if (!result.success) {
       if (result.duplicate) {
-        console.log(`[${timestamp}] ⚠ Duplicate payment detected, skipping: ${paymentIntent.id}`);
+        console.log(`\n${'~'.repeat(80)}`);
+        console.log(`[${timestamp}] ⚠️  DUPLICATE PAYMENT DETECTED`);
+        console.log(`[${timestamp}] Payment Intent: ${paymentIntent.id}`);
+        console.log(`[${timestamp}] This payment was already processed - skipping`);
+        console.log(`${'~'.repeat(80)}\n`);
       } else {
-        console.error(`[${timestamp}] ERROR: Purchase processing failed: ${result.message}`);
+        console.error(`\n${'!'.repeat(80)}`);
+        console.error(`[${timestamp}] ❌ PURCHASE FAILED: ${result.message}`);
+        console.error(`${'!'.repeat(80)}\n`);
       }
       return;
     }
 
-    console.log(`[${timestamp}] ✓ SUCCESS: Added ${result.coins_added} coins to user ${userId}`);
+    console.log(`\n${'✓'.repeat(80)}`);
+    console.log(`[${timestamp}] ✅ SUCCESS - COINS CREDITED`);
+    console.log(`[${timestamp}] User ID: ${userId}`);
+    console.log(`[${timestamp}] Coins Added: ${result.coins_added}`);
+    console.log(`[${timestamp}] New Balance: ${result.new_balance}`);
     console.log(`[${timestamp}] Transaction ID: ${result.transaction_id}`);
-    console.log(`[${timestamp}] New balance: ${result.new_balance} coins`);
+    console.log(`${'✓'.repeat(80)}\n`);
 
-    // Check updated coin pool status
     const { data: poolData } = await supabase
       .from('coin_pool')
       .select('remaining_coins, distributed_coins')
@@ -194,64 +230,75 @@ async function handleCoinPurchase(paymentIntent: Stripe.PaymentIntent) {
       .maybeSingle();
 
     if (poolData) {
-      console.log(`[${timestamp}] Coin Pool: ${poolData.remaining_coins} remaining, ${poolData.distributed_coins} distributed`);
+      console.log(`[${timestamp}] 💰 Coin Pool Status:`);
+      console.log(`[${timestamp}]    Remaining: ${poolData.remaining_coins}`);
+      console.log(`[${timestamp}]    Distributed: ${poolData.distributed_coins}`);
     }
 
   } catch (error: any) {
-    const timestamp = new Date().toISOString();
-    console.error(`[${timestamp}] CRITICAL ERROR in handleCoinPurchase:`, error.message);
-    console.error(`[${timestamp}] Stack:`, error.stack);
+    console.error(`\n${'X'.repeat(80)}`);
+    console.error(`[${timestamp}] CRITICAL ERROR IN handleCoinPurchase`);
+    console.error(`[${timestamp}] Error Message: ${error.message}`);
+    console.error(`[${timestamp}] Stack Trace:`, error.stack);
+    console.error(`${'X'.repeat(80)}\n`);
     throw error;
   }
 }
 
-/**
- * Handles coin purchase from checkout.session.completed event
- * This provides additional context from the checkout session
- */
 async function handleCoinPurchaseSession(session: Stripe.Checkout.Session) {
+  const timestamp = new Date().toISOString();
+
   try {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] Processing coin purchase from session: ${session.id}`);
+    console.log(`\n${'*'.repeat(80)}`);
+    console.log(`[${timestamp}] PROCESSING COIN PURCHASE FROM CHECKOUT SESSION`);
+    console.log(`[${timestamp}] Session ID: ${session.id}`);
+    console.log(`${'*'.repeat(80)}\n`);
 
     const metadata = session.metadata || {};
+    console.log(`[${timestamp}] Session metadata:`, JSON.stringify(metadata, null, 2));
+
     let userId = metadata.user_id || metadata.userId;
     const coinsAmount = parseInt(metadata.coins_purchased || metadata.coins || '100');
     const customerId = typeof session.customer === 'string' ? session.customer : null;
 
-    // If payment intent is available, wait for payment_intent.succeeded event
-    // This avoids double-processing
+    console.log(`[${timestamp}] Payment Intent: ${session.payment_intent || 'NOT SET'}`);
+
     if (session.payment_intent) {
-      console.log(`[${timestamp}] Payment intent exists, will be processed by payment_intent.succeeded event`);
+      console.log(`[${timestamp}] ⏸️  Payment intent exists - will be processed by payment_intent.succeeded event`);
+      console.log(`[${timestamp}] Skipping session processing to avoid duplicate`);
       return;
     }
 
-    // Try to lookup user from stripe_customers if not in metadata
+    console.log(`[${timestamp}] No payment intent - processing from session`);
+
     if (!userId && customerId) {
-      console.log(`[${timestamp}] No user_id in session metadata, looking up from customer_id: ${customerId}`);
+      console.log(`[${timestamp}] No user_id in session metadata - attempting customer lookup...`);
 
       const { data: customerData, error: customerError } = await supabase
         .rpc('get_user_from_stripe_customer', { p_customer_id: customerId });
 
       if (customerError) {
-        console.error(`[${timestamp}] Error looking up user from customer_id:`, customerError);
+        console.error(`[${timestamp}] ❌ Error looking up user:`, customerError);
       } else if (customerData) {
         userId = customerData;
-        console.log(`[${timestamp}] Found user_id from customer: ${userId}`);
+        console.log(`[${timestamp}] ✅ Found user_id from customer: ${userId}`);
       }
     }
 
     if (!userId) {
-      console.error(`[${timestamp}] ERROR: No user_id found in session metadata or stripe_customers: ${session.id}`);
+      console.error(`\n${'!'.repeat(80)}`);
+      console.error(`[${timestamp}] CRITICAL ERROR: NO USER_ID FOUND`);
+      console.error(`[${timestamp}] Session ID: ${session.id}`);
       console.error(`[${timestamp}] Customer ID: ${customerId || 'none'}`);
+      console.error(`${'!'.repeat(80)}\n`);
       return;
     }
 
     const priceGBP = (session.amount_total || 0) / 100;
 
-    console.log(`[${timestamp}] Processing ${coinsAmount} coins for user ${userId} (Session payment: £${priceGBP})`);
+    console.log(`\n[${timestamp}] Calling database function...`);
+    console.log(`[${timestamp}] User: ${userId}, Coins: ${coinsAmount}, Price: £${priceGBP}`);
 
-    // Use the database function to process the purchase (includes duplicate check)
     const { data: result, error: purchaseError } = await supabase
       .rpc('process_stripe_coin_purchase', {
         p_user_id: userId,
@@ -262,33 +309,36 @@ async function handleCoinPurchaseSession(session: Stripe.Checkout.Session) {
       });
 
     if (purchaseError) {
-      console.error(`[${timestamp}] ERROR: Failed to process coin purchase:`, purchaseError);
-      throw new Error(`Failed to process coin purchase: ${purchaseError.message}`);
+      console.error(`[${timestamp}] ❌ DATABASE ERROR:`, purchaseError);
+      throw new Error(`Failed to process: ${purchaseError.message}`);
     }
 
-    if (!result.success) {
-      if (result.duplicate) {
-        console.log(`[${timestamp}] ⚠ Duplicate payment detected, skipping: ${session.id}`);
+    if (!result || !result.success) {
+      if (result?.duplicate) {
+        console.log(`[${timestamp}] ⚠️  Duplicate payment - already processed`);
       } else {
-        console.error(`[${timestamp}] ERROR: Purchase processing failed: ${result.message}`);
+        console.error(`[${timestamp}] ❌ Purchase failed: ${result?.message}`);
       }
       return;
     }
 
-    console.log(`[${timestamp}] ✓ SUCCESS: Processed session coin purchase - ${result.coins_added} coins added`);
-    console.log(`[${timestamp}] New balance: ${result.new_balance} coins`);
+    console.log(`\n${'✓'.repeat(80)}`);
+    console.log(`[${timestamp}] ✅ SUCCESS - Session coin purchase processed`);
+    console.log(`[${timestamp}] Coins Added: ${result.coins_added}`);
+    console.log(`[${timestamp}] New Balance: ${result.new_balance}`);
+    console.log(`${'✓'.repeat(80)}\n`);
 
   } catch (error: any) {
-    const timestamp = new Date().toISOString();
-    console.error(`[${timestamp}] ERROR in handleCoinPurchaseSession:`, error.message);
+    console.error(`\n${'X'.repeat(80)}`);
+    console.error(`[${timestamp}] ERROR in handleCoinPurchaseSession`);
+    console.error(`[${timestamp}] Message: ${error.message}`);
+    console.error(`${'X'.repeat(80)}\n`);
     throw error;
   }
 }
 
-// based on the excellent https://github.com/t3dotgg/stripe-recommendations
 async function syncCustomerFromStripe(customerId: string) {
   try {
-    // fetch latest subscription data from Stripe
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       limit: 1,
@@ -296,7 +346,6 @@ async function syncCustomerFromStripe(customerId: string) {
       expand: ['data.default_payment_method'],
     });
 
-    // TODO verify if needed
     if (subscriptions.data.length === 0) {
       console.info(`No active subscriptions found for customer: ${customerId}`);
       const { error: noSubError } = await supabase.from('stripe_subscriptions').upsert(
@@ -315,10 +364,8 @@ async function syncCustomerFromStripe(customerId: string) {
       }
     }
 
-    // assumes that a customer can only have a single subscription
     const subscription = subscriptions.data[0];
 
-    // store subscription state
     const { error: subError } = await supabase.from('stripe_subscriptions').upsert(
       {
         customer_id: customerId,
