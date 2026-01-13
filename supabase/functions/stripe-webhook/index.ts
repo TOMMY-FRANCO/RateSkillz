@@ -4,6 +4,12 @@ import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 
 const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
 const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
+
+console.log('🔧 Stripe Webhook Secret Check:');
+console.log(`   Secret exists: ${!!stripeWebhookSecret}`);
+console.log(`   Secret length: ${stripeWebhookSecret?.length || 0}`);
+console.log(`   Secret format: ${stripeWebhookSecret?.substring(0, 7)}...${stripeWebhookSecret?.substring(stripeWebhookSecret.length - 10)}`);
+
 const stripe = new Stripe(stripeSecret, {
   appInfo: {
     name: 'Bolt Integration',
@@ -26,17 +32,32 @@ Deno.serve(async (req) => {
     const signature = req.headers.get('stripe-signature');
 
     if (!signature) {
+      console.error('❌ No Stripe signature header found');
       return new Response('No signature found', { status: 400 });
     }
 
+    console.log('🔍 Signature verification check:');
+    console.log(`   Signature header exists: true`);
+    console.log(`   Signature: ${signature.substring(0, 50)}...`);
+
     const body = await req.text();
+    console.log(`   Body length: ${body.length} bytes`);
+    console.log(`   Body preview: ${body.substring(0, 100)}...`);
 
     let event: Stripe.Event;
 
     try {
+      console.log('🔐 Attempting signature verification...');
       event = await stripe.webhooks.constructEventAsync(body, signature, stripeWebhookSecret);
+      console.log('✅ Signature verification SUCCESSFUL');
+      console.log(`   Event Type: ${event.type}`);
+      console.log(`   Event ID: ${event.id}`);
     } catch (error: any) {
-      console.error(`Webhook signature verification failed: ${error.message}`);
+      console.error('❌ Webhook signature verification FAILED');
+      console.error(`   Error: ${error.message}`);
+      console.error(`   Error type: ${error.type}`);
+      console.error(`   Secret format: ${stripeWebhookSecret?.substring(0, 7)}...`);
+      console.error(`   Secret length: ${stripeWebhookSecret?.length}`);
       return new Response(`Webhook signature verification failed: ${error.message}`, { status: 400 });
     }
 
@@ -67,14 +88,26 @@ async function handleEvent(event: Stripe.Event) {
     const paymentIntent = stripeData as Stripe.PaymentIntent;
     console.log(`[${timestamp}] Payment Intent Succeeded - ID: ${paymentIntent.id}`);
     console.log(`[${timestamp}] Amount: ${paymentIntent.amount / 100} ${paymentIntent.currency.toUpperCase()}`);
-    console.log(`[${timestamp}] Invoice: ${paymentIntent.invoice || 'null (one-time payment)'}`);
+    console.log(`[${timestamp}] Invoice field: ${paymentIntent.invoice || 'null'}`);
+    console.log(`[${timestamp}] Metadata:`, JSON.stringify(paymentIntent.metadata || {}, null, 2));
+
+    const hasCoinMetadata = paymentIntent.metadata &&
+      (paymentIntent.metadata.coins_purchased || paymentIntent.metadata.coins);
+
+    console.log(`[${timestamp}] Has coin purchase metadata: ${!!hasCoinMetadata}`);
+
+    if (hasCoinMetadata) {
+      console.log(`[${timestamp}] ✅ COIN PURCHASE DETECTED (via metadata) - Processing purchase`);
+      await handleCoinPurchase(paymentIntent);
+      return;
+    }
 
     if (paymentIntent.invoice === null) {
-      console.log(`[${timestamp}] This is a one-time payment - processing as coin purchase`);
+      console.log(`[${timestamp}] One-time payment with no coin metadata - processing as coin purchase`);
       await handleCoinPurchase(paymentIntent);
       return;
     } else {
-      console.log(`[${timestamp}] This is an invoice payment - skipping coin purchase logic`);
+      console.log(`[${timestamp}] This is an invoice payment (subscription) - skipping coin purchase logic`);
     }
   }
 
@@ -83,9 +116,21 @@ async function handleEvent(event: Stripe.Event) {
     console.log(`[${timestamp}] Checkout Session Completed - ID: ${session.id}`);
     console.log(`[${timestamp}] Mode: ${session.mode}`);
     console.log(`[${timestamp}] Payment Status: ${session.payment_status}`);
+    console.log(`[${timestamp}] Session Metadata:`, JSON.stringify(session.metadata || {}, null, 2));
+
+    const hasCoinMetadata = session.metadata &&
+      (session.metadata.coins_purchased || session.metadata.coins);
+
+    console.log(`[${timestamp}] Has coin purchase metadata: ${!!hasCoinMetadata}`);
+
+    if (hasCoinMetadata && session.mode === 'payment') {
+      console.log(`[${timestamp}] ✅ COIN PURCHASE DETECTED (session with metadata) - Processing purchase`);
+      await handleCoinPurchaseSession(session);
+      return;
+    }
 
     if (session.mode === 'payment') {
-      console.log(`[${timestamp}] This is a one-time payment - processing coin purchase`);
+      console.log(`[${timestamp}] One-time payment mode - processing as coin purchase`);
       await handleCoinPurchaseSession(session);
       return;
     } else if (session.mode === 'subscription') {
