@@ -27,12 +27,30 @@ import BalanceRecovery from './pages/BalanceRecovery';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-cyan-400 text-lg">Loading...</div>
+      </div>
+    );
+  }
+
   return user ? <>{children}</> : <Navigate to="/" replace />;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-cyan-400 text-lg">Loading...</div>
+      </div>
+    );
+  }
+
   return !user ? <>{children}</> : <Navigate to="/dashboard" replace />;
 }
 
