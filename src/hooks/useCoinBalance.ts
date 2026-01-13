@@ -41,46 +41,6 @@ export function useCoinBalance() {
     if (!user?.id) return;
 
     fetchBalance();
-
-    const channel = supabase
-      .channel(`profile_balance_${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${user.id}`,
-        },
-        (payload) => {
-          const newBalance = Number(payload.new?.coin_balance || 0);
-          setBalance(newBalance);
-          console.log('Balance updated via real-time:', newBalance);
-        }
-      )
-      .subscribe();
-
-    const transactionChannel = supabase
-      .channel(`coin_transactions_${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'coin_transactions',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          console.log('New transaction detected, refreshing balance...');
-          fetchBalance();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-      supabase.removeChannel(transactionChannel);
-    };
   }, [user?.id]);
 
   return { balance, loading, error, refetch: fetchBalance };

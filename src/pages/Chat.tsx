@@ -6,9 +6,6 @@ import {
   getConversationMessages,
   sendMessage,
   markMessagesAsRead,
-  subscribeToMessages,
-  subscribeToUserStatus,
-  subscribeToTypingStatus,
   setTypingStatus,
   getUserStatus,
   formatTimestamp,
@@ -16,7 +13,7 @@ import {
 import { ArrowLeft, Send, User, Check, CheckCheck, Coins } from 'lucide-react';
 import { displayUsername } from '../lib/username';
 import SendCoinsModal from '../components/SendCoinsModal';
-import { checkCanSendCoins, subscribeToCoinTransfers } from '../lib/coinTransfers';
+import { checkCanSendCoins } from '../lib/coinTransfers';
 import { supabase } from '../lib/supabase';
 
 export default function Chat() {
@@ -62,27 +59,6 @@ export default function Chat() {
     };
 
     loadMessages();
-
-    const unsubscribeMessages = subscribeToMessages(conversationId, (message) => {
-      setMessages((prev) => [...prev, message]);
-      if (message.recipient_id === user.id) {
-        markMessagesAsRead(conversationId, user.id);
-      }
-      scrollToBottom();
-    });
-
-    const unsubscribeTyping = subscribeToTypingStatus(conversationId, (status) => {
-      if (status && status.user_id !== user.id) {
-        setOtherUserTyping(status.is_typing);
-      } else {
-        setOtherUserTyping(false);
-      }
-    });
-
-    return () => {
-      unsubscribeMessages();
-      unsubscribeTyping();
-    };
   }, [conversationId, user]);
 
   useEffect(() => {
@@ -97,15 +73,6 @@ export default function Chat() {
     };
 
     loadUserStatus();
-
-    const unsubscribeStatus = subscribeToUserStatus(otherUser.id, (status) => {
-      setIsOnline(status.is_online);
-      setLastSeen(status.last_seen);
-    });
-
-    return () => {
-      unsubscribeStatus();
-    };
   }, [otherUser]);
 
   useEffect(() => {
@@ -132,17 +99,6 @@ export default function Chat() {
     };
 
     loadOtherUserVerification();
-
-    const unsubscribeTransfers = subscribeToCoinTransfers(conversationId, (transfer) => {
-      setCoinTransferNotifications((prev) => [...prev, transfer]);
-      setTimeout(() => {
-        setCoinTransferNotifications((prev) => prev.filter((t) => t.id !== transfer.id));
-      }, 5000);
-    });
-
-    return () => {
-      unsubscribeTransfers();
-    };
   }, [user, otherUser, conversationId]);
 
   useEffect(() => {

@@ -173,27 +173,3 @@ export async function checkCanSendCoins(
   }
 }
 
-export function subscribeToCoinTransfers(
-  conversationId: string,
-  callback: (transfer: CoinTransfer) => void
-) {
-  const channel = supabase
-    .channel(`coin_transfers:${conversationId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'coin_transfers',
-        filter: `conversation_id=eq.${conversationId}`,
-      },
-      (payload) => {
-        callback(payload.new as CoinTransfer);
-      }
-    )
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}

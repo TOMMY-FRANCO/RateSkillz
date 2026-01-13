@@ -107,6 +107,8 @@ export default function ProfileView() {
       setProfile(profileData);
       setIsVerified(profileData.is_verified || false);
       setHasSocialBadge(profileData.has_social_badge || false);
+      setCoinBalance(Number(profileData.coin_balance || 0));
+      setBalanceLoading(false);
 
       setViewsCount(profileData.profile_views_count || 0);
       setCommentsCount(profileData.comments_count || 0);
