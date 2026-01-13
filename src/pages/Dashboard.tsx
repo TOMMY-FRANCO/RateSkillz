@@ -515,9 +515,10 @@ export default function Dashboard() {
       <Tutorial
         isOpen={showTutorial}
         onClose={() => setShowTutorial(false)}
-        onComplete={() => {
+        onComplete={async () => {
           setTutorialCompleted(true);
-          checkTutorialStatus();
+          await checkTutorialStatus();
+          window.location.reload();
         }}
       />
     </div>

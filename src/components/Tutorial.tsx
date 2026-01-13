@@ -119,33 +119,48 @@ export default function Tutorial({ isOpen, onClose, onComplete }: TutorialProps)
   };
 
   const handleComplete = async () => {
-    if (!user) return;
+    if (!user) {
+      console.error('No user found');
+      return;
+    }
 
     setIsCompleting(true);
 
     try {
+      console.log('Calling complete_tutorial for user:', user.id);
+
       const { data, error } = await supabase.rpc('complete_tutorial', {
         user_uuid: user.id
       });
 
-      if (error) throw error;
+      console.log('Tutorial completion response:', { data, error });
+
+      if (error) {
+        console.error('RPC error:', error);
+        alert(`Tutorial completion failed: ${error.message}`);
+        setIsCompleting(false);
+        return;
+      }
 
       if (data?.success) {
+        console.log('Tutorial completed successfully!', data);
         setCoinsEarned(data.coins_earned || 5);
         setShowCompletion(true);
 
         setTimeout(() => {
-          onComplete?.();
+          if (onComplete) {
+            onComplete();
+          }
           onClose();
         }, 3000);
       } else {
         console.error('Tutorial completion failed:', data?.message);
-        onClose();
+        alert(`Tutorial completion failed: ${data?.message || 'Unknown error'}`);
+        setIsCompleting(false);
       }
     } catch (error) {
       console.error('Error completing tutorial:', error);
-      onClose();
-    } finally {
+      alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsCompleting(false);
     }
   };
