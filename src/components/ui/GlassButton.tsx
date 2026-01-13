@@ -16,25 +16,25 @@ export function GlassButton({
   ...props
 }: GlassButtonProps) {
   const baseStyles = `
-    px-8 py-3 rounded-[20px] font-semibold uppercase text-sm tracking-wider
+    px-8 py-3 rounded-lg font-bold uppercase text-sm tracking-wider
     backdrop-blur-[15px] transition-all duration-150
     active:scale-[0.96] disabled:opacity-50 disabled:cursor-not-allowed
   `;
 
   const variants = {
     primary: `
-      bg-white/5 border border-[#00FF85] text-[#00FF85]
-      ${glow ? 'shadow-[0_0_20px_rgba(0,255,133,0.4)]' : ''}
-      hover:bg-[rgba(0,255,133,0.1)] hover:shadow-[0_0_30px_rgba(0,255,133,0.6)]
+      bg-[rgba(15,24,41,0.85)] border-[1.5px] border-[#00E0FF] text-[#5FFFFF]
+      ${glow ? 'shadow-[0_0_20px_rgba(0,224,255,0.4)]' : ''}
+      hover:bg-[rgba(0,224,255,0.15)] hover:border-[#5FFFFF] hover:shadow-[0_0_30px_rgba(0,224,255,0.6)]
     `,
     secondary: `
-      bg-white/5 border border-[#38BDF8] text-[#38BDF8]
+      bg-[rgba(15,24,41,0.85)] border-[1.5px] border-[#38BDF8] text-[#38BDF8]
       ${glow ? 'shadow-[0_0_20px_rgba(56,189,248,0.4)]' : ''}
       hover:bg-[rgba(56,189,248,0.1)] hover:shadow-[0_0_30px_rgba(56,189,248,0.6)]
     `,
     ghost: `
-      bg-white/5 border border-white/10 text-white
-      hover:bg-white/10 hover:border-[#00E0FF] hover:shadow-[0_0_20px_rgba(0,224,255,0.3)]
+      bg-[rgba(15,24,41,0.6)] border border-[rgba(0,224,255,0.3)] text-white
+      hover:bg-[rgba(15,24,41,0.95)] hover:border-[#00E0FF] hover:shadow-[0_0_20px_rgba(0,224,255,0.4)]
     `
   };
 

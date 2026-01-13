@@ -11,7 +11,7 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center shadow-lg shadow-[#00FF85]/30">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#5FFFFF] rounded-lg flex items-center justify-center shadow-[0_0_20px_rgba(0,224,255,0.6)]">
                 <Star className="w-6 h-6 text-black" />
               </div>
               <h1 className="text-xl font-bold text-white heading-glow">
@@ -39,14 +39,14 @@ export default function Landing() {
       <main className="pt-16">
         <section className="relative overflow-hidden min-h-[calc(100vh-4rem)] flex items-center">
           <div className="absolute inset-0">
-            <div className="absolute top-20 left-10 w-96 h-96 bg-[#00FF85]/10 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-[#38BDF8]/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+            <div className="absolute top-20 left-10 w-96 h-96 bg-[#00E0FF]/10 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-[#5FFFFF]/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
           </div>
 
           <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24 w-full">
             <div className="text-center animate-fade-in">
               <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white mb-6 leading-tight">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00FF85] to-[#00E0FF] heading-glow">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00E0FF] to-[#5FFFFF] heading-glow">
                   Turn Your Skills Into Stats
                 </span>
               </h1>
@@ -71,28 +71,28 @@ export default function Landing() {
 
               <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
                 <div className="glass-card p-6">
-                  <div className="w-14 h-14 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#00FF85]/30">
+                  <div className="w-14 h-14 bg-gradient-to-br from-[#00E0FF] to-[#5FFFFF] rounded-lg flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(0,224,255,0.5)]">
                     <span className="text-3xl">⚽</span>
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-2">Get Rated</h3>
+                  <h3 className="tech-header">Get Rated</h3>
                   <p className="text-[#B0B8C8] text-sm">
                     Friends rate your pace, shooting, passing, dribbling, defense, and physical attributes
                   </p>
                 </div>
                 <div className="glass-card p-6">
-                  <div className="w-14 h-14 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#38BDF8]/30">
+                  <div className="w-14 h-14 bg-gradient-to-br from-[#00E0FF] to-[#5FFFFF] rounded-lg flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(0,224,255,0.5)]">
                     <span className="text-3xl">📊</span>
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-2">Build Your Card</h3>
+                  <h3 className="tech-header">Build Your Card</h3>
                   <p className="text-[#B0B8C8] text-sm">
                     Your ratings combine to create your unique RatingSkill® card with your stats
                   </p>
                 </div>
                 <div className="glass-card p-6">
-                  <div className="w-14 h-14 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#00E0FF]/30">
+                  <div className="w-14 h-14 bg-gradient-to-br from-[#00E0FF] to-[#5FFFFF] rounded-lg flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(0,224,255,0.5)]">
                     <span className="text-3xl">🏆</span>
                   </div>
-                  <h3 className="text-lg font-bold text-white mb-2">Share & Compete</h3>
+                  <h3 className="tech-header">Share & Compete</h3>
                   <p className="text-[#B0B8C8] text-sm">
                     Share your card and climb the leaderboard to become the top-rated player
                   </p>
@@ -107,7 +107,7 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="flex items-center justify-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center shadow-lg shadow-[#00FF85]/30">
+              <div className="w-8 h-8 bg-gradient-to-br from-[#00E0FF] to-[#5FFFFF] rounded-lg flex items-center justify-center shadow-[0_0_20px_rgba(0,224,255,0.6)]">
                 <Star className="w-5 h-5 text-black" />
               </div>
               <span className="text-lg font-bold text-white">
