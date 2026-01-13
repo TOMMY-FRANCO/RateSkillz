@@ -1,15 +1,16 @@
 import { TrendingUp, Coins } from 'lucide-react';
 import { useCoinPool } from '../hooks/useCoinPool';
+import { GlassCard } from './ui/GlassCard';
 
 export function CoinPoolDisplay() {
   const { stats, loading } = useCoinPool();
 
   if (loading) {
     return (
-      <div className="bg-gradient-to-br from-yellow-500/10 to-amber-600/10 rounded-xl p-6 border border-yellow-500/20 animate-pulse">
-        <div className="h-6 bg-yellow-500/20 rounded w-48 mb-4"></div>
-        <div className="h-4 bg-yellow-500/20 rounded w-32"></div>
-      </div>
+      <GlassCard className="p-6 animate-pulse">
+        <div className="h-6 bg-white/10 rounded w-48 mb-4"></div>
+        <div className="h-4 bg-white/10 rounded w-32"></div>
+      </GlassCard>
     );
   }
 
@@ -23,20 +24,20 @@ export function CoinPoolDisplay() {
   const progressPercentage = (stats.distributed_coins / stats.total_coins) * 100;
 
   return (
-    <div className="bg-gradient-to-br from-yellow-500/10 to-amber-600/10 rounded-xl p-6 border border-yellow-500/20 hover:border-yellow-500/30 transition-all">
+    <GlassCard className="p-6 hover:shadow-[0_0_30px_rgba(0,255,133,0.15)] transition-all">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-1">
-            <Coins className="w-5 h-5 text-yellow-500" />
-            Coin Pool Distribution
+          <h3 className="text-base font-bold text-white flex items-center gap-2 mb-1 uppercase tracking-wide font-['Roboto_Condensed'] italic">
+            <Coins className="w-5 h-5 text-[#00FF85]" />
+            Pool Distribution
           </h3>
-          <p className="text-sm text-gray-600">
-            Coins distributed to users from pool
+          <p className="text-sm text-white/60 font-['Montserrat'] font-normal tracking-[0.5px]">
+            Coins distributed to users
           </p>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 rounded-full border border-green-500/20">
-          <TrendingUp className="w-4 h-4 text-green-500" />
-          <span className="text-xs font-semibold text-green-500">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#00FF85]/10 rounded-full border border-[#00FF85]/30">
+          <TrendingUp className="w-4 h-4 text-[#00FF85]" />
+          <span className="text-xs font-semibold text-[#00FF85]">
             {stats.distribution_percentage.toFixed(4)}%
           </span>
         </div>
@@ -44,24 +45,24 @@ export function CoinPoolDisplay() {
 
       <div className="space-y-3">
         <div className="flex justify-between items-baseline">
-          <span className="text-sm text-gray-600">Distributed to Users</span>
-          <span className="text-2xl font-bold text-yellow-600">
+          <span className="text-sm text-white/60 font-['Montserrat']">Distributed</span>
+          <span className="text-2xl font-bold text-[#00FF85] font-['Roboto_Mono'] drop-shadow-[0_0_10px_rgba(0,255,133,0.5)]">
             {distributedFormatted}
           </span>
         </div>
 
-        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+        <div className="w-full bg-white/5 rounded-full h-3 overflow-hidden border border-white/10">
           <div
-            className="h-full bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full transition-all duration-1000 ease-out relative overflow-hidden"
+            className="h-full bg-gradient-to-r from-[#00FF85] to-[#00E0FF] rounded-full transition-all duration-1000 ease-out relative overflow-hidden shadow-[0_0_20px_rgba(0,255,133,0.4)]"
             style={{ width: `${Math.max(0.5, progressPercentage)}%` }}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
           </div>
         </div>
 
-        <div className="flex justify-between items-baseline text-xs text-gray-500">
-          <span>Total supply: {totalFormatted}</span>
-          <span className="font-medium">
+        <div className="flex justify-between items-baseline text-xs text-white/50 font-['Montserrat']">
+          <span>Total: {totalFormatted}</span>
+          <span className="font-medium text-white/70">
             {stats.remaining_coins.toLocaleString('en-GB', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -70,10 +71,10 @@ export function CoinPoolDisplay() {
           </span>
         </div>
 
-        <p className="text-xs text-gray-500 italic pt-2 border-t border-gray-200">
-          Coins are distributed through adverts, comments and purchases. Once distributed, they circulate between users.
+        <p className="text-xs text-white/40 italic pt-2 border-t border-white/10 font-['Montserrat'] tracking-[0.5px]">
+          Distributed through adverts, comments and purchases. Circulates between users.
         </p>
       </div>
-    </div>
+    </GlassCard>
   );
 }
