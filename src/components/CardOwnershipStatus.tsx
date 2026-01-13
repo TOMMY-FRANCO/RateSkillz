@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Coins, ShoppingCart, TrendingUp, Tag, X, Lock, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Coins, ShoppingCart, TrendingUp, Tag, X, Lock, Loader2, AlertCircle, CheckCircle2, KeyRound } from 'lucide-react';
 import type { CardOwnership } from '../lib/cardTrading';
-import { purchaseCardAtFixedPrice, calculatePotentialProfit, getSafeCardValue } from '../lib/cardTrading';
+import { purchaseCardAtFixedPrice, calculatePotentialProfit, getSafeCardValue, buyMyselfOut } from '../lib/cardTrading';
 import { getCoinBalance } from '../lib/coins';
 
 interface CardOwnershipStatusProps {
@@ -18,6 +18,7 @@ export default function CardOwnershipStatus({
   onUpdate
 }: CardOwnershipStatusProps) {
   const [showBuyModal, setShowBuyModal] = useState(false);
+  const [showBuyoutModal, setShowBuyoutModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -44,10 +45,10 @@ export default function CardOwnershipStatus({
   };
 
   useEffect(() => {
-    if (showBuyModal) {
+    if (showBuyModal || showBuyoutModal) {
       loadBalance();
     }
-  }, [showBuyModal]);
+  }, [showBuyModal, showBuyoutModal]);
 
   const handleBuyCard = async () => {
     if (!cardOwnership || !currentUserId) return;
@@ -73,6 +74,38 @@ export default function CardOwnershipStatus({
         setTimeout(() => setSuccess(null), 5000);
       } else {
         setError(result.error || 'Failed to purchase card');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBuyout = async () => {
+    if (!cardOwnership || !currentUserId) return;
+
+    const totalCost = safeCardValue + 100;
+
+    if (userBalance < totalCost) {
+      setError(`Insufficient coins. You need ${totalCost.toFixed(2)} coins but only have ${userBalance.toFixed(2)} coins.`);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await buyMyselfOut(cardUserId, currentUserId);
+
+      if (result.success) {
+        setShowBuyoutModal(false);
+        setSuccess('Successfully bought back your card!');
+        onUpdate();
+        setTimeout(() => setSuccess(null), 5000);
+      } else {
+        setError(result.error || 'Failed to buy out card');
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');
@@ -210,16 +243,48 @@ export default function CardOwnershipStatus({
         )}
 
         {isCardOfCurrentUser && (
-          <div className="p-4 bg-blue-900/20 border border-blue-600/50 rounded-lg">
-            <div className="flex items-center gap-2 text-blue-300 mb-2">
-              <Lock className="w-4 h-4" />
-              <span className="font-semibold">This is your card</span>
+          <div className="space-y-3">
+            <div className="p-4 bg-blue-900/20 border border-blue-600/50 rounded-lg">
+              <div className="flex items-center gap-2 text-blue-300 mb-2">
+                <Lock className="w-4 h-4" />
+                <span className="font-semibold">This is your card</span>
+              </div>
+              <p className="text-sm text-gray-400">
+                {isOwner
+                  ? "You currently own your card."
+                  : "Someone else owns your card. Use the buyout option to reclaim it!"}
+              </p>
             </div>
-            <p className="text-sm text-gray-400">
-              {isOwner
-                ? "You currently own your card. Once someone purchases it, you cannot buy it back."
-                : "Someone else owns your card. You can make an offer to buy it back!"}
-            </p>
+
+            {!isOwner && (
+              <div className="space-y-3">
+                <div className="p-4 bg-orange-900/20 border border-orange-600/50 rounded-lg">
+                  <div className="flex items-center gap-2 text-orange-300 mb-2">
+                    <KeyRound className="w-5 h-5" />
+                    <span className="font-semibold">Buy Myself Out</span>
+                  </div>
+                  <div className="space-y-2 text-sm text-gray-300">
+                    <p>Reclaim your card from {cardOwnership.owner?.username || 'the current holder'}!</p>
+                    <div className="space-y-1 text-xs">
+                      <p>Total Cost: <span className="font-bold text-orange-300">{(safeCardValue + 100).toFixed(2)} coins</span></p>
+                      <p className="ml-4 text-gray-400">Card value: {safeCardValue.toFixed(2)} coins (burned)</p>
+                      <p className="ml-4 text-gray-400">Payment to holder: 100 coins</p>
+                    </div>
+                    <p className="text-xs text-orange-300/70 mt-2">Card price stays at {safeCardValue.toFixed(2)} coins after buyout</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    loadBalance();
+                    setShowBuyoutModal(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-400 hover:to-yellow-400 text-white font-semibold rounded-lg transition-all"
+                >
+                  <KeyRound className="w-5 h-5" />
+                  Buy Myself Out - {(safeCardValue + 100).toFixed(2)} coins
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -312,6 +377,96 @@ export default function CardOwnershipStatus({
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {loading ? 'Processing...' : 'Confirm Purchase'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBuyoutModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <KeyRound className="w-6 h-6 text-orange-400" />
+              Buy Myself Out
+            </h3>
+
+            <div className="space-y-4 mb-6">
+              <div className="p-4 bg-gray-800 rounded-lg">
+                <p className="text-sm text-gray-400">Total Cost</p>
+                <p className="text-2xl font-bold text-orange-400 flex items-center gap-2">
+                  <Coins className="w-6 h-6" />
+                  {(safeCardValue + 100).toFixed(2)} coins
+                </p>
+              </div>
+
+              <div className="p-4 bg-gray-800 rounded-lg">
+                <p className="text-sm text-gray-400">Your Balance</p>
+                {balanceLoading ? (
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Loading...</span>
+                  </div>
+                ) : (
+                  <p className="text-lg font-semibold text-white">
+                    {userBalance.toFixed(2)} coins
+                  </p>
+                )}
+              </div>
+
+              <div className="p-4 bg-orange-900/20 border border-orange-600/50 rounded-lg space-y-2">
+                <p className="text-sm font-semibold text-orange-300">Payment Breakdown:</p>
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-300">
+                    Card value: <span className="font-semibold text-red-400">{safeCardValue.toFixed(2)} coins (burned)</span>
+                  </p>
+                  <p className="text-xs text-gray-400 ml-4 italic">
+                    This amount is removed from circulation
+                  </p>
+                  <p className="text-sm text-gray-300">
+                    Payment to holder: <span className="font-semibold text-green-400">100.00 coins</span>
+                  </p>
+                  <p className="text-xs text-gray-400 ml-4 italic">
+                    {cardOwnership.owner?.username || 'Current holder'} receives this
+                  </p>
+                  <div className="pt-2 mt-2 border-t border-orange-600/30">
+                    <p className="text-xs text-gray-400 italic">
+                      Total: {safeCardValue.toFixed(2)} + 100 = {(safeCardValue + 100).toFixed(2)} coins
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-blue-900/20 border border-blue-600/50 rounded-lg">
+                <p className="text-sm text-blue-300">
+                  After buyout, your card returns to you at its current value of <span className="font-bold">{safeCardValue.toFixed(2)} coins</span> (unchanged).
+                </p>
+                <p className="text-xs text-blue-300/70 mt-2">
+                  Unlike normal purchases, the card price does not increase with buyouts.
+                </p>
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-900/20 border border-red-600/50 rounded-lg">
+                  <p className="text-sm text-red-300">{error}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowBuyoutModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBuyout}
+                disabled={loading || balanceLoading || userBalance < (safeCardValue + 100)}
+                className="flex-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-400 hover:to-yellow-400 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                {loading ? 'Processing...' : 'Confirm Buyout'}
               </button>
             </div>
           </div>

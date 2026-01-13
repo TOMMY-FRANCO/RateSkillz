@@ -544,3 +544,50 @@ export async function getPendingPurchaseRequests(userId: string): Promise<Purcha
 
   return data || [];
 }
+
+export interface BuyoutResult {
+  success: boolean;
+  error?: string;
+  transaction_id?: string;
+  card_price?: number;
+  payment_to_holder?: number;
+  total_cost?: number;
+  coins_burned?: number;
+}
+
+export async function buyMyselfOut(
+  cardUserId: string,
+  originalOwnerId: string
+): Promise<BuyoutResult> {
+  try {
+    const { data, error } = await supabase.rpc('buy_myself_out', {
+      p_card_user_id: cardUserId,
+      p_original_owner_id: originalOwnerId
+    });
+
+    if (error) {
+      console.error('Error buying out card:', error);
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: false, error: 'No response from buyout transaction' };
+    }
+
+    return {
+      success: data.success,
+      error: data.error,
+      transaction_id: data.transaction_id,
+      card_price: data.card_price,
+      payment_to_holder: data.payment_to_holder,
+      total_cost: data.total_cost,
+      coins_burned: data.coins_burned
+    };
+  } catch (err) {
+    console.error('Exception buying out card:', err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'Unknown error occurred'
+    };
+  }
+}
