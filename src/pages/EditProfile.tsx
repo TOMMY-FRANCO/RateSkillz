@@ -7,14 +7,9 @@ export default function EditProfile() {
   const { profile, updateProfile } = useAuth();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState(profile?.full_name || '');
-  const [bio, setBio] = useState(profile?.bio || '');
   const [position, setPosition] = useState(profile?.position || '');
   const [number, setNumber] = useState(profile?.number || '');
   const [team, setTeam] = useState(profile?.team || '');
-  const [height, setHeight] = useState(profile?.height || '');
-  const [weight, setWeight] = useState(profile?.weight || '');
-  const [achievements, setAchievements] = useState(profile?.achievements || '');
-  const [stats, setStats] = useState(profile?.stats || '');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -65,14 +60,9 @@ export default function EditProfile() {
 
     const { error } = await updateProfile({
       full_name: fullName,
-      bio,
       position,
       number,
       team,
-      height,
-      weight,
-      achievements,
-      stats,
     });
 
     if (error) {
@@ -329,78 +319,6 @@ export default function EditProfile() {
                 <option value="West Ham United">West Ham United</option>
                 <option value="Wolverhampton Wanderers">Wolverhampton Wanderers</option>
               </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="height" className="block text-sm font-medium text-gray-300 mb-2">
-                  Height
-                </label>
-                <input
-                  id="height"
-                  type="text"
-                  value={height}
-                  onChange={(e) => setHeight(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                  placeholder="5'10&quot;"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="weight" className="block text-sm font-medium text-gray-300 mb-2">
-                  Weight
-                </label>
-                <input
-                  id="weight"
-                  type="text"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                  placeholder="165 lbs"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="bio" className="block text-sm font-medium text-gray-300 mb-2">
-                Bio
-              </label>
-              <textarea
-                id="bio"
-                rows={3}
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all resize-none"
-                placeholder="Tell us about yourself..."
-              />
-            </div>
-
-            <div>
-              <label htmlFor="achievements" className="block text-sm font-medium text-gray-300 mb-2">
-                Achievements
-              </label>
-              <textarea
-                id="achievements"
-                rows={3}
-                value={achievements}
-                onChange={(e) => setAchievements(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all resize-none"
-                placeholder="Awards, trophies, honors..."
-              />
-            </div>
-
-            <div>
-              <label htmlFor="stats" className="block text-sm font-medium text-gray-300 mb-2">
-                Career Stats
-              </label>
-              <textarea
-                id="stats"
-                rows={3}
-                value={stats}
-                onChange={(e) => setStats(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all resize-none"
-                placeholder="Goals, assists, matches played..."
-              />
             </div>
 
             {message && (
