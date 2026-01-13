@@ -196,7 +196,7 @@ export default function Tutorial({ isOpen, onClose, onComplete }: TutorialProps)
               <div className="flex items-center justify-center gap-2">
                 <Sparkles className="w-6 h-6 text-yellow-300" />
                 <span className="text-2xl font-bold text-white">
-                  +{coinsEarned} Coins Earned
+                  +5 Coins Earned
                 </span>
                 <Sparkles className="w-6 h-6 text-yellow-300" />
               </div>
