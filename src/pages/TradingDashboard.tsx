@@ -3,22 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   getCardsOwnedByUser,
-  getPendingCardOffers,
   getPortfolioValue,
   getMostValuableCards,
   getMostTradedCards,
-  acceptCardOffer,
-  denyCardOffer,
-  listCardForSale,
   calculatePotentialProfit,
   getListedCardsForSale,
-  executeCardSale,
+  purchaseCardAtFixedPrice,
   checkCardPurchaseRestriction,
   getPendingPurchaseRequests,
   approvePurchaseRequest,
   declinePurchaseRequest,
   type CardOwnership,
-  type CardOffer,
   type PurchaseRequest
 } from '../lib/cardTrading';
 import { useCoinBalance } from '../hooks/useCoinBalance';
@@ -36,7 +31,6 @@ export default function TradingDashboard() {
   const navigate = useNavigate();
   const { balance, refetch: refetchBalance } = useCoinBalance();
   const [ownedCards, setOwnedCards] = useState<CardOwnership[]>([]);
-  const [pendingOffers, setPendingOffers] = useState<CardOffer[]>([]);
   const [pendingPurchaseRequests, setPendingPurchaseRequests] = useState<PurchaseRequest[]>([]);
   const [listedCards, setListedCards] = useState<CardOwnership[]>([]);
   const [portfolioValue, setPortfolioValue] = useState(0);
@@ -44,7 +38,7 @@ export default function TradingDashboard() {
   const [mostTraded, setMostTraded] = useState<CardOwnership[]>([]);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'marketplace' | 'portfolio' | 'offers' | 'swap' | 'discard' | 'leaderboards' | 'not-bought' | 'no-manager'>('marketplace');
+  const [selectedTab, setSelectedTab] = useState<'marketplace' | 'portfolio' | 'requests' | 'swap' | 'discard' | 'leaderboards' | 'not-bought' | 'no-manager'>('marketplace');
   const [userBalances, setUserBalances] = useState<Map<string, number>>(new Map());
   const [restrictedCards, setRestrictedCards] = useState<Map<string, string>>(new Map());
 
@@ -63,9 +57,8 @@ export default function TradingDashboard() {
 
     setLoading(true);
     try {
-      const [cards, offers, purchaseReqs, value, valuable, traded, listed] = await Promise.all([
+      const [cards, purchaseReqs, value, valuable, traded, listed] = await Promise.all([
         getCardsOwnedByUser(profile.id),
-        getPendingCardOffers(profile.id),
         getPendingPurchaseRequests(profile.id),
         getPortfolioValue(profile.id),
         getMostValuableCards(10),
@@ -74,7 +67,6 @@ export default function TradingDashboard() {
       ]);
 
       setOwnedCards(cards);
-      setPendingOffers(offers);
       setPendingPurchaseRequests(purchaseReqs);
       setPortfolioValue(value);
       setMostValuable(valuable);
@@ -116,46 +108,24 @@ export default function TradingDashboard() {
     }
   };
 
-  const handleAcceptOffer = async (offerId: string) => {
-    if (!confirm('Accept this offer? The card will be transferred to the buyer.')) return;
-
-    const result = await acceptCardOffer(offerId);
-    if (result.success) {
-      alert('Offer accepted! Card transferred successfully.');
-      loadData();
-    } else {
-      alert(`Error: ${result.error}`);
-    }
-  };
-
-  const handleDenyOffer = async (offerId: string) => {
-    const result = await denyCardOffer(offerId);
-    if (result.success) {
-      alert('Offer denied.');
-      loadData();
-    } else {
-      alert(`Error: ${result.error}`);
-    }
-  };
-
   const handlePurchaseCard = async (card: CardOwnership) => {
-    if (!profile || !card.asking_price) return;
+    if (!profile) return;
 
-    if (balance < card.asking_price) {
-      alert(`Insufficient coins! You have ${balance.toFixed(2)} coins but need ${card.asking_price.toFixed(2)} coins.`);
+    if (balance < card.current_price) {
+      alert(`Insufficient coins! You have ${balance.toFixed(2)} coins but need ${card.current_price.toFixed(2)} coins.`);
       return;
     }
 
-    const confirmMsg = `Purchase this card for ${card.asking_price.toFixed(2)} coins?\n\nCurrent card value: ${card.current_price.toFixed(2)} coins\nAfter purchase, card value will be: ${(card.current_price + 5).toFixed(2)} coins`;
+    const confirmMsg = `Purchase this card at fixed price of ${card.current_price.toFixed(2)} coins?\n\nCurrent card value: ${card.current_price.toFixed(2)} coins\nAfter purchase, card value will increase to: ${(card.current_price + 10).toFixed(2)} coins`;
 
     if (!confirm(confirmMsg)) return;
 
     setPurchasing(card.id);
     try {
-      const result = await executeCardSale(card.card_user_id, profile.id, card.asking_price);
+      const result = await purchaseCardAtFixedPrice(card.card_user_id, profile.id);
 
       if (result.success) {
-        alert(`Card purchased successfully!\n\nYou paid: ${result.sale_price?.toFixed(2)} coins\nCard value increased: ${result.previous_value?.toFixed(2)} → ${result.new_value?.toFixed(2)} coins (+5 coins)`);
+        alert(`Card purchased successfully!\n\nYou paid: ${result.sale_price?.toFixed(2)} coins\nCard value increased: ${result.previous_value?.toFixed(2)} → ${result.new_value?.toFixed(2)} coins (+10 coins)`);
         refetchBalance();
         loadData();
       } else {
@@ -248,7 +218,7 @@ export default function TradingDashboard() {
                 </div>
                 <span className="text-sm text-gray-400">Pending Requests</span>
               </div>
-              <p className="text-3xl font-bold text-white">{pendingOffers.length + pendingPurchaseRequests.length}</p>
+              <p className="text-3xl font-bold text-white">{pendingPurchaseRequests.length}</p>
             </div>
           </div>
         </div>
@@ -297,17 +267,17 @@ export default function TradingDashboard() {
             My Portfolio
           </button>
           <button
-            onClick={() => setSelectedTab('offers')}
+            onClick={() => setSelectedTab('requests')}
             className={`px-6 py-3 font-semibold transition-all relative whitespace-nowrap ${
-              selectedTab === 'offers'
+              selectedTab === 'requests'
                 ? 'text-cyan-400 border-b-2 border-cyan-400'
                 : 'text-gray-400 hover:text-white'
             }`}
           >
             Requests
-            {(pendingOffers.length + pendingPurchaseRequests.length) > 0 && (
+            {pendingPurchaseRequests.length > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                {pendingOffers.length + pendingPurchaseRequests.length}
+                {pendingPurchaseRequests.length}
               </span>
             )}
           </button>
@@ -368,7 +338,7 @@ export default function TradingDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {listedCards.map((card) => {
                   const isPurchasing = purchasing === card.id;
-                  const canAfford = balance >= (card.asking_price || 0);
+                  const canAfford = balance >= (card.current_price || 0);
                   const isOwnCard = card.owner_id === profile?.id;
                   const isRestricted = restrictedCards.has(card.id);
                   const restrictionReason = restrictedCards.get(card.id);
@@ -410,10 +380,10 @@ export default function TradingDashboard() {
                         </div>
 
                         <div className="flex justify-between items-center p-3 bg-cyan-900/20 rounded-lg border border-cyan-600/30">
-                          <span className="text-sm text-cyan-300 font-semibold">Asking Price</span>
+                          <span className="text-sm text-cyan-300 font-semibold">Fixed Price</span>
                           <div className="flex items-center gap-1">
                             <Coins className="w-4 h-4 text-cyan-400" />
-                            <span className="font-bold text-cyan-400 text-lg">{card.asking_price?.toFixed(2)}</span>
+                            <span className="font-bold text-cyan-400 text-lg">{card.current_price?.toFixed(2)}</span>
                           </div>
                         </div>
 
@@ -473,7 +443,7 @@ export default function TradingDashboard() {
                         ) : (
                           <>
                             <ShoppingCart className="w-5 h-5" />
-                            Buy for {card.asking_price?.toFixed(2)}
+                            Buy for {card.current_price?.toFixed(2)}
                           </>
                         )}
                       </button>
@@ -548,7 +518,7 @@ export default function TradingDashboard() {
                               <Tag className="w-4 h-4" />
                               <span className="text-sm font-semibold">Listed for Sale</span>
                             </div>
-                            <p className="text-lg font-bold text-green-300">{card.asking_price?.toFixed(2)} coins</p>
+                            <p className="text-lg font-bold text-green-300">{card.current_price?.toFixed(2)} coins</p>
                           </div>
                         ) : (
                           <button
@@ -587,22 +557,18 @@ export default function TradingDashboard() {
           }} />
         )}
 
-        {selectedTab === 'offers' && (
+        {selectedTab === 'requests' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white mb-4">Pending Requests</h2>
+            <h2 className="text-2xl font-bold text-white mb-4">Purchase Requests</h2>
 
             {pendingPurchaseRequests.length > 0 && (
               <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-cyan-400 flex items-center gap-2">
-                  <Star className="w-5 h-5" />
-                  Purchase Requests
-                </h3>
                 {pendingPurchaseRequests.map((request) => (
-                  <div key={request.id} className="bg-gradient-to-br from-gray-900 to-gray-800 border border-yellow-600/50 rounded-2xl p-6">
+                  <div key={request.id} className="bg-gradient-to-br from-gray-900 to-gray-800 border border-cyan-600/50 rounded-2xl p-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-amber-500 rounded-full flex items-center justify-center">
+                          <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center">
                             <Star className="w-5 h-5 text-black" />
                           </div>
                           <div>
@@ -616,10 +582,10 @@ export default function TradingDashboard() {
                         </div>
 
                         <div className="mt-3 p-4 bg-gray-800/50 rounded-lg">
-                          <p className="text-sm text-gray-400 mb-1">Request Amount</p>
-                          <p className="text-2xl font-bold text-yellow-400">{request.requested_price.toFixed(2)} coins</p>
+                          <p className="text-sm text-gray-400 mb-1">Fixed Price</p>
+                          <p className="text-2xl font-bold text-cyan-400">{request.requested_price.toFixed(2)} coins</p>
                           <p className="text-xs text-gray-500 mt-1">
-                            {request.request_type === 'not_bought' ? 'First sale (Fixed price)' : 'Current card price'}
+                            {request.request_type === 'not_bought' ? 'First sale (Fixed price)' : 'Current fixed card price'}
                           </p>
                         </div>
                       </div>
@@ -646,66 +612,7 @@ export default function TradingDashboard() {
               </div>
             )}
 
-            {pendingOffers.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold text-purple-400 flex items-center gap-2">
-                  <ShoppingCart className="w-5 h-5" />
-                  Marketplace Offers
-                </h3>
-                {pendingOffers.map((offer) => (
-                  <div key={offer.id} className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                            <ShoppingCart className="w-5 h-5 text-white" />
-                          </div>
-                          <div>
-                            <p className="text-white font-semibold">
-                              {offer.buyer?.username} wants to buy {offer.card_user?.full_name || offer.card_user?.username}'s card
-                            </p>
-                            <p className="text-sm text-gray-400">
-                              {new Date(offer.created_at).toLocaleDateString()} at {new Date(offer.created_at).toLocaleTimeString()}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 p-4 bg-gray-800/50 rounded-lg">
-                          <p className="text-sm text-gray-400 mb-1">Offer Amount</p>
-                          <p className="text-2xl font-bold text-cyan-400">{offer.offer_amount.toFixed(2)} coins</p>
-                        </div>
-
-                        {offer.message && (
-                          <div className="mt-3 p-3 bg-blue-900/20 border border-blue-600/30 rounded-lg">
-                            <p className="text-sm text-blue-300">Message:</p>
-                            <p className="text-white">{offer.message}</p>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex md:flex-col gap-3">
-                        <button
-                          onClick={() => handleAcceptOffer(offer.id)}
-                          className="flex-1 md:w-32 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white font-semibold rounded-lg transition-all"
-                        >
-                          <Check className="w-5 h-5" />
-                          Accept
-                        </button>
-                        <button
-                          onClick={() => handleDenyOffer(offer.id)}
-                          className="flex-1 md:w-32 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-lg transition-all"
-                        >
-                          <X className="w-5 h-5" />
-                          Deny
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {pendingOffers.length === 0 && pendingPurchaseRequests.length === 0 && (
+            {pendingPurchaseRequests.length === 0 && (
               <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-12 text-center">
                 <Bell className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                 <p className="text-gray-400 text-lg">No pending requests</p>
