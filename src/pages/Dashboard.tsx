@@ -111,9 +111,9 @@ export default function Dashboard() {
 
     try {
       const { data, error } = await supabase
-        .from('tutorial_completions')
-        .select('id')
-        .eq('user_id', profile.id)
+        .from('profiles')
+        .select('tutorial_completed')
+        .eq('id', profile.id)
         .maybeSingle();
 
       if (error) {
@@ -121,11 +121,10 @@ export default function Dashboard() {
         return;
       }
 
-      const completed = !!data;
+      const completed = data?.tutorial_completed || false;
       setTutorialCompleted(completed);
 
-      const hasSeenPrompt = localStorage.getItem(`tutorial_prompt_dismissed_${profile.id}`);
-      if (!completed && !hasSeenPrompt && profile.terms_accepted_at && profile.username_customized) {
+      if (!completed && profile.terms_accepted_at && profile.username_customized) {
         setTimeout(() => {
           setShowTutorialPrompt(true);
         }, 2000);
@@ -510,9 +509,6 @@ export default function Dashboard() {
         }}
         onDismiss={() => {
           setShowTutorialPrompt(false);
-          if (profile) {
-            localStorage.setItem(`tutorial_prompt_dismissed_${profile.id}`, 'true');
-          }
         }}
       />
 
