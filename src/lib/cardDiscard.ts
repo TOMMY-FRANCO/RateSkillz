@@ -1,5 +1,4 @@
 import { supabase } from './supabase';
-import { updateUserActivity } from './activityTracking';
 
 export interface CardForDiscard {
   id: string;
@@ -75,10 +74,6 @@ export async function discardCard(
     if (error) throw error;
 
     const result = data as DiscardResult;
-
-    if (result.success) {
-      await updateUserActivity(userId);
-    }
 
     return result;
   } catch (error: any) {

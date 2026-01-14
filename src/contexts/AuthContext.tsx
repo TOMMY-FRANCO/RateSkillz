@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { ensureProfileExists } from '../lib/profileCreation';
-import { updateUserActivity } from '../lib/activityTracking';
 
 export interface Profile {
   id: string;
@@ -74,8 +73,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }, {
           onConflict: 'user_id'
         });
-
-      await updateUserActivity(profile.id);
 
       setProfile({ ...profile, last_active: now });
     } catch (error) {
@@ -332,8 +329,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }, {
           onConflict: 'user_id'
         });
-
-      await updateUserActivity(authData.user.id);
 
       setUser({ id: authData.user.id });
       setSession({ user: { id: authData.user.id } });
