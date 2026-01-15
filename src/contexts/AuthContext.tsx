@@ -86,40 +86,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    let mounted = true;
+
     const loadUserSession = async (session: any, isInitialLoad = false) => {
       try {
         if (!session?.user) {
-          setUser(null);
-          setSession(null);
-          setProfile(null);
+          if (mounted) {
+            setUser(null);
+            setSession(null);
+            setProfile(null);
+          }
           return;
         }
 
         console.log('[Session] Loading user session:', session.user.id);
-        setUser({ id: session.user.id });
-        setSession({ user: { id: session.user.id } });
+
+        if (mounted) {
+          setUser({ id: session.user.id });
+          setSession({ user: { id: session.user.id } });
+        }
 
         const username = session.user.user_metadata?.username ||
           session.user.email?.split('@')[0]?.toLowerCase() || 'user';
         const fullName = session.user.user_metadata?.full_name || '';
 
-        const profileData = await ensureProfileExists(
-          session.user.id,
-          session.user.email || '',
-          username,
-          fullName
-        );
+        let retries = 3;
+        let profileData = null;
 
-        if (profileData) {
-          setProfile(profileData);
-          console.log('[Session] Profile loaded successfully');
-        } else {
-          console.warn('[Session] Could not load profile');
+        while (retries > 0 && !profileData) {
+          try {
+            profileData = await ensureProfileExists(
+              session.user.id,
+              session.user.email || '',
+              username,
+              fullName
+            );
+
+            if (profileData) break;
+          } catch (error: any) {
+            console.error(`[Session] Profile load attempt failed (${4 - retries}/3):`, error);
+            retries--;
+
+            if (retries > 0) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+        }
+
+        if (mounted) {
+          if (profileData) {
+            setProfile(profileData);
+            console.log('[Session] Profile loaded successfully');
+          } else {
+            console.warn('[Session] Could not load profile after retries');
+          }
         }
       } catch (error) {
         console.error('[Session] Error loading profile:', error);
       } finally {
-        if (isInitialLoad) {
+        if (isInitialLoad && mounted) {
           setLoading(false);
         }
       }
@@ -127,13 +152,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       loadUserSession(session, true);
+    }).catch((error) => {
+      console.error('[Session] Failed to get session:', error);
+      if (mounted) {
+        setLoading(false);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      loadUserSession(session, false);
+      if (mounted) {
+        loadUserSession(session, false);
+      }
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);

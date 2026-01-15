@@ -1,5 +1,6 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -26,32 +27,47 @@ import ViewedMe from './pages/ViewedMe';
 import BalanceRecovery from './pages/BalanceRecovery';
 import ErrorBoundary from './components/ErrorBoundary';
 
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mx-auto mb-4" />
+        <p className="text-cyan-400 text-lg font-semibold">Loading RatingSkill...</p>
+        <p className="text-gray-400 text-sm mt-2">Please wait</p>
+      </div>
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-cyan-400 text-lg">Loading...</div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
-  return user ? <>{children}</> : <Navigate to="/" replace />;
+  if (!user) {
+    return <Navigate to="/" state={{ from: location }} replace />;
+  }
+
+  return <>{children}</>;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-cyan-400 text-lg">Loading...</div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
-  return !user ? <>{children}</> : <Navigate to="/dashboard" replace />;
+  if (user) {
+    const from = (location.state as any)?.from?.pathname || '/dashboard';
+    return <Navigate to={from} replace />;
+  }
+
+  return <>{children}</>;
 }
 
 function App() {
