@@ -74,11 +74,11 @@ function getCoinPriceId(coins: number, priceGBP: number): string {
   // This is a mapping of coins to Stripe Price IDs
   // You need to create these in Stripe Dashboard: https://dashboard.stripe.com/prices
   const priceMap: Record<string, string> = {
-    '100': 'price_1SfRhx0eRZe90Xo750VOspur',    // £1.00
-    '200': 'price_1SjTHx0eRZe90Xo7DLBTy7CD',    // £2.00
-    '500': 'price_1SjTKY0eRZe90Xo7iJmbNJma',    // £5.00
-    '2000': 'price_1SjTO50eRZe90Xo7XprdtW5u',  // £20.00
-    '5000': 'price_1SjTPH0eRZe90Xo70jZ4UPSF',  // £50.00
+    '100': 'price_1Spet513eRaZbd3FIFVEtQpE',    // £1.00
+    '200': 'price_1Spevl13eRaZbd3Ftn2r6yvv',    // £2.00
+    '500': 'price_1SpexQ13eRaZbd3FJNqO6Ggz',    // £5.00
+    '2000': 'price_1Speyc13eRaZbd3FgY0npTNJ',  // £20.00
+    '5000': 'price_1Spf0B13eRaZbd3FFhkaSaaf',  // £50.00
   };
 
   const priceId = priceMap[coins.toString()];
