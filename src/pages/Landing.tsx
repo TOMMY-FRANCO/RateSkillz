@@ -1,5 +1,6 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { Star } from 'lucide-react';
+import { OAuthButtons } from '../components/auth/OAuthButtons';
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -67,6 +68,20 @@ export default function Landing() {
                 >
                   Sign In
                 </button>
+              </div>
+
+              <div className="mt-8 max-w-md mx-auto">
+                <div className="relative mb-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-[#B0B8C8]/30"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-3 bg-black text-[#B0B8C8]">Or continue with</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <OAuthButtons mode="signup" theme="dark" />
+                </div>
               </div>
 
               <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">

@@ -106,9 +106,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession({ user: { id: session.user.id } });
         }
 
-        const username = session.user.user_metadata?.username ||
+        // Handle OAuth provider metadata
+        const isOAuthUser = session.user.app_metadata?.provider &&
+          ['google', 'discord', 'facebook'].includes(session.user.app_metadata.provider);
+
+        let username = session.user.user_metadata?.username ||
+          session.user.user_metadata?.preferred_username ||
+          session.user.user_metadata?.name?.toLowerCase().replace(/\s+/g, '_') ||
           session.user.email?.split('@')[0]?.toLowerCase() || 'user';
-        const fullName = session.user.user_metadata?.full_name || '';
+
+        let fullName = session.user.user_metadata?.full_name ||
+          session.user.user_metadata?.full_name ||
+          session.user.user_metadata?.name || '';
+
+        // Record OAuth account if this is an OAuth login
+        if (isOAuthUser) {
+          try {
+            const provider = session.user.app_metadata.provider;
+            const providerUserId = session.user.user_metadata?.provider_id ||
+              session.user.user_metadata?.sub ||
+              session.user.id;
+
+            // Check if OAuth account already exists
+            const { data: existingOAuth } = await supabase
+              .from('oauth_accounts')
+              .select('id')
+              .eq('user_id', session.user.id)
+              .eq('provider', provider)
+              .maybeSingle();
+
+            if (!existingOAuth) {
+              // Record the OAuth account
+              await supabase.from('oauth_accounts').insert({
+                user_id: session.user.id,
+                provider,
+                provider_user_id: providerUserId,
+                email: session.user.email,
+                provider_data: {
+                  avatar_url: session.user.user_metadata?.avatar_url,
+                  full_name: fullName,
+                  username: username,
+                  ...session.user.user_metadata,
+                },
+              });
+              console.log(`[Session] OAuth account recorded for ${provider}`);
+            }
+          } catch (oauthError) {
+            console.error('[Session] Error recording OAuth account:', oauthError);
+          }
+        }
 
         let retries = 3;
         let profileData = null;

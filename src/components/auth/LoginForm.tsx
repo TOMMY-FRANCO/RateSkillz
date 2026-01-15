@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { Eye, EyeOff, Mail, Lock, CheckCircle } from 'lucide-react';
+import { OAuthButtons } from './OAuthButtons';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -101,6 +102,17 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
             </div>
           </div>
         )}
+
+        <OAuthButtons mode="signin" />
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">Or continue with email</span>
+          </div>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
