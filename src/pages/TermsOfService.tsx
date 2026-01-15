@@ -20,7 +20,8 @@ export default function TermsOfService() {
         <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-8 space-y-6 text-gray-100">
           <div className="text-center pb-6 border-b border-white/10">
             <h2 className="text-2xl font-bold text-white mb-2">TERMS OF SERVICE FOR RATINGSKILL</h2>
-            <p className="text-sm text-gray-300">Effective Date: December 23, 2024</p>
+            <p className="text-sm text-gray-300">Effective Date: January 15, 2026</p>
+            <p className="text-xs text-gray-400 mt-1">Last Updated: January 15, 2026 - Added Social Login & OAuth Privacy Compliance</p>
           </div>
 
           <section>
@@ -153,8 +154,80 @@ export default function TermsOfService() {
             </p>
           </section>
 
+          <section className="bg-blue-500/10 border-2 border-blue-500/50 rounded-xl p-6">
+            <h3 className="text-xl font-bold text-white mb-3">14. Social Login & OAuth Privacy Compliance</h3>
+            <p className="leading-relaxed mb-4">
+              When you sign in using Google, Discord, or Facebook ("Social Providers"), we collect and process certain personal data in compliance with UK GDPR and Data Protection Act 2018.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-bold text-white mb-2">Data We Collect:</h4>
+                <p className="leading-relaxed">
+                  We receive your email address, username/display name, and profile picture from your chosen Social Provider. You control what information each provider shares with us through your provider's privacy settings.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-white mb-2">Legal Basis:</h4>
+                <p className="leading-relaxed">
+                  We process this data based on your explicit consent (GDPR Article 6(1)(a)) when you authorize the connection. You can withdraw consent anytime by disconnecting the social account in your Settings.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-white mb-2">Data Storage:</h4>
+                <p className="leading-relaxed">
+                  Your social account information is securely stored in our database and linked to your RatingSkill profile. We do not share this data with third parties except as necessary to provide our service.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-white mb-2">Your Rights:</h4>
+                <p className="leading-relaxed">
+                  Under UK GDPR, you have the right to access, correct, delete, or port your data. You can request deletion of your social account link or entire profile by contacting us.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-white mb-2">Third-Party Policies:</h4>
+                <p className="leading-relaxed">
+                  The Social Providers' collection and use of your data is governed by their own privacy policies. We recommend reviewing{' '}
+                  <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">
+                    Google Privacy Policy
+                  </a>
+                  ,{' '}
+                  <a href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">
+                    Discord Privacy Policy
+                  </a>
+                  , and{' '}
+                  <a href="https://www.facebook.com/privacy/policy/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">
+                    Facebook Data Policy
+                  </a>
+                  .
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-white mb-2">Data Retention:</h4>
+                <p className="leading-relaxed">
+                  We retain your social login data for as long as your account is active. Upon account deletion, associated OAuth data is removed within 30 days.
+                </p>
+              </div>
+
+              <div className="border-t border-blue-500/30 pt-4 mt-4">
+                <p className="leading-relaxed">
+                  For questions about how we handle your data, contact us at{' '}
+                  <a href="mailto:tommy.franco.com@gmail.com" className="text-blue-400 hover:text-blue-300 underline">
+                    tommy.franco.com@gmail.com
+                  </a>
+                </p>
+              </div>
+            </div>
+          </section>
+
           <section>
-            <h3 className="text-xl font-bold text-white mb-3">14. Changes to Terms</h3>
+            <h3 className="text-xl font-bold text-white mb-3">15. Changes to Terms</h3>
             <ul className="space-y-2 list-disc list-inside">
               <li>We reserve the right to modify these Terms at any time.</li>
               <li>We will notify users of material changes via email or platform notification.</li>
@@ -163,21 +236,21 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h3 className="text-xl font-bold text-white mb-3">15. Governing Law</h3>
+            <h3 className="text-xl font-bold text-white mb-3">16. Governing Law</h3>
             <p className="leading-relaxed">
               These Terms shall be governed by and construed in accordance with the laws of England and Wales, without regard to its conflict of law provisions.
             </p>
           </section>
 
           <section>
-            <h3 className="text-xl font-bold text-white mb-3">16. Dispute Resolution</h3>
+            <h3 className="text-xl font-bold text-white mb-3">17. Dispute Resolution</h3>
             <p className="leading-relaxed">
               Any disputes arising from these Terms or your use of the Service shall be resolved through binding arbitration rather than in court, except where prohibited by law.
             </p>
           </section>
 
           <section>
-            <h3 className="text-xl font-bold text-white mb-3">17. Contact Information</h3>
+            <h3 className="text-xl font-bold text-white mb-3">18. Contact Information</h3>
             <p className="leading-relaxed">
               If you have questions about these Terms, please contact us at:
             </p>
@@ -188,14 +261,14 @@ export default function TermsOfService() {
           </section>
 
           <section>
-            <h3 className="text-xl font-bold text-white mb-3">18. Severability</h3>
+            <h3 className="text-xl font-bold text-white mb-3">19. Severability</h3>
             <p className="leading-relaxed">
               If any provision of these Terms is found to be unenforceable or invalid, that provision shall be limited or eliminated to the minimum extent necessary, and the remaining provisions shall remain in full force and effect.
             </p>
           </section>
 
           <section>
-            <h3 className="text-xl font-bold text-white mb-3">19. Entire Agreement</h3>
+            <h3 className="text-xl font-bold text-white mb-3">20. Entire Agreement</h3>
             <p className="leading-relaxed">
               These Terms constitute the entire agreement between you and RatingSkill regarding the Service and supersede all prior agreements.
             </p>
