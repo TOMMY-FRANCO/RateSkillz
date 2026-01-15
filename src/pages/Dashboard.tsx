@@ -207,22 +207,22 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-8 animate-fade-in">
-          <h2 className="text-4xl font-bold text-white mb-2 heading-glow">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="text-center mb-4 animate-fade-in">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 heading-glow">
             Welcome, {displayUsername(profile.username)}!
           </h2>
-          <div className="flex items-center justify-center gap-2 mb-2">
+          <div className="flex items-center justify-center gap-2 mb-1">
             <OnlineStatus lastActive={profile.last_active} size="large" />
           </div>
-          <p className="text-[#B0B8C8] text-lg">
+          <p className="text-[#B0B8C8] text-sm sm:text-base">
             {(userStats?.rating_count || 0) === 0
               ? 'Invite friends to rate your player card'
               : `Your card has been rated by ${userStats?.rating_count || 0} ${userStats?.rating_count === 1 ? 'friend' : 'friends'}`}
           </p>
         </div>
 
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-4">
           {loading ? (
             <div className="text-white">Loading your card...</div>
           ) : (
@@ -238,18 +238,18 @@ export default function Dashboard() {
           )}
         </div>
 
-        <div className="flex justify-center mb-12">
+        <div className="flex justify-center mb-6">
           <button
             onClick={() => navigate(`/profile/${profile.username}?preview=true`)}
-            className="btn-secondary flex items-center gap-3 px-8 py-4"
+            className="btn-secondary flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base"
           >
-            <Eye className="w-5 h-5" />
+            <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>Preview Profile</span>
-            <span className="text-sm opacity-80">See how others view your profile</span>
+            <span className="hidden sm:inline text-xs opacity-80">See how others view your profile</span>
           </button>
         </div>
 
-        <div className="max-w-2xl mx-auto mb-12 space-y-6">
+        <div className="max-w-4xl mx-auto mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <WhatsAppDashboardShare
             username={profile.username}
             profileUrl={`${window.location.origin}/profile/${profile.username}`}
@@ -258,74 +258,76 @@ export default function Dashboard() {
             username={profile.username}
             profileUrl={`${window.location.origin}/profile/${profile.username}`}
           />
-          <FriendMilestoneReward />
+          <div className="sm:col-span-2">
+            <FriendMilestoneReward />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 max-w-6xl mx-auto">
           <button
             onClick={() => navigate('/inbox')}
-            className="glass-card p-6 cursor-pointer text-left w-full relative"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge count={getCount(['message', 'coin_received', 'coin_request'])} />
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#FF6B9D] to-[#C44569] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
-                <MessageCircle className="w-6 h-6 text-black" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#C44569] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
+                <MessageCircle className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold">Messages</h3>
-                <p className="text-[#B0B8C8] text-sm">Chat with friends</p>
+                <h3 className="text-white font-bold text-sm sm:text-base">Messages</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Chat with friends</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/search-friends')}
-            className="glass-card p-6 cursor-pointer text-left w-full"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
           >
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
-                <Search className="w-6 h-6 text-black" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <Search className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold">Search Friends</h3>
-                <p className="text-[#B0B8C8] text-sm">Find & connect</p>
+                <h3 className="text-white font-bold text-sm sm:text-base">Search Friends</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Find & connect</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/trading')}
-            className="glass-card p-6 cursor-pointer text-left w-full relative"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge count={getCount(['swap_offer', 'purchase_offer', 'card_sold'])} />
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
-                <ShoppingBag className="w-6 h-6 text-black" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
+                <ShoppingBag className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold">Card Trading</h3>
-                <p className="text-[#B0B8C8] text-sm">Buy & sell cards</p>
+                <h3 className="text-white font-bold text-sm sm:text-base">Card Trading</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Buy & sell cards</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/battle-mode')}
-            className="glass-card p-6 border-2 border-[#38BDF8]/50 cursor-pointer text-left w-full relative"
+            className="glass-card p-3 sm:p-4 border-2 border-[#38BDF8]/50 cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={getCount(['battle_request'])} className={profile.is_manager ? 'top-12' : ''} />
+            <NotificationBadge count={getCount(['battle_request'])} className={profile.is_manager ? 'top-10' : ''} />
             {profile.is_manager && (
-              <span className="absolute top-2 right-2 px-3 py-1 bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black text-xs font-bold rounded-lg shadow-lg shadow-[#FFD700]/30 uppercase tracking-wider">
+              <span className="absolute top-1 right-1 px-2 py-0.5 bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black text-[10px] font-bold rounded-md shadow-lg shadow-[#FFD700]/30 uppercase tracking-wider">
                 Manager
               </span>
             )}
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#38BDF8] to-[#0EA5E9] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
-                <Swords className="w-6 h-6 text-black" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#38BDF8] to-[#0EA5E9] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
+                <Swords className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold">Battle Mode</h3>
-                <p className="text-[#B0B8C8] text-sm">
+                <h3 className="text-white font-bold text-sm sm:text-base">Battle Mode</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">
                   {profile.is_manager ? 'Card battles & wagers' : 'View battles & challenges'}
                 </p>
               </div>
@@ -334,150 +336,150 @@ export default function Dashboard() {
 
           <button
             onClick={() => navigate('/shop')}
-            className="glass-card p-6 cursor-pointer text-left w-full"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
           >
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#FFD700] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FFD700]/30">
-                <ShoppingBag className="w-6 h-6 text-black" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FFD700]/30">
+                <ShoppingBag className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold">Coin Shop</h3>
-                <p className="text-[#B0B8C8] text-sm">Buy coins</p>
+                <h3 className="text-white font-bold text-sm sm:text-base">Coin Shop</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Buy coins</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/watch-ad')}
-            className="glass-card p-6 cursor-pointer text-left w-full relative"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge count={notificationCounts.ad_available} />
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#00FF85] to-[#00D67A] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
-                <Tv className="w-6 h-6 text-black" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00D67A] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <Tv className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold">Watch & Earn</h3>
-                <p className="text-[#B0B8C8] text-sm">Get 10 coins/day</p>
+                <h3 className="text-white font-bold text-sm sm:text-base">Watch & Earn</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Get 10 coins/day</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/transactions')}
-            className="glass-card p-6 cursor-pointer text-left w-full relative"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge count={getCount(['transaction'])} />
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#38BDF8] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
-                <TrendingUp className="w-6 h-6 text-black" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#38BDF8] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
+                <TrendingUp className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold">Transactions</h3>
-                <p className="text-[#B0B8C8] text-sm">View history</p>
+                <h3 className="text-white font-bold text-sm sm:text-base">Transactions</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">View history</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/leaderboard')}
-            className="glass-card p-6 cursor-pointer text-left w-full relative"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge count={getCount(['rank_update'])} />
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#FFD700] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FFD700]/30">
-                <Trophy className="w-6 h-6 text-black" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FFD700]/30">
+                <Trophy className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold">Leaderboard</h3>
-                <p className="text-[#B0B8C8] text-sm">Top 150 rankings</p>
+                <h3 className="text-white font-bold text-sm sm:text-base">Leaderboard</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Top 150 rankings</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/friends')}
-            className="glass-card p-6 cursor-pointer text-left w-full relative"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             {pendingRequestsCount > 0 && (
-              <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg shadow-red-500/50">
+              <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg shadow-red-500/50">
                 {pendingRequestsCount}
               </span>
             )}
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
-                <Bell className="w-6 h-6 text-black" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <Bell className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold">Notifications</h3>
-                <p className="text-[#B0B8C8] text-sm">Friend requests</p>
+                <h3 className="text-white font-bold text-sm sm:text-base">Notifications</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Friend requests</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/viewed-me')}
-            className="glass-card p-6 cursor-pointer text-left w-full relative"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge count={unreadProfileViews} />
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
-                <Eye className="w-6 h-6 text-black" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
+                <Eye className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold">Viewed Me</h3>
-                <p className="text-[#B0B8C8] text-sm">See who visited</p>
+                <h3 className="text-white font-bold text-sm sm:text-base">Viewed Me</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">See who visited</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/edit-profile')}
-            className="glass-card p-6 cursor-pointer text-left w-full"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
           >
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
-                <Edit className="w-6 h-6 text-black" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <Edit className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold">Edit Profile</h3>
-                <p className="text-[#B0B8C8] text-sm">Update your info</p>
+                <h3 className="text-white font-bold text-sm sm:text-base">Edit Profile</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Update your info</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => navigate('/settings')}
-            className="glass-card p-6 cursor-pointer text-left w-full relative"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge count={getCount(['setting_change'])} />
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
-                <Settings className="w-6 h-6 text-black" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <Settings className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold">Settings</h3>
-                <p className="text-[#B0B8C8] text-sm">Account options</p>
+                <h3 className="text-white font-bold text-sm sm:text-base">Settings</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Account options</p>
               </div>
             </div>
           </button>
 
           <button
             onClick={() => setShowTutorial(true)}
-            className="glass-card p-6 cursor-pointer text-left w-full relative border-2 border-blue-500/30"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative border-2 border-blue-500/30"
           >
             {!tutorialCompleted && (
-              <span className="absolute top-2 right-2 px-3 py-1 bg-gradient-to-r from-blue-500 to-green-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-blue-500/30 uppercase tracking-wider animate-pulse">
+              <span className="absolute top-1 right-1 px-2 py-0.5 bg-gradient-to-r from-blue-500 to-green-500 text-white text-[10px] font-bold rounded-md shadow-lg shadow-blue-500/30 uppercase tracking-wider animate-pulse">
                 +5 Coins
               </span>
             )}
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/30">
-                <BookOpen className="w-6 h-6 text-white" />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/30">
+                <BookOpen className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="text-white font-bold">Tutorial</h3>
-                <p className="text-[#B0B8C8] text-sm">
+                <h3 className="text-white font-bold text-sm sm:text-base">Tutorial</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">
                   {tutorialCompleted ? 'Review guide' : 'Learn & earn 5 coins'}
                 </p>
               </div>
