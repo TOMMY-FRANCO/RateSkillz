@@ -29,7 +29,19 @@ export default function Shop() {
       }
     } catch (err: any) {
       console.error('Checkout error:', err);
-      setError(err.message || 'Failed to initiate checkout');
+
+      // Provide user-friendly error messages
+      let errorMessage = 'Payment account setup failed. Please try again.';
+
+      if (err.message?.includes('authentication') || err.message?.includes('authenticated')) {
+        errorMessage = 'Please log in to purchase coins.';
+      } else if (err.message?.includes('network') || err.message?.includes('fetch')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
       setPurchasingPackage(null);
     }
   }
@@ -116,7 +128,7 @@ export default function Shop() {
                   {purchasingPackage === pkg.id ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Processing...
+                      Setting up payment...
                     </>
                   ) : (
                     <>

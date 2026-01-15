@@ -88,11 +88,28 @@ Deno.serve(async (req) => {
     }
 
     let customerId;
+    let needsNewCustomer = !customer || !customer.customer_id;
+
+    // If we have a customer_id in database, verify it exists in Stripe
+    if (!needsNewCustomer) {
+      try {
+        await stripe.customers.retrieve(customer.customer_id);
+        console.log(`Verified existing Stripe customer ${customer.customer_id} for user ${user.id}`);
+        customerId = customer.customer_id;
+      } catch (stripeError: any) {
+        // Customer doesn't exist in Stripe anymore (deleted or invalid)
+        console.warn(`Stored customer ${customer.customer_id} not found in Stripe: ${stripeError.message}`);
+        console.log(`Will create new customer for user ${user.id}`);
+        needsNewCustomer = true;
+      }
+    }
 
     /**
-     * In case we don't have a mapping yet, the customer does not exist and we need to create one.
+     * Create a new Stripe customer if:
+     * - No customer_id in database, OR
+     * - Stored customer_id doesn't exist in Stripe
      */
-    if (!customer || !customer.customer_id) {
+    if (needsNewCustomer) {
       const newCustomer = await stripe.customers.create({
         email: user.email,
         metadata: {
@@ -102,13 +119,20 @@ Deno.serve(async (req) => {
 
       console.log(`Created new Stripe customer ${newCustomer.id} for user ${user.id}`);
 
-      const { error: createCustomerError } = await supabase.from('stripe_customers').insert({
-        user_id: user.id,
-        customer_id: newCustomer.id,
-      });
+      // Insert or update the customer_id in database
+      const { error: upsertCustomerError } = await supabase
+        .from('stripe_customers')
+        .upsert({
+          user_id: user.id,
+          customer_id: newCustomer.id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
+        });
 
-      if (createCustomerError) {
-        console.error('Failed to save customer information in the database', createCustomerError);
+      if (upsertCustomerError) {
+        console.error('Failed to save customer information in the database', upsertCustomerError);
 
         // Try to clean up both the Stripe customer and subscription record
         try {
@@ -145,7 +169,7 @@ Deno.serve(async (req) => {
 
       console.log(`Successfully set up new customer ${customerId} with subscription record`);
     } else {
-      customerId = customer.customer_id;
+      // Using existing verified customer
 
       if (mode === 'subscription') {
         // Verify subscription exists for existing customer
