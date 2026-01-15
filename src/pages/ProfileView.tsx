@@ -76,6 +76,7 @@ export default function ProfileView() {
   const [cardOwnership, setCardOwnership] = useState<CardOwnership | null>(null);
   const [coinBalance, setCoinBalance] = useState<number>(0);
   const [balanceLoading, setBalanceLoading] = useState(true);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
   const [commentsCount, setCommentsCount] = useState<number>(0);
   const [userPresenceData, setUserPresenceData] = useState<string | undefined>();
   const [isVerified, setIsVerified] = useState(false);
@@ -89,6 +90,30 @@ export default function ProfileView() {
       loadProfile();
     }
   }, [username]);
+
+  useEffect(() => {
+    if (!profile) return;
+
+    const refreshBalanceInterval = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('coin_balance')
+          .eq('id', profile.id)
+          .maybeSingle();
+
+        if (!error && data) {
+          setCoinBalance(Number(data.coin_balance || 0));
+        }
+      } catch (error) {
+        console.error('Error refreshing balance:', error);
+      }
+    };
+
+    const interval = setInterval(refreshBalanceInterval, 5000);
+
+    return () => clearInterval(interval);
+  }, [profile?.id]);
 
   const loadProfile = async () => {
     try {
@@ -109,6 +134,7 @@ export default function ProfileView() {
       setHasSocialBadge(profileData.has_social_badge || false);
       setCoinBalance(Number(profileData.coin_balance || 0));
       setBalanceLoading(false);
+      setBalanceError(null);
 
       setViewsCount(profileData.profile_views_count || 0);
       setCommentsCount(profileData.comments_count || 0);
@@ -245,25 +271,35 @@ export default function ProfileView() {
       const cardOwnershipData = await getCardOwnership(profileData.id);
       setCardOwnership(cardOwnershipData);
 
-      const { data: balanceData, error: balanceError } = await supabase
-        .from('coins')
-        .select('balance')
-        .eq('user_id', profileData.id)
-        .maybeSingle();
-
-      if (balanceError) {
-        console.error('Error loading coin balance:', balanceError);
-      }
-
-      console.log(`Coin balance for ${profileData.username}:`, balanceData?.balance || 0);
-      setCoinBalance(balanceData?.balance || 0);
-      setBalanceLoading(false);
-
       setLoading(false);
     } catch (error) {
       console.error('Error loading profile:', error);
+      setBalanceError('Unable to load balance');
+      setBalanceLoading(false);
       setLoading(false);
       return null;
+    }
+  };
+
+  const refreshBalance = async () => {
+    if (!profile) return;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('coin_balance')
+        .eq('id', profile.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error refreshing balance:', error);
+        setBalanceError('Unable to load balance');
+      } else if (data) {
+        setCoinBalance(Number(data.coin_balance || 0));
+        setBalanceError(null);
+      }
+    } catch (error) {
+      console.error('Error refreshing balance:', error);
+      setBalanceError('Unable to load balance');
     }
   };
 
@@ -271,6 +307,7 @@ export default function ProfileView() {
     if (profile) {
       const cardOwnershipData = await getCardOwnership(profile.id);
       setCardOwnership(cardOwnershipData);
+      await refreshBalance();
       await loadProfile();
     }
   };
@@ -445,6 +482,7 @@ export default function ProfileView() {
           if (coinResult.earned) {
             setCoinEarned(coinResult.amount);
             setTimeout(() => setCoinEarned(null), 3000);
+            await refreshBalance();
           }
         } catch (coinError: any) {
           console.log('Coin reward info:', coinError.message);
@@ -667,8 +705,19 @@ export default function ProfileView() {
                   <Coins className="w-7 h-7 text-white" />
                 </div>
                 {balanceLoading ? (
-                  <div className="flex items-center justify-center h-8">
+                  <div className="flex flex-col items-center space-y-1">
                     <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                    <span className="text-xs text-gray-400">Loading balance...</span>
+                  </div>
+                ) : balanceError ? (
+                  <div className="flex flex-col items-center space-y-1">
+                    <span className="text-sm text-red-400">{balanceError}</span>
+                    <button
+                      onClick={refreshBalance}
+                      className="text-xs text-cyan-400 hover:text-cyan-300 underline"
+                    >
+                      Refresh
+                    </button>
                   </div>
                 ) : (
                   <>
