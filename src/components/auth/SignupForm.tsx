@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Eye, EyeOff, Mail, Lock, User, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, CheckCircle, Shield } from 'lucide-react';
 
 interface SignupFormProps {
   onSuccess?: () => void;
   onSwitchToLogin?: () => void;
+}
+
+declare global {
+  interface Window {
+    grecaptcha: any;
+  }
 }
 
 export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
@@ -18,6 +24,44 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
+
+  useEffect(() => {
+    // Load reCAPTCHA v3 script
+    const script = document.createElement('script');
+    script.src = `https://www.google.com/recaptcha/api.js?render=${import.meta.env.VITE_RECAPTCHA_SITE_KEY}`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      setRecaptchaLoaded(true);
+      console.log('reCAPTCHA loaded');
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  const executeRecaptcha = async (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!window.grecaptcha || !recaptchaLoaded) {
+        reject(new Error('reCAPTCHA not loaded'));
+        return;
+      }
+
+      window.grecaptcha.ready(() => {
+        window.grecaptcha
+          .execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, { action: 'signup' })
+          .then((token: string) => {
+            resolve(token);
+          })
+          .catch((err: any) => {
+            reject(err);
+          });
+      });
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,26 +84,31 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
     setLoading(true);
     setError(null);
     setSuccess(false);
-    setLoadingMessage('Creating your account...');
+    setLoadingMessage('Verifying...');
 
     try {
-      const interval = setInterval(() => {
-        setLoadingMessage((prev) => {
-          if (prev === 'Creating your account...') return 'Setting up your profile...';
-          if (prev === 'Setting up your profile...') return 'Almost done...';
-          return prev;
-        });
-      }, 3000);
+      // Get reCAPTCHA token
+      const recaptchaToken = await executeRecaptcha();
+      console.log('reCAPTCHA token obtained');
 
-      const { error: signUpError } = await signUp(email, password, username, fullName);
+      setLoadingMessage('Checking email...');
 
-      clearInterval(interval);
+      // Add slight delay for UX
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      setLoadingMessage('Creating your account...');
+
+      const { error: signUpError } = await signUp(email, password, username, fullName, recaptchaToken);
 
       if (signUpError) {
         if (signUpError.message.includes('already taken')) {
           setError('Username is already taken. Please choose another.');
-        } else if (signUpError.message.includes('already registered')) {
+        } else if (signUpError.message.includes('already registered') || signUpError.message.includes('Email already registered')) {
           setError('This email is already registered. Please sign in instead.');
+        } else if (signUpError.message.includes('Too many signup attempts')) {
+          setError('Too many signup attempts. Please try again tomorrow.');
+        } else if (signUpError.message.includes('Verification failed') || signUpError.message.includes('Please try again')) {
+          setError('Please try again. Verification failed.');
         } else if (signUpError.message.includes('invalid email') || signUpError.message.includes('Invalid email')) {
           setError('Please enter a valid email address.');
         } else {
@@ -74,7 +123,11 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
       }
     } catch (err: any) {
       console.error('Signup error:', err);
-      setError('An unexpected error occurred. Please try again.');
+      if (err.message.includes('reCAPTCHA')) {
+        setError('Security verification failed. Please refresh and try again.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setLoading(false);
       if (!success) {
@@ -213,6 +266,20 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
             >
               Sign in
             </button>
+          </p>
+        </div>
+
+        <div className="mt-4 text-center">
+          <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+            <Shield className="w-3 h-3" />
+            <p>
+              Protected by reCAPTCHA
+            </p>
+          </div>
+          <p className="text-xs text-gray-400 mt-1">
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="hover:underline">Privacy</a>
+            {' · '}
+            <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="hover:underline">Terms</a>
           </p>
         </div>
       </div>

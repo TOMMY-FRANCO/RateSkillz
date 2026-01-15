@@ -37,7 +37,7 @@ interface AuthContextType {
   session: { user: { id: string } } | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, username: string, fullName: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, username: string, fullName: string, recaptchaToken: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [profile?.id]);
 
-  const signUp = async (email: string, password: string, username: string, fullName: string) => {
+  const signUp = async (email: string, password: string, username: string, fullName: string, recaptchaToken: string) => {
     if (!supabase) {
       console.error('[SignUp] Supabase not configured');
       return { error: new Error('Supabase not configured') };
@@ -165,7 +165,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('========================================');
 
     try {
-      console.log('[SignUp] [1/4] Checking username availability...');
+      // Step 1: Verify with signup-verification Edge Function
+      console.log('[SignUp] [1/5] Running security verification...');
+      const verificationResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/signup-verification`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email,
+            recaptchaToken,
+          }),
+        }
+      );
+
+      if (!verificationResponse.ok) {
+        const verificationError = await verificationResponse.json();
+        console.error('[SignUp] Verification failed:', verificationError);
+        throw new Error(verificationError.error || 'Verification failed');
+      }
+
+      const verificationData = await verificationResponse.json();
+      console.log('[SignUp] ✓ Security verification passed');
+      console.log(`  Rate limit: ${verificationData.checks.rateLimit ? 'OK' : 'FAIL'}`);
+      console.log(`  Email available: ${verificationData.checks.emailAvailable ? 'OK' : 'FAIL'}`);
+      console.log(`  reCAPTCHA: ${verificationData.checks.recaptcha ? 'OK' : 'FAIL'}`);
+
+      const clientIp = verificationData.clientIp;
+
+      console.log('[SignUp] [2/5] Checking username availability...');
       const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
         .select('username')
@@ -184,7 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       console.log('[SignUp] ✓ Username available');
 
-      console.log('[SignUp] [2/4] Creating authentication account...');
+      console.log('[SignUp] [3/5] Creating authentication account...');
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -210,7 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[SignUp] ✓ Authentication account created');
       console.log(`  User ID: ${authData.user.id}`);
 
-      console.log('[SignUp] [3/4] Setting up your profile...');
+      console.log('[SignUp] [4/5] Setting up your profile...');
       console.log('  Waiting for database trigger or creating manually if needed...');
 
       const profileData = await ensureProfileExists(
@@ -226,7 +257,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       console.log('[SignUp] ✓ Profile setup complete');
 
-      console.log('[SignUp] [4/4] Finalizing account setup...');
+      console.log('[SignUp] [5/5] Finalizing account setup...');
+
+      // Increment rate limit counter
+      if (clientIp && clientIp !== 'unknown') {
+        try {
+          await supabase.rpc('increment_signup_count', { p_ip_address: clientIp });
+          console.log('[SignUp] Rate limit counter incremented');
+        } catch (rateLimitError) {
+          console.error('[SignUp] Failed to increment rate limit counter:', rateLimitError);
+        }
+      }
+
       setUser({ id: authData.user.id });
       setSession({ user: { id: authData.user.id } });
       setProfile(profileData);
