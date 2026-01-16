@@ -17,15 +17,23 @@ export function OAuthButtons({ mode = 'signin', theme = 'light' }: OAuthButtonsP
     try {
       const redirectTo = 'https://niurjxqttyaxmjrladrs.supabase.co/auth/v1/callback';
 
+      // Configure provider-specific options
+      const options: any = {
+        redirectTo,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      };
+
+      // Add Facebook-specific scopes
+      if (provider === 'facebook') {
+        options.scopes = 'public_profile,email';
+      }
+
       const { data, error: signInError } = await supabase.auth.signInWithOAuth({
         provider,
-        options: {
-          redirectTo,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
+        options,
       });
 
       if (signInError) {
