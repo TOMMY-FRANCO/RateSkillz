@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Coins, TrendingUp, ShoppingBag, MessageSquare, Tv, Crown, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { ArrowLeft, Coins, TrendingUp, ShoppingBag, MessageSquare, Tv, Crown, ArrowUpCircle, ArrowDownCircle, RefreshCw, AlertCircle, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getTransactions } from '../lib/coins';
 import { useCoinBalance } from '../hooks/useCoinBalance';
 import { useAuth } from '../hooks/useAuth';
@@ -11,10 +11,17 @@ interface Transaction {
   amount: number;
   transaction_type: string;
   description: string;
-  payment_provider?: string;
-  payment_amount?: number;
   created_at: string;
   balance_after?: number;
+  related_user_id?: string;
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
 }
 
 export default function TransactionHistory() {
@@ -22,15 +29,24 @@ export default function TransactionHistory() {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const { balance: currentBalance, loading: balanceLoading } = useCoinBalance();
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+    hasMore: false
+  });
+  const [refreshingBalance, setRefreshingBalance] = useState(false);
+  const { balance: currentBalance, loading: balanceLoading, refetch: refetchBalance } = useCoinBalance();
   const [balanceValidation, setBalanceValidation] = useState<{ isValid: boolean; message: string } | null>(null);
 
   useEffect(() => {
-    loadTransactions();
+    loadTransactions(pagination.page);
     if (user) {
       markNotificationsRead(user.id, 'transaction');
     }
-  }, [user]);
+  }, [user, pagination.page]);
 
   useEffect(() => {
     if (transactions.length > 0 && !balanceLoading) {
@@ -38,17 +54,44 @@ export default function TransactionHistory() {
     }
   }, [currentBalance, transactions, balanceLoading]);
 
-  async function loadTransactions() {
+  async function loadTransactions(page: number = 1) {
     try {
-      const txs = await getTransactions();
-      console.log('[TransactionHistory] Loaded transactions:', txs.length);
-      console.log('[TransactionHistory] First transaction:', txs[0]);
+      setLoading(true);
+      setError(null);
+      const result = await getTransactions(page, 20);
+      console.log('[TransactionHistory] Loaded transactions:', result.transactions.length);
+      console.log('[TransactionHistory] Pagination:', result.pagination);
 
-      setTransactions(txs);
+      setTransactions(result.transactions);
+      setPagination(result.pagination);
     } catch (error) {
       console.error('[TransactionHistory] Failed to load transactions:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load transactions. Please try again.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleRefreshBalance() {
+    try {
+      setRefreshingBalance(true);
+      await refetchBalance();
+    } catch (error) {
+      console.error('Failed to refresh balance:', error);
+    } finally {
+      setRefreshingBalance(false);
+    }
+  }
+
+  function handlePreviousPage() {
+    if (pagination.page > 1) {
+      setPagination(prev => ({ ...prev, page: prev.page - 1 }));
+    }
+  }
+
+  function handleNextPage() {
+    if (pagination.hasMore) {
+      setPagination(prev => ({ ...prev, page: prev.page + 1 }));
     }
   }
 
@@ -172,13 +215,26 @@ export default function TransactionHistory() {
           <h1 className="text-3xl font-bold text-white mb-2">Transaction History</h1>
           <p className="text-white/60">Track all your coin earnings and purchases</p>
 
-          {!balanceLoading && (
+          {!balanceLoading ? (
             <div className="mt-6 inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-6 py-4">
               <Coins className="w-6 h-6 text-yellow-400" />
               <div className="text-left">
                 <p className="text-white/60 text-sm">Current Balance</p>
                 <p className="text-2xl font-bold text-white">{currentBalance.toFixed(2)} <span className="text-lg text-white/60">coins</span></p>
               </div>
+              <button
+                onClick={handleRefreshBalance}
+                disabled={refreshingBalance}
+                className="ml-2 p-2 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
+                title="Refresh balance"
+              >
+                <RefreshCw className={`w-5 h-5 text-white/70 ${refreshingBalance ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+          ) : (
+            <div className="mt-6 inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-6 py-4">
+              <Loader2 className="w-6 h-6 text-yellow-400 animate-spin" />
+              <p className="text-white/60">Loading balance...</p>
             </div>
           )}
 
@@ -187,12 +243,51 @@ export default function TransactionHistory() {
               <p className="text-sm font-medium">{balanceValidation.message}</p>
             </div>
           )}
+
+          {pagination.total > 0 && (
+            <p className="text-white/40 text-sm mt-2">
+              Showing {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} transactions
+            </p>
+          )}
         </div>
 
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-6 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-red-300 font-semibold mb-1">Error Loading Transactions</h3>
+                <p className="text-red-200/80 text-sm">{error}</p>
+                <button
+                  onClick={() => loadTransactions(pagination.page)}
+                  className="mt-3 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin w-8 h-8 border-4 border-white/20 border-t-white rounded-full mx-auto mb-4"></div>
-            <p className="text-white/60">Loading transactions...</p>
+          <div className="space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 animate-pulse">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1">
+                    <div className="w-12 h-12 bg-white/10 rounded-full"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-5 bg-white/10 rounded w-3/4"></div>
+                      <div className="h-4 bg-white/10 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-6 bg-white/10 rounded w-20"></div>
+                    <div className="h-4 bg-white/10 rounded w-16"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : transactions.length === 0 ? (
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-12 border border-white/10 text-center">
@@ -223,12 +318,6 @@ export default function TransactionHistory() {
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-white mb-1">{tx.description}</div>
                       <div className="text-sm text-white/60">{formatDate(tx.created_at)}</div>
-                      {tx.payment_provider && (
-                        <div className="text-xs text-white/40 mt-1">
-                          via {tx.payment_provider}
-                          {tx.payment_amount && ` (£${tx.payment_amount.toFixed(2)})`}
-                        </div>
-                      )}
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -247,6 +336,32 @@ export default function TransactionHistory() {
                 </div>
               </div>
             ))}
+
+            {pagination.totalPages > 1 && (
+              <div className="mt-8 flex items-center justify-center gap-4">
+                <button
+                  onClick={handlePreviousPage}
+                  disabled={pagination.page === 1}
+                  className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white font-medium transition-colors"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                  Previous
+                </button>
+
+                <div className="text-white/60 text-sm">
+                  Page {pagination.page} of {pagination.totalPages}
+                </div>
+
+                <button
+                  onClick={handleNextPage}
+                  disabled={!pagination.hasMore}
+                  className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white font-medium transition-colors"
+                >
+                  Next
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -75,19 +75,43 @@ export async function awardAdCoins(): Promise<{ earned: boolean; amount: number;
   return await response.json();
 }
 
-export async function getTransactions(): Promise<any[]> {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`${COIN_OPERATIONS_URL}/transactions`, {
-    method: 'GET',
-    headers,
-  });
+export async function getTransactions(page: number = 1, limit: number = 20): Promise<{
+  transactions: any[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
+}> {
+  try {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${COIN_OPERATIONS_URL}/transactions?page=${page}&limit=${limit}`, {
+      method: 'GET',
+      headers,
+    });
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch transactions');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch transactions');
+    }
+
+    const data = await response.json();
+    return {
+      transactions: data.transactions || [],
+      pagination: data.pagination || {
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 0,
+        hasMore: false
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching transactions:', error);
+    throw error;
   }
-
-  const data = await response.json();
-  return data.transactions;
 }
 
 export interface CoinPackage {

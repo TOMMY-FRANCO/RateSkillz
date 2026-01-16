@@ -54,7 +54,9 @@ Deno.serve(async (req: Request) => {
     }
 
     if (path === '/transactions' && req.method === 'GET') {
-      return await getTransactions(supabase, user.id);
+      const page = parseInt(url.searchParams.get('page') || '1');
+      const limit = parseInt(url.searchParams.get('limit') || '20');
+      return await getTransactions(supabase, user.id, page, limit);
     }
 
     return new Response(
@@ -175,53 +177,101 @@ async function awardAdCoins(supabase: any, userId: string) {
   );
 }
 
-async function getTransactions(supabase: any, userId: string) {
-  const { data, error } = await supabase
-    .from('coin_transactions')
-    .select(`
-      id,
-      user_id,
-      amount::numeric,
-      transaction_type,
-      description,
-      payment_provider,
-      payment_amount::numeric,
-      created_at,
-      balance_after::numeric
-    `)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(50);
+async function getTransactions(supabase: any, userId: string, page: number = 1, limit: number = 20) {
+  try {
+    // Validate pagination parameters
+    if (page < 1) page = 1;
+    if (limit < 1 || limit > 100) limit = 20;
 
-  if (error) {
-    console.error('Error fetching transactions:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
+    const offset = (page - 1) * limit;
 
-  const transactions = (data || []).map((tx: any) => {
-    const parsedTx = {
+    // Get total count for pagination
+    const { count, error: countError } = await supabase
+      .from('coin_transactions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    if (countError) {
+      console.error('Error counting transactions:', countError);
+      throw new Error('Failed to count transactions');
+    }
+
+    // Fetch transactions (lean query - no heavy columns)
+    const { data, error } = await supabase
+      .from('coin_transactions')
+      .select(`
+        id,
+        user_id,
+        amount,
+        transaction_type,
+        description,
+        created_at,
+        balance_after,
+        related_user_id
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      console.error('Error fetching transactions:', error);
+      throw new Error('Failed to fetch transactions');
+    }
+
+    // Parse and format transactions
+    const transactions = (data || []).map((tx: any) => ({
       id: tx.id,
       user_id: tx.user_id,
       amount: typeof tx.amount === 'string' ? parseFloat(tx.amount) : (tx.amount || 0),
       transaction_type: tx.transaction_type,
       description: tx.description,
-      payment_provider: tx.payment_provider,
-      payment_amount: tx.payment_amount ? (typeof tx.payment_amount === 'string' ? parseFloat(tx.payment_amount) : tx.payment_amount) : undefined,
       created_at: tx.created_at,
       balance_after: tx.balance_after ? (typeof tx.balance_after === 'string' ? parseFloat(tx.balance_after) : tx.balance_after) : undefined,
-    };
-    return parsedTx;
-  });
+      related_user_id: tx.related_user_id,
+    }));
 
-  console.log(`Fetched ${transactions.length} transactions for user ${userId}`);
-  console.log('Sample transaction:', transactions[0]);
-  console.log('Transaction sum:', transactions.reduce((sum, tx) => sum + tx.amount, 0));
+    const totalPages = Math.ceil((count || 0) / limit);
 
-  return new Response(
-    JSON.stringify({ transactions }),
-    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-  );
+    console.log(`Fetched page ${page} of ${totalPages} (${transactions.length} transactions) for user ${userId}`);
+
+    return new Response(
+      JSON.stringify({
+        transactions,
+        pagination: {
+          page,
+          limit,
+          total: count || 0,
+          totalPages,
+          hasMore: page < totalPages
+        }
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Error in getTransactions:', error);
+
+    // Log error to admin_security_log
+    try {
+      await supabase.from('admin_security_log').insert({
+        event_type: 'transaction_fetch_error',
+        user_id: userId,
+        details: {
+          error: error.message,
+          page,
+          limit,
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (logError) {
+      console.error('Failed to log error:', logError);
+    }
+
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to fetch transactions. Please try again later.',
+        details: error.message
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
 }
