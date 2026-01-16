@@ -52,7 +52,7 @@ export default function Landing() {
                 </span>
               </h1>
               <p className="text-xl text-[#B0B8C8] mb-12 max-w-2xl mx-auto">
-                Join RatingSkill® and create your personalized player card. Let friends rate your abilities, create your profile and watch your stats rise as you level up.
+                Join RatingSkill® and create your personalised player card. Let friends rate your abilities, create your profile and watch your stats rise as you level up.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
