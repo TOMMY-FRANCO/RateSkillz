@@ -77,22 +77,6 @@ As a Manager, you can challenge other managers to battles, analyse matchups and 
     content: `Manager Battles are the competitive heart of RatingSkill®. You challenge another manager whose team has similar overall strength to yours. The battle outcome is based on player stats matchups—your Pace vs their Pace, your Shooting vs their Shooting, etc.
 
 Before you battle, analyse the matchup. Can your team handle their formation? Do your defenders outmatch their forwards? Which battles can you win? Smart managers pick opponents strategically, build winning streaks, and climb the leaderboard. This is where the grind pays off—consistent wins build your reputation and earnings potential.`
-  },
-  {
-    title: "Royalties & Income - Get Paid for Your Players",
-    subtitle: "Passive Income Through Your Card",
-    content: `Here's the beautiful part: You get paid just for being on someone else's team. If a manager buys your card to add you to their squad, you earn +5 coins every time your card is traded (swapped out). If your card is discarded entirely, you earn the full card value (20 coins) plus +5 bonus.
-
-This means you don't have to be a manager to earn. You just build a reputation, get picked by managers and earn royalties passively. The better your stats, the more valuable you become, the more you get picked and the more you earn. It's residual income through skill validation.`
-  },
-  {
-    title: "The Road to Diamonds - Convert Coins",
-    subtitle: "Your Path to Real Earnings",
-    content: `Coins are our community currency used for daily gameplay, but Diamonds represent your professional standing and competitive success.
-
-When you win a Skill-Based Manager Battle, a portion of the prize pool is awarded in Diamonds. These are tied directly to your performance on the pitch. Accumulate enough Diamonds to reach our Alpha Milestone (£100) and you can request a secure withdrawal to your verified account.
-
-The Evolution of the Arena: Our economy is designed to reward early adopters. During this Alpha Phase, daily coin rewards are higher to help you build your foundation. As the Arena grows, the conversion rates will be adjusted to ensure long-term stability. The managers who "grind" now—optimising their rosters and scouting their friends—will be the best positioned to dominate the leaderboards when the stakes get even higher. Invest your strategy now; reap the rewards later.`
   }
 ];
 
