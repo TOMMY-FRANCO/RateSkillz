@@ -255,7 +255,7 @@ export default function TermsOfService() {
               If you have questions about these Terms, please contact us at:
             </p>
             <ul className="mt-2 space-y-1">
-              <li><strong>Email:</strong> support@ratingskill.com</li>
+              <li><strong>Email:</strong> tommy.franco.com@gmail.com</li>
               <li><strong>Website:</strong> www.ratingskill.com</li>
             </ul>
           </section>
