@@ -67,32 +67,55 @@ export default function AdminCoinPool() {
         return;
       }
 
-      const { data, error } = await supabase
-        .rpc('is_user_admin', { p_user_id: user.id })
-        .single();
+      let isUserAdmin = false;
 
-      if (error) throw error;
+      try {
+        const { data, error } = await supabase
+          .rpc('is_user_admin', { p_user_id: user.id })
+          .single();
 
-      if (!data) {
+        if (error) {
+          console.warn('RPC call failed, falling back to direct query:', error);
+
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', user.id)
+            .single();
+
+          if (profileError) throw profileError;
+          isUserAdmin = profileData?.is_admin || false;
+        } else {
+          isUserAdmin = data || false;
+        }
+      } catch (err) {
+        console.error('Error checking admin status:', err);
+        isUserAdmin = false;
+      }
+
+      if (!isUserAdmin) {
         await supabase.rpc('log_admin_access', {
           p_user_id: user.id,
           p_action_type: 'access_denied',
           p_resource_accessed: 'admin_coin_pool',
           p_access_granted: false,
           p_notes: 'User attempted to access admin dashboard without admin privileges'
-        });
+        }).catch(() => {});
+
         navigate('/');
         return;
       }
 
       setIsAdmin(true);
+
       await supabase.rpc('log_admin_access', {
         p_user_id: user.id,
         p_action_type: 'access_granted',
         p_resource_accessed: 'admin_coin_pool',
         p_access_granted: true,
         p_notes: 'Admin accessed coin pool dashboard'
-      });
+      }).catch(() => {});
+
     } catch (error) {
       console.error('Error checking admin access:', error);
       navigate('/');
