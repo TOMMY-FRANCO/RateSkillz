@@ -25,6 +25,7 @@ import { VerifyProfile } from './pages/VerifyProfile';
 import SearchFriends from './pages/SearchFriends';
 import ViewedMe from './pages/ViewedMe';
 import BalanceRecovery from './pages/BalanceRecovery';
+import AdminCoinPool from './pages/AdminCoinPool';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function LoadingScreen() {
@@ -238,6 +239,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <BalanceRecovery />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/coin-pool"
+            element={
+              <ProtectedRoute>
+                <AdminCoinPool />
               </ProtectedRoute>
             }
           />

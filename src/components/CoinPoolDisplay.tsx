@@ -1,9 +1,22 @@
-import { TrendingUp, Coins } from 'lucide-react';
+import { TrendingUp, Coins, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import { useCoinPool } from '../hooks/useCoinPool';
 import { GlassCard } from './ui/GlassCard';
+import { useState } from 'react';
 
 export function CoinPoolDisplay() {
-  const { stats, loading } = useCoinPool();
+  const { stats, loading, syncing, syncPool } = useCoinPool();
+  const [showSyncMessage, setShowSyncMessage] = useState(false);
+
+  const handleSync = async () => {
+    try {
+      const result = await syncPool();
+      setShowSyncMessage(true);
+      setTimeout(() => setShowSyncMessage(false), 3000);
+      console.log('Sync completed:', result);
+    } catch (error) {
+      console.error('Sync failed:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -14,14 +27,14 @@ export function CoinPoolDisplay() {
     );
   }
 
-  const distributedFormatted = stats.distributed_coins.toLocaleString('en-GB', {
+  const distributedFormatted = stats.actual_distributed.toLocaleString('en-GB', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
   const totalFormatted = stats.total_coins.toLocaleString('en-GB');
 
-  const progressPercentage = (stats.distributed_coins / stats.total_coins) * 100;
+  const progressPercentage = (stats.actual_distributed / stats.total_coins) * 100;
 
   return (
     <GlassCard className="p-6 hover:shadow-[0_0_30px_rgba(0,255,133,0.15)] transition-all">
@@ -30,18 +43,45 @@ export function CoinPoolDisplay() {
           <h3 className="text-base font-bold text-white flex items-center gap-2 mb-1 uppercase tracking-wide font-['Roboto_Condensed'] italic">
             <Coins className="w-5 h-5 text-[#00FF85]" />
             Pool Distribution
+            {stats.is_synced ? (
+              <CheckCircle className="w-4 h-4 text-green-400" title="Pool is synced" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-yellow-400" title={`Discrepancy: ${stats.discrepancy.toFixed(2)} coins`} />
+            )}
           </h3>
           <p className="text-sm text-white/60 font-['Montserrat'] font-normal tracking-[0.5px]">
             Coins distributed to users
           </p>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#00FF85]/10 rounded-full border border-[#00FF85]/30">
-          <TrendingUp className="w-4 h-4 text-[#00FF85]" />
-          <span className="text-xs font-semibold text-[#00FF85]">
-            {stats.distribution_percentage.toFixed(4)}%
-          </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
+            title="Sync pool integrity"
+          >
+            <RefreshCw className={`w-4 h-4 text-[#00FF85] ${syncing ? 'animate-spin' : ''}`} />
+          </button>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#00FF85]/10 rounded-full border border-[#00FF85]/30">
+            <TrendingUp className="w-4 h-4 text-[#00FF85]" />
+            <span className="text-xs font-semibold text-[#00FF85]">
+              {stats.distribution_percentage.toFixed(4)}%
+            </span>
+          </div>
         </div>
       </div>
+
+      {showSyncMessage && (
+        <div className="mb-3 px-3 py-2 bg-green-500/20 border border-green-500/30 rounded-lg text-sm text-green-300">
+          Pool synced successfully
+        </div>
+      )}
+
+      {!stats.is_synced && (
+        <div className="mb-3 px-3 py-2 bg-yellow-500/20 border border-yellow-500/30 rounded-lg text-sm text-yellow-300">
+          Discrepancy detected: {Math.abs(stats.discrepancy).toFixed(2)} coins
+        </div>
+      )}
 
       <div className="space-y-3">
         <div className="flex justify-between items-baseline">
