@@ -28,7 +28,7 @@ export function OAuthButtons({ mode = 'signin', theme = 'light' }: OAuthButtonsP
 
       // Add Facebook-specific scopes
       if (provider === 'facebook') {
-        options.scopes = 'public_profile,email';
+        options.scopes = 'public_profile';
       }
 
       const { data, error: signInError } = await supabase.auth.signInWithOAuth({
