@@ -1,8 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Coins, RefreshCw, AlertCircle, CheckCircle, TrendingUp, Users, Database, Activity } from 'lucide-react';
+import { ArrowLeft, Coins, RefreshCw, AlertCircle, CheckCircle, TrendingUp, Users, Database, Activity, Lock, Shield } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useCoinPool } from '../hooks/useCoinPool';
+import { useAuth } from '../hooks/useAuth';
+
+interface ResourcePool {
+  id: string;
+  pool_name: string;
+  pool_type: string;
+  total_coins: number;
+  description: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface CoinPoolStats {
+  pool_name: string;
+  total_coins: number;
+  distributed_coins: number;
+  actual_distributed: number;
+  remaining_coins: number;
+  discrepancy: number;
+  is_synced: boolean;
+  total_users_with_coins: number;
+  last_updated: string;
+}
 
 interface DiscrepancyLog {
   id: string;
@@ -16,13 +39,106 @@ interface DiscrepancyLog {
 
 export default function AdminCoinPool() {
   const navigate = useNavigate();
-  const { stats, loading, syncing, syncPool, refetch } = useCoinPool();
+  const { user } = useAuth();
+  const [stats, setStats] = useState<CoinPoolStats | null>(null);
+  const [resourcePools, setResourcePools] = useState<ResourcePool[]>([]);
   const [logs, setLogs] = useState<DiscrepancyLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [logsLoading, setLogsLoading] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
 
   useEffect(() => {
-    loadDiscrepancyLogs();
-  }, []);
+    checkAdminAccess();
+  }, [user]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadAllData();
+    }
+  }, [isAdmin]);
+
+  async function checkAdminAccess() {
+    try {
+      if (!user) {
+        navigate('/');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .rpc('is_user_admin', { p_user_id: user.id })
+        .single();
+
+      if (error) throw error;
+
+      if (!data) {
+        await supabase.rpc('log_admin_access', {
+          p_user_id: user.id,
+          p_action_type: 'access_denied',
+          p_resource_accessed: 'admin_coin_pool',
+          p_access_granted: false,
+          p_notes: 'User attempted to access admin dashboard without admin privileges'
+        });
+        navigate('/');
+        return;
+      }
+
+      setIsAdmin(true);
+      await supabase.rpc('log_admin_access', {
+        p_user_id: user.id,
+        p_action_type: 'access_granted',
+        p_resource_accessed: 'admin_coin_pool',
+        p_access_granted: true,
+        p_notes: 'Admin accessed coin pool dashboard'
+      });
+    } catch (error) {
+      console.error('Error checking admin access:', error);
+      navigate('/');
+    } finally {
+      setCheckingAdmin(false);
+    }
+  }
+
+  async function loadAllData() {
+    await Promise.all([
+      loadCoinPoolStats(),
+      loadResourcePools(),
+      loadDiscrepancyLogs()
+    ]);
+  }
+
+  async function loadCoinPoolStats() {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .rpc('get_coin_pool_status')
+        .single();
+
+      if (error) throw error;
+
+      setStats(data);
+      setLastRefresh(new Date());
+    } catch (error) {
+      console.error('Error loading coin pool stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadResourcePools() {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_resource_pools');
+
+      if (error) throw error;
+
+      setResourcePools(data || []);
+    } catch (error) {
+      console.error('Error loading resource pools:', error);
+    }
+  }
 
   async function loadDiscrepancyLogs() {
     try {
@@ -42,11 +158,24 @@ export default function AdminCoinPool() {
 
   async function handleSync() {
     try {
-      await syncPool();
-      await loadDiscrepancyLogs();
+      setSyncing(true);
+      const { data, error } = await supabase
+        .rpc('sync_coin_pool_integrity')
+        .single();
+
+      if (error) throw error;
+
+      console.log('Sync result:', data);
+      await loadAllData();
     } catch (error) {
       console.error('Sync failed:', error);
+    } finally {
+      setSyncing(false);
     }
+  }
+
+  async function handleRefresh() {
+    await loadAllData();
   }
 
   function formatDate(dateString: string) {
@@ -62,6 +191,21 @@ export default function AdminCoinPool() {
     }).format(date);
   }
 
+  if (checkingAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="w-12 h-12 text-blue-400 animate-pulse mx-auto mb-4" />
+          <p className="text-white/60">Verifying admin access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -75,74 +219,48 @@ export default function AdminCoinPool() {
 
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full mb-4 shadow-lg">
-            <Database className="w-8 h-8 text-white" />
+            <Shield className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Coin Pool Admin Dashboard</h1>
           <p className="text-white/60">Monitor and manage coin pool integrity</p>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <Lock className="w-4 h-4 text-yellow-400" />
+            <span className="text-yellow-400 text-sm font-medium">Admin Access Only</span>
+          </div>
         </div>
 
-        {loading ? (
+        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 mb-6 border border-white/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-white/60 text-sm">
+              <Activity className="w-4 h-4" />
+              Last refreshed: {lastRefresh.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 text-white rounded-lg font-medium transition-colors text-sm"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh All Data
+            </button>
+          </div>
+        </div>
+
+        {loading && !stats ? (
           <div className="text-center py-12">
             <div className="animate-spin w-8 h-8 border-4 border-white/20 border-t-white rounded-full mx-auto mb-4"></div>
             <p className="text-white/60">Loading pool status...</p>
           </div>
-        ) : (
+        ) : stats ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-blue-500/20 rounded-lg">
-                    <Database className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <h3 className="text-white/60 text-sm font-medium">Total Pool</h3>
-                </div>
-                <p className="text-2xl font-bold text-white">
-                  {stats.total_coins.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-green-500/20 rounded-lg">
-                    <TrendingUp className="w-5 h-5 text-green-400" />
-                  </div>
-                  <h3 className="text-white/60 text-sm font-medium">Actual Distributed</h3>
-                </div>
-                <p className="text-2xl font-bold text-white">
-                  {stats.actual_distributed.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-purple-500/20 rounded-lg">
-                    <Coins className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <h3 className="text-white/60 text-sm font-medium">Remaining</h3>
-                </div>
-                <p className="text-2xl font-bold text-white">
-                  {stats.remaining_coins.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-              </div>
-
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-yellow-500/20 rounded-lg">
-                    <Users className="w-5 h-5 text-yellow-400" />
-                  </div>
-                  <h3 className="text-white/60 text-sm font-medium">Active Users</h3>
-                </div>
-                <p className="text-2xl font-bold text-white">
-                  {stats.total_users_with_coins.toLocaleString('en-GB')}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 mb-8">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 mb-6 border border-white/20">
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <Activity className="w-6 h-6 text-white" />
-                  <h2 className="text-xl font-bold text-white">Pool Integrity Status</h2>
+                <div>
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <Coins className="w-6 h-6 text-green-400" />
+                    {stats.pool_name}
+                  </h2>
+                  <p className="text-white/60 text-sm mt-1">Primary pool for user rewards, ad viewing, comments, and all community distributions</p>
                 </div>
                 <button
                   onClick={handleSync}
@@ -154,7 +272,57 @@ export default function AdminCoinPool() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white/5 rounded-lg p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-blue-500/20 rounded-lg">
+                      <Database className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <h3 className="text-white/60 text-sm font-medium">Total Pool</h3>
+                  </div>
+                  <p className="text-2xl font-bold text-white">
+                    {stats.total_coins.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-green-500/20 rounded-lg">
+                      <TrendingUp className="w-5 h-5 text-green-400" />
+                    </div>
+                    <h3 className="text-white/60 text-sm font-medium">Actual Distributed</h3>
+                  </div>
+                  <p className="text-2xl font-bold text-white">
+                    {stats.actual_distributed.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-purple-500/20 rounded-lg">
+                      <Coins className="w-5 h-5 text-purple-400" />
+                    </div>
+                    <h3 className="text-white/60 text-sm font-medium">Remaining</h3>
+                  </div>
+                  <p className="text-2xl font-bold text-white">
+                    {stats.remaining_coins.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+
+                <div className="bg-white/5 rounded-lg p-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-yellow-500/20 rounded-lg">
+                      <Users className="w-5 h-5 text-yellow-400" />
+                    </div>
+                    <h3 className="text-white/60 text-sm font-medium">Active Users</h3>
+                  </div>
+                  <p className="text-2xl font-bold text-white">
+                    {stats.total_users_with_coins.toLocaleString('en-GB')}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-white/10">
                 <div className="bg-white/5 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
                     {stats.is_synced ? (
@@ -181,28 +349,43 @@ export default function AdminCoinPool() {
 
                 <div className="bg-white/5 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <TrendingUp className="w-5 h-5 text-blue-400" />
-                    <span className="text-white/60 text-sm">Distribution</span>
+                    <Activity className="w-5 h-5 text-blue-400" />
+                    <span className="text-white/60 text-sm">Last Updated</span>
                   </div>
-                  <p className="text-lg font-bold text-white">
-                    {stats.distribution_percentage.toFixed(6)}%
+                  <p className="text-sm font-medium text-white">
+                    {formatDate(stats.last_updated)}
                   </p>
                 </div>
               </div>
+            </div>
 
-              <div className="mt-4 pt-4 border-t border-white/10">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-white/60">Recorded Distributed:</span>
-                  <span className="font-mono text-white">{stats.distributed_coins.toFixed(2)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm mt-2">
-                  <span className="text-white/60">Actual Distributed:</span>
-                  <span className="font-mono text-white">{stats.actual_distributed.toFixed(2)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm mt-2">
-                  <span className="text-white/60">Last Updated:</span>
-                  <span className="text-white/60">{formatDate(stats.last_updated)}</span>
-                </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 mb-6 border border-white/20">
+              <div className="flex items-center gap-3 mb-4">
+                <Lock className="w-6 h-6 text-orange-400" />
+                <h2 className="text-xl font-bold text-white">Resource Pools (Read-Only)</h2>
+              </div>
+              <p className="text-white/60 text-sm mb-6">Non-revenue reserve pools. These are never touched by automated distribution systems.</p>
+
+              <div className="space-y-4">
+                {resourcePools.map((pool) => (
+                  <div key={pool.id} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-white font-bold text-lg mb-1">{pool.pool_name}</h3>
+                        <p className="text-white/60 text-sm mb-3">{pool.description}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white/40 text-xs uppercase tracking-wider">{pool.pool_type}</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-white">
+                          {pool.total_coins.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        <p className="text-white/40 text-xs mt-1">Total Reserve</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -275,7 +458,7 @@ export default function AdminCoinPool() {
               )}
             </div>
           </>
-        )}
+        ) : null}
       </div>
     </div>
   );

@@ -42,7 +42,7 @@ export function CoinPoolDisplay() {
         <div>
           <h3 className="text-base font-bold text-white flex items-center gap-2 mb-1 uppercase tracking-wide font-['Roboto_Condensed'] italic">
             <Coins className="w-5 h-5 text-[#00FF85]" />
-            Pool Distribution
+            {stats.pool_name || 'Pool Distribution'}
             {stats.is_synced ? (
               <CheckCircle className="w-4 h-4 text-green-400" title="Pool is synced" />
             ) : (

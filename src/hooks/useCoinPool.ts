@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface CoinPoolStats {
+  pool_name?: string;
   total_coins: number;
   distributed_coins: number;
   actual_distributed: number;
@@ -43,6 +44,7 @@ export function useCoinPool() {
       if (data) {
         const distributionPercentage = (data.actual_distributed / data.total_coins) * 100;
         setStats({
+          pool_name: data.pool_name,
           total_coins: parseFloat(data.total_coins),
           distributed_coins: parseFloat(data.distributed_coins),
           actual_distributed: parseFloat(data.actual_distributed),
