@@ -263,7 +263,7 @@ export default function TermsOfService() {
           <section>
             <h3 className="text-xl font-bold text-white mb-3">19. Severability</h3>
             <p className="leading-relaxed">
-              If any provision of these Terms is found to be unenforceable or invalid, that provision shall be limited or eliminated to the minimum extent necessary, and the remaining provisions shall remain in full force and effect.
+              If any provision of these Terms is found to be unenforceable or invalid, that provision shall be limited or eliminated to the minimum extent necessary and the remaining provisions shall remain in full force and effect.
             </p>
           </section>
 
