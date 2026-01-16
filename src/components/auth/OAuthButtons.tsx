@@ -15,7 +15,7 @@ export function OAuthButtons({ mode = 'signin', theme = 'light' }: OAuthButtonsP
     setError(null);
 
     try {
-      const redirectTo = `${window.location.origin}/settings`;
+      const redirectTo = 'https://niurjxqttyaxmjrladrs.supabase.co/auth/v1/callback';
 
       const { data, error: signInError } = await supabase.auth.signInWithOAuth({
         provider,
@@ -29,13 +29,18 @@ export function OAuthButtons({ mode = 'signin', theme = 'light' }: OAuthButtonsP
       });
 
       if (signInError) {
+        console.error(`${provider} OAuth redirect error:`, signInError);
         throw signInError;
+      }
+
+      if (!data?.url) {
+        throw new Error('No redirect URL received from OAuth provider');
       }
 
       // The redirect will happen automatically
     } catch (err: any) {
       console.error(`${provider} OAuth error:`, err);
-      setError(err.message || `Failed to sign in with ${provider}`);
+      setError(err.message || `Failed to sign in with ${provider}. Please try again.`);
       setLoading(null);
     }
   };
