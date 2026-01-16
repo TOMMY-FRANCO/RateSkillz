@@ -91,7 +91,7 @@ export default function Landing() {
                   </div>
                   <h3 className="tech-header">Get Rated</h3>
                   <p className="text-[#B0B8C8] text-sm">
-                    Friends rate your pace, shooting, passing, dribbling, defense, and physical attributes
+                    Friends rate your pace, shooting, passing, dribbling, defense and physical attributes
                   </p>
                 </div>
                 <div className="glass-card p-6">
