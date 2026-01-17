@@ -29,12 +29,16 @@ interface CoinPoolStats {
 
 interface DiscrepancyLog {
   id: string;
+  user_id: string | null;
+  username: string | null;
   correction_type: string;
   old_balance: number;
   new_balance: number;
   discrepancy: number;
   notes: string;
+  corrected_by: string | null;
   corrected_at: string;
+  status: string;
 }
 
 export default function AdminCoinPool() {
@@ -49,6 +53,7 @@ export default function AdminCoinPool() {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [isAdmin, setIsAdmin] = useState(false);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
+  const [logFilter, setLogFilter] = useState<'active' | 'resolved' | 'all'>('active');
 
   useEffect(() => {
     checkAdminAccess();
@@ -59,6 +64,12 @@ export default function AdminCoinPool() {
       loadAllData();
     }
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadDiscrepancyLogs();
+    }
+  }, [logFilter]);
 
   async function checkAdminAccess() {
     try {
@@ -167,7 +178,7 @@ export default function AdminCoinPool() {
     try {
       setLogsLoading(true);
       const { data, error } = await supabase
-        .rpc('get_coin_pool_discrepancy_logs', { limit_count: 20 });
+        .rpc('get_audit_log_by_status', { p_status: logFilter });
 
       if (error) throw error;
 
@@ -416,7 +427,7 @@ export default function AdminCoinPool() {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <AlertCircle className="w-6 h-6 text-orange-400" />
-                  <h2 className="text-xl font-bold text-white">Discrepancy Logs</h2>
+                  <h2 className="text-xl font-bold text-white">Balance Audit Log</h2>
                 </div>
                 <button
                   onClick={loadDiscrepancyLogs}
@@ -424,6 +435,44 @@ export default function AdminCoinPool() {
                   title="Refresh logs"
                 >
                   <RefreshCw className="w-4 h-4 text-white/70" />
+                </button>
+              </div>
+
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => setLogFilter('active')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    logFilter === 'active'
+                      ? 'bg-orange-500 text-white shadow-lg'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10'
+                  }`}
+                >
+                  Active Warnings
+                  {logFilter === 'active' && logs.length > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-xs">
+                      {logs.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setLogFilter('resolved')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    logFilter === 'resolved'
+                      ? 'bg-green-500 text-white shadow-lg'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10'
+                  }`}
+                >
+                  Resolved Issues
+                </button>
+                <button
+                  onClick={() => setLogFilter('all')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    logFilter === 'all'
+                      ? 'bg-blue-500 text-white shadow-lg'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10'
+                  }`}
+                >
+                  All History
                 </button>
               </div>
 
@@ -435,8 +484,16 @@ export default function AdminCoinPool() {
               ) : logs.length === 0 ? (
                 <div className="text-center py-8">
                   <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
-                  <p className="text-white/60">No discrepancies detected</p>
-                  <p className="text-white/40 text-sm mt-1">Pool has been perfectly in sync</p>
+                  <p className="text-white/60">
+                    {logFilter === 'active'
+                      ? 'No active warnings'
+                      : logFilter === 'resolved'
+                      ? 'No resolved issues'
+                      : 'No audit log entries'}
+                  </p>
+                  <p className="text-white/40 text-sm mt-1">
+                    {logFilter === 'active' && 'All systems operating normally'}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -445,12 +502,32 @@ export default function AdminCoinPool() {
                       key={log.id}
                       className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-colors"
                     >
-                      <div className="flex items-start justify-between gap-4 mb-2">
+                      <div className="flex items-start justify-between gap-4 mb-3">
                         <div className="flex items-center gap-2">
-                          <AlertCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
-                          <span className="text-white font-semibold">{log.correction_type}</span>
+                          {log.status === 'active' ? (
+                            <AlertCircle className="w-4 h-4 text-orange-400 flex-shrink-0" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                          )}
+                          <div>
+                            <span className="text-white font-semibold">{log.correction_type}</span>
+                            {log.username && (
+                              <span className="ml-2 text-white/40 text-sm">({log.username})</span>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-white/40 text-sm">{formatDate(log.corrected_at)}</span>
+                        <div className="text-right">
+                          <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                            log.status === 'active'
+                              ? 'bg-orange-500/20 text-orange-400'
+                              : log.status === 'resolved'
+                              ? 'bg-green-500/20 text-green-400'
+                              : 'bg-blue-500/20 text-blue-400'
+                          }`}>
+                            {log.status}
+                          </span>
+                          <p className="text-white/40 text-xs mt-1">{formatDate(log.corrected_at)}</p>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-3 gap-4 mb-3 text-sm">
@@ -471,8 +548,14 @@ export default function AdminCoinPool() {
                       </div>
 
                       {log.notes && (
-                        <p className="text-white/60 text-sm bg-white/5 rounded p-2 font-mono">
+                        <p className="text-white/60 text-sm bg-white/5 rounded p-2 font-mono leading-relaxed">
                           {log.notes}
+                        </p>
+                      )}
+
+                      {log.corrected_by && (
+                        <p className="text-white/40 text-xs mt-2">
+                          Corrected by: {log.corrected_by}
                         </p>
                       )}
                     </div>
