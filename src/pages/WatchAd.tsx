@@ -14,6 +14,8 @@ export default function WatchAd() {
   const [canWatch, setCanWatch] = useState<boolean | null>(null);
   const [checkingAvailability, setCheckingAvailability] = useState(true);
   const [nextAvailable, setNextAvailable] = useState<string | null>(null);
+  const [hoursRemaining, setHoursRemaining] = useState<number>(0);
+  const [minutesRemaining, setMinutesRemaining] = useState<number>(0);
 
   useEffect(() => {
     loadBalance();
@@ -44,8 +46,16 @@ export default function WatchAd() {
       const result = await canWatchAdToday();
       setCanWatch(result.can_watch);
       if (!result.can_watch) {
-        setError('You have already watched an advert today. Come back tomorrow at midnight GMT!');
+        const hours = result.hours_remaining || 0;
+        const minutes = result.minutes_remaining || 0;
+        setHoursRemaining(hours);
+        setMinutesRemaining(minutes);
+        setError(result.message || `Next ad available in ${hours} hours ${minutes} minutes`);
         setNextAvailable(result.next_available_gmt || null);
+      } else {
+        setError(null);
+        setHoursRemaining(0);
+        setMinutesRemaining(0);
       }
     } catch (error) {
       console.error('Failed to check ad availability:', error);
@@ -57,7 +67,9 @@ export default function WatchAd() {
 
   async function startAd() {
     if (!canWatch) {
-      setError('You have already watched an ad today. Come back tomorrow at midnight GMT!');
+      const hours = hoursRemaining;
+      const minutes = minutesRemaining;
+      setError(`Next ad available in ${hours} hours ${minutes} minutes. Try again later!`);
       return;
     }
 
@@ -77,8 +89,9 @@ export default function WatchAd() {
         setCanWatch(false);
         await loadBalance();
       } else {
-        setError(result.message || 'Already watched advert today. Come back tomorrow at midnight GMT!');
+        setError(result.message || 'Already watched advert recently. Please wait 24 hours between ad views.');
         setCanWatch(false);
+        await checkAdAvailability();
       }
     } catch (err: any) {
       setError(err.message || 'Failed to award coins. Please try again.');
@@ -140,8 +153,8 @@ export default function WatchAd() {
             </button>
 
             <div className="mt-6 space-y-2">
-              <p className="text-white/40 text-sm">Limit: One advert per day</p>
-              <p className="text-white/30 text-xs">Resets daily at midnight GMT (00:00 UK time)</p>
+              <p className="text-white/40 text-sm">Limit: One ad per 24 hours</p>
+              <p className="text-white/30 text-xs">Also resets daily at midnight GMT (00:00 UK time)</p>
             </div>
           </div>
         )}
@@ -212,15 +225,25 @@ export default function WatchAd() {
         {error && (
           <div className="bg-red-500/10 backdrop-blur-sm rounded-2xl p-12 border border-red-500/20 text-center">
             <div className="w-24 h-24 mx-auto mb-6 bg-red-500/20 rounded-full flex items-center justify-center">
-              <AlertCircle className="w-12 h-12 text-red-400" />
+              <Clock className="w-12 h-12 text-red-400" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Already Watched Today</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">Ad Not Available Yet</h2>
             <p className="text-white/60 mb-6">{error}</p>
 
             <div className="bg-white/5 rounded-xl p-6 mb-8 border border-white/10">
-              <p className="text-white/80 text-sm mb-2">Advert viewing resets daily at:</p>
-              <p className="text-cyan-400 text-2xl font-bold mb-2">00:00 GMT (Midnight UK Time)</p>
-              <p className="text-white/60 text-xs mb-3">
+              <p className="text-white/80 text-sm mb-3">Time until next ad:</p>
+              <div className="flex items-center justify-center gap-4 mb-4">
+                <div className="bg-gradient-to-br from-orange-400 to-red-500 rounded-xl p-4 min-w-[100px]">
+                  <p className="text-4xl font-bold text-white">{hoursRemaining}</p>
+                  <p className="text-white/80 text-sm mt-1">Hours</p>
+                </div>
+                <div className="text-white text-3xl font-bold">:</div>
+                <div className="bg-gradient-to-br from-orange-400 to-red-500 rounded-xl p-4 min-w-[100px]">
+                  <p className="text-4xl font-bold text-white">{minutesRemaining}</p>
+                  <p className="text-white/80 text-sm mt-1">Minutes</p>
+                </div>
+              </div>
+              <p className="text-white/60 text-xs mb-2">
                 Current GMT time: {new Date().toLocaleString('en-GB', { timeZone: 'UTC', hour12: false })}
               </p>
               {nextAvailable && (
@@ -228,6 +251,9 @@ export default function WatchAd() {
                   Next available: {new Date(nextAvailable).toLocaleString('en-GB', { timeZone: 'UTC', hour12: false })} GMT
                 </p>
               )}
+              <p className="text-white/40 text-xs mt-3">
+                Ad viewing also resets at midnight GMT daily
+              </p>
             </div>
 
             <div className="space-x-4">
