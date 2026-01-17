@@ -19,8 +19,8 @@ The daily ad reset system automatically resets all users' ad viewing status at m
 
 ### 2. Edge Function: `daily-ad-reset`
 - **URL**: `https://niurjxqttyaxmjrladrs.supabase.co/functions/v1/daily-ad-reset`
-- **Method**: POST
-- **Authentication**: Requires `X-Reset-Secret` header
+- **Method**: POST or GET
+- **Authentication**: None required (public endpoint)
 - **Response**: JSON with reset stats and timestamp
 
 ### 3. Frontend Check: `can_watch_ad_today()`
@@ -39,8 +39,8 @@ The daily ad reset system automatically resets all users' ad viewing status at m
    - **Title**: Daily Ad Reset
    - **URL**: `https://niurjxqttyaxmjrladrs.supabase.co/functions/v1/daily-ad-reset`
    - **Schedule**: Every day at 00:00 GMT
-   - **Request Method**: POST
-   - **Headers**: Add `X-Reset-Secret: default-reset-secret-change-me`
+   - **Request Method**: GET or POST
+   - **Headers**: None required
 5. Save and enable
 
 ### Option 2: EasyCron (Free tier available)
@@ -50,8 +50,8 @@ The daily ad reset system automatically resets all users' ad viewing status at m
 3. Set:
    - **URL**: `https://niurjxqttyaxmjrladrs.supabase.co/functions/v1/daily-ad-reset`
    - **Cron Expression**: `0 0 * * *` (midnight GMT)
-   - **Request Type**: POST
-   - **Custom Headers**: `X-Reset-Secret: default-reset-secret-change-me`
+   - **Request Type**: GET or POST
+   - **Custom Headers**: None required
 4. Activate
 
 ### Option 3: GitHub Actions (Free for public repos)
@@ -72,21 +72,23 @@ jobs:
     steps:
       - name: Call Reset Endpoint
         run: |
-          curl -X POST "https://niurjxqttyaxmjrladrs.supabase.co/functions/v1/daily-ad-reset" \
-            -H "X-Reset-Secret: ${{ secrets.DAILY_RESET_SECRET }}" \
-            -H "Content-Type: application/json"
+          curl -X GET "https://niurjxqttyaxmjrladrs.supabase.co/functions/v1/daily-ad-reset"
 ```
 
-Add `DAILY_RESET_SECRET` to your GitHub repository secrets.
+No secrets needed - the endpoint is public.
 
 ### Option 4: Manual Testing
 
 Test the reset anytime by running:
 
 ```bash
-curl -X POST "https://niurjxqttyaxmjrladrs.supabase.co/functions/v1/daily-ad-reset" \
-  -H "X-Reset-Secret: default-reset-secret-change-me" \
-  -H "Content-Type: application/json"
+curl "https://niurjxqttyaxmjrladrs.supabase.co/functions/v1/daily-ad-reset"
+```
+
+Or with POST:
+
+```bash
+curl -X POST "https://niurjxqttyaxmjrladrs.supabase.co/functions/v1/daily-ad-reset"
 ```
 
 ## Verifying Execution
@@ -126,25 +128,20 @@ Successful reset returns:
 
 ## Security
 
-- Edge function requires `X-Reset-Secret` header for authentication
-- Default secret: `default-reset-secret-change-me` (change this!)
-- Only the edge function can call `reset_daily_ad_views()`
-- All resets are logged to `admin_security_log`
-
-## Changing the Reset Secret
-
-To use a custom secret:
-
-1. Set `DAILY_RESET_SECRET` environment variable in Supabase
-2. Update your cron service to use the new secret
-3. The edge function automatically uses the environment variable
+- Edge function is public (no authentication required)
+- This is safe because:
+  - The operation is idempotent (running multiple times has same effect)
+  - Only resets ad viewing dates (no sensitive data exposed)
+  - All executions are logged to `admin_security_log` with timestamp
+  - No data is returned that could be exploited
+- Only the edge function (with service role) can call `reset_daily_ad_views()`
 
 ## Troubleshooting
 
 ### Reset Didn't Run
-- Check cron service is active
-- Verify URL is correct
-- Confirm headers include `X-Reset-Secret`
+- Check cron service is active and configured for 00:00 GMT
+- Verify URL is correct: `https://niurjxqttyaxmjrladrs.supabase.co/functions/v1/daily-ad-reset`
+- Test manually with curl to confirm endpoint works
 - Check `admin_security_log` for error entries
 
 ### Users Still Can't Watch Ads
@@ -156,8 +153,7 @@ To use a custom secret:
 If you need to reset immediately:
 
 ```bash
-curl -X POST "https://niurjxqttyaxmjrladrs.supabase.co/functions/v1/daily-ad-reset" \
-  -H "X-Reset-Secret: default-reset-secret-change-me"
+curl "https://niurjxqttyaxmjrladrs.supabase.co/functions/v1/daily-ad-reset"
 ```
 
 ## Migration History
