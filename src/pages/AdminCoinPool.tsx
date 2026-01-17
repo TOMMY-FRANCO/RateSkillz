@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Coins, RefreshCw, AlertCircle, CheckCircle, TrendingUp, Users, Database, Activity, Lock, Shield } from 'lucide-react';
+import { ArrowLeft, Coins, RefreshCw, AlertCircle, CheckCircle, TrendingUp, Users, Database, Activity, Lock, Shield, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 
@@ -54,6 +54,8 @@ export default function AdminCoinPool() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [logFilter, setLogFilter] = useState<'active' | 'resolved' | 'all'>('active');
+  const [clearingWarnings, setClearingWarnings] = useState(false);
+  const [clearResult, setClearResult] = useState<string | null>(null);
 
   useEffect(() => {
     checkAdminAccess();
@@ -210,6 +212,33 @@ export default function AdminCoinPool() {
 
   async function handleRefresh() {
     await loadAllData();
+  }
+
+  async function handleClearStaleWarnings() {
+    if (!confirm('Clear all stale balance warnings? This will remove old warning notifications for users with verified balances.')) {
+      return;
+    }
+
+    try {
+      setClearingWarnings(true);
+      setClearResult(null);
+
+      const { data, error } = await supabase
+        .rpc('clear_warnings_for_resolved_users');
+
+      if (error) throw error;
+
+      const result = data as { success: boolean; users_cleared: number; total_warnings_cleared: number };
+      setClearResult(`Successfully cleared ${result.total_warnings_cleared} warnings for ${result.users_cleared} users`);
+
+      await loadDiscrepancyLogs();
+    } catch (error) {
+      console.error('Failed to clear warnings:', error);
+      setClearResult('Failed to clear warnings. Please try again.');
+    } finally {
+      setClearingWarnings(false);
+      setTimeout(() => setClearResult(null), 5000);
+    }
   }
 
   function formatDate(dateString: string) {
@@ -429,14 +458,35 @@ export default function AdminCoinPool() {
                   <AlertCircle className="w-6 h-6 text-orange-400" />
                   <h2 className="text-xl font-bold text-white">Balance Audit Log</h2>
                 </div>
-                <button
-                  onClick={loadDiscrepancyLogs}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                  title="Refresh logs"
-                >
-                  <RefreshCw className="w-4 h-4 text-white/70" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleClearStaleWarnings}
+                    disabled={clearingWarnings}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Clear stale balance warnings for resolved users"
+                  >
+                    <Trash2 className={`w-4 h-4 ${clearingWarnings ? 'animate-pulse' : ''}`} />
+                    <span className="text-sm font-medium">Clear Stale Warnings</span>
+                  </button>
+                  <button
+                    onClick={loadDiscrepancyLogs}
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                    title="Refresh logs"
+                  >
+                    <RefreshCw className="w-4 h-4 text-white/70" />
+                  </button>
+                </div>
               </div>
+
+              {clearResult && (
+                <div className={`mb-4 px-4 py-3 rounded-lg ${
+                  clearResult.includes('Successfully')
+                    ? 'bg-green-500/20 text-green-300 border border-green-500/30'
+                    : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                }`}>
+                  <p className="text-sm font-medium">{clearResult}</p>
+                </div>
+              )}
 
               <div className="flex gap-2 mb-4">
                 <button

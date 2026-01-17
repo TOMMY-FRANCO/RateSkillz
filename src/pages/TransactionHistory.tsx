@@ -110,26 +110,30 @@ export default function TransactionHistory() {
       return;
     }
 
-    const amounts = transactions.map(tx => {
-      const amount = typeof tx.amount === 'string' ? parseFloat(tx.amount) : tx.amount;
-      const parsed = isNaN(amount) ? 0 : amount;
-      console.log(`[TransactionHistory] TX ${tx.id.substring(0, 8)}: amount=${tx.amount} (${typeof tx.amount}), parsed=${parsed}`);
-      return parsed;
-    });
+    if (pagination.page !== 1) {
+      setBalanceValidation(null);
+      return;
+    }
 
-    const transactionSum = amounts.reduce((sum, amount) => sum + amount, 0);
+    const mostRecentTx = transactions[0];
+    if (!mostRecentTx.balance_after) {
+      console.log('[TransactionHistory] Most recent transaction missing balance_after, skipping validation');
+      setBalanceValidation(null);
+      return;
+    }
+
+    const expectedBalance = typeof mostRecentTx.balance_after === 'string'
+      ? parseFloat(mostRecentTx.balance_after)
+      : mostRecentTx.balance_after;
+
+    const discrepancy = Math.abs(currentBalance - expectedBalance);
 
     console.log('[TransactionHistory] Validation:', {
-      transactionCount: transactions.length,
-      transactionSum,
       currentBalance,
-      typeoCurrentBalance: typeof currentBalance,
-      rawDiscrepancy: currentBalance - transactionSum,
+      expectedBalance,
+      mostRecentTxDate: mostRecentTx.created_at,
+      discrepancy,
     });
-
-    const discrepancy = Math.abs(currentBalance - transactionSum);
-
-    console.log('[TransactionHistory] Discrepancy:', discrepancy);
 
     const isBalanceVerified = discrepancy < 0.01;
 
@@ -138,13 +142,10 @@ export default function TransactionHistory() {
       setBalanceValidation({ isValid: true, message: 'Balance verified' });
     } else {
       console.error('[TransactionHistory] DISCREPANCY DETECTED ✗', {
-        transactionSum,
         currentBalance,
+        expectedBalance,
         discrepancy,
-        transactionCount: transactions.length,
-        firstTx: transactions[0],
-        lastTx: transactions[transactions.length - 1],
-        allAmounts: amounts,
+        mostRecentTx,
       });
       setBalanceValidation({
         isValid: false,
