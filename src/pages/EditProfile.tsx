@@ -1,7 +1,13 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Upload, User, ArrowLeft, Save } from 'lucide-react';
+import { Upload, User, ArrowLeft, Save, Search } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+
+interface EducationOption {
+  id: string;
+  name: string;
+}
 
 export default function EditProfile() {
   const { profile, updateProfile } = useAuth();
@@ -19,6 +25,162 @@ export default function EditProfile() {
   );
   const [showPositioning, setShowPositioning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [secondarySchoolId, setSecondarySchoolId] = useState(profile?.secondary_school_id || '');
+  const [collegeId, setCollegeId] = useState(profile?.college_id || '');
+  const [universityId, setUniversityId] = useState(profile?.university_id || '');
+
+  const [schoolSearch, setSchoolSearch] = useState('');
+  const [collegeSearch, setCollegeSearch] = useState('');
+  const [universitySearch, setUniversitySearch] = useState('');
+
+  const [schoolOptions, setSchoolOptions] = useState<EducationOption[]>([]);
+  const [collegeOptions, setCollegeOptions] = useState<EducationOption[]>([]);
+  const [universityOptions, setUniversityOptions] = useState<EducationOption[]>([]);
+
+  const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
+  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
+  const [showUniversityDropdown, setShowUniversityDropdown] = useState(false);
+
+  const [loadingEducation, setLoadingEducation] = useState(false);
+
+  useEffect(() => {
+    if (profile) {
+      loadCurrentEducation();
+    }
+  }, [profile]);
+
+  const loadCurrentEducation = async () => {
+    if (profile?.secondary_school_id) {
+      const { data } = await supabase
+        .from('schools')
+        .select('id, school_name')
+        .eq('id', profile.secondary_school_id)
+        .single();
+      if (data) setSchoolSearch(data.school_name);
+    }
+    if (profile?.college_id) {
+      const { data } = await supabase
+        .from('colleges')
+        .select('id, college_name')
+        .eq('id', profile.college_id)
+        .single();
+      if (data) setCollegeSearch(data.college_name);
+    }
+    if (profile?.university_id) {
+      const { data } = await supabase
+        .from('universities')
+        .select('id, university_name')
+        .eq('id', profile.university_id)
+        .single();
+      if (data) setUniversitySearch(data.university_name);
+    }
+  };
+
+  const searchSchools = async (term: string) => {
+    if (term.length < 2) {
+      setSchoolOptions([]);
+      return;
+    }
+    setLoadingEducation(true);
+    const { data } = await supabase
+      .from('schools')
+      .select('id, school_name')
+      .ilike('school_name', `%${term}%`)
+      .order('school_name')
+      .limit(50);
+
+    setSchoolOptions(data?.map(s => ({ id: s.id, name: s.school_name })) || []);
+    setLoadingEducation(false);
+  };
+
+  const searchColleges = async (term: string) => {
+    if (term.length < 2) {
+      setCollegeOptions([]);
+      return;
+    }
+    setLoadingEducation(true);
+    const { data } = await supabase
+      .from('colleges')
+      .select('id, college_name')
+      .ilike('college_name', `%${term}%`)
+      .order('college_name')
+      .limit(50);
+
+    setCollegeOptions(data?.map(c => ({ id: c.id, name: c.college_name })) || []);
+    setLoadingEducation(false);
+  };
+
+  const searchUniversities = async (term: string) => {
+    if (term.length < 2) {
+      setUniversityOptions([]);
+      return;
+    }
+    setLoadingEducation(true);
+    const { data } = await supabase
+      .from('universities')
+      .select('id, university_name')
+      .ilike('university_name', `%${term}%`)
+      .order('university_name')
+      .limit(50);
+
+    setUniversityOptions(data?.map(u => ({ id: u.id, name: u.university_name })) || []);
+    setLoadingEducation(false);
+  };
+
+  const handleSchoolSearch = (value: string) => {
+    setSchoolSearch(value);
+    setShowSchoolDropdown(true);
+    searchSchools(value);
+  };
+
+  const handleCollegeSearch = (value: string) => {
+    setCollegeSearch(value);
+    setShowCollegeDropdown(true);
+    searchColleges(value);
+  };
+
+  const handleUniversitySearch = (value: string) => {
+    setUniversitySearch(value);
+    setShowUniversityDropdown(true);
+    searchUniversities(value);
+  };
+
+  const selectSchool = (option: EducationOption) => {
+    setSecondarySchoolId(option.id);
+    setSchoolSearch(option.name);
+    setShowSchoolDropdown(false);
+  };
+
+  const selectCollege = (option: EducationOption) => {
+    setCollegeId(option.id);
+    setCollegeSearch(option.name);
+    setShowCollegeDropdown(false);
+  };
+
+  const selectUniversity = (option: EducationOption) => {
+    setUniversityId(option.id);
+    setUniversitySearch(option.name);
+    setShowUniversityDropdown(false);
+  };
+
+  const clearSchool = () => {
+    setSecondarySchoolId('');
+    setSchoolSearch('');
+    setSchoolOptions([]);
+  };
+
+  const clearCollege = () => {
+    setCollegeId('');
+    setCollegeSearch('');
+    setCollegeOptions([]);
+  };
+
+  const clearUniversity = () => {
+    setUniversityId('');
+    setUniversitySearch('');
+    setUniversityOptions([]);
+  };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -63,6 +225,9 @@ export default function EditProfile() {
       position,
       number,
       team,
+      secondary_school_id: secondarySchoolId || null,
+      college_id: collegeId || null,
+      university_id: universityId || null,
     });
 
     if (error) {
@@ -319,6 +484,142 @@ export default function EditProfile() {
                 <option value="West Ham United">West Ham United</option>
                 <option value="Wolverhampton Wanderers">Wolverhampton Wanderers</option>
               </select>
+            </div>
+
+            <div className="border-t border-gray-700 pt-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Education (Internal Use)</h3>
+              <p className="text-sm text-gray-400 mb-4">Select your education institutions to connect with friends. Not displayed publicly.</p>
+
+              <div className="space-y-4">
+                <div className="relative">
+                  <label htmlFor="school" className="block text-sm font-medium text-gray-300 mb-2">
+                    Secondary School
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-5 w-5 text-gray-500" />
+                    </div>
+                    <input
+                      id="school"
+                      type="text"
+                      value={schoolSearch}
+                      onChange={(e) => handleSchoolSearch(e.target.value)}
+                      onFocus={() => setShowSchoolDropdown(true)}
+                      placeholder="Search for your secondary school..."
+                      className="w-full pl-10 pr-10 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                    />
+                    {secondarySchoolId && (
+                      <button
+                        type="button"
+                        onClick={clearSchool}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  {showSchoolDropdown && schoolOptions.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-auto">
+                      {schoolOptions.map(option => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => selectSchool(option)}
+                          className="w-full px-4 py-2 text-left text-white hover:bg-gray-700 transition-colors"
+                        >
+                          {option.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <label htmlFor="college" className="block text-sm font-medium text-gray-300 mb-2">
+                    College
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-5 w-5 text-gray-500" />
+                    </div>
+                    <input
+                      id="college"
+                      type="text"
+                      value={collegeSearch}
+                      onChange={(e) => handleCollegeSearch(e.target.value)}
+                      onFocus={() => setShowCollegeDropdown(true)}
+                      placeholder="Search for your college..."
+                      className="w-full pl-10 pr-10 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                    />
+                    {collegeId && (
+                      <button
+                        type="button"
+                        onClick={clearCollege}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  {showCollegeDropdown && collegeOptions.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-auto">
+                      {collegeOptions.map(option => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => selectCollege(option)}
+                          className="w-full px-4 py-2 text-left text-white hover:bg-gray-700 transition-colors"
+                        >
+                          {option.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <label htmlFor="university" className="block text-sm font-medium text-gray-300 mb-2">
+                    University
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-5 w-5 text-gray-500" />
+                    </div>
+                    <input
+                      id="university"
+                      type="text"
+                      value={universitySearch}
+                      onChange={(e) => handleUniversitySearch(e.target.value)}
+                      onFocus={() => setShowUniversityDropdown(true)}
+                      placeholder="Search for your university..."
+                      className="w-full pl-10 pr-10 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                    />
+                    {universityId && (
+                      <button
+                        type="button"
+                        onClick={clearUniversity}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  {showUniversityDropdown && universityOptions.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-auto">
+                      {universityOptions.map(option => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => selectUniversity(option)}
+                          className="w-full px-4 py-2 text-left text-white hover:bg-gray-700 transition-colors"
+                        >
+                          {option.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {message && (

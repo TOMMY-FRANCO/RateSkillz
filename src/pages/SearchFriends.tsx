@@ -20,6 +20,14 @@ interface SearchFilters {
   coinSort: 'any' | 'high_to_low' | 'low_to_high';
   positions: string[];
   managersOnly: boolean;
+  secondarySchoolId: string;
+  collegeId: string;
+  universityId: string;
+}
+
+interface EducationOption {
+  id: string;
+  name: string;
 }
 
 interface SearchResult {
@@ -90,7 +98,22 @@ export default function SearchFriends() {
     coinSort: 'any',
     positions: [],
     managersOnly: false,
+    secondarySchoolId: '',
+    collegeId: '',
+    universityId: '',
   });
+
+  const [schoolSearch, setSchoolSearch] = useState('');
+  const [collegeSearch, setCollegeSearch] = useState('');
+  const [universitySearch, setUniversitySearch] = useState('');
+
+  const [schoolOptions, setSchoolOptions] = useState<EducationOption[]>([]);
+  const [collegeOptions, setCollegeOptions] = useState<EducationOption[]>([]);
+  const [universityOptions, setUniversityOptions] = useState<EducationOption[]>([]);
+
+  const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
+  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
+  const [showUniversityDropdown, setShowUniversityDropdown] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -141,6 +164,18 @@ export default function SearchFriends() {
 
       if (filters.managersOnly) {
         query = query.eq('is_manager', true);
+      }
+
+      if (filters.secondarySchoolId) {
+        query = query.eq('secondary_school_id', filters.secondarySchoolId);
+      }
+
+      if (filters.collegeId) {
+        query = query.eq('college_id', filters.collegeId);
+      }
+
+      if (filters.universityId) {
+        query = query.eq('university_id', filters.universityId);
       }
 
       if (filters.onlineStatus === 'recent') {
@@ -253,6 +288,111 @@ export default function SearchFriends() {
     setCurrentPage(1);
   };
 
+  const searchSchools = async (term: string) => {
+    if (term.length < 2) {
+      setSchoolOptions([]);
+      return;
+    }
+    const { data } = await supabase
+      .from('schools')
+      .select('id, school_name')
+      .ilike('school_name', `%${term}%`)
+      .order('school_name')
+      .limit(50);
+
+    setSchoolOptions(data?.map(s => ({ id: s.id, name: s.school_name })) || []);
+  };
+
+  const searchColleges = async (term: string) => {
+    if (term.length < 2) {
+      setCollegeOptions([]);
+      return;
+    }
+    const { data } = await supabase
+      .from('colleges')
+      .select('id, college_name')
+      .ilike('college_name', `%${term}%`)
+      .order('college_name')
+      .limit(50);
+
+    setCollegeOptions(data?.map(c => ({ id: c.id, name: c.college_name })) || []);
+  };
+
+  const searchUniversities = async (term: string) => {
+    if (term.length < 2) {
+      setUniversityOptions([]);
+      return;
+    }
+    const { data } = await supabase
+      .from('universities')
+      .select('id, university_name')
+      .ilike('university_name', `%${term}%`)
+      .order('university_name')
+      .limit(50);
+
+    setUniversityOptions(data?.map(u => ({ id: u.id, name: u.university_name })) || []);
+  };
+
+  const handleSchoolSearch = (value: string) => {
+    setSchoolSearch(value);
+    setShowSchoolDropdown(true);
+    searchSchools(value);
+  };
+
+  const handleCollegeSearch = (value: string) => {
+    setCollegeSearch(value);
+    setShowCollegeDropdown(true);
+    searchColleges(value);
+  };
+
+  const handleUniversitySearch = (value: string) => {
+    setUniversitySearch(value);
+    setShowUniversityDropdown(true);
+    searchUniversities(value);
+  };
+
+  const selectSchool = (option: EducationOption) => {
+    setFilters(prev => ({ ...prev, secondarySchoolId: option.id }));
+    setSchoolSearch(option.name);
+    setShowSchoolDropdown(false);
+    setCurrentPage(1);
+  };
+
+  const selectCollege = (option: EducationOption) => {
+    setFilters(prev => ({ ...prev, collegeId: option.id }));
+    setCollegeSearch(option.name);
+    setShowCollegeDropdown(false);
+    setCurrentPage(1);
+  };
+
+  const selectUniversity = (option: EducationOption) => {
+    setFilters(prev => ({ ...prev, universityId: option.id }));
+    setUniversitySearch(option.name);
+    setShowUniversityDropdown(false);
+    setCurrentPage(1);
+  };
+
+  const clearSchool = () => {
+    setFilters(prev => ({ ...prev, secondarySchoolId: '' }));
+    setSchoolSearch('');
+    setSchoolOptions([]);
+    setCurrentPage(1);
+  };
+
+  const clearCollege = () => {
+    setFilters(prev => ({ ...prev, collegeId: '' }));
+    setCollegeSearch('');
+    setCollegeOptions([]);
+    setCurrentPage(1);
+  };
+
+  const clearUniversity = () => {
+    setFilters(prev => ({ ...prev, universityId: '' }));
+    setUniversitySearch('');
+    setUniversityOptions([]);
+    setCurrentPage(1);
+  };
+
   const clearFilters = () => {
     setFilters({
       username: '',
@@ -269,7 +409,16 @@ export default function SearchFriends() {
       coinSort: 'any',
       positions: [],
       managersOnly: false,
+      secondarySchoolId: '',
+      collegeId: '',
+      universityId: '',
     });
+    setSchoolSearch('');
+    setCollegeSearch('');
+    setUniversitySearch('');
+    setSchoolOptions([]);
+    setCollegeOptions([]);
+    setUniversityOptions([]);
     setCurrentPage(1);
   };
 
@@ -449,6 +598,127 @@ export default function SearchFriends() {
                   />
                   <span className="text-white font-semibold">Show only managers</span>
                 </label>
+              </div>
+
+              <div className="border-t border-white/10 pt-6">
+                <h4 className="text-md font-bold text-white mb-4">Education Filters</h4>
+                <p className="text-sm text-white/60 mb-4">Find friends from your schools, colleges, or universities</p>
+
+                <div className="space-y-4">
+                  <div className="relative">
+                    <label className="block text-sm font-semibold text-white mb-2">Secondary School</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                      <input
+                        type="text"
+                        value={schoolSearch}
+                        onChange={(e) => handleSchoolSearch(e.target.value)}
+                        onFocus={() => setShowSchoolDropdown(true)}
+                        placeholder="Search for secondary school..."
+                        className="w-full bg-white/10 border border-white/20 rounded-lg pl-10 pr-10 py-2 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      {filters.secondarySchoolId && (
+                        <button
+                          type="button"
+                          onClick={clearSchool}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/60 hover:text-white"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    {showSchoolDropdown && schoolOptions.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-auto">
+                        {schoolOptions.map(option => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => selectSchool(option)}
+                            className="w-full px-4 py-2 text-left text-white hover:bg-slate-700 transition-colors"
+                          >
+                            {option.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <label className="block text-sm font-semibold text-white mb-2">College</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                      <input
+                        type="text"
+                        value={collegeSearch}
+                        onChange={(e) => handleCollegeSearch(e.target.value)}
+                        onFocus={() => setShowCollegeDropdown(true)}
+                        placeholder="Search for college..."
+                        className="w-full bg-white/10 border border-white/20 rounded-lg pl-10 pr-10 py-2 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      {filters.collegeId && (
+                        <button
+                          type="button"
+                          onClick={clearCollege}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/60 hover:text-white"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    {showCollegeDropdown && collegeOptions.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-auto">
+                        {collegeOptions.map(option => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => selectCollege(option)}
+                            className="w-full px-4 py-2 text-left text-white hover:bg-slate-700 transition-colors"
+                          >
+                            {option.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <label className="block text-sm font-semibold text-white mb-2">University</label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                      <input
+                        type="text"
+                        value={universitySearch}
+                        onChange={(e) => handleUniversitySearch(e.target.value)}
+                        onFocus={() => setShowUniversityDropdown(true)}
+                        placeholder="Search for university..."
+                        className="w-full bg-white/10 border border-white/20 rounded-lg pl-10 pr-10 py-2 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      {filters.universityId && (
+                        <button
+                          type="button"
+                          onClick={clearUniversity}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/60 hover:text-white"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    {showUniversityDropdown && universityOptions.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-slate-800 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-auto">
+                        {universityOptions.map(option => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => selectUniversity(option)}
+                            className="w-full px-4 py-2 text-left text-white hover:bg-slate-700 transition-colors"
+                          >
+                            {option.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div>
