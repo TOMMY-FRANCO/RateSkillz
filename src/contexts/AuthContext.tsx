@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { ensureProfileExists } from '../lib/profileCreation';
+import { reconcileUserBalance } from '../lib/balanceReconciliation';
 
 export interface Profile {
   id: string;
@@ -183,6 +184,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (profileData) {
             setProfile(profileData);
             console.log('[Session] Profile loaded successfully');
+
+            // Reconcile balance on app load to fix any discrepancies
+            reconcileUserBalance(session.user.id).catch(error => {
+              console.error('[Session] Balance reconciliation failed:', error);
+            });
           } else {
             console.warn('[Session] Could not load profile after retries');
           }
