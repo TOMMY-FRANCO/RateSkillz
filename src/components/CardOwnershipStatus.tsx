@@ -267,7 +267,7 @@ export default function CardOwnershipStatus({
                     <p>Reclaim your card from {cardOwnership.owner?.username || 'the current holder'}!</p>
                     <div className="space-y-1 text-xs">
                       <p>Total Cost: <span className="font-bold text-orange-300">{(safeCardValue + 100).toFixed(2)} coins</span></p>
-                      <p className="ml-4 text-gray-400">Card value: {safeCardValue.toFixed(2)} coins (burned)</p>
+                      <p className="ml-4 text-gray-400">Card value: {safeCardValue.toFixed(2)} coins (reclamation fee)</p>
                       <p className="ml-4 text-gray-400">Payment to holder: 100 coins</p>
                     </div>
                     <p className="text-xs text-orange-300/70 mt-2">Card price stays at {safeCardValue.toFixed(2)} coins after buyout</p>
@@ -418,10 +418,10 @@ export default function CardOwnershipStatus({
                 <p className="text-sm font-semibold text-orange-300">Payment Breakdown:</p>
                 <div className="space-y-2">
                   <p className="text-sm text-gray-300">
-                    Card value: <span className="font-semibold text-red-400">{safeCardValue.toFixed(2)} coins (burned)</span>
+                    Card reclamation fee: <span className="font-semibold text-cyan-400">{safeCardValue.toFixed(2)} coins</span>
                   </p>
                   <p className="text-xs text-gray-400 ml-4 italic">
-                    This amount is removed from circulation
+                    Collected as operational fund
                   </p>
                   <p className="text-sm text-gray-300">
                     Payment to holder: <span className="font-semibold text-green-400">100.00 coins</span>
