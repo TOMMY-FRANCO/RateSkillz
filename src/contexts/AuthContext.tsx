@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { supabase } from '../lib/supabase';
 import { ensureProfileExists } from '../lib/profileCreation';
 import { reconcileUserBalance } from '../lib/balanceReconciliation';
+import { reconcileCoinPool } from '../lib/coinPoolReconciliation';
 
 export interface Profile {
   id: string;
@@ -188,6 +189,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Reconcile balance on app load to fix any discrepancies
             reconcileUserBalance(session.user.id).catch(error => {
               console.error('[Session] Balance reconciliation failed:', error);
+            });
+
+            // Reconcile coin pool on app load to fix any pool discrepancies
+            reconcileCoinPool().catch(error => {
+              console.error('[Session] Pool reconciliation failed:', error);
             });
           } else {
             console.warn('[Session] Could not load profile after retries');
