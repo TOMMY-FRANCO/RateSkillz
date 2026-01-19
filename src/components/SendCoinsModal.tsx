@@ -46,18 +46,33 @@ export default function SendCoinsModal({
 
   const loadLimitsAndBalance = async () => {
     setLoading(true);
+    console.log('[SendCoinsModal] Loading balance and limits...');
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.error('[SendCoinsModal] No user found');
+        return;
+      }
+
+      console.log('[SendCoinsModal] Fetching data for user:', user.id);
 
       const [balanceResult, sendLimitResult, receiveLimitResult] = await Promise.all([
-        supabase.from('coins').select('balance').eq('user_id', user.id).maybeSingle(),
+        supabase.from('profiles').select('coin_balance').eq('id', user.id).maybeSingle(),
         supabase.rpc('get_remaining_send_limit', { p_user_id: user.id }),
         supabase.rpc('get_remaining_receive_limit', { p_user_id: recipientId }),
       ]);
 
+      console.log('[SendCoinsModal] Balance result:', balanceResult);
+      console.log('[SendCoinsModal] Send limit result:', sendLimitResult);
+      console.log('[SendCoinsModal] Receive limit result:', receiveLimitResult);
+
       if (balanceResult.data) {
-        setSenderBalance(Number(balanceResult.data.balance));
+        const balance = Number(balanceResult.data.coin_balance) || 0;
+        setSenderBalance(balance);
+        console.log('[SendCoinsModal] Sender balance set to:', balance);
+      } else {
+        console.warn('[SendCoinsModal] No balance data found, setting to 0');
+        setSenderBalance(0);
       }
 
       if (sendLimitResult.data !== null) {
@@ -68,7 +83,7 @@ export default function SendCoinsModal({
         setRemainingReceiveLimit(Number(receiveLimitResult.data));
       }
     } catch (err) {
-      console.error('Error loading limits:', err);
+      console.error('[SendCoinsModal] Error loading limits:', err);
       setError('Failed to load transfer limits');
     } finally {
       setLoading(false);
@@ -78,6 +93,7 @@ export default function SendCoinsModal({
   const handleSendCoins = async () => {
     setProcessing(true);
     setError(null);
+    console.log('[SendCoinsModal] Starting coin transfer...');
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -86,6 +102,26 @@ export default function SendCoinsModal({
         return;
       }
 
+      // Fetch fresh balance before transfer
+      console.log('[SendCoinsModal] Fetching fresh balance before transfer...');
+      const { data: balanceData } = await supabase
+        .from('profiles')
+        .select('coin_balance')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (balanceData) {
+        const currentBalance = Number(balanceData.coin_balance) || 0;
+        console.log('[SendCoinsModal] Fresh balance:', currentBalance);
+
+        if (currentBalance < selectedAmount) {
+          setError(`You have ${currentBalance.toFixed(1)} coins, need ${selectedAmount} coins`);
+          setProcessing(false);
+          return;
+        }
+      }
+
+      console.log('[SendCoinsModal] Processing transfer via RPC...');
       const { data, error: transferError } = await supabase.rpc('process_coin_transfer', {
         p_sender_id: user.id,
         p_recipient_id: recipientId,
@@ -93,19 +129,27 @@ export default function SendCoinsModal({
         p_conversation_id: conversationId,
       });
 
+      console.log('[SendCoinsModal] Transfer result:', data);
+
       if (transferError) {
+        console.error('[SendCoinsModal] Transfer error:', transferError);
         setError(transferError.message);
         return;
       }
 
       if (data && !data.success) {
+        console.error('[SendCoinsModal] Transfer failed:', data.error);
         setError(data.error || 'Transfer failed');
         return;
       }
 
+      console.log('[SendCoinsModal] Transfer successful!');
       setSuccess(true);
       setRemainingSendLimit(Number(data.remaining_send_limit));
       setRemainingReceiveLimit(Number(data.remaining_receive_limit));
+
+      // Refresh balance immediately after successful transfer
+      await loadLimitsAndBalance();
 
       onTransferComplete(selectedAmount);
 
@@ -113,7 +157,7 @@ export default function SendCoinsModal({
         onClose();
       }, 2000);
     } catch (err) {
-      console.error('Error sending coins:', err);
+      console.error('[SendCoinsModal] Error sending coins:', err);
       setError('An unexpected error occurred');
     } finally {
       setProcessing(false);
@@ -227,7 +271,9 @@ export default function SendCoinsModal({
             {!canAfford && (
               <div className="bg-yellow-500/10 border border-yellow-500/50 rounded-lg p-3 mb-4 flex items-start gap-2">
                 <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-                <p className="text-yellow-300 text-sm">Insufficient balance</p>
+                <p className="text-yellow-300 text-sm">
+                  You have {senderBalance.toFixed(1)} coins, need {selectedAmount} coins
+                </p>
               </div>
             )}
 
