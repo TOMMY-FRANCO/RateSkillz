@@ -153,8 +153,8 @@ export default function WatchAd() {
             </button>
 
             <div className="mt-6 space-y-2">
-              <p className="text-white/40 text-sm">Limit: One ad per 24 hours</p>
-              <p className="text-white/30 text-xs">Also resets daily at midnight GMT (00:00 UK time)</p>
+              <p className="text-white/40 text-sm">Limit: One ad per day</p>
+              <p className="text-white/30 text-xs">Resets daily at 00:00 GMT (midnight UK time)</p>
             </div>
           </div>
         )}

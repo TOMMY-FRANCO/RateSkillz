@@ -47,9 +47,21 @@ export async function awardCommentCoins(profileUserId: string, commentId: string
   return await response.json();
 }
 
-export async function canWatchAdToday(): Promise<{ can_watch: boolean; message: string; next_available_gmt?: string }> {
-  const { data, error } = await supabase.rpc('can_watch_ad_today', {
-    p_user_id: (await supabase.auth.getUser()).data.user?.id
+export async function canWatchAdToday(): Promise<{
+  can_watch: boolean;
+  message: string;
+  next_available_gmt?: string;
+  hours_remaining?: number;
+  minutes_remaining?: number;
+}> {
+  const userId = (await supabase.auth.getUser()).data.user?.id;
+
+  if (!userId) {
+    return { can_watch: false, message: 'Not authenticated' };
+  }
+
+  const { data, error } = await supabase.rpc('get_ad_status', {
+    p_user_id: userId
   });
 
   if (error) {
@@ -57,7 +69,24 @@ export async function canWatchAdToday(): Promise<{ can_watch: boolean; message: 
     return { can_watch: false, message: 'Error checking availability' };
   }
 
-  return data;
+  // data is an array with one row
+  const status = data?.[0];
+
+  if (!status) {
+    return { can_watch: false, message: 'Error checking availability' };
+  }
+
+  const hoursUntilNext = status.hours_until_next || 0;
+  const minutesRemaining = Math.floor((hoursUntilNext % 1) * 60);
+  const hoursRemaining = Math.floor(hoursUntilNext);
+
+  return {
+    can_watch: status.can_watch,
+    message: status.message,
+    next_available_gmt: status.next_available,
+    hours_remaining: hoursRemaining,
+    minutes_remaining: minutesRemaining,
+  };
 }
 
 export async function awardAdCoins(): Promise<{ earned: boolean; amount: number; message?: string; error?: string }> {
