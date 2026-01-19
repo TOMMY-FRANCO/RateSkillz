@@ -26,6 +26,7 @@ import SearchFriends from './pages/SearchFriends';
 import ViewedMe from './pages/ViewedMe';
 import BalanceRecovery from './pages/BalanceRecovery';
 import AdminCoinPool from './pages/AdminCoinPool';
+import AdminModeration from './pages/AdminModeration';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function LoadingScreen() {
@@ -247,6 +248,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AdminCoinPool />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-hq-london"
+            element={
+              <ProtectedRoute>
+                <AdminModeration />
               </ProtectedRoute>
             }
           />

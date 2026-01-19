@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Upload, User, ArrowLeft, Save, Search } from 'lucide-react';
+import { Upload, User, ArrowLeft, Save, Search, Shield, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import SafetyPopup from '../components/SafetyPopup';
 
 interface EducationOption {
   id: string;
@@ -43,6 +44,11 @@ export default function EditProfile() {
   const [showUniversityDropdown, setShowUniversityDropdown] = useState(false);
 
   const [loadingEducation, setLoadingEducation] = useState(false);
+
+  // Safety features
+  const [age, setAge] = useState(profile?.age || '');
+  const [findableBySchool, setFindableBySchool] = useState(profile?.findable_by_school ?? true);
+  const [showSafetyPopup, setShowSafetyPopup] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -220,6 +226,14 @@ export default function EditProfile() {
     setSaving(true);
     setMessage('');
 
+    // Validate age if provided
+    const ageNum = age ? parseInt(age.toString()) : null;
+    if (ageNum !== null && (ageNum < 11 || ageNum > 150)) {
+      setMessage('Age must be between 11 and 150');
+      setSaving(false);
+      return;
+    }
+
     const { error } = await updateProfile({
       full_name: fullName,
       position,
@@ -228,13 +242,21 @@ export default function EditProfile() {
       secondary_school_id: secondarySchoolId || null,
       college_id: collegeId || null,
       university_id: universityId || null,
+      age: ageNum,
+      findable_by_school: findableBySchool,
     });
 
     if (error) {
       setMessage('Error updating profile: ' + error.message);
     } else {
       setMessage('Profile updated successfully!');
-      setTimeout(() => navigate('/dashboard'), 1500);
+
+      // Show safety popup if age is 11-17 and they haven't seen it
+      if (ageNum && ageNum >= 11 && ageNum < 18 && !profile?.safety_popup_shown) {
+        setShowSafetyPopup(true);
+      } else {
+        setTimeout(() => navigate('/dashboard'), 1500);
+      }
     }
 
     setSaving(false);
@@ -622,6 +644,90 @@ export default function EditProfile() {
               </div>
             </div>
 
+            {/* Safety & Privacy Settings */}
+            <div className="border-t border-gray-700 pt-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-cyan-400" />
+                Safety & Privacy Settings
+              </h3>
+
+              {/* Age Selector */}
+              <div className="mb-6">
+                <label htmlFor="age" className="block text-sm font-medium text-gray-300 mb-2">
+                  Age (11-150)
+                </label>
+                <p className="text-xs text-gray-400 mb-3">
+                  This determines your privacy settings. Users 11-17 have additional safety features enabled by default.
+                </p>
+                <input
+                  id="age"
+                  type="number"
+                  min="11"
+                  max="150"
+                  value={age}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setAge(val);
+                    // Auto-set findable_by_school based on age
+                    const ageNum = parseInt(val);
+                    if (!isNaN(ageNum)) {
+                      if (ageNum < 18) {
+                        setFindableBySchool(false);
+                      } else {
+                        setFindableBySchool(true);
+                      }
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                  placeholder="Enter your age"
+                />
+              </div>
+
+              {/* Findable by School Toggle */}
+              {age && (
+                <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <label htmlFor="findable" className="block text-sm font-medium text-white mb-1">
+                        Allow students at my school to find me
+                      </label>
+                      <p className="text-xs text-gray-400">
+                        {parseInt(age.toString()) < 18
+                          ? 'For your safety, this is OFF by default. Only people you add as friends can see your profile.'
+                          : 'This controls whether you appear in Search results for users at your school.'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFindableBySchool(!findableBySchool)}
+                      className={`ml-4 relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-gray-800 ${
+                        findableBySchool ? 'bg-green-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                          findableBySchool ? 'translate-x-7' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 text-sm">
+                    {findableBySchool ? (
+                      <>
+                        <Eye className="w-4 h-4 text-green-400" />
+                        <span className="text-green-400 font-medium">Visible in school search</span>
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="w-4 h-4 text-gray-400" />
+                        <span className="text-gray-400 font-medium">Hidden from school search</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {message && (
               <div className={`rounded-lg p-3 ${
                 message.includes('Error')
@@ -643,6 +749,17 @@ export default function EditProfile() {
           </form>
         </div>
       </main>
+
+      {/* Safety Popup for 11-17 year olds */}
+      {showSafetyPopup && profile && (
+        <SafetyPopup
+          onAccept={() => {
+            setShowSafetyPopup(false);
+            navigate('/dashboard');
+          }}
+          userId={profile.id}
+        />
+      )}
     </div>
   );
 }

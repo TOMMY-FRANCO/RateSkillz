@@ -267,6 +267,144 @@ export default function TermsOfService() {
             </p>
           </section>
 
+          <section className="bg-blue-500/10 border-2 border-blue-500/50 rounded-xl p-6">
+            <h3 className="text-2xl font-bold text-white mb-4">RatingSkill: Parent & Guardian Guide</h3>
+            <p className="leading-relaxed mb-4">
+              At RatingSkill, we believe young people should focus on what matters: building strategy, competing fairly and having fun. We've designed the platform to be Safe by Design, so you and your child can both feel confident and relaxed while playing.
+            </p>
+
+            <div className="space-y-6">
+              <div>
+                <h4 className="text-lg font-bold text-white mb-3">Privacy: Your Child Stays Protected</h4>
+                <p className="font-semibold text-blue-200 mb-2">Privacy is the Default</p>
+                <ul className="space-y-2 list-disc list-inside ml-4 text-gray-200">
+                  <li>Every player under 18 starts with maximum privacy settings automatically turned on</li>
+                  <li>Your child's full profile is only visible to people they've personally chosen as Friends</li>
+                  <li>No one from other schools can contact them unless they share their nickname and add each other as Friends</li>
+                  <li>They use a nickname instead of their real name—staying anonymous while competing</li>
+                </ul>
+                <p className="font-semibold text-blue-200 mb-2 mt-4">Only Real Friendships Count</p>
+                <ul className="space-y-2 list-disc list-inside ml-4 text-gray-200">
+                  <li>Direct messages only come from people they've invited</li>
+                  <li>No random messages from strangers</li>
+                  <li>You know exactly who they're interacting with</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-bold text-white mb-3">Pure Skill, Pure Fun</h4>
+                <p className="font-semibold text-blue-200 mb-2">No Luck, No Shortcuts</p>
+                <ul className="space-y-2 list-disc list-inside ml-4 text-gray-200">
+                  <li>Unlike many games, there are no random rewards, loot boxes, or "lucky wins"</li>
+                  <li>Success comes from smart thinking and great strategy—that's it</li>
+                  <li>What you see is what you get—no hidden mechanics or surprises</li>
+                </ul>
+                <p className="font-semibold text-blue-200 mb-2 mt-4">Keeping Everyone Playing Nice</p>
+                <ul className="space-y-2 list-disc list-inside ml-4 text-gray-200">
+                  <li>We absolutely don't tolerate trash talk, bullying, or unfair play</li>
+                  <li>Your child can report any bad behaviour with one click</li>
+                  <li>Our UK moderation team reviews every report personally and quickly</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-bold text-white mb-3">Coins: Earned Through Great Gameplay</h4>
+                <p className="font-semibold text-blue-200 mb-2">A Fair Economy</p>
+                <ul className="space-y-2 list-disc list-inside ml-4 text-gray-200">
+                  <li>Coins are earned by playing well and winning matches</li>
+                  <li>The total coin supply is fixed and transparent—no surprises</li>
+                  <li>Coins stay within the game—they can't be traded for real money or cashed out</li>
+                </ul>
+                <p className="font-semibold text-blue-200 mb-2 mt-4">No Pay-to-Win Pressure</p>
+                <ul className="space-y-2 list-disc list-inside ml-4 text-gray-200">
+                  <li>Spending extra money doesn't make them a better manager</li>
+                  <li>Only skill and strategy win games</li>
+                </ul>
+                <p className="font-semibold text-blue-200 mb-2 mt-4">Spending Peace of Mind</p>
+                <ul className="space-y-2 list-disc list-inside ml-4 text-gray-200">
+                  <li>We recommend setting device-level spending limits or using Stripe's parental controls</li>
+                  <li>If your child wants to buy coins, they should ask you first</li>
+                  <li>One quick conversation keeps the phone bill surprise-free</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-bold text-white mb-3">Fun Competition, Healthy Balance</h4>
+                <p className="font-semibold text-blue-200 mb-2">School Pride Without Pressure</p>
+                <ul className="space-y-2 list-disc list-inside ml-4 text-gray-200">
+                  <li>School leaderboards bring friends together and build community spirit</li>
+                  <li>The game is designed as a fun mental workout, not an endless grind</li>
+                  <li>We encourage regular breaks and time away from screens</li>
+                </ul>
+                <p className="font-semibold text-blue-200 mb-2 mt-4">You're Part of the Safety Team</p>
+                <ul className="space-y-2 list-disc list-inside ml-4 text-gray-200">
+                  <li>Ask your child about their strategy—what tactics did they use? What would they do differently next time?</li>
+                  <li>Check their Friends list sometimes—make sure they're only adding people they genuinely know from school</li>
+                  <li>If something feels off, use the Report button (we review every single one, even the quiet concerns)</li>
+                  <li>As the creator, I personally check all high-priority safety reports</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-bold text-white mb-3">How We Look After Their Information</h4>
+                <p className="font-semibold text-blue-200 mb-2">What We Ask For (Only What We Need):</p>
+                <ul className="space-y-2 list-disc list-inside ml-4 text-gray-200">
+                  <li>Email address (to keep their account secure and save progress)</li>
+                  <li>A nickname (so they stay anonymous)</li>
+                  <li>School name (only if they choose the School Leaderboard)</li>
+                  <li>Game stats (wins, losses, skill ratings)</li>
+                </ul>
+                <p className="font-semibold text-blue-200 mb-2 mt-4">How We Use It:</p>
+                <ul className="space-y-2 list-disc list-inside ml-4 text-gray-200">
+                  <li>Fair and accurate ranking on leaderboards</li>
+                  <li>Keeping the coin ledger honest and transparent</li>
+                  <li>Sending safety alerts if someone reports a problem</li>
+                </ul>
+                <p className="font-semibold text-blue-200 mb-2 mt-4">What We Absolutely Don't Do:</p>
+                <ul className="space-y-2 list-disc list-inside ml-4 text-gray-200">
+                  <li>Track their location with GPS</li>
+                  <li>Follow them across other apps or websites</li>
+                  <li>Sell their data to advertisers or companies</li>
+                  <li>Share information unless UK law requires it for safety</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-bold text-white mb-3">Your Child is in Control</h4>
+                <p className="font-semibold text-blue-200 mb-2">Complete Privacy Rights:</p>
+                <ul className="space-y-2 list-disc list-inside ml-4 text-gray-200">
+                  <li>Delete Anytime: One tap in Settings completely deletes their account and all data forever</li>
+                  <li>No Hidden Tracking: We don't know where they go, what apps they use, or anything outside RatingSkill</li>
+                  <li>No Selling Data: We don't make money from their information</li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-bold text-white mb-3">We're Here If You Need Us</h4>
+                <p className="font-semibold text-blue-200 mb-2">Something Feels Wrong?</p>
+                <ul className="space-y-2 list-disc list-inside ml-4 text-gray-200">
+                  <li>Use the Report button (available to both your child and you)</li>
+                  <li>Reports can be anonymous if preferred</li>
+                  <li>Every single report gets reviewed carefully and quickly</li>
+                </ul>
+                <p className="font-semibold text-blue-200 mb-2 mt-4">Questions About Safety or Privacy?</p>
+                <ul className="space-y-2 list-disc list-inside ml-4 text-gray-200">
+                  <li>Reach out anytime—we're genuinely here to help</li>
+                  <li>No question is too small</li>
+                </ul>
+              </div>
+
+              <div className="border-t border-blue-500/30 pt-4 mt-4">
+                <p className="text-center text-gray-200 leading-relaxed">
+                  <strong>Last Updated: January 2026</strong>
+                </p>
+                <p className="text-center text-gray-300 leading-relaxed mt-2">
+                  RatingSkill helps young people learn strategy, compete fairly, build friendships and most importantly—have fun knowing they're safe. That's what we're here for.
+                </p>
+              </div>
+            </div>
+          </section>
+
           <section>
             <h3 className="text-xl font-bold text-white mb-3">20. Entire Agreement</h3>
             <p className="leading-relaxed">

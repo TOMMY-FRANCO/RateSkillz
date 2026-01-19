@@ -8,7 +8,8 @@ import SocialLinks from '../components/SocialLinks';
 import EditSocialLinks from '../components/EditSocialLinks';
 import OnlineStatus from '../components/OnlineStatus';
 import CardOwnershipStatus from '../components/CardOwnershipStatus';
-import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2, Coins, Lock, X, Loader2, MessageSquare, MessageCircle } from 'lucide-react';
+import ReportUserModal from '../components/ReportUserModal';
+import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2, Coins, Lock, X, Loader2, MessageSquare, MessageCircle, Flag } from 'lucide-react';
 import { formatCoinBalance, formatCoinBalanceFull } from '../lib/formatBalance';
 import type { Profile } from '../contexts/AuthContext';
 import { awardCommentCoins } from '../lib/coins';
@@ -70,6 +71,7 @@ export default function ProfileView() {
   const [ratingSuccess, setRatingSuccess] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showEditSocialLinks, setShowEditSocialLinks] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [socialLinks, setSocialLinks] = useState<any>(null);
   const [commentVotes, setCommentVotes] = useState<Record<string, { is_upvote: boolean; vote_id: string }>>({});
   const [coinEarned, setCoinEarned] = useState<number | null>(null);
@@ -827,6 +829,16 @@ export default function ProfileView() {
                     </button>
                   </>
                 )}
+
+                {/* Report Button - Always visible for non-owners */}
+                <button
+                  onClick={() => setShowReportModal(true)}
+                  className="px-4 sm:px-6 py-2 bg-gray-800 hover:bg-gray-700 text-red-400 font-semibold rounded-lg border border-red-500/30 hover:border-red-500/50 transition-all flex items-center space-x-2 text-sm sm:text-base"
+                  title="Report user for harassment"
+                >
+                  <Flag className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Report</span>
+                </button>
               </div>
             </div>
           )}
@@ -1097,6 +1109,14 @@ export default function ProfileView() {
         currentLinks={socialLinks}
         onSave={loadProfile}
       />
+
+      {showReportModal && (
+        <ReportUserModal
+          reportedUserId={profile.id}
+          reportedUsername={profile.username}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
     </div>
   );
 }

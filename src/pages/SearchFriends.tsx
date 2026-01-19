@@ -166,16 +166,23 @@ export default function SearchFriends() {
         query = query.eq('is_manager', true);
       }
 
+      // Education filters - Only show users who have opted into school searchability
       if (filters.secondarySchoolId) {
-        query = query.eq('secondary_school_id', filters.secondarySchoolId);
+        query = query
+          .eq('secondary_school_id', filters.secondarySchoolId)
+          .eq('findable_by_school', true);
       }
 
       if (filters.collegeId) {
-        query = query.eq('college_id', filters.collegeId);
+        query = query
+          .eq('college_id', filters.collegeId)
+          .eq('findable_by_school', true);
       }
 
       if (filters.universityId) {
-        query = query.eq('university_id', filters.universityId);
+        query = query
+          .eq('university_id', filters.universityId)
+          .eq('findable_by_school', true);
       }
 
       if (filters.onlineStatus === 'recent') {
