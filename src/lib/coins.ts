@@ -55,8 +55,10 @@ export async function canWatchAdToday(): Promise<{
   minutes_remaining?: number;
 }> {
   const userId = (await supabase.auth.getUser()).data.user?.id;
+  console.log('[canWatchAdToday] Checking for user:', userId);
 
   if (!userId) {
+    console.error('[canWatchAdToday] No user ID found');
     return { can_watch: false, message: 'Not authenticated' };
   }
 
@@ -65,20 +67,29 @@ export async function canWatchAdToday(): Promise<{
   });
 
   if (error) {
-    console.error('Error checking ad availability:', error);
+    console.error('[canWatchAdToday] RPC error:', error);
     return { can_watch: false, message: 'Error checking availability' };
   }
+
+  console.log('[canWatchAdToday] RPC response:', data);
 
   // data is an array with one row
   const status = data?.[0];
 
   if (!status) {
+    console.error('[canWatchAdToday] No status data returned');
     return { can_watch: false, message: 'Error checking availability' };
   }
 
   const hoursUntilNext = status.hours_until_next || 0;
   const minutesRemaining = Math.floor((hoursUntilNext % 1) * 60);
   const hoursRemaining = Math.floor(hoursUntilNext);
+
+  console.log('[canWatchAdToday] Parsed status:', {
+    can_watch: status.can_watch,
+    hours_remaining: hoursRemaining,
+    minutes_remaining: minutesRemaining
+  });
 
   return {
     can_watch: status.can_watch,
@@ -90,18 +101,26 @@ export async function canWatchAdToday(): Promise<{
 }
 
 export async function awardAdCoins(): Promise<{ earned: boolean; amount: number; message?: string; error?: string }> {
+  console.log('[awardAdCoins] Calling edge function...');
   const headers = await getAuthHeaders();
+  console.log('[awardAdCoins] Headers prepared, making request to:', `${COIN_OPERATIONS_URL}/award-ad`);
+
   const response = await fetch(`${COIN_OPERATIONS_URL}/award-ad`, {
     method: 'POST',
     headers,
   });
 
+  console.log('[awardAdCoins] Response status:', response.status);
+
   if (!response.ok) {
     const error = await response.json();
+    console.error('[awardAdCoins] Error response:', error);
     throw new Error(error.error || 'Failed to award coins');
   }
 
-  return await response.json();
+  const result = await response.json();
+  console.log('[awardAdCoins] Success response:', result);
+  return result;
 }
 
 export async function getTransactions(page: number = 1, limit: number = 20): Promise<{

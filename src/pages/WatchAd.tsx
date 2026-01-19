@@ -42,8 +42,10 @@ export default function WatchAd() {
 
   async function checkAdAvailability() {
     setCheckingAvailability(true);
+    console.log('[WatchAd] Checking ad availability...');
     try {
       const result = await canWatchAdToday();
+      console.log('[WatchAd] Ad availability result:', result);
       setCanWatch(result.can_watch);
       if (!result.can_watch) {
         const hours = result.hours_remaining || 0;
@@ -52,13 +54,15 @@ export default function WatchAd() {
         setMinutesRemaining(minutes);
         setError(result.message || `Next ad available in ${hours} hours ${minutes} minutes`);
         setNextAvailable(result.next_available_gmt || null);
+        console.log('[WatchAd] User NOT eligible - hours remaining:', hours, 'minutes:', minutes);
       } else {
         setError(null);
         setHoursRemaining(0);
         setMinutesRemaining(0);
+        console.log('[WatchAd] User IS eligible to watch ad');
       }
     } catch (error) {
-      console.error('Failed to check ad availability:', error);
+      console.error('[WatchAd] Failed to check ad availability:', error);
       setCanWatch(true);
     } finally {
       setCheckingAvailability(false);
@@ -81,19 +85,24 @@ export default function WatchAd() {
   async function handleAdComplete() {
     setWatching(false);
     setEarning(true);
+    console.log('[WatchAd] Ad complete, awarding coins...');
 
     try {
       const result = await awardAdCoins();
+      console.log('[WatchAd] Award result:', result);
       if (result.earned) {
+        console.log('[WatchAd] Successfully earned coins! New balance coming...');
         setCompleted(true);
         setCanWatch(false);
         await loadBalance();
       } else {
-        setError(result.message || 'Already watched advert recently. Please wait 24 hours between ad views.');
+        console.error('[WatchAd] Failed to earn coins:', result.message || result.error);
+        setError(result.message || result.error || 'Already watched advert recently. Please wait 24 hours between ad views.');
         setCanWatch(false);
         await checkAdAvailability();
       }
     } catch (err: any) {
+      console.error('[WatchAd] Error awarding coins:', err);
       setError(err.message || 'Failed to award coins. Please try again.');
     } finally {
       setEarning(false);
