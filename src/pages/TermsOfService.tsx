@@ -218,8 +218,8 @@ export default function TermsOfService() {
               <div className="border-t border-blue-500/30 pt-4 mt-4">
                 <p className="leading-relaxed">
                   For questions about how we handle your data, contact us at{' '}
-                  <a href="mailto:tommy.franco.com@gmail.com" className="text-blue-400 hover:text-blue-300 underline">
-                    tommy.franco.com@gmail.com
+                  <a href="mailto:Dev.ratingskill@gmail.com" className="text-blue-400 hover:text-blue-300 underline">
+                    Dev.ratingskill@gmail.com
                   </a>
                 </p>
               </div>
@@ -255,7 +255,7 @@ export default function TermsOfService() {
               If you have questions about these Terms, please contact us at:
             </p>
             <ul className="mt-2 space-y-1">
-              <li><strong>Email:</strong> tommy.franco.com@gmail.com</li>
+              <li><strong>Email:</strong> Dev.ratingskill@gmail.com</li>
               <li><strong>Website:</strong> www.ratingskill.com</li>
             </ul>
           </section>
