@@ -284,7 +284,7 @@ export default function Settings() {
               </button>
             </div>
             <p className="text-gray-400 text-sm">
-              RatingSkill® - Create your personalized RatingSkill® card and get rated by friends.
+              RatingSkill® - Create your personalised RatingSkill® card and get rated by friends.
             </p>
             <p className="text-gray-500 text-xs mt-4">Version 1.0.0</p>
           </div>
