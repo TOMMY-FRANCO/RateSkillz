@@ -62,7 +62,7 @@ export default function TermsOfService() {
           <section>
             <h3 className="text-xl font-bold text-white mb-3">4. User Accounts</h3>
             <ul className="space-y-2 list-disc list-inside">
-              <li>You must be at least 13 years old to use RatingSkill.</li>
+              <li>You must be at least 11 years old to use RatingSkill.</li>
               <li>You are responsible for maintaining the confidentiality of your account credentials.</li>
               <li>You agree to provide accurate and complete information during registration.</li>
               <li>You are responsible for all activities that occur under your account.</li>
