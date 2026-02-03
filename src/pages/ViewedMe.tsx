@@ -81,7 +81,7 @@ export default function ViewedMe() {
       const { count } = await supabase
         .from('profile_views')
         .select('*', { count: 'exact', head: true })
-        .eq('profile_id', user.id);
+        .eq('viewed_user_id', user.id);
 
       setTotalViewers(count || 0);
 
@@ -90,10 +90,10 @@ export default function ViewedMe() {
 
       const { data: viewsData, error: viewsError } = await supabase
         .from('profile_views')
-        .select('viewer_id, viewed_at')
-        .eq('profile_id', user.id)
+        .select('viewer_id, last_viewed_at')
+        .eq('viewed_user_id', user.id)
         .not('viewer_id', 'is', null)
-        .order('viewed_at', { ascending: false })
+        .order('last_viewed_at', { ascending: false })
         .range(from, to);
 
       if (viewsError) throw viewsError;
@@ -101,54 +101,39 @@ export default function ViewedMe() {
       if (viewsData && viewsData.length > 0) {
         const viewerIds = viewsData.map((v) => v.viewer_id);
 
+        // Use profile_summary cache for optimized single-table query
         const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
+          .from('profile_summary')
           .select(`
-            id,
+            user_id,
             username,
             avatar_url,
             overall_rating,
             position,
             team,
-            coin_balance,
             is_manager,
             manager_wins,
-            last_active,
+            last_seen,
             is_verified,
-            has_social_badge
+            pac_rating,
+            sho_rating,
+            pas_rating,
+            dri_rating,
+            def_rating,
+            phy_rating,
+            total_card_value,
+            leaderboard_rank
           `)
-          .in('id', viewerIds);
+          .in('user_id', viewerIds);
 
         if (profilesError) throw profilesError;
 
-        const { data: statsData } = await supabase
-          .from('user_stats')
-          .select('user_id, pac, sho, pas, dri, def, phy')
-          .in('user_id', viewerIds);
-
-        const { data: cardData } = await supabase
-          .from('card_ownership')
-          .select('card_user_id, current_price')
-          .in('card_user_id', viewerIds);
-
-        const { data: leaderboardData } = await supabase
-          .from('leaderboard')
-          .select('profile_id, rank')
-          .in('profile_id', viewerIds);
-
-        const profilesMap = new Map(profilesData?.map((p) => [p.id, p]));
-        const statsMap = new Map(statsData?.map((s) => [s.user_id, s]));
-        const cardMap = new Map(cardData?.map((c) => [c.card_user_id, c.current_price]));
-        const rankMap = new Map(leaderboardData?.map((l) => [l.profile_id, l.rank]));
+        const profilesMap = new Map(profilesData?.map((p) => [p.user_id, p]));
 
         const enrichedViewers = viewsData
           .map((view) => {
             const profile = profilesMap.get(view.viewer_id);
             if (!profile) return null;
-
-            const stats = statsMap.get(view.viewer_id);
-            const cardWorth = cardMap.get(view.viewer_id);
-            const rank = rankMap.get(view.viewer_id);
 
             return {
               viewer_id: view.viewer_id,
@@ -157,21 +142,21 @@ export default function ViewedMe() {
               overall_rating: profile.overall_rating,
               position: profile.position,
               team: profile.team,
-              coin_balance: profile.coin_balance,
+              coin_balance: 0, // Not in cache
               is_manager: profile.is_manager,
               manager_wins: profile.manager_wins,
-              last_active: profile.last_active,
+              last_active: profile.last_seen,
               is_verified: profile.is_verified,
-              has_social_badge: profile.has_social_badge,
-              viewed_at: view.viewed_at,
-              pac: stats?.pac,
-              sho: stats?.sho,
-              pas: stats?.pas,
-              dri: stats?.dri,
-              def: stats?.def,
-              phy: stats?.phy,
-              card_worth: cardWorth,
-              rank: rank,
+              has_social_badge: false, // Not in cache
+              viewed_at: view.last_viewed_at,
+              pac: profile.pac_rating,
+              sho: profile.sho_rating,
+              pas: profile.pas_rating,
+              dri: profile.dri_rating,
+              def: profile.def_rating,
+              phy: profile.phy_rating,
+              card_worth: profile.total_card_value ? parseFloat(profile.total_card_value) : undefined,
+              rank: profile.leaderboard_rank,
             };
           })
           .filter((v): v is ViewerData => v !== null);

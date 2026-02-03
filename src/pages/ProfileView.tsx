@@ -119,27 +119,53 @@ export default function ProfileView() {
 
   const loadProfile = async () => {
     try {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
+      // Use profile_summary cache for optimized query
+      const { data: summaryData, error: summaryError } = await supabase
+        .from('profile_summary')
         .select('*')
         .eq('username', username)
         .maybeSingle();
 
-      if (profileError) throw profileError;
-      if (!profileData) {
+      if (summaryError) throw summaryError;
+      if (!summaryData) {
         navigate('/settings');
         return;
       }
 
-      setProfile(profileData);
+      // Map cache fields to profile format
+      const profileData = {
+        id: summaryData.user_id,
+        username: summaryData.username,
+        full_name: summaryData.full_name,
+        avatar_url: summaryData.avatar_url,
+        bio: summaryData.bio,
+        position: summaryData.position,
+        team: summaryData.team,
+        age: summaryData.age,
+        overall_rating: summaryData.overall_rating,
+        is_verified: summaryData.is_verified,
+        is_manager: summaryData.is_manager,
+        is_admin: summaryData.is_admin,
+        is_banned: summaryData.is_banned,
+        friend_count: summaryData.friend_count,
+        profile_views_count: 0, // Not available in cache
+        comments_count: 0, // Not available in cache
+        has_social_badge: false, // Not available in cache
+        coin_balance: 0, // We'll fetch this separately if needed
+        last_active: summaryData.last_seen,
+        created_at: summaryData.created_at,
+        manager_wins: summaryData.manager_wins,
+      };
+
+      setProfile(profileData as any);
       setIsVerified(profileData.is_verified || false);
-      setHasSocialBadge(profileData.has_social_badge || false);
-      setCoinBalance(Number(profileData.coin_balance || 0));
+      setHasSocialBadge(false);
+      setCoinBalance(0);
       setBalanceLoading(false);
       setBalanceError(null);
 
-      setViewsCount(profileData.profile_views_count || 0);
-      setCommentsCount(profileData.comments_count || 0);
+      setViewsCount(0);
+      setCommentsCount(0);
 
       const presence = await getUserPresence(profileData.id);
       if (presence) {
@@ -204,7 +230,15 @@ export default function ProfileView() {
         }
       }
 
-      const stats = await getUserStats(profileData.id);
+      // Use stats from profile_summary cache
+      const stats = {
+        pac: summaryData.pac_rating || 50,
+        sho: summaryData.sho_rating || 50,
+        pas: summaryData.pas_rating || 50,
+        dri: summaryData.dri_rating || 50,
+        def: summaryData.def_rating || 50,
+        phy: summaryData.phy_rating || 50,
+      };
       setUserStats(stats);
 
       if (currentUser && profileData.id !== currentUser.id) {
@@ -262,11 +296,15 @@ export default function ProfileView() {
         }
       }
 
-      const { data: socialLinksData } = await supabase
-        .from('social_links')
-        .select('*')
-        .eq('user_id', profileData.id)
-        .maybeSingle();
+      // Use social links from profile_summary cache
+      const socialLinksData = {
+        user_id: summaryData.user_id,
+        instagram_url: summaryData.instagram_url,
+        twitter_url: summaryData.twitter_url,
+        youtube_url: summaryData.youtube_url,
+        tiktok_url: summaryData.tiktok_url,
+        twitch_url: summaryData.twitch_url,
+      };
 
       setSocialLinks(socialLinksData);
 

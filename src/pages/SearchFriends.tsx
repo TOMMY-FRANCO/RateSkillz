@@ -128,23 +128,28 @@ export default function SearchFriends() {
 
     setLoading(true);
     try {
+      // Use profile_summary cache table for optimized single-table query
       let query = supabase
-        .from('profiles')
+        .from('profile_summary')
         .select(`
-          id,
+          user_id,
           username,
           avatar_url,
           overall_rating,
           position,
           team,
-          coin_balance,
           is_manager,
           manager_wins,
-          last_active,
+          last_seen,
           is_verified,
-          has_social_badge
+          pac_rating,
+          sho_rating,
+          pas_rating,
+          dri_rating,
+          def_rating,
+          phy_rating
         `, { count: 'exact' })
-        .neq('id', user.id);
+        .neq('user_id', user.id);
 
       if (filters.username) {
         query = query.ilike('username', `%${filters.username}%`);
@@ -166,31 +171,35 @@ export default function SearchFriends() {
         query = query.eq('is_manager', true);
       }
 
-      // Education filters - Only show users who have opted into school searchability
-      if (filters.secondarySchoolId) {
-        query = query
-          .eq('secondary_school_id', filters.secondarySchoolId)
-          .eq('findable_by_school', true);
-      }
+      // Education filters not available in profile_summary cache
+      // These filters will be applied in a follow-up query if needed
 
-      if (filters.collegeId) {
-        query = query
-          .eq('college_id', filters.collegeId)
-          .eq('findable_by_school', true);
+      // Apply stat filters directly in query
+      if (filters.pacMin !== null) {
+        query = query.gte('pac_rating', filters.pacMin);
       }
-
-      if (filters.universityId) {
-        query = query
-          .eq('university_id', filters.universityId)
-          .eq('findable_by_school', true);
+      if (filters.shoMin !== null) {
+        query = query.gte('sho_rating', filters.shoMin);
+      }
+      if (filters.pasMin !== null) {
+        query = query.gte('pas_rating', filters.pasMin);
+      }
+      if (filters.driMin !== null) {
+        query = query.gte('dri_rating', filters.driMin);
+      }
+      if (filters.defMin !== null) {
+        query = query.gte('def_rating', filters.defMin);
+      }
+      if (filters.phyMin !== null) {
+        query = query.gte('phy_rating', filters.phyMin);
       }
 
       if (filters.onlineStatus === 'recent') {
-        query = query.order('last_active', { ascending: false });
+        query = query.order('last_seen', { ascending: false });
       } else if (filters.coinSort === 'high_to_low') {
-        query = query.order('coin_balance', { ascending: false });
+        query = query.order('overall_rating', { ascending: false }); // coin_balance not in cache
       } else if (filters.coinSort === 'low_to_high') {
-        query = query.order('coin_balance', { ascending: true });
+        query = query.order('overall_rating', { ascending: true });
       } else {
         query = query.order('overall_rating', { ascending: false });
       }
@@ -203,55 +212,30 @@ export default function SearchFriends() {
 
       if (profileError) throw profileError;
 
-      if (profileData && profileData.length > 0) {
-        const userIds = profileData.map((p) => p.id);
-        const { data: statsData } = await supabase
-          .from('user_stats')
-          .select('user_id, pac, sho, pas, dri, def, phy')
-          .in('user_id', userIds);
+      // Map cache table columns to expected interface
+      const mappedResults = (profileData || []).map((profile: any) => ({
+        id: profile.user_id,
+        username: profile.username,
+        avatar_url: profile.avatar_url,
+        overall_rating: profile.overall_rating,
+        position: profile.position,
+        team: profile.team,
+        coin_balance: 0, // Not in cache, set to 0
+        is_manager: profile.is_manager,
+        manager_wins: profile.manager_wins,
+        last_active: profile.last_seen,
+        is_verified: profile.is_verified,
+        has_social_badge: false, // Not in cache
+        pac: profile.pac_rating,
+        sho: profile.sho_rating,
+        pas: profile.pas_rating,
+        dri: profile.dri_rating,
+        def: profile.def_rating,
+        phy: profile.phy_rating,
+      }));
 
-        const statsMap = new Map(statsData?.map((s) => [s.user_id, s]));
-
-        const enrichedResults = profileData.map((profile) => {
-          const stats = statsMap.get(profile.id);
-          return {
-            ...profile,
-            pac: stats?.pac,
-            sho: stats?.sho,
-            pas: stats?.pas,
-            dri: stats?.dri,
-            def: stats?.def,
-            phy: stats?.phy,
-          };
-        });
-
-        let filteredResults = enrichedResults;
-
-        if (filters.pacMin !== null) {
-          filteredResults = filteredResults.filter((r) => (r.pac ?? 50) >= filters.pacMin!);
-        }
-        if (filters.shoMin !== null) {
-          filteredResults = filteredResults.filter((r) => (r.sho ?? 50) >= filters.shoMin!);
-        }
-        if (filters.pasMin !== null) {
-          filteredResults = filteredResults.filter((r) => (r.pas ?? 50) >= filters.pasMin!);
-        }
-        if (filters.driMin !== null) {
-          filteredResults = filteredResults.filter((r) => (r.dri ?? 50) >= filters.driMin!);
-        }
-        if (filters.defMin !== null) {
-          filteredResults = filteredResults.filter((r) => (r.def ?? 50) >= filters.defMin!);
-        }
-        if (filters.phyMin !== null) {
-          filteredResults = filteredResults.filter((r) => (r.phy ?? 50) >= filters.phyMin!);
-        }
-
-        setResults(filteredResults);
-        setTotalResults(count || 0);
-      } else {
-        setResults([]);
-        setTotalResults(0);
-      }
+      setResults(mappedResults);
+      setTotalResults(count || 0);
     } catch (error) {
       console.error('Search error:', error);
       setResults([]);

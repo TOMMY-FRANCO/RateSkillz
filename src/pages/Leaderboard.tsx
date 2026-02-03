@@ -42,14 +42,28 @@ export default function Leaderboard() {
 
   const fetchLeaderboard = async () => {
     try {
+      // Use leaderboard_cache for optimized query
       const { data, error } = await supabase
-        .from('leaderboard')
+        .from('leaderboard_cache')
         .select('*')
         .order('rank', { ascending: true });
 
       if (error) throw error;
 
-      setEntries(data || []);
+      // Map cache fields to expected interface
+      const mappedEntries = (data || []).map((entry: any) => ({
+        rank: entry.rank,
+        profile_id: entry.user_id,
+        overall_rating: entry.overall_rating,
+        previous_rank: null, // Not available in cache
+        username: entry.username,
+        full_name: entry.username, // Use username as full_name fallback
+        avatar_url: entry.avatar_url,
+        position: entry.position,
+        team: entry.team,
+      }));
+
+      setEntries(mappedEntries);
 
       if (data && data.length > 0) {
         const userIds = data.map(entry => entry.profile_id);
