@@ -122,6 +122,7 @@ export async function createCompleteProfile(
       .insert({
         card_user_id: userId,
         owner_id: userId,
+        original_owner_id: userId,
         current_price: 20.00,
         base_price: 20.00,
         is_listed_for_sale: false,

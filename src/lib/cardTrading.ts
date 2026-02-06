@@ -114,9 +114,9 @@ export async function getCardsOwnedByUser(userId: string): Promise<CardOwnership
     last_sale_price: row.last_sale_price || null,
     acquired_at: row.acquired_at,
     card_user: {
-      username: row.original_owner_username || '',
-      full_name: row.original_owner_username || '',
-      avatar_url: row.owner_avatar || '',
+      username: row.card_user_username || row.original_owner_username || '',
+      full_name: row.card_user_username || row.original_owner_username || '',
+      avatar_url: row.card_user_avatar || row.owner_avatar || '',
     },
   }));
 }
@@ -193,9 +193,9 @@ function mapCacheToCardOwnership(row: any): CardOwnership {
     last_sale_price: row.last_sale_price || null,
     acquired_at: row.acquired_at,
     card_user: {
-      username: row.original_owner_username || '',
-      full_name: row.original_owner_username || '',
-      avatar_url: row.owner_avatar || '',
+      username: row.card_user_username || row.original_owner_username || '',
+      full_name: row.card_user_username || row.original_owner_username || '',
+      avatar_url: row.card_user_avatar || row.owner_avatar || '',
     },
     owner: {
       username: row.owner_username || '',
