@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, UserCheck, UserX, Clock, Eye, Bell, CheckCircle, XCircle, AlertCircle, Coins, Send, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, UserCheck, UserX, Clock, Eye, Bell, CheckCircle, XCircle, AlertCircle, Coins, Send, Loader2, RefreshCw, MessageCircle } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
 import { displayUsername } from '../lib/username';
 import { getMultipleUserBalances } from '../lib/balances';
@@ -229,6 +229,32 @@ export default function Friends() {
     } catch (error: any) {
       console.error('Error removing friend:', error);
       showNotification('error', 'Failed to remove friend. Please try again.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleMessageFriend = async (friend: FriendRequest) => {
+    if (!currentUser) return;
+    setActionLoading(friend.id);
+    try {
+      const conversationId = await getOrCreateConversation(currentUser.id, friend.profile.id);
+      if (conversationId) {
+        navigate(`/inbox/${conversationId}`, {
+          state: {
+            otherUser: {
+              id: friend.profile.id,
+              username: friend.profile.username,
+              full_name: friend.profile.full_name,
+              avatar_url: friend.profile.avatar_url,
+            },
+          },
+        });
+      } else {
+        showNotification('error', 'Could not open conversation. Please try again.');
+      }
+    } catch {
+      showNotification('error', 'Could not open conversation. Please try again.');
     } finally {
       setActionLoading(null);
     }
@@ -533,7 +559,15 @@ export default function Friends() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex space-x-3">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => handleMessageFriend(friend)}
+                          disabled={actionLoading === friend.id}
+                          className="px-4 py-2 bg-cyan-500/10 text-cyan-400 font-semibold rounded-lg hover:bg-cyan-500/20 transition-all flex items-center space-x-2 border border-cyan-500/30"
+                        >
+                          {actionLoading === friend.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
+                          <span>Message</span>
+                        </button>
                         <button
                           onClick={() => {
                             setSendCoinsRecipient({
@@ -551,7 +585,7 @@ export default function Friends() {
                         </button>
                         <button
                           onClick={() => navigate(`/profile/${friend.profile.username}`)}
-                          className="px-6 py-2 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all flex items-center space-x-2"
+                          className="px-4 py-2 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all flex items-center space-x-2"
                         >
                           <Eye className="w-4 h-4" />
                           <span>View Profile</span>
@@ -559,7 +593,7 @@ export default function Friends() {
                         <button
                           onClick={() => handleRemoveFriend(friend.id)}
                           disabled={actionLoading === friend.id}
-                          className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center space-x-2"
+                          className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center space-x-2"
                         >
                           {actionLoading === friend.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
                           <span>Remove</span>

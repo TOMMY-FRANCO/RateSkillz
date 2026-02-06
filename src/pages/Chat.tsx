@@ -34,13 +34,13 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const otherUser = location.state?.otherUser as {
+  const [otherUser, setOtherUser] = useState<{
     id: string;
     username: string;
     full_name: string | null;
     avatar_url: string | null;
     is_verified?: boolean;
-  };
+  } | null>(location.state?.otherUser || null);
 
   const [showSendCoinsModal, setShowSendCoinsModal] = useState(false);
   const [canSendCoins, setCanSendCoins] = useState(false);
@@ -52,8 +52,36 @@ export default function Chat() {
   useEffect(() => {
     if (!user || !conversationId) return;
 
-    const loadMessages = async () => {
+    const loadConversationData = async () => {
       setLoading(true);
+
+      if (!otherUser) {
+        const { data: conv } = await supabase
+          .from('conversations')
+          .select('user_one_id, user_two_id')
+          .eq('id', conversationId)
+          .maybeSingle();
+
+        if (!conv) {
+          navigate('/inbox');
+          return;
+        }
+
+        const otherUserId = conv.user_one_id === user.id ? conv.user_two_id : conv.user_one_id;
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url, is_verified')
+          .eq('id', otherUserId)
+          .maybeSingle();
+
+        if (!profile) {
+          navigate('/inbox');
+          return;
+        }
+
+        setOtherUser(profile);
+      }
+
       const msgs = await getConversationMessages(conversationId);
       setMessages(msgs);
       setLoading(false);
@@ -61,7 +89,7 @@ export default function Chat() {
       await markMessagesAsRead(conversationId, user.id);
     };
 
-    loadMessages();
+    loadConversationData();
   }, [conversationId, user]);
 
   useEffect(() => {
@@ -197,7 +225,7 @@ export default function Chat() {
     }
   };
 
-  if (loading || !otherUser) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex flex-col">
         <div className="bg-black/20 backdrop-blur-sm border-b border-white/10">
