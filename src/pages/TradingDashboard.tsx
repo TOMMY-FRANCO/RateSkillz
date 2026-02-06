@@ -53,7 +53,7 @@ export default function TradingDashboard() {
       loadData();
       markNotificationsReadBatch(profile.id, ['swap_offer', 'purchase_offer', 'card_sold']);
     }
-  }, [profile]);
+  }, [profile?.id]);
 
   const loadData = useCallback(async (isRefresh = false) => {
     if (!profile) return;

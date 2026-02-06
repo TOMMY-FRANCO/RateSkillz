@@ -76,8 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }, {
           onConflict: 'user_id'
         });
-
-      setProfile({ ...profile, last_active: now });
     } catch (error) {
       console.error('Error updating activity:', error);
     }
