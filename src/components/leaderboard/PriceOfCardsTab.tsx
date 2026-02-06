@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useTierBadges } from '../../hooks/useTierBadges';
-import { Search, ChevronLeft, ChevronRight, Coins, User, Trophy, Loader2 } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Coins, User, Trophy } from 'lucide-react';
 import { displayUsername } from '../../lib/username';
+import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../ui/Shimmer';
+import { SkeletonAvatar } from '../ui/SkeletonPresets';
 
 interface CardData {
   card_user_id: string;
@@ -179,8 +181,36 @@ export default function PriceOfCardsTab() {
 
   if (loading && cards.length === 0) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+      <div className="space-y-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <StaggerItem key={i} index={i}>
+            <div className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 border border-gray-700 rounded-xl p-4">
+              <div className="flex items-center gap-4">
+                <ShimmerBar className="w-12 h-8 rounded" speed="slow" />
+                <SkeletonAvatar size="lg" shape="rounded" />
+                <div className="flex-grow space-y-2">
+                  <div className="flex items-center gap-2">
+                    <ShimmerBar className="h-4 w-32 rounded" />
+                    <ShimmerBar className="h-5 w-16 rounded" />
+                  </div>
+                  <ShimmerBar className="h-3 w-48 rounded" speed="slow" />
+                  <ShimmerBar className="h-3 w-36 rounded" speed="slow" />
+                </div>
+                <div className="hidden md:flex items-center gap-6">
+                  <div className="text-center space-y-1">
+                    <ShimmerBar className="h-7 w-10 rounded mx-auto" />
+                    <ShimmerBar className="h-3 w-8 rounded" speed="slow" />
+                  </div>
+                  <div className="text-center space-y-1">
+                    <ShimmerBar className="h-7 w-14 rounded mx-auto" />
+                    <ShimmerBar className="h-3 w-10 rounded" speed="slow" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </StaggerItem>
+        ))}
+        <SlowLoadMessage loading={true} message="Loading card prices..." />
       </div>
     );
   }

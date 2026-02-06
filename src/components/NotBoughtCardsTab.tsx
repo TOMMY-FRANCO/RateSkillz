@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCoinBalance } from '../hooks/useCoinBalance';
 import { getNotBoughtCards, createPurchaseRequest, type CardWithRatings } from '../lib/cardTrading';
 import { Coins, Send, User, Shield, TrendingUp, Trophy, Star } from 'lucide-react';
+import { ShimmerBar, StaggerItem, SlowLoadMessage } from './ui/Shimmer';
+import { SkeletonAvatar } from './ui/SkeletonPresets';
 
 interface NotBoughtCardsTabProps {
   onRequestSent?: () => void;
@@ -82,8 +84,22 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-white">Loading not bought cards...</div>
+      <div className="space-y-3 py-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <StaggerItem key={i} index={i}>
+            <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-4">
+              <div className="flex items-center gap-4">
+                <SkeletonAvatar size="lg" shape="rounded" />
+                <div className="flex-1 space-y-2">
+                  <ShimmerBar className="h-4 w-36 rounded" />
+                  <ShimmerBar className="h-3 w-24 rounded" speed="slow" />
+                </div>
+                <ShimmerBar className="h-9 w-28 rounded-lg" />
+              </div>
+            </div>
+          </StaggerItem>
+        ))}
+        <SlowLoadMessage loading={true} message="Loading cards..." />
       </div>
     );
   }

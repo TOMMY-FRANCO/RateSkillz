@@ -18,6 +18,8 @@ import { saveRating, getMyRatingForUser, getUserStats, type PlayerRating, type U
 import { recordUniqueProfileView } from '../lib/viewTracking';
 import { getOrCreateConversation, checkAreFriends } from '../lib/messaging';
 import { getUserPresence } from '../lib/presence';
+import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
+import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 
 interface Comment {
   id: string;
@@ -648,8 +650,37 @@ export default function ProfileView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Loading profile...</div>
+      <div className="min-h-screen bg-black">
+        <nav className="bg-gray-900 border-b border-gray-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
+            <ShimmerBar className="w-5 h-5 rounded" />
+            <ShimmerBar className="h-5 w-40 rounded" />
+          </div>
+        </nav>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <StaggerItem index={0} className="flex justify-center mb-6">
+            <ShimmerBar className="w-72 h-96 rounded-2xl" />
+          </StaggerItem>
+          <StaggerItem index={1} className="flex justify-center mb-6">
+            <ShimmerBar className="h-10 w-32 rounded-lg" />
+          </StaggerItem>
+          <StaggerItem index={2} className="space-y-4 max-w-2xl mx-auto">
+            <div className="flex items-center gap-3">
+              <SkeletonAvatar size="lg" />
+              <div className="space-y-2 flex-1">
+                <ShimmerBar className="h-5 w-48 rounded" />
+                <ShimmerBar className="h-3 w-32 rounded" speed="slow" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {[0, 1, 2].map((i) => (
+                <ShimmerBar key={i} className="h-20 rounded-xl" speed="slow" />
+              ))}
+            </div>
+            <ShimmerBar className="h-32 rounded-xl" speed="slow" />
+          </StaggerItem>
+          <SlowLoadMessage loading={true} message="Loading profile..." />
+        </main>
       </div>
     );
   }

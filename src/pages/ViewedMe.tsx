@@ -6,6 +6,8 @@ import { Eye, UserPlus, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { sendFriendRequest } from '../lib/friendRequests';
 import { useTierBadges } from '../hooks/useTierBadges';
 import { markNotificationsRead } from '../lib/notifications';
+import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
+import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 
 interface ViewerData {
   viewer_id: string;
@@ -196,8 +198,26 @@ export default function ViewedMe() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-white animate-spin" />
+          <div className="space-y-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <StaggerItem key={i} index={i}>
+                <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/20 rounded-2xl p-6">
+                  <div className="flex items-start gap-4">
+                    <SkeletonAvatar size="lg" />
+                    <div className="flex-1 space-y-3">
+                      <ShimmerBar className="h-5 w-36 rounded" />
+                      <ShimmerBar className="h-3 w-24 rounded" speed="slow" />
+                      <div className="grid grid-cols-3 gap-2">
+                        <ShimmerBar className="h-12 rounded-lg" speed="slow" />
+                        <ShimmerBar className="h-12 rounded-lg" speed="slow" />
+                        <ShimmerBar className="h-12 rounded-lg" speed="slow" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </StaggerItem>
+            ))}
+            <SlowLoadMessage loading={true} message="Loading profile viewers..." />
           </div>
         ) : viewers.length === 0 ? (
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-12 text-center">

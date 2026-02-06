@@ -5,6 +5,7 @@ type ShimmerSpeed = 'fast' | 'slow';
 
 interface SkeletonAvatarProps {
   size?: 'sm' | 'md' | 'lg';
+  shape?: 'circle' | 'rounded';
   className?: string;
 }
 
@@ -14,8 +15,13 @@ const avatarSizes = {
   lg: 'w-12 h-12',
 };
 
-export function SkeletonAvatar({ size = 'md', className = '' }: SkeletonAvatarProps) {
-  return <ShimmerBar className={`${avatarSizes[size]} rounded-full flex-shrink-0 ${className}`} />;
+const avatarShapes = {
+  circle: 'rounded-full',
+  rounded: 'rounded-lg',
+};
+
+export function SkeletonAvatar({ size = 'md', shape = 'circle', className = '' }: SkeletonAvatarProps) {
+  return <ShimmerBar className={`${avatarSizes[size]} ${avatarShapes[shape]} flex-shrink-0 ${className}`} />;
 }
 
 interface SkeletonTextProps {

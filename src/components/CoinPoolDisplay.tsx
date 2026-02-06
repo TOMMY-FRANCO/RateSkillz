@@ -2,6 +2,7 @@ import { TrendingUp, Coins, RefreshCw, AlertCircle, CheckCircle } from 'lucide-r
 import { useCoinPool } from '../hooks/useCoinPool';
 import { GlassCard } from './ui/GlassCard';
 import { useState } from 'react';
+import { ShimmerBar, StaggerItem } from './ui/Shimmer';
 
 export function CoinPoolDisplay() {
   const { stats, loading, syncing, syncPool } = useCoinPool();
@@ -20,9 +21,25 @@ export function CoinPoolDisplay() {
 
   if (loading) {
     return (
-      <GlassCard className="p-6 animate-pulse">
-        <div className="h-6 bg-white/10 rounded w-48 mb-4"></div>
-        <div className="h-4 bg-white/10 rounded w-32"></div>
+      <GlassCard className="p-6">
+        <StaggerItem index={0} className="space-y-4">
+          <div className="flex items-start justify-between">
+            <div className="space-y-2">
+              <ShimmerBar className="h-5 w-44 rounded" />
+              <ShimmerBar className="h-3 w-32 rounded" speed="slow" />
+            </div>
+            <ShimmerBar className="h-7 w-20 rounded-full" speed="slow" />
+          </div>
+          <div className="flex justify-between items-baseline">
+            <ShimmerBar className="h-3 w-20 rounded" speed="slow" />
+            <ShimmerBar className="h-7 w-28 rounded" />
+          </div>
+          <ShimmerBar className="h-3 w-full rounded-full" speed="slow" />
+          <div className="flex justify-between">
+            <ShimmerBar className="h-3 w-24 rounded" speed="slow" />
+            <ShimmerBar className="h-3 w-28 rounded" speed="slow" />
+          </div>
+        </StaggerItem>
       </GlassCard>
     );
   }

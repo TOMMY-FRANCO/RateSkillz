@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Search, ChevronLeft, ChevronRight, Crown, User, Loader2, Trophy, CheckCircle2 } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Crown, User, Trophy, CheckCircle2 } from 'lucide-react';
 import { displayUsername } from '../../lib/username';
 import { VerificationBadge } from '../VerificationBadge';
+import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../ui/Shimmer';
+import { SkeletonAvatar } from '../ui/SkeletonPresets';
 
 interface ManagerData {
   id: string;
@@ -127,8 +129,30 @@ export default function TopManagersTab() {
 
   if (loading && managers.length === 0) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+      <div className="space-y-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <StaggerItem key={i} index={i}>
+            <div className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 border border-gray-700 rounded-xl p-4">
+              <div className="flex items-center gap-4">
+                <ShimmerBar className="w-12 h-8 rounded" speed="slow" />
+                <SkeletonAvatar size="lg" shape="rounded" />
+                <div className="flex-grow space-y-2">
+                  <ShimmerBar className="h-4 w-40 rounded" />
+                  <ShimmerBar className="h-3 w-24 rounded" speed="slow" />
+                </div>
+                <div className="hidden md:flex items-center gap-6">
+                  {[0, 1, 2, 3, 4].map((j) => (
+                    <div key={j} className="text-center space-y-1">
+                      <ShimmerBar className="h-6 w-10 rounded mx-auto" />
+                      <ShimmerBar className="h-3 w-12 rounded" speed="slow" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </StaggerItem>
+        ))}
+        <SlowLoadMessage loading={true} message="Loading managers..." />
       </div>
     );
   }

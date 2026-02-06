@@ -13,6 +13,8 @@ import {
 import { ArrowLeft, Send, User, Check, CheckCheck, Coins } from 'lucide-react';
 import { displayUsername } from '../lib/username';
 import SendCoinsModal from '../components/SendCoinsModal';
+import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
+import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 import { checkCanSendCoins } from '../lib/coinTransfers';
 import { supabase } from '../lib/supabase';
 
@@ -151,11 +153,30 @@ export default function Chat() {
 
   if (loading || !otherUser) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex flex-col">
+        <div className="bg-black/20 backdrop-blur-sm border-b border-white/10">
+          <div className="max-w-4xl mx-auto px-4 py-4">
+            <div className="flex items-center gap-4">
+              <ShimmerBar className="w-10 h-10 rounded-lg" />
+              <SkeletonAvatar size="md" />
+              <div className="space-y-2">
+                <ShimmerBar className="h-4 w-32 rounded" />
+                <ShimmerBar className="h-3 w-20 rounded" speed="slow" />
+              </div>
+            </div>
           </div>
+        </div>
+        <div className="flex-1 max-w-4xl w-full mx-auto px-4 py-6 space-y-4">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <StaggerItem key={i} index={i} className={`flex ${i % 2 === 0 ? 'justify-start' : 'justify-end'}`}>
+              <ShimmerBar
+                className={`h-14 rounded-2xl ${i % 2 === 0 ? 'rounded-bl-none' : 'rounded-br-none'}`}
+                style={{ width: `${140 + (i % 3) * 60}px` }}
+                speed="slow"
+              />
+            </StaggerItem>
+          ))}
+          <SlowLoadMessage loading={true} message="Loading messages..." />
         </div>
       </div>
     );

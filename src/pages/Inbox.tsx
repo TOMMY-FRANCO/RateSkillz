@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Conversation, getUserConversations, formatTimestamp } from '../lib/messaging';
 import { MessageCircle, ArrowLeft, User } from 'lucide-react';
 import { displayUsername } from '../lib/username';
+import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
+import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
 import { markNotificationsRead } from '../lib/notifications';
@@ -62,8 +64,24 @@ export default function Inbox() {
             </button>
             <h1 className="text-3xl font-black text-white">Messages</h1>
           </div>
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <StaggerItem key={i} index={i}>
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-4">
+                  <div className="flex items-center gap-4">
+                    <SkeletonAvatar size="lg" />
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <ShimmerBar className="h-4 w-32 rounded" />
+                        <ShimmerBar className="h-3 w-12 rounded" speed="slow" />
+                      </div>
+                      <ShimmerBar className="h-3 w-48 rounded" speed="slow" />
+                    </div>
+                  </div>
+                </div>
+              </StaggerItem>
+            ))}
+            <SlowLoadMessage loading={true} message="Loading conversations..." />
           </div>
         </div>
       </div>

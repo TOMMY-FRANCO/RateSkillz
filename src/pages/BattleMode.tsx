@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Swords, Trophy, Coins, Clock, ArrowLeft } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { GlassButton } from '../components/ui/GlassButton';
+import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
 import { BattleArena } from '../components/battle/BattleArena';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -99,8 +100,25 @@ export default function BattleMode() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00FF85]"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <StaggerItem index={0}>
+            <ShimmerBar className="h-8 w-48 rounded-lg" />
+          </StaggerItem>
+          <StaggerItem index={1} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ShimmerBar className="h-40 rounded-2xl" />
+            <ShimmerBar className="h-40 rounded-2xl" />
+          </StaggerItem>
+          <StaggerItem index={2}>
+            <ShimmerBar className="h-12 w-full rounded-xl" speed="slow" />
+          </StaggerItem>
+          <StaggerItem index={3} className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <ShimmerBar key={i} className="h-20 rounded-xl" speed="slow" />
+            ))}
+          </StaggerItem>
+          <SlowLoadMessage loading={true} message="Loading battle arena..." />
+        </div>
       </div>
     );
   }

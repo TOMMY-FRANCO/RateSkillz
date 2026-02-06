@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Search, Filter, X, Loader2, UserPlus, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { sendFriendRequest } from '../lib/friendRequests';
+import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
+import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 
 interface SearchFilters {
   username: string;
@@ -681,8 +683,25 @@ export default function SearchFriends() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-white animate-spin" />
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <StaggerItem key={i} index={i}>
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-5">
+                  <div className="flex items-center gap-4">
+                    <SkeletonAvatar size="lg" />
+                    <div className="flex-1 space-y-2">
+                      <ShimmerBar className="h-5 w-36 rounded" />
+                      <ShimmerBar className="h-3 w-24 rounded" speed="slow" />
+                    </div>
+                    <div className="flex gap-2">
+                      <ShimmerBar className="h-9 w-20 rounded-lg" />
+                      <ShimmerBar className="h-9 w-20 rounded-lg" />
+                    </div>
+                  </div>
+                </div>
+              </StaggerItem>
+            ))}
+            <SlowLoadMessage loading={true} message="Searching users..." />
           </div>
         ) : results.length === 0 ? (
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-12 text-center">

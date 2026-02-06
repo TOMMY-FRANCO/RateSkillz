@@ -5,6 +5,8 @@ import { getTransactions } from '../lib/coins';
 import { useCoinBalance } from '../hooks/useCoinBalance';
 import { useAuth } from '../hooks/useAuth';
 import { markNotificationsRead } from '../lib/notifications';
+import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
+import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 
 interface Transaction {
   id: string;
@@ -272,23 +274,26 @@ export default function TransactionHistory() {
 
         {loading ? (
           <div className="space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 animate-pulse">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className="w-12 h-12 bg-white/10 rounded-full"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-5 bg-white/10 rounded w-3/4"></div>
-                      <div className="h-4 bg-white/10 rounded w-1/2"></div>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <StaggerItem key={i} index={i}>
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-4 flex-1">
+                      <SkeletonAvatar size="md" />
+                      <div className="flex-1 space-y-2">
+                        <ShimmerBar className="h-4 w-3/4 rounded" />
+                        <ShimmerBar className="h-3 w-1/2 rounded" speed="slow" />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <ShimmerBar className="h-5 w-20 rounded" />
+                      <ShimmerBar className="h-3 w-16 rounded" speed="slow" />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="h-6 bg-white/10 rounded w-20"></div>
-                    <div className="h-4 bg-white/10 rounded w-16"></div>
-                  </div>
                 </div>
-              </div>
+              </StaggerItem>
             ))}
+            <SlowLoadMessage loading={true} message="Loading transactions..." />
           </div>
         ) : transactions.length === 0 ? (
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-12 border border-white/10 text-center">

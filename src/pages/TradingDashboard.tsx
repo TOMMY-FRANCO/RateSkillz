@@ -20,6 +20,8 @@ import { useCoinBalance } from '../hooks/useCoinBalance';
 import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Bell, Trophy, Check, X, Store, User, Repeat, Trash2, Star, Users } from 'lucide-react';
 import { getMultipleUserBalances } from '../lib/balances';
 import { formatCoinBalance } from '../lib/formatBalance';
+import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
+import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 import CardSwapTab from '../components/CardSwapTab';
 import CardDiscardTab from '../components/CardDiscardTab';
 import NotBoughtCardsTab from '../components/NotBoughtCardsTab';
@@ -164,8 +166,39 @@ export default function TradingDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Loading trading dashboard...</div>
+      <div className="min-h-screen bg-black p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <StaggerItem index={0} className="flex items-center gap-3">
+            <ShimmerBar className="w-8 h-8 rounded" />
+            <ShimmerBar className="h-7 w-56 rounded" />
+          </StaggerItem>
+          <StaggerItem index={1} className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="bg-gray-900/60 border border-gray-800 rounded-xl p-4 space-y-2">
+                <ShimmerBar className="h-3 w-20 rounded" speed="slow" />
+                <ShimmerBar className="h-7 w-24 rounded" />
+              </div>
+            ))}
+          </StaggerItem>
+          <StaggerItem index={2}>
+            <ShimmerBar className="h-10 w-full rounded-xl" speed="slow" />
+          </StaggerItem>
+          <StaggerItem index={3} className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="bg-gray-900/60 border border-gray-800 rounded-xl p-4">
+                <div className="flex items-center gap-4">
+                  <SkeletonAvatar size="lg" shape="rounded" />
+                  <div className="flex-1 space-y-2">
+                    <ShimmerBar className="h-4 w-32 rounded" />
+                    <ShimmerBar className="h-3 w-20 rounded" speed="slow" />
+                  </div>
+                  <ShimmerBar className="h-8 w-20 rounded" />
+                </div>
+              </div>
+            ))}
+          </StaggerItem>
+          <SlowLoadMessage loading={true} message="Loading trading data..." />
+        </div>
       </div>
     );
   }

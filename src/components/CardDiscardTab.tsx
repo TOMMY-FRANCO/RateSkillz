@@ -11,6 +11,8 @@ import {
 import { useCoinBalance } from '../hooks/useCoinBalance';
 import { Trash2, TrendingUp, Clock, AlertCircle, CheckCircle, User, Coins } from 'lucide-react';
 import { formatCoinBalance } from '../lib/formatBalance';
+import { ShimmerBar, StaggerItem, SlowLoadMessage } from './ui/Shimmer';
+import { SkeletonAvatar } from './ui/SkeletonPresets';
 
 export default function CardDiscardTab() {
   const { profile } = useAuth();
@@ -84,8 +86,22 @@ export default function CardDiscardTab() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="space-y-3 py-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <StaggerItem key={i} index={i}>
+            <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-4">
+              <div className="flex items-center gap-4">
+                <SkeletonAvatar size="lg" shape="rounded" />
+                <div className="flex-1 space-y-2">
+                  <ShimmerBar className="h-4 w-32 rounded" />
+                  <ShimmerBar className="h-3 w-20 rounded" speed="slow" />
+                </div>
+                <ShimmerBar className="h-9 w-24 rounded-lg" />
+              </div>
+            </div>
+          </StaggerItem>
+        ))}
+        <SlowLoadMessage loading={true} message="Loading cards..." />
       </div>
     );
   }
