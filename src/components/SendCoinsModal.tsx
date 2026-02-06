@@ -11,6 +11,14 @@ import {
   type TransferErrorCode,
 } from '../lib/coinTransfers';
 
+function ShimmerBar({ className = '', style }: { className?: string; style?: React.CSSProperties }) {
+  return (
+    <div className={`relative overflow-hidden bg-white/[0.06] ${className}`} style={style}>
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent animate-shimmer" />
+    </div>
+  );
+}
+
 interface SendCoinsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -315,9 +323,53 @@ export default function SendCoinsModal({
 
           <div className="p-6">
             {friendsLoading ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-3">
-                <div className="animate-spin rounded-full h-10 w-10 border-2 border-white/20 border-t-amber-400"></div>
-                <p className="text-gray-400 text-sm">Loading friends...</p>
+              <div className="space-y-5 animate-fade-in">
+                <div>
+                  <ShimmerBar className="h-3.5 w-14 rounded mb-2" />
+                  <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-3 space-y-3">
+                    {[28, 24, 20].map((w, i) => (
+                      <div key={i} className="flex items-center gap-3" style={{ animationDelay: `${i * 100}ms` }}>
+                        <ShimmerBar className="w-9 h-9 rounded-full flex-shrink-0" />
+                        <div className="flex-1 space-y-1.5">
+                          <ShimmerBar className={`h-3.5 rounded`} style={{ width: `${w * 4}px` }} />
+                          <ShimmerBar className="h-2.5 w-16 rounded" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <ShimmerBar className="h-3.5 w-14 rounded" />
+                    <ShimmerBar className="h-3.5 w-24 rounded" />
+                  </div>
+                  <div className="flex gap-2 mb-4">
+                    {[0, 1, 2, 3].map((i) => (
+                      <ShimmerBar key={i} className="flex-1 h-10 rounded-lg" />
+                    ))}
+                  </div>
+                  <ShimmerBar className="h-2 rounded-full mx-1" />
+                  <div className="text-center mt-4">
+                    <ShimmerBar className="h-8 w-16 rounded-lg mx-auto" />
+                  </div>
+                </div>
+
+                <div className="bg-white/[0.03] rounded-xl p-4 border border-white/[0.04] space-y-2.5">
+                  {[0, 1].map((i) => (
+                    <div key={i} className="flex justify-between">
+                      <ShimmerBar className="h-3.5 w-28 rounded" />
+                      <ShimmerBar className="h-3.5 w-20 rounded" />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-3 pt-1">
+                  <div className="flex-1 h-12 rounded-xl bg-white/[0.03] border border-white/[0.06]" />
+                  <div className="flex-1 h-12 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
+                    <ShimmerBar className="h-4 w-28 rounded" />
+                  </div>
+                </div>
               </div>
             ) : success ? (
               <div className="text-center py-8">
@@ -518,26 +570,34 @@ export default function SendCoinsModal({
                     <div className="bg-white/5 rounded-xl p-4 mb-5 border border-white/5 space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">You can send today</span>
-                        <span
-                          className={`font-semibold ${
-                            withinSendLimit ? 'text-emerald-400' : 'text-red-400'
-                          }`}
-                        >
-                          {remainingSendLimit} coins left
-                        </span>
+                        {loading ? (
+                          <ShimmerBar className="h-4 w-24 rounded" />
+                        ) : (
+                          <span
+                            className={`font-semibold ${
+                              withinSendLimit ? 'text-emerald-400' : 'text-red-400'
+                            }`}
+                          >
+                            {remainingSendLimit} coins left
+                          </span>
+                        )}
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">
                           {selectedFriend.full_name || displayUsername(selectedFriend.username)} can
                           receive
                         </span>
-                        <span
-                          className={`font-semibold ${
-                            withinReceiveLimit ? 'text-emerald-400' : 'text-red-400'
-                          }`}
-                        >
-                          {remainingReceiveLimit} coins left
-                        </span>
+                        {loading ? (
+                          <ShimmerBar className="h-4 w-24 rounded" />
+                        ) : (
+                          <span
+                            className={`font-semibold ${
+                              withinReceiveLimit ? 'text-emerald-400' : 'text-red-400'
+                            }`}
+                          >
+                            {remainingReceiveLimit} coins left
+                          </span>
+                        )}
                       </div>
                       {selectedAmount > 0 && (
                         <div className="flex justify-between text-sm pt-1 border-t border-white/5">
