@@ -17,6 +17,7 @@ export default function EditProfile() {
   const [position, setPosition] = useState(profile?.position || '');
   const [number, setNumber] = useState(profile?.number || '');
   const [team, setTeam] = useState(profile?.team || '');
+  const [gender, setGender] = useState(profile?.gender || '');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -254,6 +255,7 @@ export default function EditProfile() {
       position,
       number,
       team,
+      gender: gender || null,
       secondary_school_id: secondarySchoolId || null,
       college_id: collegeId || null,
       university_id: universityId || null,
@@ -521,6 +523,29 @@ export default function EditProfile() {
                 <option value="West Ham United">West Ham United</option>
                 <option value="Wolverhampton Wanderers">Wolverhampton Wanderers</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Gender
+              </label>
+              <p className="text-xs text-gray-500 mb-3">Displayed as M or F on the leaderboard only</p>
+              <div className="flex gap-3">
+                {(['male', 'female'] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setGender(opt)}
+                    className={`flex-1 py-3 rounded-lg font-semibold transition-all border-2 ${
+                      gender === opt
+                        ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400'
+                        : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500'
+                    }`}
+                  >
+                    {opt === 'male' ? 'Male' : 'Female'}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="border-t border-gray-700 pt-6">
