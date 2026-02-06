@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { playSound } from '../lib/sounds';
 
+type BadgeSoundType = 'notification' | 'coin-received' | 'friend-request' | 'card-swap' | 'message-received';
+
 interface NotificationBadgeProps {
   count: number;
   className?: string;
-  soundType?: 'notification' | 'coin-received' | 'friend-request';
+  soundType?: BadgeSoundType;
 }
 
 export default function NotificationBadge({ count, className = '', soundType = 'notification' }: NotificationBadgeProps) {

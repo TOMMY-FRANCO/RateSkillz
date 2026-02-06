@@ -12,6 +12,7 @@ import OnlineStatus from '../components/OnlineStatus';
 import SendCoinsModal from '../components/SendCoinsModal';
 import { claimPerFriendMilestoneReward } from '../lib/rewards';
 import { getOrCreateConversation } from '../lib/messaging';
+import { setFriendsBadgeSeenCount } from '../lib/notifications';
 
 interface FriendRequest {
   id: string;
@@ -111,6 +112,7 @@ export default function Friends() {
         setIncomingRequests(incoming);
         setOutgoingRequests(outgoing);
         setFriends(accepted);
+        setFriendsBadgeSeenCount(incoming.length);
 
         const allUserIds = new Set<string>();
         [...incoming, ...outgoing, ...accepted].forEach(req => {

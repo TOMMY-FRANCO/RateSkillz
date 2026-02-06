@@ -178,3 +178,22 @@ export function isAdBadgeDismissed(): boolean {
     return false;
   }
 }
+
+const FRIENDS_BADGE_SEEN_KEY = 'friends_badge_seen_count';
+
+export function setFriendsBadgeSeenCount(count: number): void {
+  try {
+    localStorage.setItem(FRIENDS_BADGE_SEEN_KEY, count.toString());
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+export function getFriendsBadgeSeenCount(): number {
+  try {
+    const val = localStorage.getItem(FRIENDS_BADGE_SEEN_KEY);
+    return val ? parseInt(val, 10) : 0;
+  } catch {
+    return 0;
+  }
+}

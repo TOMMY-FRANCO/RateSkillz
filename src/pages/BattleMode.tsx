@@ -14,6 +14,7 @@ import {
   acceptBattleChallenge,
 } from '../lib/battleMode';
 import { supabase } from '../lib/supabase';
+import { markNotificationsRead } from '../lib/notifications';
 
 export default function BattleMode() {
   const { user } = useAuth();
@@ -30,6 +31,7 @@ export default function BattleMode() {
   useEffect(() => {
     if (user) {
       loadData();
+      markNotificationsRead(user.id, 'battle_request');
     }
   }, [user]);
 

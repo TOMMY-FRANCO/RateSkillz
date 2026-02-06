@@ -15,6 +15,7 @@ import { getUserStats } from '../lib/ratings';
 import { useUnreadMessages } from '../hooks/useUnreadMessages';
 import { useNotifications } from '../hooks/useNotifications';
 import NotificationBadge from '../components/NotificationBadge';
+import { getFriendsBadgeSeenCount } from '../lib/notifications';
 import { SocialSharingReward } from '../components/SocialSharingReward';
 import { FriendMilestoneReward } from '../components/FriendMilestoneReward';
 import { WhatsAppDashboardShare } from '../components/WhatsAppDashboardShare';
@@ -35,7 +36,7 @@ export default function Dashboard() {
   const [showTutorialPrompt, setShowTutorialPrompt] = useState(false);
   const [tutorialCompleted, setTutorialCompleted] = useState(false);
   const { unreadCount: unreadMessagesCount } = useUnreadMessages();
-  const { counts: notificationCounts, getCount } = useNotifications(profile?.id);
+  const { counts: notificationCounts, getCount, loading: notificationsLoading } = useNotifications(profile?.id);
 
   useEffect(() => {
     if (profile) {
@@ -268,7 +269,7 @@ export default function Dashboard() {
             onClick={() => navigate('/inbox')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={getCount(['message', 'coin_received', 'coin_request'])} soundType="coin-received" />
+            <NotificationBadge count={getCount(['message', 'coin_received', 'coin_request'])} soundType="message-received" />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#C44569] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
                 <MessageCircle className="w-5 h-5 text-black" />
@@ -299,7 +300,7 @@ export default function Dashboard() {
             onClick={() => navigate('/trading')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={getCount(['swap_offer', 'purchase_offer', 'card_sold'])} />
+            <NotificationBadge count={getCount(['swap_offer', 'purchase_offer', 'card_sold'])} soundType="card-swap" />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
                 <ShoppingBag className="w-5 h-5 text-black" />
@@ -401,7 +402,7 @@ export default function Dashboard() {
             onClick={() => navigate('/friends')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={pendingRequestsCount} soundType="friend-request" />
+            <NotificationBadge count={Math.max(0, pendingRequestsCount - getFriendsBadgeSeenCount())} soundType="friend-request" />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <Bell className="w-5 h-5 text-black" />
