@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Coins, Tv, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Coins, Tv, CheckCircle, Clock } from 'lucide-react';
 import { awardAdCoins, getCoinBalance, canWatchAdToday } from '../lib/coins';
+import { dismissAdBadge } from '../lib/notifications';
 
 export default function WatchAd() {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export default function WatchAd() {
   const [minutesRemaining, setMinutesRemaining] = useState<number>(0);
 
   useEffect(() => {
+    dismissAdBadge();
     loadBalance();
     checkAdAvailability();
   }, []);

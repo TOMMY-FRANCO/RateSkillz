@@ -64,12 +64,14 @@ export async function getNotificationCounts(
       });
     }
 
-    const { data: adAvailable } = await supabase.rpc('is_ad_available_today', {
-      p_user_id: userId,
-    });
+    if (!isAdBadgeDismissed()) {
+      const { data: adAvailable } = await supabase.rpc('is_ad_available_today', {
+        p_user_id: userId,
+      });
 
-    if (adAvailable) {
-      counts.ad_available = 1;
+      if (adAvailable) {
+        counts.ad_available = 1;
+      }
     }
 
     return counts;
@@ -153,4 +155,26 @@ export function getButtonNotificationCount(
   types: NotificationType[]
 ): number {
   return types.reduce((sum, type) => sum + (counts[type] || 0), 0);
+}
+
+function getAdBadgeDismissKey(): string {
+  const now = new Date();
+  const utcDate = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+  return `ad_badge_dismissed_${utcDate}`;
+}
+
+export function dismissAdBadge(): void {
+  try {
+    localStorage.setItem(getAdBadgeDismissKey(), 'true');
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+export function isAdBadgeDismissed(): boolean {
+  try {
+    return localStorage.getItem(getAdBadgeDismissKey()) === 'true';
+  } catch {
+    return false;
+  }
 }

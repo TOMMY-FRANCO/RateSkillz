@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import {
   getNotificationCounts,
   markNotificationsRead,
+  dismissAdBadge as dismissAdBadgeLib,
   type NotificationCounts,
   type NotificationType,
 } from '../lib/notifications';
@@ -54,6 +55,11 @@ export function useNotifications(userId: string | undefined) {
     [userId, fetchCounts]
   );
 
+  const dismissAdBadge = useCallback(() => {
+    dismissAdBadgeLib();
+    setCounts((prev) => ({ ...prev, ad_available: 0 }));
+  }, []);
+
   const getCount = useCallback(
     (types: NotificationType[]): number => {
       return types.reduce((sum, type) => sum + (counts[type] || 0), 0);
@@ -67,5 +73,6 @@ export function useNotifications(userId: string | undefined) {
     markAsRead,
     getCount,
     refetch: fetchCounts,
+    dismissAdBadge,
   };
 }
