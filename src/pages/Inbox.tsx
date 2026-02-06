@@ -149,8 +149,7 @@ export default function Inbox() {
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <h3 className="font-bold text-white text-lg truncate">
-                          {conversation.other_user?.full_name ||
-                            displayUsername(conversation.other_user?.username || '')}
+                          @{conversation.other_user?.username || 'unknown'}
                         </h3>
                         {conversation.other_user && (
                           <OnlineStatus

@@ -827,7 +827,7 @@ export default function ProfileView() {
                               otherUser: {
                                 id: profile.id,
                                 username: profile.username,
-                                full_name: profile.full_name,
+                                full_name: null,
                                 avatar_url: profile.avatar_url,
                               },
                             },
@@ -1117,7 +1117,7 @@ export default function ProfileView() {
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         username={profile.username}
-        fullName={profile.full_name || profile.username}
+        fullName={`@${profile.username}`}
         overallRating={profile.overall_rating ?? 50}
       />
 

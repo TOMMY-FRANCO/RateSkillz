@@ -14,7 +14,6 @@ export function WhatsAppDashboardShare({ username, profileUrl }: WhatsAppDashboa
   const [claiming, setClaiming] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fullName, setFullName] = useState('');
   const [overallRating, setOverallRating] = useState(0);
   const [newBalance, setNewBalance] = useState<number | null>(null);
 
@@ -29,14 +28,13 @@ export function WhatsAppDashboardShare({ username, profileUrl }: WhatsAppDashboa
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, overall_rating')
+        .select('overall_rating')
         .eq('id', user.id)
         .maybeSingle();
 
       if (error) throw error;
 
       if (data) {
-        setFullName(data.full_name || username);
         setOverallRating(data.overall_rating || 0);
       }
     } catch (err) {
@@ -87,7 +85,7 @@ export function WhatsAppDashboardShare({ username, profileUrl }: WhatsAppDashboa
       setShowSuccess(true);
       setNewBalance(data.new_balance);
 
-      const shareText = `Check out ${fullName}'s Football Player Card! Overall Rating: ${overallRating}. Rate me on RatingSkill!`;
+      const shareText = `Check out @${username}'s Football Player Card! Overall Rating: ${overallRating}. Rate me on RatingSkill!`;
       const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + profileUrl)}`;
 
       window.open(whatsappUrl, '_blank');

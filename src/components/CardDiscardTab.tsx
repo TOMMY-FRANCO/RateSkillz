@@ -194,9 +194,8 @@ export default function CardDiscardTab() {
                     )}
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900">
-                        {card.player_full_name}
+                        @{card.player_username}
                       </h3>
-                      <p className="text-sm text-gray-500">@{card.player_username}</p>
                     </div>
                   </div>
 
@@ -295,9 +294,8 @@ export default function CardDiscardTab() {
                       )}
                       <div className="flex-1">
                         <h4 className="font-semibold text-gray-900">
-                          {item.player_full_name}
+                          @{item.player_username}
                         </h4>
-                        <p className="text-sm text-gray-500">@{item.player_username}</p>
                       </div>
                     </div>
 
@@ -363,8 +361,7 @@ export default function CardDiscardTab() {
                   </div>
                 )}
                 <div>
-                  <p className="font-semibold text-gray-900">{selectedCard.player_full_name}</p>
-                  <p className="text-sm text-gray-600">@{selectedCard.player_username}</p>
+                  <p className="font-semibold text-gray-900">@{selectedCard.player_username}</p>
                 </div>
               </div>
 

@@ -360,7 +360,7 @@ export default function PriceOfCardsTab() {
                   <div className="flex-grow min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-lg font-bold text-white truncate">
-                        {card.player_full_name}
+                        @{card.player_username}
                       </h3>
                       {tier && (
                         <span
@@ -375,7 +375,6 @@ export default function PriceOfCardsTab() {
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-sm text-gray-400">
-                      <span>@{displayUsername(card.player_username)}</span>
                       {card.player_position && (
                         <>
                           <span className="text-gray-600">•</span>

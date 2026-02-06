@@ -48,7 +48,7 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
       return;
     }
 
-    if (!confirm(`Send purchase request for ${card.card_user?.full_name || card.card_user?.username}'s card?\n\nPrice: 20 coins (fixed)\n\nOriginal owner will receive notification to approve or decline.`)) {
+    if (!confirm(`Send purchase request for @${card.card_user?.username || 'unknown'}'s card?\n\nPrice: 20 coins (fixed)\n\nOriginal owner will receive notification to approve or decline.`)) {
       return;
     }
 
@@ -143,9 +143,8 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-white mb-1">
-                      {card.card_user?.full_name || card.card_user?.username}
+                      @{card.card_user?.username || 'unknown'}
                     </h3>
-                    <p className="text-sm text-gray-400">@{card.card_user?.username}</p>
                     <div className="flex items-center gap-2 mt-2">
                       <div className="flex items-center gap-1 text-yellow-500">
                         <Trophy className="w-4 h-4" />

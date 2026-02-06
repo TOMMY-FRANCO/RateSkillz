@@ -218,7 +218,7 @@ export default function Leaderboard() {
                   <div className="flex-grow min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-lg font-bold text-white truncate">
-                        {entry.full_name}
+                        @{entry.username}
                       </h3>
                       {entry.gender && (
                         <span className="px-1.5 py-0.5 bg-gray-700 text-gray-300 text-xs font-bold rounded">
@@ -232,7 +232,6 @@ export default function Leaderboard() {
                       )}
                     </div>
                     <div className="flex items-center gap-3 text-sm text-gray-400">
-                      <span>@{entry.username}</span>
                       {entry.position && (
                         <>
                           <span className="text-gray-600">•</span>

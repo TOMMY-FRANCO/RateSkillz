@@ -85,12 +85,11 @@ export default function BattleHistoryList({ battles, userId, onRefresh, onBattle
                   <>
                     <img
                       src={opponent.profile_picture_url || '/default-avatar.png'}
-                      alt={opponent.full_name}
+                      alt={opponent.username}
                       className="w-12 h-12 rounded-full border-2 border-gray-600"
                     />
                     <div>
-                      <h3 className="text-white font-bold">{opponent.full_name}</h3>
-                      <p className="text-gray-400 text-sm">@{opponent.username}</p>
+                      <h3 className="text-white font-bold">@{opponent.username}</h3>
                     </div>
                   </>
                 )}

@@ -207,7 +207,7 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
           {/* Player Name */}
           <div className="glass-container px-3 py-2 rounded-lg border border-white/20 mb-3">
             <h3 className="text-lg font-black text-white text-center tracking-wide uppercase">
-              {profile.full_name || displayUsername(profile.username)}
+              @{profile.username}
             </h3>
           </div>
 

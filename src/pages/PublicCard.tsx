@@ -86,7 +86,7 @@ export default function PublicCard() {
 
       updateMetaTags({
         title: `${profileData.username}'s Football Player Card - RatingSkill`,
-        description: `Check out ${profileData.full_name || profileData.username}'s Card! Overall Rating: ${profileData.overall_rating || 'Not Rated'}. Rate me on RatingSkill!`,
+        description: `Check out @${profileData.username}'s Card! Overall Rating: ${profileData.overall_rating || 'Not Rated'}. Rate me on RatingSkill!`,
         image: getAbsoluteImageUrl(profileData.profile_picture_url),
         url: getProfileCardUrl(profileData.username),
         type: 'profile',

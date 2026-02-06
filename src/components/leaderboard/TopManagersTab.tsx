@@ -293,7 +293,7 @@ export default function TopManagersTab() {
                   <div className="flex-grow min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-lg font-bold text-white truncate">
-                        {manager.full_name}
+                        @{manager.username}
                       </h3>
                       <span className="px-2 py-0.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-bold rounded">
                         M
@@ -305,7 +305,6 @@ export default function TopManagersTab() {
                       />
                     </div>
                     <div className="flex items-center gap-3 text-sm text-gray-400">
-                      <span>@{displayUsername(manager.username)}</span>
                       {manager.team && (
                         <>
                           <span className="text-gray-600">•</span>

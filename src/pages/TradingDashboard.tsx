@@ -439,9 +439,8 @@ export default function TradingDashboard() {
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                           <h3 className="text-lg font-bold text-white mb-1">
-                            {card.card_user?.full_name || card.card_user?.username}
+                            @{card.card_user?.username || 'unknown'}
                           </h3>
-                          <p className="text-sm text-gray-400">@{card.card_user?.username}</p>
                           {card.card_user_id && userBalances.has(card.card_user_id) && (
                             <div className="flex items-center gap-1 mt-1">
                               <Coins className="w-3 h-3 text-yellow-500/70" />
@@ -562,9 +561,8 @@ export default function TradingDashboard() {
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex-1">
                           <h3 className="text-lg font-bold text-white mb-1">
-                            {card.card_user?.full_name || card.card_user?.username}
+                            @{card.card_user?.username || 'unknown'}
                           </h3>
-                          <p className="text-sm text-gray-400">@{card.card_user?.username}</p>
                         </div>
                         <button
                           onClick={() => navigate(`/profile/${card.card_user?.username}`)}
@@ -658,7 +656,7 @@ export default function TradingDashboard() {
                           </div>
                           <div>
                             <p className="text-white font-semibold">
-                              {request.buyer?.username} wants to buy {request.card_user?.full_name || request.card_user?.username}'s card
+                              @{request.buyer?.username} wants to buy @{request.card_user?.username || 'unknown'}'s card
                             </p>
                             <p className="text-sm text-gray-400">
                               {new Date(request.created_at).toLocaleDateString()} at {new Date(request.created_at).toLocaleTimeString()}
@@ -753,7 +751,7 @@ export default function TradingDashboard() {
                               onClick={() => navigate(`/profile/${card.card_user?.username}`)}
                               className="text-cyan-400 hover:text-cyan-300 font-semibold"
                             >
-                              {card.card_user?.full_name || card.card_user?.username}
+                              @{card.card_user?.username || 'unknown'}
                             </button>
                           </td>
                           <td className="px-6 py-4">
@@ -764,7 +762,7 @@ export default function TradingDashboard() {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-gray-300">
-                            {card.owner?.username}
+                            @{card.owner?.username || 'unknown'}
                           </td>
                           <td className="px-6 py-4">
                             <span className="font-semibold text-cyan-400">{card.current_price.toFixed(2)}</span>
@@ -809,7 +807,7 @@ export default function TradingDashboard() {
                               onClick={() => navigate(`/profile/${card.card_user?.username}`)}
                               className="text-cyan-400 hover:text-cyan-300 font-semibold"
                             >
-                              {card.card_user?.full_name || card.card_user?.username}
+                              @{card.card_user?.username || 'unknown'}
                             </button>
                           </td>
                           <td className="px-6 py-4">
@@ -820,7 +818,7 @@ export default function TradingDashboard() {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-gray-300">
-                            {card.owner?.username}
+                            @{card.owner?.username || 'unknown'}
                           </td>
                           <td className="px-6 py-4">
                             <span className="font-semibold text-green-400">{card.times_traded}</span>

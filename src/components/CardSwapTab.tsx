@@ -277,7 +277,7 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <h3 className="font-bold text-white text-lg">
-                            {listing.card?.profile?.full_name || displayUsername(listing.card?.profile?.username || '')}
+                            @{listing.card?.profile?.username || 'unknown'}
                           </h3>
                           <p className="text-sm text-gray-400">
                             {listing.card?.profile?.position} | OVR {listing.card?.profile?.overall_rating}
@@ -289,7 +289,7 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
                             {formatCoinBalance(listing.card?.current_price || 0)} coins
                           </p>
                           <p className="text-xs text-gray-400 mt-1">
-                            Managed by: {listing.manager?.full_name || displayUsername(listing.manager?.username || '')}
+                            Managed by: @{listing.manager?.username || 'unknown'}
                           </p>
                         </div>
                         <div>
@@ -307,7 +307,7 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
                               <option value="">Propose Swap</option>
                               {managedCards.map((card) => (
                                 <option key={card.id} value={card.card_user_id}>
-                                  {card.profile?.full_name || displayUsername(card.profile?.username || '')} (
+                                  @{card.profile?.username || 'unknown'} (
                                   {formatCoinBalance(card.current_price)})
                                 </option>
                               ))}
@@ -349,7 +349,7 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <h3 className="font-bold text-white text-lg">
-                            {listing.card?.profile?.full_name || displayUsername(listing.card?.profile?.username || '')}
+                            @{listing.card?.profile?.username || 'unknown'}
                           </h3>
                           <p className="text-sm text-gray-400">
                             {listing.card?.profile?.position} | OVR {listing.card?.profile?.overall_rating}
@@ -398,7 +398,7 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="font-bold text-white text-lg">
                           {isReceiver ? 'Swap Request from' : 'Swap Proposed to'}{' '}
-                          {otherManager?.full_name || displayUsername(otherManager?.username || '')}
+                          @{otherManager?.username || 'unknown'}
                         </h3>
                         <span className="text-xs text-gray-400">
                           {new Date(offer.created_at).toLocaleDateString()}
@@ -409,7 +409,7 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
                         <div className="bg-purple-500/10 rounded-lg p-4 border border-purple-500/30">
                           <p className="text-xs text-purple-300 mb-2">Your Card</p>
                           <h4 className="font-bold text-white">
-                            {myCard?.profile?.full_name || displayUsername(myCard?.profile?.username || '')}
+                            @{myCard?.profile?.username || 'unknown'}
                           </h4>
                           <p className="text-sm text-gray-400">
                             {myCard?.profile?.position} | OVR {myCard?.profile?.overall_rating}
@@ -426,7 +426,7 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
                         <div className="bg-pink-500/10 rounded-lg p-4 border border-pink-500/30">
                           <p className="text-xs text-pink-300 mb-2">Their Card</p>
                           <h4 className="font-bold text-white">
-                            {theirCard?.profile?.full_name || displayUsername(theirCard?.profile?.username || '')}
+                            @{theirCard?.profile?.username || 'unknown'}
                           </h4>
                           <p className="text-sm text-gray-400">
                             {theirCard?.profile?.position} | OVR {theirCard?.profile?.overall_rating}
@@ -501,7 +501,7 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
                     <div className="grid md:grid-cols-3 gap-4 items-center">
                       <div className="bg-white/5 rounded-lg p-4">
                         <h4 className="font-bold text-white">
-                          {swap.card_a?.profile?.full_name || displayUsername(swap.card_a?.profile?.username || '')}
+                          @{swap.card_a?.profile?.username || 'unknown'}
                         </h4>
                         <p className="text-sm text-gray-400">
                           OVR {swap.card_a?.profile?.overall_rating}
@@ -514,7 +514,7 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
 
                       <div className="bg-white/5 rounded-lg p-4">
                         <h4 className="font-bold text-white">
-                          {swap.card_b?.profile?.full_name || displayUsername(swap.card_b?.profile?.username || '')}
+                          @{swap.card_b?.profile?.username || 'unknown'}
                         </h4>
                         <p className="text-sm text-gray-400">
                           OVR {swap.card_b?.profile?.overall_rating}
@@ -556,7 +556,7 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
                   >
                     <div>
                       <h3 className="font-bold text-white">
-                        {card.profile?.full_name || displayUsername(card.profile?.username || '')}
+                        @{card.profile?.username || 'unknown'}
                       </h3>
                       <p className="text-sm text-gray-400">
                         {card.profile?.position} | OVR {card.profile?.overall_rating}

@@ -353,7 +353,7 @@ export default function Chat() {
 
               <div>
                 <h2 className="font-bold text-white text-lg">
-                  {otherUser.full_name || displayUsername(otherUser.username)}
+                  @{otherUser.username}
                 </h2>
                 <p className="text-sm text-gray-300">
                   {otherUserTyping ? (
@@ -536,7 +536,7 @@ export default function Chat() {
           onClose={() => setShowSendCoinsModal(false)}
           recipientId={otherUser.id}
           recipientUsername={otherUser.username}
-          recipientFullName={otherUser.full_name}
+          recipientFullName={null}
           recipientIsVerified={otherUser.is_verified || false}
           conversationId={conversationId}
           onTransferComplete={handleTransferComplete}

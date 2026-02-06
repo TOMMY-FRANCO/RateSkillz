@@ -618,7 +618,7 @@ export default function Friends() {
         }}
         recipientId={sendCoinsRecipient?.id}
         recipientUsername={sendCoinsRecipient?.username}
-        recipientFullName={sendCoinsRecipient?.full_name}
+        recipientFullName={null}
         recipientIsVerified={sendCoinsRecipient?.is_verified}
         onTransferComplete={() => loadFriendData()}
       />

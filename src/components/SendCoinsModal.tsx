@@ -248,8 +248,7 @@ export default function SendCoinsModal({
         setSenderBalance(Number(updatedBalance.coin_balance) || 0);
       }
 
-      const recipientName = selectedFriend.full_name || displayUsername(selectedFriend.username);
-      setToast({ message: `Sent ${selectedAmount} coins to ${recipientName}`, type: 'success' });
+      setToast({ message: `Sent ${selectedAmount} coins to @${selectedFriend.username}`, type: 'success' });
       onTransferComplete?.(selectedAmount);
 
       setTimeout(() => {
@@ -333,7 +332,7 @@ export default function SendCoinsModal({
                 <h3 className="text-xl font-bold text-white mb-2">Transfer Complete</h3>
                 <p className="text-gray-300">
                   Sent {selectedAmount} coins to{' '}
-                  {selectedFriend?.full_name || displayUsername(selectedFriend?.username || '')}
+                  @{selectedFriend?.username || 'unknown'}
                 </p>
               </div>
             ) : (
@@ -358,7 +357,7 @@ export default function SendCoinsModal({
                         )}
                         <div>
                           <p className="text-white font-semibold text-sm flex items-center gap-1.5">
-                            {selectedFriend.full_name || displayUsername(selectedFriend.username)}
+                            @{selectedFriend.username}
                             {selectedFriend.is_verified && (
                               <ShieldCheck className="w-4 h-4 text-blue-400" />
                             )}
@@ -441,7 +440,7 @@ export default function SendCoinsModal({
                                 )}
                                 <div className="flex-1 min-w-0">
                                   <p className="text-white text-sm font-medium truncate flex items-center gap-1.5">
-                                    {friend.full_name || displayUsername(friend.username)}
+                                    @{friend.username}
                                     {friend.is_verified && (
                                       <ShieldCheck className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
                                     )}
@@ -539,7 +538,7 @@ export default function SendCoinsModal({
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">
-                          {selectedFriend.full_name || displayUsername(selectedFriend.username)} can
+                          @{selectedFriend.username} can
                           receive
                         </span>
                         <ContentReveal
@@ -603,7 +602,7 @@ export default function SendCoinsModal({
                       <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3.5 mb-4 flex items-start gap-2.5">
                         <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
                         <p className="text-amber-300 text-sm">
-                          {selectedFriend.full_name || displayUsername(selectedFriend.username)} can
+                          @{selectedFriend.username} can
                           only receive {remainingReceiveLimit} more coins today.
                         </p>
                       </div>
