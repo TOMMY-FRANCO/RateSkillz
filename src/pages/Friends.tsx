@@ -11,6 +11,7 @@ import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
 import SendCoinsModal from '../components/SendCoinsModal';
 import { claimPerFriendMilestoneReward } from '../lib/rewards';
+import { getOrCreateConversation } from '../lib/messaging';
 
 interface FriendRequest {
   id: string;
@@ -143,6 +144,7 @@ export default function Friends() {
       showNotification('success', 'Friend request accepted!');
 
       if (request && currentUser) {
+        getOrCreateConversation(currentUser.id, request.user_id).catch(() => {});
         claimPerFriendMilestoneReward(currentUser.id, request.user_id).catch(() => {});
       }
 

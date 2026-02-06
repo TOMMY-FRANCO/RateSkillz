@@ -2,18 +2,11 @@ import { supabase } from './supabase';
 
 export interface FriendRequest {
   id: string;
-  sender_id: string;
-  receiver_id: string;
+  user_id: string;
+  friend_id: string;
   status: 'pending' | 'accepted' | 'rejected';
   created_at: string;
-  updated_at: string;
-  sender?: {
-    id: string;
-    username: string;
-    full_name: string;
-    avatar_url: string;
-  };
-  receiver?: {
+  profile?: {
     id: string;
     username: string;
     full_name: string;
@@ -28,12 +21,31 @@ export async function sendFriendRequest(receiverId: string) {
       throw new Error('Not authenticated');
     }
 
+    const senderId = currentUser.user.id;
+
+    const { data: existing } = await supabase
+      .from('friends')
+      .select('id, status')
+      .or(
+        `and(user_id.eq.${senderId},friend_id.eq.${receiverId}),and(user_id.eq.${receiverId},friend_id.eq.${senderId})`
+      )
+      .maybeSingle();
+
+    if (existing) {
+      if (existing.status === 'accepted') {
+        throw new Error('Already friends');
+      }
+      if (existing.status === 'pending') {
+        throw new Error('Friend request already pending');
+      }
+    }
+
     const { data, error } = await supabase
-      .from('friend_requests')
+      .from('friends')
       .insert({
-        sender_id: currentUser.user.id,
-        receiver_id: receiverId,
-        status: 'pending'
+        user_id: senderId,
+        friend_id: receiverId,
+        status: 'pending',
       })
       .select()
       .single();
@@ -49,8 +61,8 @@ export async function sendFriendRequest(receiverId: string) {
 export async function acceptFriendRequest(requestId: string) {
   try {
     const { data, error } = await supabase
-      .from('friend_requests')
-      .update({ status: 'accepted', updated_at: new Date().toISOString() })
+      .from('friends')
+      .update({ status: 'accepted' })
       .eq('id', requestId)
       .select()
       .single();
@@ -65,31 +77,25 @@ export async function acceptFriendRequest(requestId: string) {
 
 export async function rejectFriendRequest(requestId: string) {
   try {
-    const { data, error } = await supabase
-      .from('friend_requests')
-      .update({ status: 'rejected', updated_at: new Date().toISOString() })
-      .eq('id', requestId)
-      .select()
-      .single();
+    const { error } = await supabase
+      .from('friends')
+      .delete()
+      .eq('id', requestId);
 
     if (error) throw error;
-    return { data, error: null };
+    return { error: null };
   } catch (error: any) {
     console.error('Error rejecting friend request:', error);
-    return { data: null, error };
+    return { error };
   }
 }
 
 export async function getFriendRequests(userId: string) {
   try {
     const { data, error } = await supabase
-      .from('friend_requests')
-      .select(`
-        *,
-        sender:profiles!friend_requests_sender_id_fkey(id, username, full_name, avatar_url),
-        receiver:profiles!friend_requests_receiver_id_fkey(id, username, full_name, avatar_url)
-      `)
-      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+      .from('friends')
+      .select('*')
+      .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -103,10 +109,10 @@ export async function getFriendRequests(userId: string) {
 export async function getFriendCount(userId: string) {
   try {
     const { count, error } = await supabase
-      .from('friend_requests')
+      .from('friends')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'accepted')
-      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+      .or(`user_id.eq.${userId},friend_id.eq.${userId}`);
 
     if (error) throw error;
     return { count: count || 0, error: null };
@@ -119,10 +125,12 @@ export async function getFriendCount(userId: string) {
 export async function areFriends(userId1: string, userId2: string) {
   try {
     const { data, error } = await supabase
-      .from('friend_requests')
+      .from('friends')
       .select('id')
       .eq('status', 'accepted')
-      .or(`and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`)
+      .or(
+        `and(user_id.eq.${userId1},friend_id.eq.${userId2}),and(user_id.eq.${userId2},friend_id.eq.${userId1})`
+      )
       .maybeSingle();
 
     if (error) throw error;
@@ -136,7 +144,7 @@ export async function areFriends(userId1: string, userId2: string) {
 export async function removeFriend(friendshipId: string) {
   try {
     const { error } = await supabase
-      .from('friend_requests')
+      .from('friends')
       .delete()
       .eq('id', friendshipId);
 

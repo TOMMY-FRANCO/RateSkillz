@@ -202,11 +202,12 @@ export default function SearchFriends() {
 
     setSendingRequest(recipientId);
     try {
-      await sendFriendRequest(user.id, recipientId);
+      const { error } = await sendFriendRequest(recipientId);
+      if (error) throw error;
       alert('Friend request sent!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending friend request:', error);
-      alert('Failed to send friend request');
+      alert(error?.message || 'Failed to send friend request');
     } finally {
       setSendingRequest(null);
     }
