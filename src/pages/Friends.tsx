@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, UserCheck, UserX, Clock, Eye, Bell, CheckCircle, XCircle, AlertCircle, Coins } from 'lucide-react';
+import { ArrowLeft, UserCheck, UserX, Clock, Eye, Bell, CheckCircle, XCircle, AlertCircle, Coins, Send } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
 import { displayUsername } from '../lib/username';
 import { getMultipleUserBalances } from '../lib/balances';
 import { formatCoinBalance } from '../lib/formatBalance';
 import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
+import SendCoinsModal from '../components/SendCoinsModal';
 
 interface FriendRequest {
   id: string;
@@ -38,6 +39,8 @@ export default function Friends() {
   const [notification, setNotification] = useState<NotificationState | null>(null);
   const [userBalances, setUserBalances] = useState<Map<string, number>>(new Map());
   const [userPresence, setUserPresence] = useState<Map<string, UserPresence>>(new Map());
+  const [showSendCoinsModal, setShowSendCoinsModal] = useState(false);
+  const [sendCoinsRecipient, setSendCoinsRecipient] = useState<{ id: string; username: string; full_name: string | null; is_verified: boolean } | null>(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -510,6 +513,21 @@ export default function Friends() {
                       </div>
                       <div className="flex space-x-3">
                         <button
+                          onClick={() => {
+                            setSendCoinsRecipient({
+                              id: friend.profile.id,
+                              username: friend.profile.username,
+                              full_name: friend.profile.full_name,
+                              is_verified: (friend.profile as any).is_verified ?? false,
+                            });
+                            setShowSendCoinsModal(true);
+                          }}
+                          className="px-4 py-2 bg-amber-500/10 text-amber-400 font-semibold rounded-lg hover:bg-amber-500/20 transition-all flex items-center space-x-2 border border-amber-500/30"
+                        >
+                          <Send className="w-4 h-4" />
+                          <span>Send Coins</span>
+                        </button>
+                        <button
                           onClick={() => navigate(`/profile/${friend.profile.username}`)}
                           className="px-6 py-2 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all flex items-center space-x-2"
                         >
@@ -532,6 +550,19 @@ export default function Friends() {
           </div>
         </div>
       </main>
+
+      <SendCoinsModal
+        isOpen={showSendCoinsModal}
+        onClose={() => {
+          setShowSendCoinsModal(false);
+          setSendCoinsRecipient(null);
+        }}
+        recipientId={sendCoinsRecipient?.id}
+        recipientUsername={sendCoinsRecipient?.username}
+        recipientFullName={sendCoinsRecipient?.full_name}
+        recipientIsVerified={sendCoinsRecipient?.is_verified}
+        onTransferComplete={() => loadFriendData()}
+      />
     </div>
   );
 }
