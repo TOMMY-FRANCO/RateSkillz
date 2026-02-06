@@ -160,10 +160,17 @@ export default function Chat() {
     e.preventDefault();
     if (!user || !conversationId || !otherUser || !newMessage.trim() || sending) return;
 
-    setSending(true);
-    const result = await sendMessage(conversationId, user.id, otherUser.id, newMessage.trim());
-    if (result) playSound('message-sent');
+    const content = newMessage.trim();
     setNewMessage('');
+    setSending(true);
+    const result = await sendMessage(conversationId, user.id, otherUser.id, content);
+    if (result) {
+      playSound('message-sent');
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === result.id)) return prev;
+        return [...prev, result];
+      });
+    }
     setSending(false);
 
     if (typingTimeoutRef.current) {
@@ -175,12 +182,19 @@ export default function Chat() {
   const handleTransferComplete = async (amount: number) => {
     if (!user || !conversationId || !otherUser) return;
 
-    await sendMessage(
+    const result = await sendMessage(
       conversationId,
       user.id,
       otherUser.id,
       `Sent ${amount} coins`
     );
+    if (result) {
+      playSound('coin-received');
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === result.id)) return prev;
+        return [...prev, result];
+      });
+    }
   };
 
   if (loading || !otherUser) {
