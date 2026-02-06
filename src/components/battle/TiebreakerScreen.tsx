@@ -1,8 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Target, Zap } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { GlassButton } from '../ui/GlassButton';
-import { Battle, PlayerCard } from '../../lib/battleMode';
+import {
+  Battle,
+  PlayerCard,
+  submitTiebreakerMove,
+  subscribeToBattle,
+  getBattle,
+} from '../../lib/battleMode';
+import { useAuth } from '../../hooks/useAuth';
 
 interface TiebreakerScreenProps {
   battle: Battle;
@@ -15,39 +22,89 @@ const SKILLS = [
   { code: 'PAC', name: 'Pace', color: 'from-green-500 to-emerald-500' },
   { code: 'SHO', name: 'Shooting', color: 'from-red-500 to-rose-500' },
   { code: 'PAS', name: 'Passing', color: 'from-blue-500 to-cyan-500' },
-  { code: 'DRI', name: 'Dribbling', color: 'from-purple-500 to-pink-500' },
+  { code: 'DRI', name: 'Dribbling', color: 'from-teal-500 to-cyan-500' },
   { code: 'DEF', name: 'Defending', color: 'from-orange-500 to-amber-500' },
   { code: 'PHY', name: 'Physical', color: 'from-yellow-500 to-lime-500' },
 ];
 
+const getSkillValue = (card: PlayerCard, skillCode: string): number => {
+  const map: Record<string, number> = {
+    PAC: card.pace, SHO: card.shooting, PAS: card.passing,
+    DRI: card.dribbling, DEF: card.defending, PHY: card.physical,
+  };
+  return map[skillCode] || 0;
+};
+
 export function TiebreakerScreen({
-  battle,
+  battle: initialBattle,
   myCards,
   eliminatedCards,
   onComplete,
 }: TiebreakerScreenProps) {
+  const { user } = useAuth();
+  const [battle, setBattle] = useState(initialBattle);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const availableCards = myCards.filter((card) => !eliminatedCards.includes(card.id));
 
-  const getSkillValue = (card: PlayerCard, skillCode: string): number => {
-    const skillMap: { [key: string]: number } = {
-      PAC: card.pace,
-      SHO: card.shooting,
-      PAS: card.passing,
-      DRI: card.dribbling,
-      DEF: card.defending,
-      PHY: card.physical,
-    };
-    return skillMap[skillCode] || 0;
-  };
+  useEffect(() => {
+    const channel = subscribeToBattle(battle.id, (updated) => {
+      setBattle(updated);
+      if (updated.status === 'completed' || updated.status === 'forfeited') {
+        setTimeout(() => onComplete(), 2000);
+      }
+    });
+    return () => { channel.unsubscribe(); };
+  }, [battle.id, onComplete]);
+
+  useEffect(() => {
+    if (!user) return;
+    const alreadySubmitted = (battle.card_selections || []).some(
+      (move: any) => move.is_tiebreaker && move.user_id === user.id
+    );
+    if (alreadySubmitted) setSubmitted(true);
+  }, [battle.card_selections, user]);
 
   const handleConfirm = async () => {
-    if (selectedCard && selectedSkill) {
-      onComplete();
+    if (!user || !selectedCard || !selectedSkill || submitting) return;
+    setSubmitting(true);
+    try {
+      const result = await submitTiebreakerMove(battle.id, user.id, selectedCard, selectedSkill);
+      if (result.success) {
+        setSubmitted(true);
+        if (result.battle_over) {
+          const updated = await getBattle(battle.id);
+          setBattle(updated);
+        }
+      } else {
+        alert(result.error || 'Failed to submit tiebreaker move');
+      }
+    } catch (error) {
+      console.error('Error submitting tiebreaker:', error);
+      alert('Failed to submit tiebreaker move');
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+        <div className="max-w-2xl mx-auto">
+          <GlassCard className="p-8 text-center">
+            <Target className="w-16 h-16 text-yellow-500 mx-auto mb-4 animate-pulse" />
+            <h1 className="text-3xl font-bold text-white mb-4">Move Submitted!</h1>
+            <p className="text-white/70 text-lg">
+              Waiting for opponent to submit their tiebreaker move...
+            </p>
+          </GlassCard>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
@@ -117,11 +174,11 @@ export function TiebreakerScreen({
 
               <GlassButton
                 onClick={handleConfirm}
-                disabled={!selectedSkill}
+                disabled={!selectedSkill || submitting}
                 className="w-full"
                 size="lg"
               >
-                Confirm Tiebreaker Selection
+                {submitting ? 'Submitting...' : 'Confirm Tiebreaker Selection'}
               </GlassButton>
             </div>
           )}

@@ -12,24 +12,24 @@ export interface Battle {
   current_turn_user_id: string | null;
   turn_started_at: string | null;
   first_player_id: string | null;
-  card_selections: any[];
+  card_selections: BattleSelection[];
   used_skills: string[];
   player1_remaining_cards: number;
   player2_remaining_cards: number;
   is_tiebreaker: boolean;
 }
 
-export interface BattleMove {
-  round: number;
-  attacker_id: string;
-  defender_id: string;
-  attacker_card_id: string;
-  defender_card_id: string;
-  skill_used: string;
-  attacker_value: number;
-  defender_value: number;
-  winner_id: string;
-  card_eliminated_id: string | null;
+export interface BattleSelection {
+  round?: number;
+  user_id: string;
+  card_id: string;
+  skill: string;
+  value: number;
+  is_attacker?: boolean;
+  is_tiebreaker?: boolean;
+  attacker_wins?: boolean;
+  eliminated_card_id?: string | null;
+  timestamp: string;
 }
 
 export interface PlayerCard {
@@ -52,12 +52,7 @@ export interface PlayerCard {
 export async function checkManagerStatus(userId: string): Promise<boolean> {
   const { data, error } = await supabase
     .rpc('check_manager_status', { p_user_id: userId });
-
-  if (error) {
-    console.error('Error checking manager status:', error);
-    return false;
-  }
-
+  if (error) return false;
   return data === true;
 }
 
@@ -71,7 +66,6 @@ export async function createBattleChallenge(
     p_opponent_id: opponentId,
     p_wager_amount: wagerAmount,
   });
-
   if (error) throw error;
   return data;
 }
@@ -81,275 +75,73 @@ export async function acceptBattleChallenge(battleId: string, accepterId: string
     p_battle_id: battleId,
     p_accepter_id: accepterId,
   });
-
   if (error) throw error;
   return data;
 }
 
-export async function setFirstPlayer(battleId: string, firstPlayerId: string) {
-  const { error } = await supabase
-    .from('battles')
-    .update({
-      first_player_id: firstPlayerId,
-      current_turn_user_id: firstPlayerId,
-      turn_started_at: new Date().toISOString(),
-    })
-    .eq('id', battleId);
-
-  if (error) throw error;
-}
-
-export async function makeBattleMove(
+export async function submitBattleMove(
   battleId: string,
   userId: string,
   cardId: string,
-  skill: string,
-  isAttacker: boolean
+  skill: string | null
 ) {
-  const { data: battle, error: fetchError } = await supabase
-    .from('battles')
-    .select('*')
-    .eq('id', battleId)
-    .single();
-
-  if (fetchError) throw fetchError;
-
-  const { data: cardData, error: cardError } = await supabase
-    .from('card_ownership')
-    .select(`
-      id,
-      card_user_id,
-      user_stats!inner (
-        pac,
-        sho,
-        pas,
-        dri,
-        def,
-        phy
-      )
-    `)
-    .eq('id', cardId)
-    .single();
-
-  if (cardError) throw cardError;
-
-  const skillValues: { [key: string]: number } = {
-    PAC: cardData.user_stats?.pac || 50,
-    SHO: cardData.user_stats?.sho || 50,
-    PAS: cardData.user_stats?.pas || 50,
-    DRI: cardData.user_stats?.dri || 50,
-    DEF: cardData.user_stats?.def || 50,
-    PHY: cardData.user_stats?.phy || 50,
-  };
-
-  const cardSelections = battle.card_selections || [];
-  const newMove: any = {
-    round: cardSelections.length + 1,
-    user_id: userId,
-    card_id: cardId,
-    skill: skill,
-    skill_value: skillValues[skill],
-    is_attacker: isAttacker,
-    timestamp: new Date().toISOString(),
-  };
-
-  cardSelections.push(newMove);
-
-  const { error: updateError } = await supabase
-    .from('battles')
-    .update({
-      card_selections: cardSelections,
-    })
-    .eq('id', battleId);
-
-  if (updateError) throw updateError;
-
-  return newMove;
+  const { data, error } = await supabase.rpc('submit_battle_move', {
+    p_battle_id: battleId,
+    p_user_id: userId,
+    p_card_id: cardId,
+    p_skill: skill,
+  });
+  if (error) throw error;
+  return data;
 }
 
-export async function processRoundResult(
+export async function submitTiebreakerMove(
   battleId: string,
-  attackerMove: any,
-  defenderMove: any
+  userId: string,
+  cardId: string,
+  skill: string
 ) {
-  const { data: battle, error: fetchError } = await supabase
-    .from('battles')
-    .select('*')
-    .eq('id', battleId)
-    .single();
-
-  if (fetchError) throw fetchError;
-
-  const defenderWins = defenderMove.skill_value > attackerMove.skill_value;
-  const usedSkills = battle.used_skills || [];
-  usedSkills.push(attackerMove.skill);
-
-  let nextTurnUserId: string;
-  let player1Remaining = battle.player1_remaining_cards;
-  let player2Remaining = battle.player2_remaining_cards;
-  let cardEliminated: string | null = null;
-
-  if (defenderWins) {
-    nextTurnUserId = defenderMove.user_id;
-  } else {
-    if (defenderMove.user_id === battle.manager1_id) {
-      player1Remaining--;
-    } else {
-      player2Remaining--;
-    }
-    cardEliminated = defenderMove.card_id;
-    nextTurnUserId = defenderMove.user_id;
-  }
-
-  const cardSelections = battle.card_selections || [];
-  const lastRound = cardSelections[cardSelections.length - 1];
-  if (lastRound) {
-    lastRound.defender_wins = defenderWins;
-    lastRound.card_eliminated = cardEliminated;
-  }
-
-  const updates: any = {
-    card_selections: cardSelections,
-    used_skills: usedSkills,
-    current_turn_user_id: nextTurnUserId,
-    turn_started_at: new Date().toISOString(),
-    player1_remaining_cards: player1Remaining,
-    player2_remaining_cards: player2Remaining,
-  };
-
-  if (player1Remaining === 0 || player2Remaining === 0) {
-    const winnerId = player1Remaining > 0 ? battle.manager1_id : battle.manager2_id;
-    updates.status = 'completed';
-    updates.winner_id = winnerId;
-    updates.completed_at = new Date().toISOString();
-    await distributeBattleWinnings(battleId, winnerId, battle.wager_amount);
-  } else if (usedSkills.length === 6) {
-    updates.is_tiebreaker = true;
-  }
-
-  const { error: updateError } = await supabase
-    .from('battles')
-    .update(updates)
-    .eq('id', battleId);
-
-  if (updateError) throw updateError;
+  const { data, error } = await supabase.rpc('submit_tiebreaker_move', {
+    p_battle_id: battleId,
+    p_user_id: userId,
+    p_card_id: cardId,
+    p_skill: skill,
+  });
+  if (error) throw error;
+  return data;
 }
 
 export async function forfeitBattle(battleId: string, userId: string) {
-  const { data: battle, error: fetchError } = await supabase
-    .from('battles')
-    .select('*')
-    .eq('id', battleId)
-    .single();
-
-  if (fetchError) throw fetchError;
-
-  const winnerId = userId === battle.manager1_id ? battle.manager2_id : battle.manager1_id;
-
-  const { error: updateError } = await supabase
-    .from('battles')
-    .update({
-      status: 'forfeited',
-      winner_id: winnerId,
-      completed_at: new Date().toISOString(),
-    })
-    .eq('id', battleId);
-
-  if (updateError) throw updateError;
-
-  await distributeBattleWinnings(battleId, winnerId, battle.wager_amount);
+  const { data, error } = await supabase.rpc('forfeit_battle', {
+    p_battle_id: battleId,
+    p_user_id: userId,
+  });
+  if (error) throw error;
+  return data;
 }
 
-async function distributeBattleWinnings(battleId: string, winnerId: string, wagerAmount: number) {
-  const { data: battle } = await supabase
-    .from('battles')
-    .select('manager1_id, manager2_id')
-    .eq('id', battleId)
-    .single();
-
-  if (!battle) return;
-
-  const loserId = winnerId === battle.manager1_id ? battle.manager2_id : battle.manager1_id;
-
-  const { data: winnerCards } = await supabase
-    .from('card_ownership')
-    .select('id, original_owner_id')
-    .eq('owner_id', winnerId)
-    .limit(5);
-
-  const { data: loserCards } = await supabase
-    .from('card_ownership')
-    .select('id, original_owner_id')
-    .eq('owner_id', loserId)
-    .limit(5);
-
-  const allCards = [...(winnerCards || []), ...(loserCards || [])];
-  const totalRoyalties = allCards.length * 5;
-
-  for (const card of allCards) {
-    await supabase.from('battle_royalties').insert({
-      battle_id: battleId,
-      card_id: card.id,
-      owner_id: card.original_owner_id,
-      amount: 5,
-    });
-
-    await supabase.from('coin_transactions').insert({
-      user_id: card.original_owner_id,
-      amount: 5,
-      transaction_type: 'battle_royalty',
-      description: `Battle royalty from card in match`,
-    });
-  }
-
-  const winnerPayout = wagerAmount - totalRoyalties;
-
-  await supabase.from('coin_transactions').insert([
-    {
-      user_id: winnerId,
-      amount: winnerPayout,
-      transaction_type: 'battle_win',
-      description: `Won battle (${wagerAmount} - ${totalRoyalties} royalties)`,
-    },
-    {
-      user_id: loserId,
-      amount: -wagerAmount,
-      transaction_type: 'battle_loss',
-      description: `Lost battle wager`,
-    },
-  ]);
+export async function cancelBattle(battleId: string, userId: string) {
+  const { data, error } = await supabase.rpc('cancel_battle', {
+    p_battle_id: battleId,
+    p_user_id: userId,
+  });
+  if (error) throw error;
+  return data;
 }
 
-export async function getUserBattles(userId: string) {
+export async function getUserBattles(userId: string): Promise<Battle[]> {
   const { data, error } = await supabase
-    .from('active_battle_cache')
+    .from('battles')
     .select('*')
-    .or(`player1_id.eq.${userId},player2_id.eq.${userId}`)
-    .order('created_at', { ascending: false });
+    .or(`manager1_id.eq.${userId},manager2_id.eq.${userId}`)
+    .order('created_at', { ascending: false })
+    .limit(20);
 
   if (error) throw error;
-
-  return (data || []).map((row: any) => ({
-    id: row.battle_id,
-    manager1_id: row.player1_id,
-    manager2_id: row.player2_id,
-    wager_amount: row.wager_amount,
-    status: row.status,
-    created_at: row.created_at,
-    completed_at: row.completed_at,
-    winner_id: row.winner_id,
-    current_turn_user_id: row.current_turn_user_id,
-    turn_started_at: row.turn_started_at,
-    first_player_id: null,
-    card_selections: [],
-    used_skills: [],
-    player1_remaining_cards: row.player1_remaining_cards,
-    player2_remaining_cards: row.player2_remaining_cards,
-    is_tiebreaker: false,
-  })) as Battle[];
+  return (data || []) as Battle[];
 }
 
-export async function getBattle(battleId: string) {
+export async function getBattle(battleId: string): Promise<Battle> {
   const { data, error } = await supabase
     .from('battles')
     .select('*')
@@ -362,8 +154,8 @@ export async function getBattle(battleId: string) {
 
 export async function getPlayerCards(userId: string): Promise<PlayerCard[]> {
   const { data: cards, error: cardsError } = await supabase
-    .from('card_market_cache')
-    .select('card_user_id, owner_id, original_owner_username, owner_avatar')
+    .from('card_ownership')
+    .select('id, card_user_id, owner_id')
     .eq('owner_id', userId)
     .limit(5);
 
@@ -384,11 +176,11 @@ export async function getPlayerCards(userId: string): Promise<PlayerCard[]> {
   return cards.map((card: any) => {
     const p = profileMap.get(card.card_user_id);
     return {
-      id: `${card.card_user_id}_${card.owner_id}`,
+      id: card.id,
       card_user_id: card.card_user_id,
       owner_id: card.owner_id,
-      player_name: p?.username || card.original_owner_username || 'Unknown Player',
-      username: p?.username || card.original_owner_username || 'Unknown',
+      player_name: p?.username || 'Unknown',
+      username: p?.username || 'Unknown',
       avatar_url: p?.avatar_url || '',
       image_url: p?.avatar_url || '',
       overall_rating: p?.overall_rating || 50,
@@ -402,7 +194,10 @@ export async function getPlayerCards(userId: string): Promise<PlayerCard[]> {
   });
 }
 
-export async function subscribeToBattle(battleId: string, callback: (battle: Battle) => void) {
+export function subscribeToBattle(
+  battleId: string,
+  callback: (battle: Battle) => void
+) {
   const channel = supabase
     .channel(`battle:${battleId}`)
     .on(

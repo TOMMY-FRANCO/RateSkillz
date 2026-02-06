@@ -1,21 +1,20 @@
-import { useState, useEffect } from 'react';
-import { Swords, Clock, Flag, Target } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Swords, Clock, Flag, Target, Shield, Zap } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { GlassButton } from '../ui/GlassButton';
 import { SkillSelectionScreen } from './SkillSelectionScreen';
 import { TiebreakerScreen } from './TiebreakerScreen';
 import { useAuth } from '../../hooks/useAuth';
 import { BattleResultSkeleton, BattleResultReveal } from '../ui/HighValueSkeletons';
-import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../ui/Shimmer';
+import { ShimmerBar, StaggerItem } from '../ui/Shimmer';
 import {
   Battle,
   PlayerCard,
   getPlayerCards,
-  setFirstPlayer,
-  makeBattleMove,
-  processRoundResult,
+  submitBattleMove,
   forfeitBattle,
   subscribeToBattle,
+  getBattle,
 } from '../../lib/battleMode';
 
 interface BattleArenaProps {
@@ -27,45 +26,47 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   const { user } = useAuth();
   const [battle, setBattle] = useState<Battle>(initialBattle);
   const [myCards, setMyCards] = useState<PlayerCard[]>([]);
-  const [opponentCards, setOpponentCards] = useState<PlayerCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeRemaining, setTimeRemaining] = useState(60);
-  const [showFirstPlayerSelect, setShowFirstPlayerSelect] = useState(false);
-  const [showSkillSelection, setShowSkillSelection] = useState(false);
-  const [isMyTurn, setIsMyTurn] = useState(false);
-  const [isAttacker, setIsAttacker] = useState(false);
-  const [pendingAttack, setPendingAttack] = useState<any>(null);
-  const [eliminatedCards, setEliminatedCards] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [roundResult, setRoundResult] = useState<{ attacker_wins: boolean } | null>(null);
+
+  const isMyTurn = battle.current_turn_user_id === user?.id;
+  const isAttacker = (battle.card_selections?.length ?? 0) % 2 === 0;
+  const isCompleted = battle.status === 'completed' || battle.status === 'forfeited';
+
+  const eliminatedCardIds = (battle.card_selections || [])
+    .filter((move: any) => move.eliminated_card_id)
+    .map((move: any) => move.eliminated_card_id as string);
+
+  const attackerSkill = !isAttacker && battle.card_selections?.length > 0
+    ? battle.card_selections[battle.card_selections.length - 1]?.skill
+    : null;
 
   useEffect(() => {
     loadCards();
-    const channel = subscribeToBattle(battle.id, (updatedBattle) => {
-      setBattle(updatedBattle);
-      checkBattleState(updatedBattle);
+    const channel = subscribeToBattle(battle.id, (updated) => {
+      setBattle(updated);
     });
-
-    return () => {
-      channel.unsubscribe();
-    };
+    return () => { channel.unsubscribe(); };
   }, [battle.id]);
 
   useEffect(() => {
-    checkBattleState(battle);
-  }, [battle, user]);
+    if (isCompleted) {
+      const timer = setTimeout(() => onComplete(), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isCompleted, onComplete]);
 
   useEffect(() => {
     if (!battle.turn_started_at || !isMyTurn || battle.status !== 'active') return;
 
     const interval = setInterval(() => {
-      const turnStart = new Date(battle.turn_started_at!).getTime();
-      const now = Date.now();
-      const elapsed = Math.floor((now - turnStart) / 1000);
+      const elapsed = Math.floor((Date.now() - new Date(battle.turn_started_at!).getTime()) / 1000);
       const remaining = Math.max(0, 60 - elapsed);
-
       setTimeRemaining(remaining);
-
       if (remaining === 0) {
-        handleForfeit();
+        handleAutoForfeit();
       }
     }, 1000);
 
@@ -74,14 +75,9 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
 
   const loadCards = async () => {
     if (!user) return;
-
     try {
       const cards = await getPlayerCards(user.id);
       setMyCards(cards);
-
-      const opponentId = battle.manager1_id === user.id ? battle.manager2_id : battle.manager1_id;
-      const oppCards = await getPlayerCards(opponentId);
-      setOpponentCards(oppCards);
     } catch (error) {
       console.error('Error loading cards:', error);
     } finally {
@@ -89,75 +85,44 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
     }
   };
 
-  const checkBattleState = (currentBattle: Battle) => {
-    if (!user) return;
-
-    if (currentBattle.status === 'completed' || currentBattle.status === 'forfeited') {
-      setTimeout(() => onComplete(), 2000);
-      return;
-    }
-
-    if (!currentBattle.first_player_id) {
-      setShowFirstPlayerSelect(true);
-      return;
-    }
-
-    setShowFirstPlayerSelect(false);
-
-    const myTurn = currentBattle.current_turn_user_id === user.id;
-    setIsMyTurn(myTurn);
-
-    if (myTurn) {
-      const cardSelections = currentBattle.card_selections || [];
-      const lastMove = cardSelections[cardSelections.length - 1];
-
-      if (!lastMove || lastMove.user_id !== user.id) {
-        const attacking = !lastMove || lastMove.defender_wins === false;
-        setIsAttacker(attacking);
-        setShowSkillSelection(true);
-      } else {
-        if (lastMove.is_attacker) {
-          setPendingAttack(lastMove);
-          setShowSkillSelection(false);
-        }
-      }
-    } else {
-      setShowSkillSelection(false);
-    }
-  };
-
-  const handleSelectFirstPlayer = async (playerId: string) => {
+  const handleSkillSelection = useCallback(async (cardId: string, skill?: string) => {
+    if (!user || submitting) return;
+    setSubmitting(true);
     try {
-      await setFirstPlayer(battle.id, playerId);
-    } catch (error) {
-      console.error('Error setting first player:', error);
-    }
-  };
-
-  const handleSkillSelection = async (cardId: string, skill?: string) => {
-    if (!user) return;
-
-    try {
-      const move = await makeBattleMove(battle.id, user.id, cardId, skill || '', isAttacker);
-
-      if (isAttacker) {
-        setPendingAttack(move);
-        setShowSkillSelection(false);
-      } else {
-        const attackMove = pendingAttack || battle.card_selections[battle.card_selections.length - 1];
-        await processRoundResult(battle.id, attackMove, move);
-        setPendingAttack(null);
+      const result = await submitBattleMove(
+        battle.id,
+        user.id,
+        cardId,
+        isAttacker ? (skill || null) : null
+      );
+      if (!result.success) {
+        alert(result.error || 'Failed to submit move');
+      } else if (!result.is_attacker) {
+        setRoundResult({ attacker_wins: result.attacker_wins });
+        setTimeout(() => setRoundResult(null), 2000);
       }
+      const updated = await getBattle(battle.id);
+      setBattle(updated);
     } catch (error) {
-      console.error('Error making move:', error);
-      alert('Failed to make move');
+      console.error('Error submitting move:', error);
+      alert('Failed to submit move');
+    } finally {
+      setSubmitting(false);
     }
-  };
+  }, [user, submitting, battle.id, isAttacker]);
 
-  const handleForfeit = async () => {
+  const handleAutoForfeit = useCallback(async () => {
     if (!user) return;
+    try {
+      await forfeitBattle(battle.id, user.id);
+    } catch (error) {
+      console.error('Error auto-forfeiting:', error);
+    }
+  }, [user, battle.id]);
 
-    if (confirm('Are you sure you want to forfeit? You will lose all wagered coins.')) {
+  const handleManualForfeit = async () => {
+    if (!user) return;
+    if (confirm('Are you sure you want to forfeit? You will lose your wagered coins.')) {
       try {
         await forfeitBattle(battle.id, user.id);
       } catch (error) {
@@ -196,35 +161,40 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
     );
   }
 
-  if (battle.is_tiebreaker) {
+  if (battle.is_tiebreaker && !isCompleted) {
     return (
       <TiebreakerScreen
         battle={battle}
         myCards={myCards}
-        eliminatedCards={eliminatedCards}
+        eliminatedCards={eliminatedCardIds}
         onComplete={onComplete}
       />
     );
   }
 
-  const isCompleted = battle.status === 'completed' || battle.status === 'forfeited';
-  const isWinner = battle.winner_id === user?.id;
-
   if (isCompleted) {
+    const isWinner = battle.winner_id === user?.id;
+    const myRemaining = battle.manager1_id === user?.id
+      ? battle.player1_remaining_cards
+      : battle.player2_remaining_cards;
+    const oppRemaining = battle.manager1_id === user?.id
+      ? battle.player2_remaining_cards
+      : battle.player1_remaining_cards;
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
         <div className="max-w-2xl mx-auto space-y-6">
           <BattleResultReveal
             isWinner={isWinner}
-            myScore={battle.manager1_id === user?.id ? battle.manager1_score : battle.manager2_score}
-            opponentScore={battle.manager1_id === user?.id ? battle.manager2_score : battle.manager1_score}
+            myScore={myRemaining}
+            opponentScore={oppRemaining}
             wagerAmount={battle.wager_amount}
             opponentName="Opponent"
           />
           <GlassCard className="p-6">
             <h3 className="text-xl font-bold text-white mb-4">Skills Used</h3>
             <div className="flex gap-2 flex-wrap">
-              {battle.used_skills.map((skill) => (
+              {(battle.used_skills || []).map((skill) => (
                 <div
                   key={skill}
                   className="px-3 py-1 bg-red-500/20 border border-red-500 rounded-full text-red-500 text-sm"
@@ -232,7 +202,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                   {skill}
                 </div>
               ))}
-              {battle.used_skills.length === 0 && (
+              {(!battle.used_skills || battle.used_skills.length === 0) && (
                 <p className="text-white/50">No skills used</p>
               )}
             </div>
@@ -258,7 +228,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                   <span className="text-2xl font-bold">{timeRemaining}s</span>
                 </div>
               )}
-              <GlassButton onClick={handleForfeit} variant="outline" size="sm">
+              <GlassButton onClick={handleManualForfeit} variant="outline" size="sm">
                 <Flag className="w-4 h-4 mr-2" />
                 Forfeit
               </GlassButton>
@@ -289,50 +259,58 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
           </div>
         </GlassCard>
 
-        {showFirstPlayerSelect && (
-          <GlassCard className="p-6 mb-6">
-            <h3 className="text-2xl font-bold text-white mb-4 text-center">
-              Press the button to go first!
-            </h3>
-            <div className="flex gap-4 justify-center">
-              <GlassButton onClick={() => handleSelectFirstPlayer(user!.id)}>
-                I'll Go First!
-              </GlassButton>
+        {roundResult && (
+          <GlassCard className={`p-6 mb-6 border-2 ${
+            roundResult.attacker_wins ? 'border-red-500 bg-red-500/10' : 'border-green-500 bg-green-500/10'
+          }`}>
+            <div className="text-center">
+              {roundResult.attacker_wins ? (
+                <>
+                  <Zap className="w-12 h-12 text-red-500 mx-auto mb-2" />
+                  <h3 className="text-2xl font-bold text-red-500">Card Eliminated!</h3>
+                  <p className="text-white/70 mt-1">Your opponent won this round</p>
+                </>
+              ) : (
+                <>
+                  <Shield className="w-12 h-12 text-green-500 mx-auto mb-2" />
+                  <h3 className="text-2xl font-bold text-green-500">Defense Successful!</h3>
+                  <p className="text-white/70 mt-1">Your card held strong</p>
+                </>
+              )}
             </div>
           </GlassCard>
         )}
 
-        {!showFirstPlayerSelect && !isMyTurn && (
+        {!isMyTurn && !roundResult && (
           <GlassCard className="p-6 mb-6 text-center">
-            <Target className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+            <Target className="w-12 h-12 text-yellow-500 mx-auto mb-4 animate-pulse" />
             <h3 className="text-2xl font-bold text-white">Opponent's Turn</h3>
             <p className="text-white/70 mt-2">Waiting for opponent to make their move...</p>
           </GlassCard>
         )}
 
-        {isMyTurn && showSkillSelection && (
+        {isMyTurn && !submitting && (
           <SkillSelectionScreen
             cards={myCards}
-            usedSkills={battle.used_skills}
+            usedSkills={battle.used_skills || []}
             isAttacker={isAttacker}
             onSelect={handleSkillSelection}
-            eliminatedCards={eliminatedCards}
+            eliminatedCards={eliminatedCardIds}
+            attackerSkill={attackerSkill}
           />
         )}
 
-        {pendingAttack && !isMyTurn && (
-          <GlassCard className="p-6">
-            <h3 className="text-xl font-bold text-white mb-4">Your Attack</h3>
-            <p className="text-white/70">
-              Waiting for opponent to defend against your {pendingAttack.skill} challenge...
-            </p>
+        {submitting && (
+          <GlassCard className="p-6 mb-6 text-center">
+            <div className="animate-spin w-8 h-8 border-2 border-white/20 border-t-[#00FF85] rounded-full mx-auto mb-4" />
+            <p className="text-white/70">Submitting move...</p>
           </GlassCard>
         )}
 
         <GlassCard className="p-6 mt-6">
           <h3 className="text-xl font-bold text-white mb-4">Skills Used</h3>
           <div className="flex gap-2 flex-wrap">
-            {battle.used_skills.map((skill) => (
+            {(battle.used_skills || []).map((skill) => (
               <div
                 key={skill}
                 className="px-3 py-1 bg-red-500/20 border border-red-500 rounded-full text-red-500 text-sm"
@@ -340,7 +318,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                 {skill}
               </div>
             ))}
-            {battle.used_skills.length === 0 && (
+            {(!battle.used_skills || battle.used_skills.length === 0) && (
               <p className="text-white/50">No skills used yet</p>
             )}
           </div>
