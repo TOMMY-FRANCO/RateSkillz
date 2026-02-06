@@ -19,6 +19,7 @@ interface LeaderboardEntry {
   avatar_url: string | null;
   position: string | null;
   team: string | null;
+  gender: string | null;
 }
 
 type TabType = 'global' | 'prices' | 'managers';
@@ -55,12 +56,13 @@ export default function Leaderboard() {
         rank: entry.rank,
         profile_id: entry.user_id,
         overall_rating: entry.overall_rating,
-        previous_rank: null, // Not available in cache
+        previous_rank: null,
         username: entry.username,
-        full_name: entry.username, // Use username as full_name fallback
+        full_name: entry.username,
         avatar_url: entry.avatar_url,
         position: entry.position,
         team: entry.team,
+        gender: entry.gender || null,
       }));
 
       setEntries(mappedEntries);
@@ -218,6 +220,11 @@ export default function Leaderboard() {
                       <h3 className="text-lg font-bold text-white truncate">
                         {entry.full_name}
                       </h3>
+                      {entry.gender && (
+                        <span className="px-1.5 py-0.5 bg-gray-700 text-gray-300 text-xs font-bold rounded">
+                          {entry.gender === 'male' ? 'M' : 'F'}
+                        </span>
+                      )}
                       {isCurrentUser && (
                         <span className="px-2 py-0.5 bg-cyan-500 text-black text-xs font-bold rounded">
                           YOU

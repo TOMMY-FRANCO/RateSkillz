@@ -23,12 +23,17 @@ export default function Settings() {
   const [hasSocialBadge, setHasSocialBadge] = useState(false);
   const [friendCount, setFriendCount] = useState(0);
   const { prefs: audioPrefs, updatePrefs: updateAudioPrefs } = useSoundEffects();
+  const [gender, setGender] = useState<string | null>(null);
+  const [savingGender, setSavingGender] = useState(false);
+  const [genderSuccess, setGenderSuccess] = useState(false);
+  const [genderError, setGenderError] = useState<string | null>(null);
 
   useEffect(() => {
     loadProfiles();
     if (profile) {
       fetchPendingRequests();
       fetchVerificationStatus();
+      fetchGender();
     }
   }, [profile]);
 
@@ -49,6 +54,41 @@ export default function Settings() {
       }
     } catch (error) {
       console.error('Error fetching verification status:', error);
+    }
+  };
+
+  const fetchGender = async () => {
+    if (!profile) return;
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('gender')
+        .eq('id', profile.id)
+        .maybeSingle();
+      if (data) setGender(data.gender || null);
+    } catch (error) {
+      console.error('Error fetching gender:', error);
+    }
+  };
+
+  const saveGender = async (value: string) => {
+    if (!profile) return;
+    setSavingGender(true);
+    setGenderError(null);
+    setGenderSuccess(false);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ gender: value })
+        .eq('id', profile.id);
+      if (error) throw error;
+      setGender(value);
+      setGenderSuccess(true);
+      setTimeout(() => setGenderSuccess(false), 3000);
+    } catch (err: any) {
+      setGenderError(err.message || 'Failed to save gender. Please try again.');
+    } finally {
+      setSavingGender(false);
     }
   };
 
@@ -162,6 +202,47 @@ export default function Settings() {
             >
               Edit Profile
             </button>
+          </div>
+
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center space-x-2">
+              <User className="w-6 h-6" />
+              <span>Gender</span>
+            </h2>
+            <p className="text-gray-400 text-sm mb-4">Displayed as M or F on the leaderboard only</p>
+            <div className="flex gap-3 mb-4">
+              {(['male', 'female'] as const).map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => saveGender(opt)}
+                  disabled={savingGender}
+                  className={`flex-1 py-3 rounded-lg font-semibold transition-all border-2 ${
+                    gender === opt
+                      ? 'bg-cyan-500/20 border-cyan-500 text-cyan-400'
+                      : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500'
+                  } ${savingGender ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  {savingGender && gender !== opt ? '' : opt === 'male' ? 'Male' : 'Female'}
+                  {savingGender && gender !== opt && (
+                    <span className="inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                  )}
+                </button>
+              ))}
+            </div>
+            {genderSuccess && (
+              <p className="text-green-400 text-sm">Gender saved successfully</p>
+            )}
+            {genderError && (
+              <div className="flex items-center justify-between bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                <p className="text-red-400 text-sm">{genderError}</p>
+                <button
+                  onClick={() => gender && saveGender(gender)}
+                  className="text-red-400 text-sm font-semibold hover:text-red-300 ml-3"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">

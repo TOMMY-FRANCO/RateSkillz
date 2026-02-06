@@ -25,6 +25,7 @@ export interface Profile {
   last_active?: string;
   terms_accepted_at?: string;
   username_customized?: boolean;
+  gender?: string;
 }
 
 export function isUserOnline(lastActive?: string): boolean {
