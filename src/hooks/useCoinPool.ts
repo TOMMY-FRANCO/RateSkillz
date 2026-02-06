@@ -91,12 +91,6 @@ export function useCoinPool() {
 
   useEffect(() => {
     fetchStats();
-
-    const interval = setInterval(() => {
-      fetchStats();
-    }, 5 * 60 * 1000);
-
-    return () => clearInterval(interval);
   }, []);
 
   return { stats, loading, syncing, error, refetch: fetchStats, syncPool };

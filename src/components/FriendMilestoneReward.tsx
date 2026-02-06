@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, Coins, CheckCircle, Sparkles } from 'lucide-react';
 import { getRewardStatus } from '../lib/rewards';
 import { useAuth } from '../hooks/useAuth';
-import { supabase } from '../lib/supabase';
 import { ShimmerBar, StaggerItem } from './ui/Shimmer';
 import { playSound } from '../lib/sounds';
 
@@ -36,26 +35,6 @@ export function FriendMilestoneReward() {
   useEffect(() => {
     loadRewardStatus();
   }, [loadRewardStatus]);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('friend-milestone-reward')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'reward_logs', filter: `user_id=eq.${user.id}` },
-        () => { loadRewardStatus(); }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
-        () => { loadRewardStatus(); }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user, loadRewardStatus]);
 
   const isComplete = claimedCount >= MAX_FRIENDS;
   const displayCount = Math.min(claimedCount, MAX_FRIENDS);

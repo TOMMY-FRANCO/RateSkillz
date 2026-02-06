@@ -98,7 +98,7 @@ export default function ProfileView() {
   useEffect(() => {
     if (!profile) return;
 
-    const refreshBalanceInterval = async () => {
+    const fetchBalance = async () => {
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -110,13 +110,11 @@ export default function ProfileView() {
           setCoinBalance(Number(data.coin_balance || 0));
         }
       } catch (error) {
-        console.error('Error refreshing balance:', error);
+        console.error('Error fetching balance:', error);
       }
     };
 
-    const interval = setInterval(refreshBalanceInterval, 5000);
-
-    return () => clearInterval(interval);
+    fetchBalance();
   }, [profile?.id]);
 
   const loadProfile = async () => {

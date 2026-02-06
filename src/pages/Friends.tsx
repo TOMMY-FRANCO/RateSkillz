@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, UserCheck, UserX, Clock, Eye, Bell, CheckCircle, XCircle, AlertCircle, Coins, Send } from 'lucide-react';
+import { ArrowLeft, UserCheck, UserX, Clock, Eye, Bell, CheckCircle, XCircle, AlertCircle, Coins, Send, Loader2, RefreshCw } from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
 import { displayUsername } from '../lib/username';
 import { getMultipleUserBalances } from '../lib/balances';
@@ -37,6 +37,7 @@ export default function Friends() {
   const [outgoingRequests, setOutgoingRequests] = useState<FriendRequest[]>([]);
   const [friends, setFriends] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [notification, setNotification] = useState<NotificationState | null>(null);
   const [userBalances, setUserBalances] = useState<Map<string, number>>(new Map());
@@ -47,36 +48,14 @@ export default function Friends() {
   useEffect(() => {
     if (currentUser) {
       loadFriendData();
-
-      const channel = supabase
-        .channel('friends-realtime')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'friends',
-            filter: `user_id=eq.${currentUser.id}`,
-          },
-          () => loadFriendData()
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'friends',
-            filter: `friend_id=eq.${currentUser.id}`,
-          },
-          () => loadFriendData()
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
   }, [currentUser]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadFriendData();
+    setRefreshing(false);
+  };
 
   const showNotification = (type: 'success' | 'error' | 'info', message: string) => {
     setNotification({ type, message });
@@ -255,17 +234,8 @@ export default function Friends() {
     }
   };
 
-  const calculateOverallRating = (profile: Profile): string => {
-    const ratings = [
-      profile.passing,
-      profile.shooting,
-      profile.dribbling,
-      profile.defense,
-      profile.physical,
-    ];
-    const total = ratings.reduce((sum, rating) => sum + rating, 0);
-    const average = Math.round(total / ratings.length);
-    return average.toString();
+  const getOverallRating = (profile: Profile): number => {
+    return profile.overall_rating ?? 50;
   };
 
   if (loading) {
@@ -290,13 +260,23 @@ export default function Friends() {
               </button>
               <h1 className="text-xl font-bold text-white">Friends & Notifications</h1>
             </div>
-            <div className="flex items-center space-x-2 text-gray-400">
-              <Bell className="w-5 h-5" />
-              {incomingRequests.length > 0 && (
-                <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                  {incomingRequests.length}
-                </span>
-              )}
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="text-gray-400 hover:text-cyan-400 transition-colors disabled:opacity-50"
+                title="Refresh"
+              >
+                <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
+              <div className="flex items-center space-x-2 text-gray-400">
+                <Bell className="w-5 h-5" />
+                {incomingRequests.length > 0 && (
+                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                    {incomingRequests.length}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -383,9 +363,9 @@ export default function Friends() {
                       className="bg-gray-800 rounded-lg p-4 border border-gray-700 flex items-center justify-between"
                     >
                       <div className="flex items-center space-x-4">
-                        {request.profile.profile_picture ? (
+                        {request.profile.avatar_url ? (
                           <img
-                            src={request.profile.profile_picture}
+                            src={request.profile.avatar_url}
                             alt={request.profile.username}
                             className="w-16 h-16 rounded-full object-cover border-2 border-cyan-500"
                           />
@@ -403,7 +383,7 @@ export default function Friends() {
                             size="small"
                           />
                           <p className="text-gray-400 text-sm mt-1">
-                            Overall Rating: {calculateOverallRating(request.profile)}
+                            OVR {getOverallRating(request.profile)}
                           </p>
                           {userBalances.has(request.profile.id) && (
                             <div className="flex items-center gap-1 mt-1">
@@ -421,16 +401,18 @@ export default function Friends() {
                       <div className="flex space-x-3">
                         <button
                           onClick={() => handleAcceptRequest(request.id)}
-                          className="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-500 transition-all flex items-center space-x-2"
+                          disabled={actionLoading === request.id}
+                          className="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center space-x-2"
                         >
-                          <UserCheck className="w-4 h-4" />
+                          {actionLoading === request.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
                           <span>Accept</span>
                         </button>
                         <button
                           onClick={() => handleDeclineRequest(request.id)}
-                          className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-500 transition-all flex items-center space-x-2"
+                          disabled={actionLoading === request.id}
+                          className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center space-x-2"
                         >
-                          <UserX className="w-4 h-4" />
+                          {actionLoading === request.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
                           <span>Decline</span>
                         </button>
                       </div>
@@ -453,9 +435,9 @@ export default function Friends() {
                       className="bg-gray-800 rounded-lg p-4 border border-gray-700 flex items-center justify-between"
                     >
                       <div className="flex items-center space-x-4">
-                        {request.profile.profile_picture ? (
+                        {request.profile.avatar_url ? (
                           <img
-                            src={request.profile.profile_picture}
+                            src={request.profile.avatar_url}
                             alt={request.profile.username}
                             className="w-16 h-16 rounded-full object-cover border-2 border-gray-600"
                           />
@@ -491,9 +473,11 @@ export default function Friends() {
                       </div>
                       <button
                         onClick={() => handleCancelRequest(request.id)}
-                        className="px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-500 transition-all"
+                        disabled={actionLoading === request.id}
+                        className="px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center space-x-2"
                       >
-                        Cancel Request
+                        {actionLoading === request.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                        <span>Cancel Request</span>
                       </button>
                     </div>
                   ))
@@ -514,9 +498,9 @@ export default function Friends() {
                       className="bg-gray-800 rounded-lg p-4 border border-gray-700 flex items-center justify-between"
                     >
                       <div className="flex items-center space-x-4">
-                        {friend.profile.profile_picture ? (
+                        {friend.profile.avatar_url ? (
                           <img
-                            src={friend.profile.profile_picture}
+                            src={friend.profile.avatar_url}
                             alt={friend.profile.username}
                             className="w-16 h-16 rounded-full object-cover border-2 border-green-500"
                           />
@@ -534,7 +518,7 @@ export default function Friends() {
                             size="small"
                           />
                           <p className="text-gray-400 text-sm mt-1">
-                            Overall Rating: {calculateOverallRating(friend.profile)}
+                            OVR {getOverallRating(friend.profile)}
                           </p>
                           {userBalances.has(friend.profile.id) && (
                             <div className="flex items-center gap-1 mt-1">
@@ -574,9 +558,10 @@ export default function Friends() {
                         </button>
                         <button
                           onClick={() => handleRemoveFriend(friend.id)}
-                          className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-500 transition-all flex items-center space-x-2"
+                          disabled={actionLoading === friend.id}
+                          className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center space-x-2"
                         >
-                          <UserX className="w-4 h-4" />
+                          {actionLoading === friend.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
                           <span>Remove</span>
                         </button>
                       </div>
