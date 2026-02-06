@@ -27,7 +27,7 @@ import CardSwapTab from '../components/CardSwapTab';
 import CardDiscardTab from '../components/CardDiscardTab';
 import NotBoughtCardsTab from '../components/NotBoughtCardsTab';
 import NoManagerCardsTab from '../components/NoManagerCardsTab';
-import { markNotificationsRead } from '../lib/notifications';
+import { markNotificationsReadBatch } from '../lib/notifications';
 
 export default function TradingDashboard() {
   const { profile } = useAuth();
@@ -48,10 +48,7 @@ export default function TradingDashboard() {
   useEffect(() => {
     if (profile) {
       loadData();
-      markNotificationsRead(profile.id, 'swap_offer');
-      markNotificationsRead(profile.id, 'purchase_offer');
-      markNotificationsRead(profile.id, 'purchase_request');
-      markNotificationsRead(profile.id, 'card_sold');
+      markNotificationsReadBatch(profile.id, ['swap_offer', 'purchase_offer', 'card_sold']);
     }
   }, [profile]);
 

@@ -40,12 +40,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (profile) {
-      fetchUserStats();
-      calculateRank();
-      fetchPendingRequests();
-      fetchVerificationStatus();
-      fetchUnreadProfileViews();
-      checkTutorialStatus();
+      loadDashboardData();
 
       if (!profile.terms_accepted_at) {
         setShowTermsModal(true);
@@ -55,120 +50,63 @@ export default function Dashboard() {
     }
   }, [profile]);
 
-  const fetchUnreadProfileViews = async () => {
+  const loadDashboardData = async () => {
     if (!profile) return;
 
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('unread_profile_views')
-        .eq('id', profile.id)
-        .maybeSingle();
+      const [stats, profileData, pendingData, rankData] = await Promise.all([
+        getUserStats(profile.id),
+        supabase
+          .from('profiles')
+          .select('is_verified, has_social_badge, unread_profile_views, tutorial_completed')
+          .eq('id', profile.id)
+          .maybeSingle(),
+        supabase
+          .from('friends')
+          .select('id', { count: 'exact', head: true })
+          .eq('friend_id', profile.id)
+          .eq('status', 'pending'),
+        Promise.all([
+          supabase
+            .from('profiles')
+            .select('id', { count: 'exact', head: true })
+            .gt('overall_rating', profile.overall_rating || 0),
+          supabase
+            .from('profiles')
+            .select('id', { count: 'exact', head: true }),
+        ]),
+      ]);
 
-      if (error) throw error;
-      setUnreadProfileViews(data?.unread_profile_views || 0);
-    } catch (error) {
-      console.error('Error fetching unread profile views:', error);
-    }
-  };
+      setUserStats(stats);
 
-  const fetchVerificationStatus = async () => {
-    if (!profile) return;
-
-    try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('is_verified, has_social_badge')
-        .eq('id', profile.id)
-        .single();
-
-      if (data) {
-        setIsVerified(data.is_verified || false);
-        setHasSocialBadge(data.has_social_badge || false);
-      }
-    } catch (error) {
-      console.error('Error fetching verification status:', error);
-    }
-  };
-
-  const fetchPendingRequests = async () => {
-    if (!profile) return;
-
-    try {
-      const { data } = await supabase
-        .from('friends')
-        .select('id')
-        .eq('friend_id', profile.id)
-        .eq('status', 'pending');
-
-      setPendingRequestsCount(data?.length || 0);
-    } catch (error) {
-      console.error('Error fetching pending requests:', error);
-    }
-  };
-
-  const checkTutorialStatus = async () => {
-    if (!profile) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('tutorial_completed')
-        .eq('id', profile.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error checking tutorial status:', error);
-        return;
+      if (profileData.data) {
+        setIsVerified(profileData.data.is_verified || false);
+        setHasSocialBadge(profileData.data.has_social_badge || false);
+        setUnreadProfileViews(profileData.data.unread_profile_views || 0);
+        const completed = profileData.data.tutorial_completed || false;
+        setTutorialCompleted(completed);
+        if (!completed && profile.terms_accepted_at && profile.username_customized) {
+          setTimeout(() => setShowTutorialPrompt(true), 2000);
+        }
       }
 
-      const completed = data?.tutorial_completed || false;
-      setTutorialCompleted(completed);
+      setPendingRequestsCount(pendingData.count || 0);
 
-      if (!completed && profile.terms_accepted_at && profile.username_customized) {
-        setTimeout(() => {
-          setShowTutorialPrompt(true);
-        }, 2000);
-      }
+      const [aboveMe, totalProfiles] = rankData;
+      setRank({
+        position: (aboveMe.count || 0) + 1,
+        total: totalProfiles.count || 0,
+      });
     } catch (error) {
-      console.error('Error checking tutorial status:', error);
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
-  };
-
-  const fetchUserStats = async () => {
-    if (!profile) return;
-
-    try {
-      const stats = await getUserStats(profile.id);
-      setUserStats(stats);
-    } catch (error) {
-      console.error('Error fetching user stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const calculateRank = async () => {
-    if (!profile) return;
-
-    try {
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, overall_rating')
-        .order('overall_rating', { ascending: false });
-
-      if (profilesError) throw profilesError;
-
-      const position = (profiles || []).findIndex((p) => p.id === profile.id) + 1;
-      setRank({ position, total: profiles?.length || 0 });
-    } catch (error) {
-      console.error('Error calculating rank:', error);
-    }
   };
 
   if (!profile) {

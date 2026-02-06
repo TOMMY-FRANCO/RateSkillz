@@ -33,64 +33,52 @@ export interface NotificationCounts {
   ad_available: number;
 }
 
+const EMPTY_COUNTS: NotificationCounts = {
+  message: 0,
+  coin_received: 0,
+  coin_request: 0,
+  swap_offer: 0,
+  purchase_offer: 0,
+  card_sold: 0,
+  battle_request: 0,
+  profile_view: 0,
+  transaction: 0,
+  rank_update: 0,
+  setting_change: 0,
+  ad_available: 0,
+};
+
 export async function getNotificationCounts(
   userId: string
 ): Promise<NotificationCounts> {
   try {
-    const { data, error } = await supabase.rpc('get_notification_counts', {
-      p_user_id: userId,
-    });
+    const checkAd = !isAdBadgeDismissed();
 
-    if (error) throw error;
+    const [countsResult, adResult] = await Promise.all([
+      supabase.rpc('get_notification_counts', { p_user_id: userId }),
+      checkAd
+        ? supabase.rpc('is_ad_available_today', { p_user_id: userId })
+        : Promise.resolve({ data: false }),
+    ]);
 
-    const counts: NotificationCounts = {
-      message: 0,
-      coin_received: 0,
-      coin_request: 0,
-      swap_offer: 0,
-      purchase_offer: 0,
-      card_sold: 0,
-      battle_request: 0,
-      profile_view: 0,
-      transaction: 0,
-      rank_update: 0,
-      setting_change: 0,
-      ad_available: 0,
-    };
+    if (countsResult.error) throw countsResult.error;
 
-    if (data) {
-      data.forEach((item: NotificationCount) => {
+    const counts: NotificationCounts = { ...EMPTY_COUNTS };
+
+    if (countsResult.data) {
+      countsResult.data.forEach((item: NotificationCount) => {
         counts[item.notification_type] = item.unread_count;
       });
     }
 
-    if (!isAdBadgeDismissed()) {
-      const { data: adAvailable } = await supabase.rpc('is_ad_available_today', {
-        p_user_id: userId,
-      });
-
-      if (adAvailable) {
-        counts.ad_available = 1;
-      }
+    if (checkAd && adResult.data) {
+      counts.ad_available = 1;
     }
 
     return counts;
   } catch (err) {
     console.error('Error getting notification counts:', err);
-    return {
-      message: 0,
-      coin_received: 0,
-      coin_request: 0,
-      swap_offer: 0,
-      purchase_offer: 0,
-      card_sold: 0,
-      battle_request: 0,
-      profile_view: 0,
-      transaction: 0,
-      rank_update: 0,
-      setting_change: 0,
-      ad_available: 0,
-    };
+    return { ...EMPTY_COUNTS };
   }
 }
 
@@ -107,6 +95,22 @@ export async function markNotificationsRead(
     if (error) throw error;
   } catch (err) {
     console.error('Error marking notifications as read:', err);
+  }
+}
+
+export async function markNotificationsReadBatch(
+  userId: string,
+  notificationTypes: NotificationType[]
+): Promise<void> {
+  try {
+    const { error } = await supabase.rpc('mark_notifications_read_batch', {
+      p_user_id: userId,
+      p_notification_types: notificationTypes,
+    });
+
+    if (error) throw error;
+  } catch (err) {
+    console.error('Error batch marking notifications as read:', err);
   }
 }
 

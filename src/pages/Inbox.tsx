@@ -8,7 +8,7 @@ import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimm
 import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
-import { markNotificationsRead } from '../lib/notifications';
+import { markNotificationsReadBatch } from '../lib/notifications';
 
 export default function Inbox() {
   const { user } = useAuth();
@@ -41,9 +41,7 @@ export default function Inbox() {
 
     init();
 
-    markNotificationsRead(user.id, 'message');
-    markNotificationsRead(user.id, 'coin_received');
-    markNotificationsRead(user.id, 'coin_request');
+    markNotificationsReadBatch(user.id, ['message', 'coin_received', 'coin_request']);
   }, [user, loadConversations]);
 
   const handleRefresh = async () => {
