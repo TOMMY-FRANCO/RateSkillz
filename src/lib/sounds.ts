@@ -8,7 +8,9 @@ type SoundName =
   | 'coin-received'
   | 'friend-request'
   | 'card-swap'
-  | 'milestone';
+  | 'milestone'
+  | 'message-sent'
+  | 'message-received';
 
 type SoundCategory = 'transactions' | 'battles' | 'notifications';
 
@@ -23,6 +25,8 @@ const SOUND_CATEGORIES: Record<SoundName, SoundCategory> = {
   'friend-request': 'notifications',
   'card-swap': 'transactions',
   'milestone': 'notifications',
+  'message-sent': 'notifications',
+  'message-received': 'notifications',
 };
 
 interface AudioPreferences {
@@ -66,12 +70,18 @@ function unlockAudio() {
 }
 
 function setupUnlockListeners() {
-  const events = ['touchstart', 'touchend', 'mousedown', 'keydown'];
+  const events = ['touchstart', 'touchend', 'mousedown', 'keydown', 'click'];
   const handler = () => {
     unlockAudio();
     events.forEach((e) => document.removeEventListener(e, handler, true));
   };
   events.forEach((e) => document.addEventListener(e, handler, true));
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && audioCtx?.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+  });
 }
 
 if (typeof window !== 'undefined') {
@@ -210,6 +220,16 @@ const SYNTH: Record<SoundName, (ctx: AudioContext) => void> = {
     tone(ctx, 1047, t + 0.35, 0.4, 0.15, 'triangle');
     tone(ctx, 784, t + 0.5, 0.15, 0.08, 'sine');
   },
+  'message-sent': (ctx) => {
+    const t = ctx.currentTime;
+    noise(ctx, t, 0.08, 0.02, 5000);
+    tone(ctx, 900, t + 0.02, 0.1, 0.06, 'sine');
+  },
+  'message-received': (ctx) => {
+    const t = ctx.currentTime;
+    tone(ctx, 700, t, 0.08, 0.08, 'sine');
+    tone(ctx, 1000, t + 0.06, 0.12, 0.08, 'sine');
+  },
 };
 
 export function playSound(name: SoundName) {
@@ -222,6 +242,30 @@ export function playSound(name: SoundName) {
     }
     SYNTH[name](ctx);
   } catch {}
+}
+
+export function playSoundPreview(name: SoundName) {
+  try {
+    const ctx = getContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    SYNTH[name](ctx);
+  } catch {}
+}
+
+const CATEGORY_PREVIEW: Record<SoundCategory | 'master', SoundName> = {
+  master: 'notification',
+  transactions: 'coin-purchase',
+  battles: 'battle-win',
+  notifications: 'notification',
+};
+
+export function getPreviewSoundForCategory(
+  category: SoundCategory | 'master'
+): SoundName {
+  return CATEGORY_PREVIEW[category];
 }
 
 export type { SoundName, SoundCategory, AudioPreferences };

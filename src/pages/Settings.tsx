@@ -10,7 +10,8 @@ import { displayUsername } from '../lib/username';
 import { WhatsAppVerification } from '../components/WhatsAppVerification';
 import { VerificationBadge } from '../components/VerificationBadge';
 import { useSoundEffects } from '../hooks/useSoundEffects';
-import { playSound } from '../lib/sounds';
+import { playSoundPreview, getPreviewSoundForCategory } from '../lib/sounds';
+import { logAudioToggle } from '../lib/soundAnalytics';
 
 export default function Settings() {
   const { profile, signOut } = useAuth();
@@ -218,49 +219,11 @@ export default function Settings() {
 
           <UsernameChanger />
 
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center space-x-2">
-              <Volume2 className="w-6 h-6" />
-              <span>Sound Effects</span>
-            </h2>
-            <div className="space-y-4">
-              {([
-                { key: 'master' as const, label: 'Master Audio', desc: 'Enable all sound effects' },
-                { key: 'transactions' as const, label: 'Transactions', desc: 'Purchases, coin transfers, swaps' },
-                { key: 'battles' as const, label: 'Battles', desc: 'Win/loss results' },
-                { key: 'notifications' as const, label: 'Notifications', desc: 'Alerts, rank changes, milestones' },
-              ]).map(({ key, label, desc }) => (
-                <div key={key} className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700">
-                  <div>
-                    <p className="text-white font-semibold text-sm">{label}</p>
-                    <p className="text-gray-400 text-xs">{desc}</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      const newVal = !audioPrefs[key];
-                      updateAudioPrefs({ [key]: newVal });
-                      if (newVal && (key === 'master' || audioPrefs.master)) {
-                        playSound('notification');
-                      }
-                    }}
-                    className={`relative w-12 h-7 rounded-full transition-colors ${
-                      audioPrefs[key] && (key === 'master' || audioPrefs.master)
-                        ? 'bg-cyan-500'
-                        : 'bg-gray-600'
-                    }`}
-                  >
-                    <span
-                      className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${
-                        audioPrefs[key] && (key === 'master' || audioPrefs.master)
-                          ? 'translate-x-6'
-                          : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
+          <AudioSettingsPanel
+            audioPrefs={audioPrefs}
+            updateAudioPrefs={updateAudioPrefs}
+            userId={profile.id}
+          />
 
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
             <h2 className="text-xl font-bold text-white mb-4">Actions</h2>
@@ -337,6 +300,100 @@ export default function Settings() {
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+interface AudioSettingsPanelProps {
+  audioPrefs: { master: boolean; transactions: boolean; battles: boolean; notifications: boolean };
+  updateAudioPrefs: (update: Partial<AudioSettingsPanelProps['audioPrefs']>) => void;
+  userId: string;
+}
+
+const AUDIO_TOGGLES = [
+  { key: 'master' as const, label: 'Master Audio', desc: 'Enable all sound effects' },
+  { key: 'transactions' as const, label: 'Transactions', desc: 'Purchases, coin transfers, swaps' },
+  { key: 'battles' as const, label: 'Battles', desc: 'Win/loss results' },
+  { key: 'notifications' as const, label: 'Notifications', desc: 'Alerts, rank changes, milestones' },
+] as const;
+
+function AudioSettingsPanel({ audioPrefs, updateAudioPrefs, userId }: AudioSettingsPanelProps) {
+  const [playingKey, setPlayingKey] = useState<string | null>(null);
+
+  const handleToggle = (key: typeof AUDIO_TOGGLES[number]['key']) => {
+    const newVal = !audioPrefs[key];
+    updateAudioPrefs({ [key]: newVal });
+    logAudioToggle(userId, key, newVal);
+
+    const masterOn = key === 'master' ? newVal : audioPrefs.master;
+    if (newVal && masterOn) {
+      const previewSound = getPreviewSoundForCategory(key);
+      playSoundPreview(previewSound);
+      setPlayingKey(key);
+      setTimeout(() => setPlayingKey(null), 1000);
+    }
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
+      <h2 className="text-xl font-bold text-white mb-4 flex items-center space-x-2">
+        <Volume2 className="w-6 h-6" />
+        <span>Sound Effects</span>
+      </h2>
+      <div className="space-y-4">
+        {AUDIO_TOGGLES.map(({ key, label, desc }) => {
+          const isActive = audioPrefs[key] && (key === 'master' || audioPrefs.master);
+          const isPlaying = playingKey === key;
+
+          return (
+            <div key={key} className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700">
+              <div className="flex-1 min-w-0 mr-3">
+                <div className="flex items-center gap-2">
+                  <p className="text-white font-semibold text-sm">{label}</p>
+                  {isPlaying && (
+                    <span className="text-[10px] text-cyan-400 font-medium animate-pulse">
+                      Playing...
+                    </span>
+                  )}
+                </div>
+                <p className="text-gray-400 text-xs">{desc}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (isActive) {
+                      const previewSound = getPreviewSoundForCategory(key);
+                      playSoundPreview(previewSound);
+                      setPlayingKey(key);
+                      setTimeout(() => setPlayingKey(null), 1000);
+                    }
+                  }}
+                  className={`text-xs px-2 py-1 rounded transition-colors ${
+                    isActive
+                      ? 'text-cyan-400 hover:bg-cyan-500/10 cursor-pointer'
+                      : 'text-gray-600 cursor-not-allowed'
+                  }`}
+                  disabled={!isActive}
+                >
+                  Preview
+                </button>
+                <button
+                  onClick={() => handleToggle(key)}
+                  className={`relative w-12 h-7 rounded-full transition-colors ${
+                    isActive ? 'bg-cyan-500' : 'bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${
+                      isActive ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

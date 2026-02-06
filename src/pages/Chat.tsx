@@ -17,6 +17,7 @@ import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimm
 import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 import { checkCanSendCoins } from '../lib/coinTransfers';
 import { supabase } from '../lib/supabase';
+import { playSound } from '../lib/sounds';
 
 export default function Chat() {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -61,6 +62,36 @@ export default function Chat() {
     };
 
     loadMessages();
+  }, [conversationId, user]);
+
+  useEffect(() => {
+    if (!user || !conversationId) return;
+
+    const channel = supabase
+      .channel(`chat-sounds-${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const msg = payload.new as Message;
+          if (msg.sender_id !== user.id) {
+            playSound('message-received');
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === msg.id)) return prev;
+              return [...prev, msg];
+            });
+            markMessagesAsRead(conversationId, user.id);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [conversationId, user]);
 
   useEffect(() => {
@@ -130,7 +161,8 @@ export default function Chat() {
     if (!user || !conversationId || !otherUser || !newMessage.trim() || sending) return;
 
     setSending(true);
-    await sendMessage(conversationId, user.id, otherUser.id, newMessage.trim());
+    const result = await sendMessage(conversationId, user.id, otherUser.id, newMessage.trim());
+    if (result) playSound('message-sent');
     setNewMessage('');
     setSending(false);
 
