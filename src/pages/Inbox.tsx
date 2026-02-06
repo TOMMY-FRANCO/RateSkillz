@@ -2,20 +2,20 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Conversation, getUserConversations, formatTimestamp } from '../lib/messaging';
-import { MessageCircle, ArrowLeft, User } from 'lucide-react';
+import { MessageCircle, ArrowLeft, User, RefreshCw } from 'lucide-react';
 import { displayUsername } from '../lib/username';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
 import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
 import { markNotificationsRead } from '../lib/notifications';
-import { supabase } from '../lib/supabase';
 
 export default function Inbox() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [userPresence, setUserPresence] = useState<Map<string, UserPresence>>(new Map());
 
   const loadConversations = useCallback(async () => {
@@ -46,39 +46,11 @@ export default function Inbox() {
     markNotificationsRead(user.id, 'coin_request');
   }, [user, loadConversations]);
 
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('inbox-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'conversations',
-        },
-        () => {
-          loadConversations();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'conversations',
-        },
-        () => {
-          loadConversations();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, loadConversations]);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadConversations();
+    setRefreshing(false);
+  };
 
   const handleConversationClick = (conversation: Conversation) => {
     if (conversation.other_user) {
@@ -135,7 +107,15 @@ export default function Inbox() {
           >
             <ArrowLeft className="w-6 h-6 text-white" />
           </button>
-          <h1 className="text-3xl font-black text-white">Messages</h1>
+          <h1 className="text-3xl font-black text-white flex-1">Messages</h1>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-50"
+            title="Refresh"
+          >
+            <RefreshCw className={`w-5 h-5 text-white ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
         </div>
 
         {conversations.length === 0 ? (
