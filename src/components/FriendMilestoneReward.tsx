@@ -3,18 +3,11 @@ import { Users, Coins, CheckCircle, Sparkles } from 'lucide-react';
 import { getRewardStatus } from '../lib/rewards';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
+import { ShimmerBar, StaggerItem } from './ui/Shimmer';
 
 const MAX_FRIENDS = 5;
 const COINS_PER_FRIEND = 5;
 const TOTAL_REWARD = MAX_FRIENDS * COINS_PER_FRIEND;
-
-function ShimmerBar({ className = '' }: { className?: string }) {
-  return (
-    <div className={`relative overflow-hidden bg-white/[0.06] ${className}`}>
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent animate-shimmer" />
-    </div>
-  );
-}
 
 export function FriendMilestoneReward() {
   const { user } = useAuth();
@@ -66,23 +59,27 @@ export function FriendMilestoneReward() {
     return (
       <div className="bg-gradient-to-br from-gray-900/80 to-gray-800/80 border border-white/[0.06] rounded-2xl p-5 backdrop-blur-sm">
         <div className="flex items-center gap-3 mb-4">
-          <ShimmerBar className="w-10 h-10 rounded-xl flex-shrink-0" />
-          <div className="flex-1 space-y-2">
+          <StaggerItem index={0}>
+            <ShimmerBar className="w-10 h-10 rounded-xl" />
+          </StaggerItem>
+          <StaggerItem index={1} className="flex-1 space-y-2">
             <ShimmerBar className="h-4 w-36 rounded" />
             <ShimmerBar className="h-3 w-52 rounded" />
-          </div>
+          </StaggerItem>
         </div>
         <div className="space-y-3">
-          <div className="flex justify-between">
-            <ShimmerBar className="h-3 w-24 rounded" />
-            <ShimmerBar className="h-3 w-16 rounded" />
-          </div>
-          <ShimmerBar className="h-3 w-full rounded-full" />
-          <div className="flex gap-1.5">
+          <StaggerItem index={2} className="flex justify-between">
+            <ShimmerBar className="h-3 w-24 rounded" speed="slow" />
+            <ShimmerBar className="h-3 w-16 rounded" speed="slow" />
+          </StaggerItem>
+          <StaggerItem index={3}>
+            <ShimmerBar className="h-3 w-full rounded-full" speed="slow" />
+          </StaggerItem>
+          <StaggerItem index={4} className="flex gap-1.5">
             {[0, 1, 2, 3, 4].map((i) => (
               <ShimmerBar key={i} className="flex-1 h-9 rounded-lg" />
             ))}
-          </div>
+          </StaggerItem>
         </div>
       </div>
     );
@@ -90,7 +87,7 @@ export function FriendMilestoneReward() {
 
   if (isComplete) {
     return (
-      <div className="relative bg-gradient-to-br from-emerald-950/60 to-emerald-900/40 border border-emerald-500/20 rounded-2xl p-5 backdrop-blur-sm overflow-hidden">
+      <div className="relative bg-gradient-to-br from-emerald-950/60 to-emerald-900/40 border border-emerald-500/20 rounded-2xl p-5 backdrop-blur-sm overflow-hidden animate-content-reveal">
         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="relative flex items-center gap-3 mb-3">
           <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center ring-2 ring-emerald-500/20">
@@ -116,7 +113,7 @@ export function FriendMilestoneReward() {
   }
 
   return (
-    <div className="relative bg-gradient-to-br from-gray-900/80 to-gray-800/80 border border-white/[0.06] rounded-2xl p-5 backdrop-blur-sm overflow-hidden">
+    <div className="relative bg-gradient-to-br from-gray-900/80 to-gray-800/80 border border-white/[0.06] rounded-2xl p-5 backdrop-blur-sm overflow-hidden animate-content-reveal">
       <div className="absolute top-0 right-0 w-40 h-40 bg-amber-500/[0.03] rounded-full -translate-y-1/2 translate-x-1/2" />
 
       <div className="relative flex items-start gap-3 mb-4">

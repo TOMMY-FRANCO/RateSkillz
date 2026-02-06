@@ -19,6 +19,16 @@
   --text-primary: #FFFFFF;
   --text-secondary: rgba(255, 255, 255, 0.8);
   --text-tertiary: rgba(255, 255, 255, 0.6);
+
+  --shimmer-accent-color: rgba(245, 158, 11, 0.12);
+  --shimmer-slow-color: rgba(245, 158, 11, 0.08);
+  --shimmer-base: rgba(255, 255, 255, 0.06);
+  --shimmer-speed-fast: 2.5s;
+  --shimmer-speed-slow: 3.5s;
+  --shimmer-pulse-speed: 1.8s;
+  --shimmer-stagger-base: 50ms;
+  --shimmer-reveal-duration: 0.2s;
+  --shimmer-counter-duration: 400ms;
 }
 
 * {
@@ -319,6 +329,58 @@ input::placeholder, textarea::placeholder {
 
 .animate-shimmer {
   animation: shimmer 2s ease-in-out infinite;
+}
+
+.animate-shimmer-accent {
+  animation: shimmer var(--shimmer-speed-fast) ease-in-out infinite;
+}
+
+.animate-shimmer-slow {
+  animation: shimmer var(--shimmer-speed-slow) ease-in-out infinite;
+}
+
+@keyframes stagger-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-stagger-fade-in {
+  opacity: 0;
+  animation: stagger-fade-in var(--shimmer-reveal-duration) ease-out forwards;
+}
+
+@keyframes content-reveal {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.animate-content-reveal {
+  animation: content-reveal var(--shimmer-reveal-duration) ease-out forwards;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.animate-skeleton-pulse {
+  animation: skeleton-pulse var(--shimmer-pulse-speed) ease-in-out infinite;
 }
 
 @keyframes glow-pulse {
