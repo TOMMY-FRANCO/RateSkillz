@@ -10,6 +10,7 @@ import { formatCoinBalance } from '../lib/formatBalance';
 import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
 import SendCoinsModal from '../components/SendCoinsModal';
+import { claimPerFriendMilestoneReward } from '../lib/rewards';
 
 interface FriendRequest {
   id: string;
@@ -128,6 +129,8 @@ export default function Friends() {
   const handleAcceptRequest = async (requestId: string) => {
     setActionLoading(requestId);
     try {
+      const request = incomingRequests.find((r) => r.id === requestId);
+
       const { error } = await supabase
         .from('friends')
         .update({ status: 'accepted' })
@@ -138,6 +141,11 @@ export default function Friends() {
       }
 
       showNotification('success', 'Friend request accepted!');
+
+      if (request && currentUser) {
+        claimPerFriendMilestoneReward(currentUser.id, request.user_id).catch(() => {});
+      }
+
       await loadFriendData();
     } catch (error: any) {
       console.error('Error accepting request:', error);

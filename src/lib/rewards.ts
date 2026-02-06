@@ -15,6 +15,7 @@ export interface RewardStatus {
   social_reward_claimed: boolean;
   friend_count: number;
   friend_milestone_reward_claimed: boolean;
+  friend_milestone_claimed_count: number;
 }
 
 export async function claimWhatsAppVerificationReward(userId: string): Promise<RewardResult> {
@@ -89,6 +90,44 @@ export async function claimFriendMilestoneReward(userId: string): Promise<Reward
   }
 }
 
+export async function claimPerFriendMilestoneReward(
+  userId: string,
+  friendId: string
+): Promise<RewardResult & { claimed_count?: number; milestone_complete?: boolean }> {
+  try {
+    const { data, error } = await supabase.rpc('claim_per_friend_milestone_reward', {
+      p_user_id: userId,
+      p_friend_id: friendId,
+    });
+
+    if (error) throw error;
+
+    return data as RewardResult & { claimed_count?: number; milestone_complete?: boolean };
+  } catch (error) {
+    console.error('Error claiming per-friend milestone reward:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to claim reward',
+    };
+  }
+}
+
+export async function getFriendMilestoneClaimedCount(userId: string): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from('reward_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('reward_type', 'friend_milestone_per_friend')
+      .eq('status', 'claimed');
+
+    if (error) throw error;
+    return count || 0;
+  } catch {
+    return 0;
+  }
+}
+
 export async function getRewardStatus(userId: string): Promise<RewardStatus | null> {
   try {
     const { data: profile, error: profileError } = await supabase
@@ -99,24 +138,35 @@ export async function getRewardStatus(userId: string): Promise<RewardStatus | nu
 
     if (profileError) throw profileError;
 
-    const { data: whatsappReward, error: rewardError } = await supabase
-      .from('reward_logs')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('reward_type', 'whatsapp_verify')
-      .eq('status', 'claimed')
-      .maybeSingle();
+    const [whatsappResult, milestoneCountResult] = await Promise.all([
+      supabase
+        .from('reward_logs')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('reward_type', 'whatsapp_verify')
+        .eq('status', 'claimed')
+        .maybeSingle(),
+      supabase
+        .from('reward_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('reward_type', 'friend_milestone_per_friend')
+        .eq('status', 'claimed'),
+    ]);
 
-    if (rewardError) throw rewardError;
+    if (whatsappResult.error) throw whatsappResult.error;
+
+    const claimedCount = milestoneCountResult.count || 0;
 
     return {
       whatsapp_verified: profile.is_verified || false,
-      whatsapp_reward_claimed: whatsappReward !== null,
+      whatsapp_reward_claimed: whatsappResult.data !== null,
       has_shared_x: profile.has_shared_x || false,
       has_shared_facebook: profile.has_shared_facebook || false,
       social_reward_claimed: profile.shared_reward_claimed || false,
       friend_count: profile.friend_count || 0,
-      friend_milestone_reward_claimed: profile.social_badge_reward_claimed || false
+      friend_milestone_reward_claimed: claimedCount >= 5,
+      friend_milestone_claimed_count: claimedCount,
     };
   } catch (error) {
     console.error('Error getting reward status:', error);
