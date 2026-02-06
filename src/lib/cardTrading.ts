@@ -75,12 +75,8 @@ export interface CardSaleResult {
 
 export async function getCardOwnership(cardUserId: string): Promise<CardOwnership | null> {
   const { data, error } = await supabase
-    .from('card_ownership')
-    .select(`
-      *,
-      card_user:profiles!card_ownership_card_user_id_fkey(username, full_name, avatar_url),
-      owner:profiles!card_ownership_owner_id_fkey(username, full_name)
-    `)
+    .from('card_market_cache')
+    .select('*')
     .eq('card_user_id', cardUserId)
     .maybeSingle();
 
@@ -91,13 +87,7 @@ export async function getCardOwnership(cardUserId: string): Promise<CardOwnershi
 
   if (!data) return null;
 
-  return {
-    ...data,
-    current_price: data.current_price || data.base_price || 20.00,
-    base_price: data.base_price || 20.00,
-    times_traded: data.times_traded || 0,
-    last_sale_price: data.last_sale_price || null
-  };
+  return mapCacheToCardOwnership(data);
 }
 
 export async function getCardsOwnedByUser(userId: string): Promise<CardOwnership[]> {
@@ -347,93 +337,72 @@ export interface PurchaseRequest {
 }
 
 export async function getNotBoughtCards(): Promise<CardWithRatings[]> {
-  const { data, error } = await supabase
-    .from('card_ownership')
-    .select(`
-      *,
-      card_user:profiles!card_ownership_card_user_id_fkey(
-        id,
-        username,
-        full_name,
-        avatar_url,
-        position,
-        team,
-        overall_rating
-      )
-    `)
+  const { data: cards, error } = await supabase
+    .from('card_market_cache')
+    .select('*')
     .eq('times_traded', 0)
-    .filter('owner_id', 'eq', supabase.raw('card_user_id'))
-    .order('created_at', { ascending: false });
+    .order('acquired_at', { ascending: false });
 
   if (error) {
     console.error('Error fetching not bought cards:', error);
     return [];
   }
 
-  const cardsWithRatings = await Promise.all(
-    (data || []).map(async (card) => {
-      const { data: avgRatings } = await supabase
-        .from('ratings')
-        .select('pac, sho, pas, dri, def, phy')
-        .eq('rated_user_id', card.card_user_id);
+  const notBought = (cards || []).filter((c: any) => c.owner_id === c.card_user_id);
+  if (notBought.length === 0) return [];
 
-      let ratings = { pac: 50, sho: 50, pas: 50, dri: 50, def: 50, phy: 50 };
-      if (avgRatings && avgRatings.length > 0) {
-        const sum = (key: string) => avgRatings.reduce((acc, r: any) => acc + (r[key] || 0), 0);
-        const count = avgRatings.length;
-        ratings = {
-          pac: Math.round(sum('pac') / count),
-          sho: Math.round(sum('sho') / count),
-          pas: Math.round(sum('pas') / count),
-          dri: Math.round(sum('dri') / count),
-          def: Math.round(sum('def') / count),
-          phy: Math.round(sum('phy') / count),
-        };
-      }
+  const cardUserIds = notBought.map((c: any) => c.card_user_id);
 
-      const { data: tierData } = await supabase
-        .from('tier_badges')
-        .select('badge_tier')
-        .eq('user_id', card.card_user_id)
-        .maybeSingle();
+  const [profilesResult, tiersResult] = await Promise.all([
+    supabase
+      .from('profile_summary')
+      .select('user_id, username, full_name, avatar_url, position, team, overall_rating, pac_rating, sho_rating, pas_rating, dri_rating, def_rating, phy_rating')
+      .in('user_id', cardUserIds),
+    supabase
+      .from('tier_badges')
+      .select('user_id, badge_tier')
+      .in('user_id', cardUserIds),
+  ]);
 
-      return {
-        ...card,
-        ...ratings,
-        position: card.card_user?.position || 'N/A',
-        team: card.card_user?.team || 'N/A',
-        overall_rating: card.card_user?.overall_rating || 50,
-        tier_badge: tierData?.badge_tier || null,
-      };
-    })
-  );
+  const profileMap = new Map<string, any>();
+  (profilesResult.data || []).forEach((p: any) => profileMap.set(p.user_id, p));
 
-  return cardsWithRatings;
+  const tierMap = new Map<string, string>();
+  (tiersResult.data || []).forEach((t: any) => tierMap.set(t.user_id, t.badge_tier));
+
+  return notBought.map((card: any) => {
+    const p = profileMap.get(card.card_user_id);
+    const mapped = mapCacheToCardOwnership(card);
+    return {
+      ...mapped,
+      card_user: {
+        id: card.card_user_id,
+        username: p?.username || card.original_owner_username || '',
+        full_name: p?.full_name || card.original_owner_username || '',
+        avatar_url: p?.avatar_url || '',
+        position: p?.position || 'N/A',
+        team: p?.team || 'N/A',
+        overall_rating: p?.overall_rating || 50,
+      },
+      pac: p?.pac_rating || 50,
+      sho: p?.sho_rating || 50,
+      pas: p?.pas_rating || 50,
+      dri: p?.dri_rating || 50,
+      def: p?.def_rating || 50,
+      phy: p?.phy_rating || 50,
+      position: p?.position || 'N/A',
+      team: p?.team || 'N/A',
+      overall_rating: p?.overall_rating || 50,
+      tier_badge: tierMap.get(card.card_user_id) || null,
+    };
+  });
 }
 
 export async function getNoManagerCards(): Promise<CardWithRatings[]> {
-  const { data, error } = await supabase
-    .from('card_ownership')
-    .select(`
-      *,
-      card_user:profiles!card_ownership_card_user_id_fkey(
-        id,
-        username,
-        full_name,
-        avatar_url,
-        position,
-        team,
-        overall_rating
-      ),
-      owner:profiles!card_ownership_owner_id_fkey(
-        id,
-        username,
-        full_name,
-        is_manager
-      )
-    `)
+  const { data: cards, error } = await supabase
+    .from('card_market_cache')
+    .select('*')
     .gt('times_traded', 0)
-    .or('is_manager.is.false,is_manager.is.null', { foreignTable: 'owner' })
     .order('current_price', { ascending: true });
 
   if (error) {
@@ -441,45 +410,67 @@ export async function getNoManagerCards(): Promise<CardWithRatings[]> {
     return [];
   }
 
-  const cardsWithRatings = await Promise.all(
-    (data || []).map(async (card) => {
-      const { data: avgRatings } = await supabase
-        .from('ratings')
-        .select('pac, sho, pas, dri, def, phy')
-        .eq('rated_user_id', card.card_user_id);
+  if (!cards || cards.length === 0) return [];
 
-      let ratings = { pac: 50, sho: 50, pas: 50, dri: 50, def: 50, phy: 50 };
-      if (avgRatings && avgRatings.length > 0) {
-        const sum = (key: string) => avgRatings.reduce((acc, r: any) => acc + (r[key] || 0), 0);
-        const count = avgRatings.length;
-        ratings = {
-          pac: Math.round(sum('pac') / count),
-          sho: Math.round(sum('sho') / count),
-          pas: Math.round(sum('pas') / count),
-          dri: Math.round(sum('dri') / count),
-          def: Math.round(sum('def') / count),
-          phy: Math.round(sum('phy') / count),
-        };
-      }
+  const ownerIds = [...new Set(cards.map((c: any) => c.owner_id))];
+  const cardUserIds = [...new Set(cards.map((c: any) => c.card_user_id))];
+  const allUserIds = [...new Set([...ownerIds, ...cardUserIds])];
 
-      const { data: tierData } = await supabase
-        .from('tier_badges')
-        .select('badge_tier')
-        .eq('user_id', card.card_user_id)
-        .maybeSingle();
+  const [profilesResult, tiersResult] = await Promise.all([
+    supabase
+      .from('profile_summary')
+      .select('user_id, username, full_name, avatar_url, position, team, overall_rating, is_manager, pac_rating, sho_rating, pas_rating, dri_rating, def_rating, phy_rating')
+      .in('user_id', allUserIds),
+    supabase
+      .from('tier_badges')
+      .select('user_id, badge_tier')
+      .in('user_id', cardUserIds),
+  ]);
 
-      return {
-        ...card,
-        ...ratings,
-        position: card.card_user?.position || 'N/A',
-        team: card.card_user?.team || 'N/A',
-        overall_rating: card.card_user?.overall_rating || 50,
-        tier_badge: tierData?.badge_tier || null,
-      };
-    })
-  );
+  const profileMap = new Map<string, any>();
+  (profilesResult.data || []).forEach((p: any) => profileMap.set(p.user_id, p));
 
-  return cardsWithRatings;
+  const tierMap = new Map<string, string>();
+  (tiersResult.data || []).forEach((t: any) => tierMap.set(t.user_id, t.badge_tier));
+
+  const filtered = cards.filter((card: any) => {
+    const ownerProfile = profileMap.get(card.owner_id);
+    return !ownerProfile?.is_manager;
+  });
+
+  return filtered.map((card: any) => {
+    const p = profileMap.get(card.card_user_id);
+    const ownerProfile = profileMap.get(card.owner_id);
+    const mapped = mapCacheToCardOwnership(card);
+    return {
+      ...mapped,
+      card_user: {
+        id: card.card_user_id,
+        username: p?.username || card.original_owner_username || '',
+        full_name: p?.full_name || card.original_owner_username || '',
+        avatar_url: p?.avatar_url || '',
+        position: p?.position || 'N/A',
+        team: p?.team || 'N/A',
+        overall_rating: p?.overall_rating || 50,
+      },
+      owner: {
+        id: card.owner_id,
+        username: ownerProfile?.username || card.owner_username || '',
+        full_name: ownerProfile?.full_name || card.owner_username || '',
+        is_manager: ownerProfile?.is_manager || false,
+      },
+      pac: p?.pac_rating || 50,
+      sho: p?.sho_rating || 50,
+      pas: p?.pas_rating || 50,
+      dri: p?.dri_rating || 50,
+      def: p?.def_rating || 50,
+      phy: p?.phy_rating || 50,
+      position: p?.position || 'N/A',
+      team: p?.team || 'N/A',
+      overall_rating: p?.overall_rating || 50,
+      tier_badge: tierMap.get(card.card_user_id) || null,
+    };
+  });
 }
 
 export async function createPurchaseRequest(

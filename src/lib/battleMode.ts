@@ -361,47 +361,45 @@ export async function getBattle(battleId: string) {
 }
 
 export async function getPlayerCards(userId: string): Promise<PlayerCard[]> {
-  const { data, error } = await supabase
-    .from('card_ownership')
-    .select(`
-      id,
-      card_user_id,
-      owner_id,
-      profiles!card_ownership_card_user_id_fkey (
-        username,
-        avatar_url,
-        overall_rating
-      ),
-      user_stats!inner (
-        pac,
-        sho,
-        pas,
-        dri,
-        def,
-        phy
-      )
-    `)
+  const { data: cards, error: cardsError } = await supabase
+    .from('card_market_cache')
+    .select('card_user_id, owner_id, original_owner_username, owner_avatar')
     .eq('owner_id', userId)
     .limit(5);
 
-  if (error) throw error;
+  if (cardsError) throw cardsError;
+  if (!cards || cards.length === 0) return [];
 
-  return (data || []).map((item: any) => ({
-    id: item.id,
-    card_user_id: item.card_user_id,
-    owner_id: item.owner_id,
-    player_name: item.profiles?.username || 'Unknown Player',
-    username: item.profiles?.username || 'Unknown',
-    avatar_url: item.profiles?.avatar_url || '',
-    image_url: item.profiles?.avatar_url || '',
-    overall_rating: item.profiles?.overall_rating || 50,
-    pace: item.user_stats?.pac || 50,
-    shooting: item.user_stats?.sho || 50,
-    passing: item.user_stats?.pas || 50,
-    dribbling: item.user_stats?.dri || 50,
-    defending: item.user_stats?.def || 50,
-    physical: item.user_stats?.phy || 50,
-  }));
+  const cardUserIds = cards.map((c: any) => c.card_user_id);
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profile_summary')
+    .select('user_id, username, avatar_url, overall_rating, pac_rating, sho_rating, pas_rating, dri_rating, def_rating, phy_rating')
+    .in('user_id', cardUserIds);
+
+  if (profilesError) throw profilesError;
+
+  const profileMap = new Map<string, any>();
+  (profiles || []).forEach((p: any) => profileMap.set(p.user_id, p));
+
+  return cards.map((card: any) => {
+    const p = profileMap.get(card.card_user_id);
+    return {
+      id: `${card.card_user_id}_${card.owner_id}`,
+      card_user_id: card.card_user_id,
+      owner_id: card.owner_id,
+      player_name: p?.username || card.original_owner_username || 'Unknown Player',
+      username: p?.username || card.original_owner_username || 'Unknown',
+      avatar_url: p?.avatar_url || '',
+      image_url: p?.avatar_url || '',
+      overall_rating: p?.overall_rating || 50,
+      pace: p?.pac_rating || 50,
+      shooting: p?.sho_rating || 50,
+      passing: p?.pas_rating || 50,
+      dribbling: p?.dri_rating || 50,
+      defending: p?.def_rating || 50,
+      physical: p?.phy_rating || 50,
+    };
+  });
 }
 
 export async function subscribeToBattle(battleId: string, callback: (battle: Battle) => void) {
