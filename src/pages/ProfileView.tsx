@@ -193,41 +193,22 @@ export default function ProfileView() {
       setFriendsCount(profileData.friend_count || 0);
 
       if (currentUser && profileData.id !== currentUser.id) {
-        console.log('🔍 Loading friend status...');
-        console.log('Current User ID:', currentUser.id);
-        console.log('Profile User ID:', profileData.id);
-
-        const { data: friendData, error: friendError } = await supabase
+        const { data: friendData } = await supabase
           .from('friends')
           .select('*')
           .or(`and(user_id.eq.${currentUser.id},friend_id.eq.${profileData.id}),and(user_id.eq.${profileData.id},friend_id.eq.${currentUser.id})`)
           .maybeSingle();
 
-        if (friendError) {
-          console.error('❌ Error loading friend data:', friendError);
-        } else {
-          console.log('Friend Data:', friendData);
-        }
-
         if (friendData) {
           setFriendshipId(friendData.id);
           if (friendData.status === 'accepted') {
-            console.log('✅ Friend status: ACCEPTED');
             setFriendStatus('accepted');
           } else if (friendData.status === 'blocked') {
-            console.log('🚫 Friend status: BLOCKED');
             setFriendStatus('blocked');
           } else if (friendData.status === 'pending') {
-            if (friendData.user_id === currentUser.id) {
-              console.log('⏳ Friend status: PENDING_SENT (you sent the request)');
-              setFriendStatus('pending_sent');
-            } else {
-              console.log('⏳ Friend status: PENDING_RECEIVED (you received the request)');
-              setFriendStatus('pending_received');
-            }
+            setFriendStatus(friendData.user_id === currentUser.id ? 'pending_sent' : 'pending_received');
           }
         } else {
-          console.log('👥 Friend status: NONE (no friendship exists)');
           setFriendStatus('none');
         }
       }
@@ -355,20 +336,10 @@ export default function ProfileView() {
   };
 
   const handleFriendRequest = async () => {
-    console.log('🔵 Friend Request Button Clicked!');
-    console.log('Current User:', currentUser?.id);
-    console.log('Profile User:', profile?.id);
-    console.log('Current Friend Status:', friendStatus);
-    console.log('Friendship ID:', friendshipId);
-
-    if (!currentUser || !profile) {
-      console.log('❌ Missing currentUser or profile, aborting');
-      return;
-    }
+    if (!currentUser || !profile) return;
 
     try {
       if (friendStatus === 'none') {
-        console.log('➡️ Sending new friend request...');
         const { data, error } = await supabase
           .from('friends')
           .insert({
@@ -379,70 +350,51 @@ export default function ProfileView() {
           .select()
           .single();
 
-        if (error) {
-          console.error('❌ Error inserting friend request:', error);
-        } else if (data) {
-          console.log('✅ Friend request sent successfully:', data);
+        if (error) throw error;
+        if (data) {
           setFriendshipId(data.id);
           setFriendStatus('pending_sent');
-          alert('Friend request sent!');
         }
       } else if (friendStatus === 'pending_sent') {
-        console.log('➡️ Canceling friend request...');
         if (friendshipId) {
           const { error } = await supabase
             .from('friends')
             .delete()
             .eq('id', friendshipId);
 
-          if (error) {
-            console.error('❌ Error canceling friend request:', error);
-          } else {
-            console.log('✅ Friend request canceled');
-            setFriendshipId(null);
-            setFriendStatus('none');
-            alert('Friend request canceled');
-          }
+          if (error) throw error;
+          setFriendshipId(null);
+          setFriendStatus('none');
         }
       } else if (friendStatus === 'pending_received') {
-        console.log('➡️ Accepting friend request...');
         if (friendshipId) {
           const { error } = await supabase
             .from('friends')
             .update({ status: 'accepted' })
             .eq('id', friendshipId);
 
-          if (error) {
-            console.error('❌ Error accepting friend request:', error);
-          } else {
-            console.log('✅ Friend request accepted');
-            setFriendStatus('accepted');
-            await loadProfile();
-            alert('Friend request accepted!');
-          }
+          if (error) throw error;
+          setFriendStatus('accepted');
+          getOrCreateConversation(currentUser.id, profile.id).catch(() => {});
+          await loadProfile();
         }
       } else if (friendStatus === 'accepted') {
-        console.log('➡️ Removing friend...');
+        if (!confirm('Remove this friend?')) return;
         if (friendshipId) {
           const { error } = await supabase
             .from('friends')
             .delete()
             .eq('id', friendshipId);
 
-          if (error) {
-            console.error('❌ Error removing friend:', error);
-          } else {
-            console.log('✅ Friend removed');
-            setFriendshipId(null);
-            setFriendStatus('none');
-            await loadProfile();
-            alert('Friend removed');
-          }
+          if (error) throw error;
+          setFriendshipId(null);
+          setFriendStatus('none');
+          await loadProfile();
         }
       }
-    } catch (error) {
-      console.error('❌ Exception in handleFriendRequest:', error);
-      alert('An error occurred. Check console for details.');
+    } catch (error: any) {
+      console.error('Error handling friend request:', error);
+      alert(error?.message || 'Action failed. Try again.');
     }
   };
 

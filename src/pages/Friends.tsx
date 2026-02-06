@@ -47,6 +47,34 @@ export default function Friends() {
   useEffect(() => {
     if (currentUser) {
       loadFriendData();
+
+      const channel = supabase
+        .channel('friends-realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'friends',
+            filter: `user_id=eq.${currentUser.id}`,
+          },
+          () => loadFriendData()
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'friends',
+            filter: `friend_id=eq.${currentUser.id}`,
+          },
+          () => loadFriendData()
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [currentUser]);
 

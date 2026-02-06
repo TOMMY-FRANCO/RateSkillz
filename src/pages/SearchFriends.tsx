@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import { Search, Filter, X, Loader2, UserPlus, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
-import { sendFriendRequest } from '../lib/friendRequests';
+import { Search, Filter, X, Loader2, UserPlus, UserCheck, UserX, Clock, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { sendFriendRequest, removeFriend } from '../lib/friendRequests';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
 import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 
@@ -84,6 +84,7 @@ export default function SearchFriends() {
   const [totalResults, setTotalResults] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [sendingRequest, setSendingRequest] = useState<string | null>(null);
+  const [friendStatuses, setFriendStatuses] = useState<Map<string, { status: 'none' | 'pending_sent' | 'pending_received' | 'accepted'; id: string | null }>>(new Map());
 
   const [filters, setFilters] = useState<SearchFilters>({
     username: '',
@@ -188,6 +189,10 @@ export default function SearchFriends() {
 
       setResults(mappedResults);
       setTotalResults(count || 0);
+
+      if (mappedResults.length > 0 && user) {
+        loadFriendStatuses(mappedResults.map(r => r.id));
+      }
     } catch (error) {
       console.error('Search error:', error);
       setResults([]);
@@ -197,17 +202,124 @@ export default function SearchFriends() {
     }
   };
 
+  const loadFriendStatuses = async (userIds: string[]) => {
+    if (!user || userIds.length === 0) return;
+
+    try {
+      const { data } = await supabase
+        .from('friends')
+        .select('id, user_id, friend_id, status')
+        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+
+      const statusMap = new Map<string, { status: 'none' | 'pending_sent' | 'pending_received' | 'accepted'; id: string | null }>();
+
+      for (const uid of userIds) {
+        statusMap.set(uid, { status: 'none', id: null });
+      }
+
+      if (data) {
+        for (const row of data) {
+          const otherUserId = row.user_id === user.id ? row.friend_id : row.user_id;
+          if (!userIds.includes(otherUserId)) continue;
+
+          if (row.status === 'accepted') {
+            statusMap.set(otherUserId, { status: 'accepted', id: row.id });
+          } else if (row.status === 'pending') {
+            if (row.user_id === user.id) {
+              statusMap.set(otherUserId, { status: 'pending_sent', id: row.id });
+            } else {
+              statusMap.set(otherUserId, { status: 'pending_received', id: row.id });
+            }
+          }
+        }
+      }
+
+      setFriendStatuses(statusMap);
+    } catch (error) {
+      console.error('Error loading friend statuses:', error);
+    }
+  };
+
   const handleSendFriendRequest = async (recipientId: string) => {
     if (!user) return;
 
     setSendingRequest(recipientId);
     try {
-      const { error } = await sendFriendRequest(recipientId);
+      const { data, error } = await sendFriendRequest(recipientId);
       if (error) throw error;
-      alert('Friend request sent!');
+      setFriendStatuses(prev => {
+        const next = new Map(prev);
+        next.set(recipientId, { status: 'pending_sent', id: data?.id || null });
+        return next;
+      });
     } catch (error: any) {
       console.error('Error sending friend request:', error);
       alert(error?.message || 'Failed to send friend request');
+    } finally {
+      setSendingRequest(null);
+    }
+  };
+
+  const handleCancelRequest = async (recipientId: string, friendshipId: string) => {
+    if (!user) return;
+
+    setSendingRequest(recipientId);
+    try {
+      const { error } = await removeFriend(friendshipId);
+      if (error) throw error;
+      setFriendStatuses(prev => {
+        const next = new Map(prev);
+        next.set(recipientId, { status: 'none', id: null });
+        return next;
+      });
+    } catch (error: any) {
+      console.error('Error canceling request:', error);
+      alert(error?.message || 'Failed to cancel request');
+    } finally {
+      setSendingRequest(null);
+    }
+  };
+
+  const handleAcceptRequest = async (recipientId: string, friendshipId: string) => {
+    if (!user) return;
+
+    setSendingRequest(recipientId);
+    try {
+      const { error } = await supabase
+        .from('friends')
+        .update({ status: 'accepted' })
+        .eq('id', friendshipId);
+
+      if (error) throw error;
+      setFriendStatuses(prev => {
+        const next = new Map(prev);
+        next.set(recipientId, { status: 'accepted', id: friendshipId });
+        return next;
+      });
+    } catch (error: any) {
+      console.error('Error accepting request:', error);
+      alert(error?.message || 'Failed to accept request');
+    } finally {
+      setSendingRequest(null);
+    }
+  };
+
+  const handleRemoveFriend = async (recipientId: string, friendshipId: string) => {
+    if (!confirm('Remove this friend?')) return;
+    if (!user) return;
+
+    setSendingRequest(recipientId);
+    try {
+      const { error } = await removeFriend(friendshipId);
+      if (error) throw error;
+      setFriendStatuses(prev => {
+        const next = new Map(prev);
+        next.set(recipientId, { status: 'none', id: null });
+        return next;
+      });
+    } catch (error: any) {
+      console.error('Error removing friend:', error);
+      alert(error?.message || 'Failed to remove friend');
     } finally {
       setSendingRequest(null);
     }
@@ -793,18 +905,60 @@ export default function SearchFriends() {
                       <Eye className="w-4 h-4" />
                       View Profile
                     </button>
-                    <button
-                      onClick={() => handleSendFriendRequest(result.id)}
-                      disabled={sendingRequest === result.id}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
-                    >
-                      {sendingRequest === result.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <UserPlus className="w-4 h-4" />
-                      )}
-                      Add Friend
-                    </button>
+                    {(() => {
+                      const fs = friendStatuses.get(result.id);
+                      const isProcessing = sendingRequest === result.id;
+
+                      if (fs?.status === 'accepted') {
+                        return (
+                          <button
+                            onClick={() => handleRemoveFriend(result.id, fs.id!)}
+                            disabled={isProcessing}
+                            className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                          >
+                            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
+                            Remove Friend
+                          </button>
+                        );
+                      }
+
+                      if (fs?.status === 'pending_sent') {
+                        return (
+                          <button
+                            onClick={() => handleCancelRequest(result.id, fs.id!)}
+                            disabled={isProcessing}
+                            className="flex-1 bg-gray-600 hover:bg-gray-500 disabled:bg-gray-600/50 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                          >
+                            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
+                            Request Pending
+                          </button>
+                        );
+                      }
+
+                      if (fs?.status === 'pending_received') {
+                        return (
+                          <button
+                            onClick={() => handleAcceptRequest(result.id, fs.id!)}
+                            disabled={isProcessing}
+                            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-600/50 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                          >
+                            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
+                            Accept Request
+                          </button>
+                        );
+                      }
+
+                      return (
+                        <button
+                          onClick={() => handleSendFriendRequest(result.id)}
+                          disabled={isProcessing}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                        >
+                          {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                          Add Friend
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               ))}
