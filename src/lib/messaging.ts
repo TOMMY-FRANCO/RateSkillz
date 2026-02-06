@@ -41,6 +41,11 @@ export interface TypingStatus {
   updated_at: string;
 }
 
+export interface SendResult {
+  message: Message | null;
+  error: string | null;
+}
+
 export async function getOrCreateConversation(userId: string, otherUserId: string): Promise<string | null> {
   try {
     const { data, error } = await supabase.rpc('get_or_create_conversation', {
@@ -62,10 +67,9 @@ export async function getUserConversations(userId: string): Promise<Conversation
       .from('conversations')
       .select('*')
       .or(`user_one_id.eq.${userId},user_two_id.eq.${userId}`)
-      .order('last_message_at', { ascending: false });
+      .order('last_message_at', { ascending: false, nullsFirst: false });
 
     if (error) throw error;
-
     if (!conversations) return [];
 
     const conversationsWithUsers = await Promise.all(
@@ -76,7 +80,7 @@ export async function getUserConversations(userId: string): Promise<Conversation
           .from('profiles')
           .select('id, username, full_name, avatar_url')
           .eq('id', otherUserId)
-          .single();
+          .maybeSingle();
 
         const { count } = await supabase
           .from('messages')
@@ -121,7 +125,7 @@ export async function sendMessage(
   senderId: string,
   recipientId: string,
   content: string
-): Promise<Message | null> {
+): Promise<SendResult> {
   try {
     const { data, error } = await supabase
       .from('messages')
@@ -136,10 +140,10 @@ export async function sendMessage(
 
     if (error) throw error;
 
-    return data;
-  } catch (error) {
+    return { message: data, error: null };
+  } catch (error: any) {
     console.error('Error sending message:', error);
-    return null;
+    return { message: null, error: error?.message || 'Failed to send message' };
   }
 }
 
@@ -258,6 +262,7 @@ export async function checkAreFriends(userId: string, otherUserId: string): Prom
 }
 
 export function formatTimestamp(timestamp: string): string {
+  if (!timestamp) return '';
   const date = new Date(timestamp);
   const now = new Date();
   const diffInMs = now.getTime() - date.getTime();

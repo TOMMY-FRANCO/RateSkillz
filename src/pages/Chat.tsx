@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -10,7 +10,7 @@ import {
   getUserStatus,
   formatTimestamp,
 } from '../lib/messaging';
-import { ArrowLeft, Send, User, Check, CheckCheck, Coins } from 'lucide-react';
+import { ArrowLeft, Send, User, Check, CheckCheck, Coins, AlertCircle, Loader2 } from 'lucide-react';
 import { displayUsername } from '../lib/username';
 import SendCoinsModal from '../components/SendCoinsModal';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
@@ -18,6 +18,14 @@ import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 import { checkCanSendCoins } from '../lib/coinTransfers';
 import { supabase } from '../lib/supabase';
 import { playSound } from '../lib/sounds';
+
+interface OtherUserInfo {
+  id: string;
+  username: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  is_verified?: boolean;
+}
 
 export default function Chat() {
   const { conversationId } = useParams<{ conversationId: string }>();
@@ -28,26 +36,22 @@ export default function Chat() {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
+  const [otherUser, setOtherUser] = useState<OtherUserInfo | null>(location.state?.otherUser || null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
-
-  const [otherUser, setOtherUser] = useState<{
-    id: string;
-    username: string;
-    full_name: string | null;
-    avatar_url: string | null;
-    is_verified?: boolean;
-  } | null>(location.state?.otherUser || null);
+  const typingClearRef = useRef<NodeJS.Timeout>();
 
   const [showSendCoinsModal, setShowSendCoinsModal] = useState(false);
   const [canSendCoins, setCanSendCoins] = useState(false);
   const [sendCoinsTooltip, setSendCoinsTooltip] = useState('');
-  const [coinTransferNotifications, setCoinTransferNotifications] = useState<
-    Array<{ id: string; amount: number; sender_id: string; recipient_id: string; created_at: string }>
-  >([]);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
 
   useEffect(() => {
     if (!user || !conversationId) return;
@@ -55,7 +59,9 @@ export default function Chat() {
     const loadConversationData = async () => {
       setLoading(true);
 
-      if (!otherUser) {
+      let resolvedOtherUser = otherUser;
+
+      if (!resolvedOtherUser) {
         const { data: conv } = await supabase
           .from('conversations')
           .select('user_one_id, user_two_id')
@@ -79,6 +85,7 @@ export default function Chat() {
           return;
         }
 
+        resolvedOtherUser = profile;
         setOtherUser(profile);
       }
 
@@ -96,7 +103,7 @@ export default function Chat() {
     if (!user || !conversationId) return;
 
     const channel = supabase
-      .channel(`chat-sounds-${conversationId}`)
+      .channel(`chat-${conversationId}`)
       .on(
         'postgres_changes',
         {
@@ -107,20 +114,75 @@ export default function Chat() {
         },
         (payload) => {
           const msg = payload.new as Message;
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
           if (msg.sender_id !== user.id) {
             playSound('message-received');
-            setMessages((prev) => {
-              if (prev.some((m) => m.id === msg.id)) return prev;
-              return [...prev, msg];
-            });
             markMessagesAsRead(conversationId, user.id);
+            setOtherUserTyping(false);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const updated = payload.new as Message;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === updated.id ? { ...m, is_read: updated.is_read, read_at: updated.read_at } : m))
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId, user]);
+
+  useEffect(() => {
+    if (!user || !conversationId || !otherUser) return;
+
+    const channel = supabase
+      .channel(`typing-${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'typing_status',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'DELETE') {
+            const old = payload.old as any;
+            if (old.user_id === otherUser.id) {
+              setOtherUserTyping(false);
+            }
+          } else {
+            const record = payload.new as any;
+            if (record.user_id === otherUser.id) {
+              setOtherUserTyping(record.is_typing);
+              if (typingClearRef.current) clearTimeout(typingClearRef.current);
+              typingClearRef.current = setTimeout(() => setOtherUserTyping(false), 5000);
+            }
           }
         }
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [conversationId, user]);
+    return () => {
+      supabase.removeChannel(channel);
+      if (typingClearRef.current) clearTimeout(typingClearRef.current);
+    };
+  }, [conversationId, user, otherUser]);
 
   useEffect(() => {
     if (!otherUser) return;
@@ -155,20 +217,16 @@ export default function Chat() {
         .maybeSingle();
 
       if (data) {
-        otherUser.is_verified = data.is_verified;
+        setOtherUser((prev) => prev ? { ...prev, is_verified: data.is_verified } : prev);
       }
     };
 
     loadOtherUserVerification();
-  }, [user, otherUser, conversationId]);
+  }, [user, otherUser?.id, conversationId]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, [messages, scrollToBottom]);
 
   const handleTyping = () => {
     if (!user || !conversationId) return;
@@ -191,13 +249,18 @@ export default function Chat() {
     const content = newMessage.trim();
     setNewMessage('');
     setSending(true);
-    const result = await sendMessage(conversationId, user.id, otherUser.id, content);
-    if (result) {
+    setSendError(null);
+
+    const { message, error } = await sendMessage(conversationId, user.id, otherUser.id, content);
+    if (message) {
       playSound('message-sent');
       setMessages((prev) => {
-        if (prev.some((m) => m.id === result.id)) return prev;
-        return [...prev, result];
+        if (prev.some((m) => m.id === message.id)) return prev;
+        return [...prev, message];
       });
+    } else {
+      setSendError(error || 'Failed to send message');
+      setNewMessage(content);
     }
     setSending(false);
 
@@ -210,24 +273,24 @@ export default function Chat() {
   const handleTransferComplete = async (amount: number) => {
     if (!user || !conversationId || !otherUser) return;
 
-    const result = await sendMessage(
+    const { message } = await sendMessage(
       conversationId,
       user.id,
       otherUser.id,
       `Sent ${amount} coins`
     );
-    if (result) {
+    if (message) {
       playSound('coin-received');
       setMessages((prev) => {
-        if (prev.some((m) => m.id === result.id)) return prev;
-        return [...prev, result];
+        if (prev.some((m) => m.id === message.id)) return prev;
+        return [...prev, message];
       });
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex flex-col">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col">
         <div className="bg-black/20 backdrop-blur-sm border-b border-white/10">
           <div className="max-w-4xl mx-auto px-4 py-4">
             <div className="flex items-center gap-4">
@@ -256,8 +319,10 @@ export default function Chat() {
     );
   }
 
+  if (!otherUser) return null;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col">
       <div className="bg-black/20 backdrop-blur-sm border-b border-white/10">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
@@ -277,7 +342,7 @@ export default function Chat() {
                     className="w-12 h-12 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
                     <User className="w-6 h-6 text-white" />
                   </div>
                 )}
@@ -291,7 +356,9 @@ export default function Chat() {
                   {otherUser.full_name || displayUsername(otherUser.username)}
                 </h2>
                 <p className="text-sm text-gray-300">
-                  {isOnline ? (
+                  {otherUserTyping ? (
+                    <span className="text-cyan-400 font-medium">typing...</span>
+                  ) : isOnline ? (
                     <span className="flex items-center gap-1">
                       <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                       Online
@@ -309,72 +376,83 @@ export default function Chat() {
       </div>
 
       <div className="flex-1 overflow-y-auto max-w-4xl w-full mx-auto px-4 py-6">
-        <div className="space-y-4">
-          {messages.map((message) => {
+        <div className="space-y-3">
+          {messages.length === 0 && (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+                <Send className="w-8 h-8 text-gray-500" />
+              </div>
+              <p className="text-gray-400 text-lg font-medium">No messages yet</p>
+              <p className="text-gray-500 text-sm mt-1">Send a message to start the conversation</p>
+            </div>
+          )}
+
+          {messages.map((message, index) => {
             const isSentByMe = message.sender_id === user?.id;
             const isCoinTransfer = message.content.includes('Sent') && message.content.includes('coins');
+            const prevMessage = index > 0 ? messages[index - 1] : null;
+            const showDateDivider = !prevMessage ||
+              new Date(message.created_at).toDateString() !== new Date(prevMessage.created_at).toDateString();
 
             return (
-              <div
-                key={message.id}
-                className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                    isCoinTransfer
-                      ? isSentByMe
-                        ? 'bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-br-none'
-                        : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-bl-none'
-                      : isSentByMe
-                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-br-none'
-                      : 'bg-white/10 backdrop-blur-sm text-white rounded-bl-none border border-white/20'
-                  }`}
-                >
-                  {isCoinTransfer && (
-                    <div className="flex items-center gap-2 mb-1">
-                      <Coins className="w-4 h-4" />
-                      <span className="text-xs font-semibold">Coin Transfer</span>
-                    </div>
-                  )}
-                  <p className="break-words">{message.content}</p>
-                  <div className="flex items-center justify-end gap-1 mt-1">
-                    <span className="text-xs opacity-70">
-                      {new Date(message.created_at).toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
+              <div key={message.id}>
+                {showDateDivider && (
+                  <div className="flex items-center justify-center my-4">
+                    <div className="bg-white/5 text-gray-400 text-xs px-3 py-1 rounded-full">
+                      {new Date(message.created_at).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'short',
+                        day: 'numeric',
                       })}
-                    </span>
-                    {isSentByMe && (
-                      <span className="text-xs opacity-70">
-                        {message.is_read ? (
-                          <CheckCheck className="w-3 h-3 text-blue-300" />
-                        ) : (
-                          <Check className="w-3 h-3" />
-                        )}
-                      </span>
+                    </div>
+                  </div>
+                )}
+                <div
+                  className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'} animate-[fadeSlideIn_0.2s_ease-out]`}
+                >
+                  <div
+                    className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl transition-all ${
+                      isCoinTransfer
+                        ? isSentByMe
+                          ? 'bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-br-none'
+                          : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-bl-none'
+                        : isSentByMe
+                        ? 'bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-br-none'
+                        : 'bg-white/10 backdrop-blur-sm text-white rounded-bl-none border border-white/20'
+                    }`}
+                  >
+                    {isCoinTransfer && (
+                      <div className="flex items-center gap-2 mb-1">
+                        <Coins className="w-4 h-4" />
+                        <span className="text-xs font-semibold">Coin Transfer</span>
+                      </div>
                     )}
+                    <p className="break-words">{message.content}</p>
+                    <div className="flex items-center justify-end gap-1 mt-1">
+                      <span className="text-xs opacity-70">
+                        {new Date(message.created_at).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                      {isSentByMe && (
+                        <span className="text-xs opacity-70">
+                          {message.is_read ? (
+                            <CheckCheck className="w-3 h-3 text-blue-300" />
+                          ) : (
+                            <Check className="w-3 h-3" />
+                          )}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             );
           })}
 
-          {coinTransferNotifications.map((notification) => (
-            <div
-              key={notification.id}
-              className="flex justify-center animate-fade-in"
-            >
-              <div className="bg-yellow-500/20 border border-yellow-500/50 px-4 py-2 rounded-full text-yellow-300 text-sm font-semibold flex items-center gap-2">
-                <Coins className="w-4 h-4" />
-                {notification.sender_id === user?.id
-                  ? `You sent ${notification.amount} coins`
-                  : `Received ${notification.amount} coins`}
-              </div>
-            </div>
-          ))}
-
           {otherUserTyping && (
-            <div className="flex justify-start">
+            <div className="flex justify-start animate-[fadeSlideIn_0.2s_ease-out]">
               <div className="bg-white/10 backdrop-blur-sm px-4 py-3 rounded-2xl rounded-bl-none border border-white/20">
                 <div className="flex gap-1">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
@@ -387,6 +465,18 @@ export default function Chat() {
           <div ref={messagesEndRef} />
         </div>
       </div>
+
+      {sendError && (
+        <div className="max-w-4xl mx-auto px-4 w-full">
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2 mb-2 flex items-center gap-2 animate-[fadeSlideIn_0.2s_ease-out]">
+            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+            <p className="text-red-300 text-sm flex-1">{sendError}</p>
+            <button onClick={() => setSendError(null)} className="text-red-400 hover:text-red-300 text-sm font-medium">
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="bg-black/20 backdrop-blur-sm border-t border-white/10">
         <div className="max-w-4xl mx-auto px-4 py-4">
@@ -421,16 +511,20 @@ export default function Chat() {
                 handleTyping();
               }}
               placeholder="Type a message..."
-              className="flex-1 bg-white/10 text-white placeholder-gray-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 border border-white/10"
+              className="flex-1 bg-white/10 text-white placeholder-gray-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-500 border border-white/10"
               disabled={sending}
             />
             <button
               type="submit"
               disabled={!newMessage.trim() || sending}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white px-6 py-3 rounded-xl font-bold hover:from-cyan-700 hover:to-teal-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              <Send className="w-5 h-5" />
-              Send
+              {sending ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+              {sending ? 'Sending' : 'Send'}
             </button>
           </form>
         </div>

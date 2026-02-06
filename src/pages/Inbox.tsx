@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Conversation, getUserConversations, formatTimestamp } from '../lib/messaging';
@@ -9,6 +9,7 @@ import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
 import { markNotificationsRead } from '../lib/notifications';
+import { supabase } from '../lib/supabase';
 
 export default function Inbox() {
   const { user } = useAuth();
@@ -17,31 +18,67 @@ export default function Inbox() {
   const [loading, setLoading] = useState(true);
   const [userPresence, setUserPresence] = useState<Map<string, UserPresence>>(new Map());
 
+  const loadConversations = useCallback(async () => {
+    if (!user) return;
+    const convs = await getUserConversations(user.id);
+    setConversations(convs);
+
+    const userIds = convs.map((c) => c.other_user?.id).filter(Boolean) as string[];
+    if (userIds.length > 0) {
+      const presence = await getMultipleUserPresence(userIds);
+      setUserPresence(presence);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
 
-    const loadConversations = async () => {
+    const init = async () => {
       setLoading(true);
-      const convs = await getUserConversations(user.id);
-      setConversations(convs);
-
-      const userIds = convs.map((c) => c.other_user?.id).filter(Boolean) as string[];
-      if (userIds.length > 0) {
-        const presence = await getMultipleUserPresence(userIds);
-        setUserPresence(presence);
-      }
-
+      await loadConversations();
       setLoading(false);
     };
 
-    loadConversations();
+    init();
 
-    if (user) {
-      markNotificationsRead(user.id, 'message');
-      markNotificationsRead(user.id, 'coin_received');
-      markNotificationsRead(user.id, 'coin_request');
-    }
-  }, [user]);
+    markNotificationsRead(user.id, 'message');
+    markNotificationsRead(user.id, 'coin_received');
+    markNotificationsRead(user.id, 'coin_request');
+  }, [user, loadConversations]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('inbox-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'conversations',
+        },
+        () => {
+          loadConversations();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'conversations',
+        },
+        () => {
+          loadConversations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, loadConversations]);
 
   const handleConversationClick = (conversation: Conversation) => {
     if (conversation.other_user) {
@@ -53,7 +90,7 @@ export default function Inbox() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="flex items-center gap-4 mb-8">
             <button
@@ -89,7 +126,7 @@ export default function Inbox() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-8">
           <button
@@ -124,7 +161,7 @@ export default function Inbox() {
                         className="w-14 h-14 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
                         <User className="w-7 h-7 text-white" />
                       </div>
                     )}
@@ -146,7 +183,7 @@ export default function Inbox() {
                         )}
                       </div>
                       <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
-                        {formatTimestamp(conversation.last_message_at)}
+                        {conversation.last_message_at ? formatTimestamp(conversation.last_message_at) : ''}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
