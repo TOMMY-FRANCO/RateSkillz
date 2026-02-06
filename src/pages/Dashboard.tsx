@@ -299,7 +299,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <h3 className="text-white font-bold text-sm sm:text-base">Watch & Earn</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Get 10 coins/day</p>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Get 5 coins/day</p>
               </div>
             </div>
           </button>
@@ -454,7 +454,6 @@ export default function Dashboard() {
         onClose={() => setShowTutorial(false)}
         onComplete={async () => {
           setTutorialCompleted(true);
-          await checkTutorialStatus();
           window.location.reload();
         }}
       />

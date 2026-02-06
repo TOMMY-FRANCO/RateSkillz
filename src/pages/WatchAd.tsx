@@ -127,7 +127,7 @@ export default function WatchAd() {
             <Tv className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">Watch & Earn</h1>
-          <p className="text-white/60 text-lg">Watch a short advert and earn 10 coins</p>
+          <p className="text-white/60 text-lg">Watch a short advert and earn 5 coins</p>
 
           <div className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
             <Coins className="w-5 h-5 text-yellow-400" />
@@ -148,7 +148,7 @@ export default function WatchAd() {
             <div className="mb-8">
               <div className="inline-flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl shadow-lg mb-4">
                 <Coins className="w-8 h-8 text-white" />
-                <span className="text-3xl font-bold text-white">+10 coins</span>
+                <span className="text-3xl font-bold text-white">+5 coins</span>
               </div>
               <p className="text-white/60 mt-4">Watch a 30-second advert to earn coins</p>
             </div>
@@ -209,11 +209,11 @@ export default function WatchAd() {
               <CheckCircle className="w-12 h-12 text-white" />
             </div>
             <h2 className="text-3xl font-bold text-white mb-2">Congratulations!</h2>
-            <p className="text-white/60 mb-8">You earned 10 coins</p>
+            <p className="text-white/60 mb-8">You earned 5 coins</p>
 
             <div className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl shadow-lg mb-8">
               <Coins className="w-8 h-8 text-white" />
-              <span className="text-4xl font-bold text-white">+10</span>
+              <span className="text-4xl font-bold text-white">+5</span>
             </div>
 
             <div className="space-x-4">
