@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, Coins, CheckCircle, Sparkles } from 'lucide-react';
 import { getRewardStatus } from '../lib/rewards';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { ShimmerBar, StaggerItem } from './ui/Shimmer';
+import { playSound } from '../lib/sounds';
 
 const MAX_FRIENDS = 5;
 const COINS_PER_FRIEND = 5;
@@ -14,6 +15,7 @@ export function FriendMilestoneReward() {
   const [friendCount, setFriendCount] = useState(0);
   const [claimedCount, setClaimedCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const prevClaimedRef = useRef(0);
 
   const loadRewardStatus = useCallback(async () => {
     if (!user) return;
@@ -21,7 +23,12 @@ export function FriendMilestoneReward() {
     const status = await getRewardStatus(user.id);
     if (status) {
       setFriendCount(status.friend_count);
-      setClaimedCount(status.friend_milestone_claimed_count);
+      const newCount = status.friend_milestone_claimed_count;
+      if (newCount > prevClaimedRef.current && prevClaimedRef.current > 0) {
+        playSound(newCount >= MAX_FRIENDS ? 'milestone' : 'coin-received');
+      }
+      prevClaimedRef.current = newCount;
+      setClaimedCount(newCount);
     }
     setLoading(false);
   }, [user]);

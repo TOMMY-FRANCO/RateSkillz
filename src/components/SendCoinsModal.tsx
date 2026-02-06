@@ -14,6 +14,7 @@ import { ShimmerBar, StaggerContainer, StaggerItem, ContentReveal, SlowLoadMessa
 import { SkeletonAvatar, SkeletonText, SkeletonButton, SkeletonLimitRow } from './ui/SkeletonPresets';
 import { AnimatedCounter } from './ui/AnimatedCounter';
 import { useContentReveal } from '../hooks/useContentReveal';
+import { playSound } from '../lib/sounds';
 
 interface SendCoinsModalProps {
   isOpen: boolean;
@@ -230,6 +231,7 @@ export default function SendCoinsModal({
       }
 
       setSuccess(true);
+      playSound('coin-received');
       if (result.remaining_send_limit !== undefined) {
         setRemainingSendLimit(Number(result.remaining_send_limit));
       }

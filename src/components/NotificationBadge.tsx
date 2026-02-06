@@ -1,9 +1,22 @@
+import { useEffect, useRef } from 'react';
+import { playSound } from '../lib/sounds';
+
 interface NotificationBadgeProps {
   count: number;
   className?: string;
+  soundType?: 'notification' | 'coin-received' | 'friend-request';
 }
 
-export default function NotificationBadge({ count, className = '' }: NotificationBadgeProps) {
+export default function NotificationBadge({ count, className = '', soundType = 'notification' }: NotificationBadgeProps) {
+  const prevCountRef = useRef(count);
+
+  useEffect(() => {
+    if (count > prevCountRef.current && prevCountRef.current >= 0) {
+      playSound(soundType);
+    }
+    prevCountRef.current = count;
+  }, [count, soundType]);
+
   if (count === 0) return null;
 
   const displayCount = count > 100 ? '100+' : count.toString();

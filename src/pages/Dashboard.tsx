@@ -268,7 +268,7 @@ export default function Dashboard() {
             onClick={() => navigate('/inbox')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={getCount(['message', 'coin_received', 'coin_request'])} />
+            <NotificationBadge count={getCount(['message', 'coin_received', 'coin_request'])} soundType="coin-received" />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#C44569] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
                 <MessageCircle className="w-5 h-5 text-black" />
@@ -401,11 +401,7 @@ export default function Dashboard() {
             onClick={() => navigate('/friends')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
-            {pendingRequestsCount > 0 && (
-              <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg shadow-red-500/50">
-                {pendingRequestsCount}
-              </span>
-            )}
+            <NotificationBadge count={pendingRequestsCount} soundType="friend-request" />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <Bell className="w-5 h-5 text-black" />

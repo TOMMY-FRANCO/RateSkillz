@@ -18,6 +18,7 @@ import { CardOwnership } from '../lib/cardTrading';
 import { Repeat, Plus, Filter, History, AlertCircle, Check, X, Coins, User } from 'lucide-react';
 import { displayUsername } from '../lib/username';
 import { formatCoinBalance } from '../lib/formatBalance';
+import { playSound } from '../lib/sounds';
 
 interface CardSwapTabProps {
   onSwapComplete: () => void;
@@ -148,6 +149,7 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
     try {
       const result = await acceptCardSwap(swapId, profile.id);
       if (result.success) {
+        playSound('card-swap');
         alert('Swap completed successfully!');
         onSwapComplete();
         loadData();

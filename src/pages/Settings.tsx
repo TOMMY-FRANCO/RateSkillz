@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, LogOut, User, Users, Bell, FileText, Shield, UserCheck } from 'lucide-react';
+import { ArrowLeft, LogOut, User, Users, Bell, FileText, Shield, UserCheck, Volume2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Profile } from '../contexts/AuthContext';
 import OnlineStatus from '../components/OnlineStatus';
@@ -9,6 +9,8 @@ import UsernameChanger from '../components/UsernameChanger';
 import { displayUsername } from '../lib/username';
 import { WhatsAppVerification } from '../components/WhatsAppVerification';
 import { VerificationBadge } from '../components/VerificationBadge';
+import { useSoundEffects } from '../hooks/useSoundEffects';
+import { playSound } from '../lib/sounds';
 
 export default function Settings() {
   const { profile, signOut } = useAuth();
@@ -19,6 +21,7 @@ export default function Settings() {
   const [isVerified, setIsVerified] = useState(false);
   const [hasSocialBadge, setHasSocialBadge] = useState(false);
   const [friendCount, setFriendCount] = useState(0);
+  const { prefs: audioPrefs, updatePrefs: updateAudioPrefs } = useSoundEffects();
 
   useEffect(() => {
     loadProfiles();
@@ -214,6 +217,50 @@ export default function Settings() {
           </div>
 
           <UsernameChanger />
+
+          <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center space-x-2">
+              <Volume2 className="w-6 h-6" />
+              <span>Sound Effects</span>
+            </h2>
+            <div className="space-y-4">
+              {([
+                { key: 'master' as const, label: 'Master Audio', desc: 'Enable all sound effects' },
+                { key: 'transactions' as const, label: 'Transactions', desc: 'Purchases, coin transfers, swaps' },
+                { key: 'battles' as const, label: 'Battles', desc: 'Win/loss results' },
+                { key: 'notifications' as const, label: 'Notifications', desc: 'Alerts, rank changes, milestones' },
+              ]).map(({ key, label, desc }) => (
+                <div key={key} className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700">
+                  <div>
+                    <p className="text-white font-semibold text-sm">{label}</p>
+                    <p className="text-gray-400 text-xs">{desc}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const newVal = !audioPrefs[key];
+                      updateAudioPrefs({ [key]: newVal });
+                      if (newVal && (key === 'master' || audioPrefs.master)) {
+                        playSound('notification');
+                      }
+                    }}
+                    className={`relative w-12 h-7 rounded-full transition-colors ${
+                      audioPrefs[key] && (key === 'master' || audioPrefs.master)
+                        ? 'bg-cyan-500'
+                        : 'bg-gray-600'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${
+                        audioPrefs[key] && (key === 'master' || audioPrefs.master)
+                          ? 'translate-x-6'
+                          : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
             <h2 className="text-xl font-bold text-white mb-4">Actions</h2>

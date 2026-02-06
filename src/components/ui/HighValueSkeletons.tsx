@@ -1,8 +1,9 @@
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, useRef, ReactNode } from 'react';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from './Shimmer';
 import { AnimatedCounter } from './AnimatedCounter';
 import { SkeletonAvatar } from './SkeletonPresets';
-import { Coins, Trophy, TrendingUp, TrendingDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Coins, Trophy, ArrowUp, ArrowDown } from 'lucide-react';
+import { playSound } from '../../lib/sounds';
 
 interface SkeletonReceiptProps {
   visible: boolean;
@@ -82,6 +83,16 @@ export function CardReceiptReveal({
   newBalance,
   className = '',
 }: CardReceiptRevealProps) {
+  const soundPlayed = useRef(false);
+
+  useEffect(() => {
+    if (!soundPlayed.current) {
+      soundPlayed.current = true;
+      const t = setTimeout(() => playSound('coin-purchase'), 100);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
   return (
     <div className={`bg-gradient-to-br from-gray-900 to-gray-800 border border-green-500/40 rounded-2xl p-6 animate-content-reveal ${className}`}>
       <div className="flex items-center gap-3 mb-4">
@@ -189,6 +200,15 @@ export function BattleResultReveal({
   className = '',
 }: BattleResultRevealProps) {
   const [showConfetti, setShowConfetti] = useState(false);
+  const soundPlayed = useRef(false);
+
+  useEffect(() => {
+    if (!soundPlayed.current) {
+      soundPlayed.current = true;
+      const t = setTimeout(() => playSound(isWinner ? 'battle-win' : 'battle-loss'), 150);
+      return () => clearTimeout(t);
+    }
+  }, [isWinner]);
 
   useEffect(() => {
     if (isWinner) {
@@ -275,6 +295,16 @@ export function RankChangeIndicator({
   previousRank,
   className = '',
 }: RankChangeIndicatorProps) {
+  const soundPlayed = useRef(false);
+  const hasChange = previousRank && previousRank !== currentRank;
+
+  useEffect(() => {
+    if (hasChange && !soundPlayed.current) {
+      soundPlayed.current = true;
+      playSound(currentRank < previousRank! ? 'rank-up' : 'rank-down');
+    }
+  }, [hasChange, currentRank, previousRank]);
+
   if (!previousRank || previousRank === currentRank) {
     return (
       <span className={`text-2xl font-black text-gray-500 ${className}`}>
