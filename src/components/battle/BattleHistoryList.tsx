@@ -1,5 +1,6 @@
 import { Trophy, Clock, XCircle, Coins } from 'lucide-react';
 import { Battle } from '../../lib/battleMode';
+import { AnimatedCounter } from '../ui/AnimatedCounter';
 
 interface BattleHistoryListProps {
   battles: Battle[];
@@ -110,7 +111,9 @@ export default function BattleHistoryList({ battles, userId, onRefresh, onBattle
               {battle.status === 'completed' && (
                 <div className="text-right">
                   <div className="text-2xl font-bold text-white">
-                    {battle.manager1_score} - {battle.manager2_score}
+                    <AnimatedCounter value={battle.manager1_score} duration={600} decimals={0} />
+                    {' - '}
+                    <AnimatedCounter value={battle.manager2_score} duration={600} decimals={0} />
                   </div>
                   <p className="text-sm text-gray-400">Final Score</p>
                 </div>

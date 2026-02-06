@@ -22,6 +22,7 @@ import { getMultipleUserBalances } from '../lib/balances';
 import { formatCoinBalance } from '../lib/formatBalance';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
 import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
+import { SkeletonReceipt } from '../components/ui/HighValueSkeletons';
 import CardSwapTab from '../components/CardSwapTab';
 import CardDiscardTab from '../components/CardDiscardTab';
 import NotBoughtCardsTab from '../components/NotBoughtCardsTab';
@@ -376,6 +377,12 @@ export default function TradingDashboard() {
                   const isRestricted = restrictedCards.has(card.id);
                   const restrictionReason = restrictedCards.get(card.id);
 
+                  if (isPurchasing) {
+                    return (
+                      <SkeletonReceipt key={card.id} visible={true} />
+                    );
+                  }
+
                   return (
                     <div key={card.id} className={`bg-gradient-to-br from-gray-900 to-gray-800 border rounded-2xl p-6 transition-all ${
                       isRestricted ? 'border-red-500/50' : 'border-gray-700 hover:border-cyan-500/50'
@@ -449,7 +456,7 @@ export default function TradingDashboard() {
 
                       <button
                         onClick={() => handlePurchaseCard(card)}
-                        disabled={isPurchasing || !canAfford || isOwnCard || isRestricted}
+                        disabled={!canAfford || isOwnCard || isRestricted}
                         className={`w-full px-4 py-3 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${
                           isRestricted
                             ? 'bg-red-600/30 text-red-300 cursor-not-allowed border border-red-500/30'
@@ -457,14 +464,10 @@ export default function TradingDashboard() {
                             ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                             : !canAfford
                             ? 'bg-red-600/50 text-red-200 cursor-not-allowed'
-                            : isPurchasing
-                            ? 'bg-gray-700 text-gray-300 cursor-wait'
                             : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-400 hover:to-emerald-400 text-white'
                         }`}
                       >
-                        {isPurchasing ? (
-                          <>Processing...</>
-                        ) : isRestricted ? (
+                        {isRestricted ? (
                           <>
                             <X className="w-5 h-5" />
                             Purchase Restricted

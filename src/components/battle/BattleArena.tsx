@@ -5,6 +5,8 @@ import { GlassButton } from '../ui/GlassButton';
 import { SkillSelectionScreen } from './SkillSelectionScreen';
 import { TiebreakerScreen } from './TiebreakerScreen';
 import { useAuth } from '../../hooks/useAuth';
+import { BattleResultSkeleton, BattleResultReveal } from '../ui/HighValueSkeletons';
+import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../ui/Shimmer';
 import {
   Battle,
   PlayerCard,
@@ -167,8 +169,29 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00FF85]"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <StaggerItem index={0}>
+            <div className="bg-white/[0.03] rounded-2xl border border-white/[0.06] p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <ShimmerBar className="w-8 h-8 rounded" />
+                  <ShimmerBar className="h-7 w-40 rounded" />
+                </div>
+                <ShimmerBar className="h-9 w-24 rounded-lg" speed="slow" />
+              </div>
+              <div className="grid grid-cols-3 gap-4 text-center">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="space-y-1">
+                    <ShimmerBar className="h-3 w-20 rounded mx-auto" speed="slow" />
+                    <ShimmerBar className="h-8 w-12 rounded mx-auto" speed="slow" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </StaggerItem>
+          <BattleResultSkeleton visible={true} />
+        </div>
       </div>
     );
   }
@@ -181,6 +204,41 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
         eliminatedCards={eliminatedCards}
         onComplete={onComplete}
       />
+    );
+  }
+
+  const isCompleted = battle.status === 'completed' || battle.status === 'forfeited';
+  const isWinner = battle.winner_id === user?.id;
+
+  if (isCompleted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+        <div className="max-w-2xl mx-auto space-y-6">
+          <BattleResultReveal
+            isWinner={isWinner}
+            myScore={battle.manager1_id === user?.id ? battle.manager1_score : battle.manager2_score}
+            opponentScore={battle.manager1_id === user?.id ? battle.manager2_score : battle.manager1_score}
+            wagerAmount={battle.wager_amount}
+            opponentName="Opponent"
+          />
+          <GlassCard className="p-6">
+            <h3 className="text-xl font-bold text-white mb-4">Skills Used</h3>
+            <div className="flex gap-2 flex-wrap">
+              {battle.used_skills.map((skill) => (
+                <div
+                  key={skill}
+                  className="px-3 py-1 bg-red-500/20 border border-red-500 rounded-full text-red-500 text-sm"
+                >
+                  {skill}
+                </div>
+              ))}
+              {battle.used_skills.length === 0 && (
+                <p className="text-white/50">No skills used</p>
+              )}
+            </div>
+          </GlassCard>
+        </div>
+      </div>
     );
   }
 

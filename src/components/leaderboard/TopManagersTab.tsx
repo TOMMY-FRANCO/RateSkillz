@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Search, ChevronLeft, ChevronRight, Crown, User, Trophy, CheckCircle2 } from 'lucide-react';
@@ -6,6 +6,7 @@ import { displayUsername } from '../../lib/username';
 import { VerificationBadge } from '../VerificationBadge';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../ui/Shimmer';
 import { SkeletonAvatar } from '../ui/SkeletonPresets';
+import { RankChangeIndicator } from '../ui/HighValueSkeletons';
 
 interface ManagerData {
   id: string;
@@ -35,6 +36,7 @@ export default function TopManagersTab() {
   const [teamFilter, setTeamFilter] = useState('');
   const [verifiedFilter, setVerifiedFilter] = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const prevRanksRef = useRef<Map<string, number>>(new Map());
 
   const fetchManagers = async () => {
     setLoading(true);
@@ -95,7 +97,13 @@ export default function TopManagersTab() {
           has_social_badge: manager.has_social_badge || false,
         }));
 
+        const newRanks = new Map<string, number>();
+        formattedManagers.forEach((m, i) => {
+          newRanks.set(m.id, (currentPage - 1) * MANAGERS_PER_PAGE + i + 1);
+        });
+
         setManagers(formattedManagers);
+        prevRanksRef.current = newRanks;
       }
 
       setLastUpdated(new Date());
@@ -259,7 +267,10 @@ export default function TopManagersTab() {
               >
                 <div className="flex items-center gap-4">
                   <div className="flex-shrink-0 w-12 text-center">
-                    <span className="text-2xl font-black text-gray-500">#{rank}</span>
+                    <RankChangeIndicator
+                      currentRank={rank}
+                      previousRank={prevRanksRef.current.get(manager.id)}
+                    />
                   </div>
 
                   <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-800 border-2 border-gray-700 relative">

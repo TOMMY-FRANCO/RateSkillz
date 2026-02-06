@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useTierBadges } from '../../hooks/useTierBadges';
@@ -6,6 +6,7 @@ import { Search, ChevronLeft, ChevronRight, Coins, User, Trophy } from 'lucide-r
 import { displayUsername } from '../../lib/username';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../ui/Shimmer';
 import { SkeletonAvatar } from '../ui/SkeletonPresets';
+import { RankChangeIndicator } from '../ui/HighValueSkeletons';
 
 interface CardData {
   card_user_id: string;
@@ -44,6 +45,7 @@ export default function PriceOfCardsTab() {
   const [minRating, setMinRating] = useState('');
   const [maxRating, setMaxRating] = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const prevRanksRef = useRef<Map<string, number>>(new Map());
 
   const getTierForRating = (rating: number) => {
     return tiers.find(tier =>
@@ -153,7 +155,13 @@ export default function PriceOfCardsTab() {
           }
         }
 
+        const newRanks = new Map<string, number>();
+        filteredCards.forEach((c, i) => {
+          newRanks.set(c.card_user_id, (currentPage - 1) * CARDS_PER_PAGE + i + 1);
+        });
+
         setCards(filteredCards);
+        prevRanksRef.current = newRanks;
       }
 
       setLastUpdated(new Date());
@@ -329,7 +337,10 @@ export default function PriceOfCardsTab() {
               >
                 <div className="flex items-center gap-4">
                   <div className="flex-shrink-0 w-12 text-center">
-                    <span className="text-2xl font-black text-gray-500">#{rank}</span>
+                    <RankChangeIndicator
+                      currentRank={rank}
+                      previousRank={prevRanksRef.current.get(card.card_user_id)}
+                    />
                   </div>
 
                   <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-800 border-2 border-gray-700">
