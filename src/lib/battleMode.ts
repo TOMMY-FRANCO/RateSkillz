@@ -322,13 +322,31 @@ async function distributeBattleWinnings(battleId: string, winnerId: string, wage
 
 export async function getUserBattles(userId: string) {
   const { data, error } = await supabase
-    .from('battles')
+    .from('active_battle_cache')
     .select('*')
-    .or(`manager1_id.eq.${userId},manager2_id.eq.${userId}`)
+    .or(`player1_id.eq.${userId},player2_id.eq.${userId}`)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data as Battle[];
+
+  return (data || []).map((row: any) => ({
+    id: row.battle_id,
+    manager1_id: row.player1_id,
+    manager2_id: row.player2_id,
+    wager_amount: row.wager_amount,
+    status: row.status,
+    created_at: row.created_at,
+    completed_at: row.completed_at,
+    winner_id: row.winner_id,
+    current_turn_user_id: row.current_turn_user_id,
+    turn_started_at: row.turn_started_at,
+    first_player_id: null,
+    card_selections: [],
+    used_skills: [],
+    player1_remaining_cards: row.player1_remaining_cards,
+    player2_remaining_cards: row.player2_remaining_cards,
+    is_tiebreaker: false,
+  })) as Battle[];
 }
 
 export async function getBattle(battleId: string) {

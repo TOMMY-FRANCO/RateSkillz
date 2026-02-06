@@ -66,7 +66,7 @@ export default function Leaderboard() {
       setEntries(mappedEntries);
 
       if (data && data.length > 0) {
-        const userIds = data.map(entry => entry.profile_id);
+        const userIds = data.map((entry: any) => entry.user_id);
         const presence = await getMultipleUserPresence(userIds);
         setUserPresence(presence);
       }

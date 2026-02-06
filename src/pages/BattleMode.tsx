@@ -51,12 +51,11 @@ export default function BattleMode() {
       }
 
       const { data: managersData } = await supabase
-        .from('profiles')
-        .select('id, username, is_manager')
-        .eq('is_manager', true)
-        .neq('id', user.id);
+        .from('searchable_users_cache')
+        .select('user_id, username')
+        .neq('user_id', user.id);
 
-      setManagers(managersData || []);
+      setManagers((managersData || []).map((m: any) => ({ id: m.user_id, username: m.username })));
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {

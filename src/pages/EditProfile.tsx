@@ -57,12 +57,27 @@ export default function EditProfile() {
   }, [profile]);
 
   const loadCurrentEducation = async () => {
+    if (!profile) return;
+
+    const { data: cached } = await supabase
+      .from('profile_edit_cache')
+      .select('secondary_school_name, college_name, university_name')
+      .eq('user_id', profile.id)
+      .maybeSingle();
+
+    if (cached) {
+      if (cached.secondary_school_name) setSchoolSearch(cached.secondary_school_name);
+      if (cached.college_name) setCollegeSearch(cached.college_name);
+      if (cached.university_name) setUniversitySearch(cached.university_name);
+      return;
+    }
+
     if (profile?.secondary_school_id) {
       const { data } = await supabase
         .from('schools')
         .select('id, school_name')
         .eq('id', profile.secondary_school_id)
-        .single();
+        .maybeSingle();
       if (data) setSchoolSearch(data.school_name);
     }
     if (profile?.college_id) {
@@ -70,7 +85,7 @@ export default function EditProfile() {
         .from('colleges')
         .select('id, college_name')
         .eq('id', profile.college_id)
-        .single();
+        .maybeSingle();
       if (data) setCollegeSearch(data.college_name);
     }
     if (profile?.university_id) {
@@ -78,7 +93,7 @@ export default function EditProfile() {
         .from('universities')
         .select('id, university_name')
         .eq('id', profile.university_id)
-        .single();
+        .maybeSingle();
       if (data) setUniversitySearch(data.university_name);
     }
   };

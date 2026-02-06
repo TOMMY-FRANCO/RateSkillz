@@ -128,27 +128,9 @@ export default function SearchFriends() {
 
     setLoading(true);
     try {
-      // Use profile_summary cache table for optimized single-table query
       let query = supabase
-        .from('profile_summary')
-        .select(`
-          user_id,
-          username,
-          avatar_url,
-          overall_rating,
-          position,
-          team,
-          is_manager,
-          manager_wins,
-          last_seen,
-          is_verified,
-          pac_rating,
-          sho_rating,
-          pas_rating,
-          dri_rating,
-          def_rating,
-          phy_rating
-        `, { count: 'exact' })
+        .from('searchable_users_cache')
+        .select('*', { count: 'exact' })
         .neq('user_id', user.id);
 
       if (filters.username) {
@@ -167,39 +149,8 @@ export default function SearchFriends() {
         query = query.in('position', filters.positions);
       }
 
-      if (filters.managersOnly) {
-        query = query.eq('is_manager', true);
-      }
-
-      // Education filters not available in profile_summary cache
-      // These filters will be applied in a follow-up query if needed
-
-      // Apply stat filters directly in query
-      if (filters.pacMin !== null) {
-        query = query.gte('pac_rating', filters.pacMin);
-      }
-      if (filters.shoMin !== null) {
-        query = query.gte('sho_rating', filters.shoMin);
-      }
-      if (filters.pasMin !== null) {
-        query = query.gte('pas_rating', filters.pasMin);
-      }
-      if (filters.driMin !== null) {
-        query = query.gte('dri_rating', filters.driMin);
-      }
-      if (filters.defMin !== null) {
-        query = query.gte('def_rating', filters.defMin);
-      }
-      if (filters.phyMin !== null) {
-        query = query.gte('phy_rating', filters.phyMin);
-      }
-
       if (filters.onlineStatus === 'recent') {
-        query = query.order('last_seen', { ascending: false });
-      } else if (filters.coinSort === 'high_to_low') {
-        query = query.order('overall_rating', { ascending: false }); // coin_balance not in cache
-      } else if (filters.coinSort === 'low_to_high') {
-        query = query.order('overall_rating', { ascending: true });
+        query = query.order('updated_at', { ascending: false });
       } else {
         query = query.order('overall_rating', { ascending: false });
       }
@@ -208,30 +159,29 @@ export default function SearchFriends() {
       const to = from + RESULTS_PER_PAGE - 1;
       query = query.range(from, to);
 
-      const { data: profileData, error: profileError, count } = await query;
+      const { data: cacheData, error: cacheError, count } = await query;
 
-      if (profileError) throw profileError;
+      if (cacheError) throw cacheError;
 
-      // Map cache table columns to expected interface
-      const mappedResults = (profileData || []).map((profile: any) => ({
-        id: profile.user_id,
-        username: profile.username,
-        avatar_url: profile.avatar_url,
-        overall_rating: profile.overall_rating,
-        position: profile.position,
-        team: profile.team,
-        coin_balance: 0, // Not in cache, set to 0
-        is_manager: profile.is_manager,
-        manager_wins: profile.manager_wins,
-        last_active: profile.last_seen,
-        is_verified: profile.is_verified,
-        has_social_badge: false, // Not in cache
-        pac: profile.pac_rating,
-        sho: profile.sho_rating,
-        pas: profile.pas_rating,
-        dri: profile.dri_rating,
-        def: profile.def_rating,
-        phy: profile.phy_rating,
+      const mappedResults = (cacheData || []).map((row: any) => ({
+        id: row.user_id,
+        username: row.username,
+        avatar_url: row.avatar_url,
+        overall_rating: row.overall_rating,
+        position: row.position,
+        team: row.team,
+        coin_balance: 0,
+        is_manager: false,
+        manager_wins: 0,
+        last_active: row.updated_at,
+        is_verified: row.is_verified,
+        has_social_badge: false,
+        pac: undefined,
+        sho: undefined,
+        pas: undefined,
+        dri: undefined,
+        def: undefined,
+        phy: undefined,
       }));
 
       setResults(mappedResults);

@@ -78,90 +78,34 @@ export default function ViewedMe() {
 
     setLoading(true);
     try {
-      const { count } = await supabase
-        .from('profile_views')
-        .select('*', { count: 'exact', head: true })
-        .eq('viewed_user_id', user.id);
+      const { data: cacheData, error: cacheError } = await supabase
+        .from('profile_view_cache')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      setTotalViewers(count || 0);
+      if (cacheError) throw cacheError;
 
-      const from = (currentPage - 1) * VIEWERS_PER_PAGE;
-      const to = from + VIEWERS_PER_PAGE - 1;
+      const totalCount = cacheData?.recent_viewers_count || 0;
+      setTotalViewers(totalCount);
 
-      const { data: viewsData, error: viewsError } = await supabase
-        .from('profile_views')
-        .select('viewer_id, last_viewed_at')
-        .eq('viewed_user_id', user.id)
-        .not('viewer_id', 'is', null)
-        .order('last_viewed_at', { ascending: false })
-        .range(from, to);
-
-      if (viewsError) throw viewsError;
-
-      if (viewsData && viewsData.length > 0) {
-        const viewerIds = viewsData.map((v) => v.viewer_id);
-
-        // Use profile_summary cache for optimized single-table query
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profile_summary')
-          .select(`
-            user_id,
-            username,
-            avatar_url,
-            overall_rating,
-            position,
-            team,
-            is_manager,
-            manager_wins,
-            last_seen,
-            is_verified,
-            pac_rating,
-            sho_rating,
-            pas_rating,
-            dri_rating,
-            def_rating,
-            phy_rating,
-            total_card_value,
-            leaderboard_rank
-          `)
-          .in('user_id', viewerIds);
-
-        if (profilesError) throw profilesError;
-
-        const profilesMap = new Map(profilesData?.map((p) => [p.user_id, p]));
-
-        const enrichedViewers = viewsData
-          .map((view) => {
-            const profile = profilesMap.get(view.viewer_id);
-            if (!profile) return null;
-
-            return {
-              viewer_id: view.viewer_id,
-              username: profile.username,
-              avatar_url: profile.avatar_url,
-              overall_rating: profile.overall_rating,
-              position: profile.position,
-              team: profile.team,
-              coin_balance: 0, // Not in cache
-              is_manager: profile.is_manager,
-              manager_wins: profile.manager_wins,
-              last_active: profile.last_seen,
-              is_verified: profile.is_verified,
-              has_social_badge: false, // Not in cache
-              viewed_at: view.last_viewed_at,
-              pac: profile.pac_rating,
-              sho: profile.sho_rating,
-              pas: profile.pas_rating,
-              dri: profile.dri_rating,
-              def: profile.def_rating,
-              phy: profile.phy_rating,
-              card_worth: profile.total_card_value ? parseFloat(profile.total_card_value) : undefined,
-              rank: profile.leaderboard_rank,
-            };
-          })
-          .filter((v): v is ViewerData => v !== null);
-
-        setViewers(enrichedViewers);
+      if (cacheData && cacheData.last_viewer_id) {
+        const viewer: ViewerData = {
+          viewer_id: cacheData.last_viewer_id,
+          username: cacheData.last_viewer_username || 'Unknown',
+          avatar_url: null,
+          overall_rating: cacheData.overall_rating || 50,
+          position: cacheData.position,
+          team: cacheData.team,
+          coin_balance: 0,
+          is_manager: false,
+          manager_wins: 0,
+          last_active: cacheData.last_seen || cacheData.updated_at,
+          is_verified: cacheData.is_verified || false,
+          has_social_badge: false,
+          viewed_at: cacheData.last_viewed_at,
+        };
+        setViewers([viewer]);
       } else {
         setViewers([]);
       }

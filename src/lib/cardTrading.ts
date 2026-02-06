@@ -102,11 +102,8 @@ export async function getCardOwnership(cardUserId: string): Promise<CardOwnershi
 
 export async function getCardsOwnedByUser(userId: string): Promise<CardOwnership[]> {
   const { data, error } = await supabase
-    .from('card_ownership')
-    .select(`
-      *,
-      card_user:profiles!card_ownership_card_user_id_fkey(username, full_name, avatar_url)
-    `)
+    .from('card_market_cache')
+    .select('*')
     .eq('owner_id', userId)
     .neq('card_user_id', userId)
     .order('acquired_at', { ascending: false });
@@ -116,12 +113,21 @@ export async function getCardsOwnedByUser(userId: string): Promise<CardOwnership
     return [];
   }
 
-  return (data || []).map(card => ({
-    ...card,
-    current_price: card.current_price || card.base_price || 20.00,
-    base_price: card.base_price || 20.00,
-    times_traded: card.times_traded || 0,
-    last_sale_price: card.last_sale_price || null
+  return (data || []).map((row: any) => ({
+    id: `${row.card_user_id}_${row.owner_id}`,
+    card_user_id: row.card_user_id,
+    owner_id: row.owner_id,
+    current_price: row.current_price || row.base_price || 20.00,
+    base_price: row.base_price || 20.00,
+    is_listed_for_sale: row.is_listed_for_sale,
+    times_traded: row.times_traded || 0,
+    last_sale_price: row.last_sale_price || null,
+    acquired_at: row.acquired_at,
+    card_user: {
+      username: row.original_owner_username || '',
+      full_name: row.original_owner_username || '',
+      avatar_url: row.owner_avatar || '',
+    },
   }));
 }
 
@@ -153,12 +159,8 @@ export async function getPortfolioValue(userId: string): Promise<number> {
 
 export async function getMostValuableCards(limit: number = 10): Promise<CardOwnership[]> {
   const { data, error } = await supabase
-    .from('card_ownership')
-    .select(`
-      *,
-      card_user:profiles!card_ownership_card_user_id_fkey(username, full_name, avatar_url),
-      owner:profiles!card_ownership_owner_id_fkey(username, full_name)
-    `)
+    .from('card_market_cache')
+    .select('*')
     .order('current_price', { ascending: false })
     .limit(limit);
 
@@ -167,17 +169,13 @@ export async function getMostValuableCards(limit: number = 10): Promise<CardOwne
     return [];
   }
 
-  return data || [];
+  return (data || []).map(mapCacheToCardOwnership);
 }
 
 export async function getMostTradedCards(limit: number = 10): Promise<CardOwnership[]> {
   const { data, error } = await supabase
-    .from('card_ownership')
-    .select(`
-      *,
-      card_user:profiles!card_ownership_card_user_id_fkey(username, full_name, avatar_url),
-      owner:profiles!card_ownership_owner_id_fkey(username, full_name)
-    `)
+    .from('card_market_cache')
+    .select('*')
     .order('times_traded', { ascending: false })
     .limit(limit);
 
@@ -186,7 +184,30 @@ export async function getMostTradedCards(limit: number = 10): Promise<CardOwners
     return [];
   }
 
-  return data || [];
+  return (data || []).map(mapCacheToCardOwnership);
+}
+
+function mapCacheToCardOwnership(row: any): CardOwnership {
+  return {
+    id: `${row.card_user_id}_${row.owner_id}`,
+    card_user_id: row.card_user_id,
+    owner_id: row.owner_id,
+    current_price: row.current_price || row.base_price || 20.00,
+    base_price: row.base_price || 20.00,
+    is_listed_for_sale: row.is_listed_for_sale,
+    times_traded: row.times_traded || 0,
+    last_sale_price: row.last_sale_price || null,
+    acquired_at: row.acquired_at,
+    card_user: {
+      username: row.original_owner_username || '',
+      full_name: row.original_owner_username || '',
+      avatar_url: row.owner_avatar || '',
+    },
+    owner: {
+      username: row.owner_username || '',
+      full_name: row.owner_username || '',
+    },
+  };
 }
 
 export async function purchaseCardAtFixedPrice(
@@ -275,12 +296,8 @@ export async function checkCardPurchaseRestriction(
 
 export async function getListedCardsForSale(): Promise<CardOwnership[]> {
   const { data, error } = await supabase
-    .from('card_ownership')
-    .select(`
-      *,
-      card_user:profiles!card_ownership_card_user_id_fkey(username, full_name, avatar_url),
-      owner:profiles!card_ownership_owner_id_fkey(username, full_name)
-    `)
+    .from('card_market_cache')
+    .select('*')
     .eq('is_listed_for_sale', true)
     .order('current_price', { ascending: true });
 
@@ -289,7 +306,7 @@ export async function getListedCardsForSale(): Promise<CardOwnership[]> {
     return [];
   }
 
-  return data || [];
+  return (data || []).map(mapCacheToCardOwnership);
 }
 
 export interface CardWithRatings extends CardOwnership {
