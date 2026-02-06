@@ -142,6 +142,10 @@ export function calculatePotentialProfit(purchasePrice: number, sellingPrice: nu
   return Math.round((sellingPrice - purchasePrice) * 100) / 100;
 }
 
+export function calculatePortfolioValue(cards: CardOwnership[]): number {
+  return cards.reduce((total, card) => total + getSafeCardValue(card), 0);
+}
+
 export async function getPortfolioValue(userId: string): Promise<number> {
   const cards = await getCardsOwnedByUser(userId);
   return cards.reduce((total, card) => total + getSafeCardValue(card), 0);
@@ -282,6 +286,37 @@ export async function checkCardPurchaseRestriction(
   return {
     isRestricted: false
   };
+}
+
+export async function checkPurchaseRestrictionsBatch(
+  ownerIds: string[],
+  buyerId: string
+): Promise<Map<string, string>> {
+  const uniqueOwnerIds = [...new Set(ownerIds.filter(id => id !== buyerId))];
+  if (uniqueOwnerIds.length === 0) return new Map();
+
+  try {
+    const { data, error } = await supabase.rpc('check_purchase_restrictions_batch', {
+      p_owner_ids: uniqueOwnerIds,
+      p_buyer_id: buyerId,
+    });
+
+    if (error) {
+      console.error('Error batch checking restrictions:', error);
+      return new Map();
+    }
+
+    const restrictions = new Map<string, string>();
+    (data || []).forEach((row: { owner_id: string; is_restricted: boolean; reason: string | null }) => {
+      if (row.is_restricted && row.reason) {
+        restrictions.set(row.owner_id, row.reason);
+      }
+    });
+    return restrictions;
+  } catch (err) {
+    console.error('Exception batch checking restrictions:', err);
+    return new Map();
+  }
 }
 
 export async function getListedCardsForSale(): Promise<CardOwnership[]> {

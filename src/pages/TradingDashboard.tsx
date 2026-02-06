@@ -1,15 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   getCardsOwnedByUser,
-  getPortfolioValue,
+  calculatePortfolioValue,
   getMostValuableCards,
   getMostTradedCards,
-  calculatePotentialProfit,
   getListedCardsForSale,
   purchaseCardAtFixedPrice,
-  checkCardPurchaseRestriction,
+  checkPurchaseRestrictionsBatch,
   getPendingPurchaseRequests,
   approvePurchaseRequest,
   declinePurchaseRequest,
@@ -17,7 +16,7 @@ import {
   type PurchaseRequest
 } from '../lib/cardTrading';
 import { useCoinBalance } from '../hooks/useCoinBalance';
-import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Bell, Trophy, Check, X, Store, User, Repeat, Trash2, Star, Users } from 'lucide-react';
+import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Bell, Trophy, Check, X, Store, User, Repeat, Trash2, Star, Users, RefreshCw, AlertTriangle } from 'lucide-react';
 import { getMultipleUserBalances } from '../lib/balances';
 import { formatCoinBalance } from '../lib/formatBalance';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
@@ -28,6 +27,8 @@ import CardDiscardTab from '../components/CardDiscardTab';
 import NotBoughtCardsTab from '../components/NotBoughtCardsTab';
 import NoManagerCardsTab from '../components/NoManagerCardsTab';
 import { markNotificationsReadBatch } from '../lib/notifications';
+
+type TabKey = 'marketplace' | 'portfolio' | 'requests' | 'swap' | 'discard' | 'leaderboards' | 'not-bought' | 'no-manager';
 
 export default function TradingDashboard() {
   const { profile } = useAuth();
@@ -40,8 +41,10 @@ export default function TradingDashboard() {
   const [mostValuable, setMostValuable] = useState<CardOwnership[]>([]);
   const [mostTraded, setMostTraded] = useState<CardOwnership[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState<string | null>(null);
-  const [selectedTab, setSelectedTab] = useState<'marketplace' | 'portfolio' | 'requests' | 'swap' | 'discard' | 'leaderboards' | 'not-bought' | 'no-manager'>('marketplace');
+  const [selectedTab, setSelectedTab] = useState<TabKey>('marketplace');
   const [userBalances, setUserBalances] = useState<Map<string, number>>(new Map());
   const [restrictedCards, setRestrictedCards] = useState<Map<string, string>>(new Map());
 
@@ -52,15 +55,20 @@ export default function TradingDashboard() {
     }
   }, [profile]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async (isRefresh = false) => {
     if (!profile) return;
 
-    setLoading(true);
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setLoadError(null);
+
     try {
-      const [cards, purchaseReqs, value, valuable, traded, listed] = await Promise.all([
+      const [cards, purchaseReqs, valuable, traded, listed] = await Promise.all([
         getCardsOwnedByUser(profile.id),
         getPendingPurchaseRequests(profile.id),
-        getPortfolioValue(profile.id),
         getMostValuableCards(10),
         getMostTradedCards(10),
         getListedCardsForSale()
@@ -68,7 +76,7 @@ export default function TradingDashboard() {
 
       setOwnedCards(cards);
       setPendingPurchaseRequests(purchaseReqs);
-      setPortfolioValue(value);
+      setPortfolioValue(calculatePortfolioValue(cards));
       setMostValuable(valuable);
       setMostTraded(traded);
       setListedCards(listed);
@@ -82,30 +90,41 @@ export default function TradingDashboard() {
         if (card.card_user_id) allUserIds.add(card.card_user_id);
       });
 
-      if (allUserIds.size > 0) {
-        const balances = await getMultipleUserBalances(Array.from(allUserIds));
-        setUserBalances(balances);
-      }
+      const ownerIdsForRestrictions = listed
+        .filter(c => c.owner_id && c.owner_id !== profile.id)
+        .map(c => c.owner_id);
 
-      if (listed.length > 0 && profile) {
-        const restrictions = new Map<string, string>();
-        await Promise.all(
-          listed.map(async (card) => {
-            if (card.owner_id && card.owner_id !== profile.id) {
-              const restriction = await checkCardPurchaseRestriction(card.owner_id, profile.id);
-              if (restriction.isRestricted) {
-                restrictions.set(card.id, restriction.reason || 'Restricted');
-              }
-            }
-          })
-        );
-        setRestrictedCards(restrictions);
-      }
+      const [balances, ownerRestrictions] = await Promise.all([
+        allUserIds.size > 0
+          ? getMultipleUserBalances(Array.from(allUserIds))
+          : Promise.resolve(new Map<string, number>()),
+        ownerIdsForRestrictions.length > 0
+          ? checkPurchaseRestrictionsBatch(ownerIdsForRestrictions, profile.id)
+          : Promise.resolve(new Map<string, string>()),
+      ]);
+
+      setUserBalances(balances);
+
+      const cardRestrictions = new Map<string, string>();
+      listed.forEach(card => {
+        const reason = ownerRestrictions.get(card.owner_id);
+        if (reason) {
+          cardRestrictions.set(card.id, reason);
+        }
+      });
+      setRestrictedCards(cardRestrictions);
     } catch (error) {
       console.error('Error loading trading data:', error);
+      setLoadError('Failed to load trading data. Pull down to try again.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }, [profile]);
+
+  const handleRefresh = () => {
+    if (refreshing) return;
+    loadData(true);
   };
 
   const handlePurchaseCard = async (card: CardOwnership) => {
@@ -127,7 +146,7 @@ export default function TradingDashboard() {
       if (result.success) {
         alert(`Card purchased successfully!\n\nYou paid: ${result.sale_price?.toFixed(2)} coins\nCard value increased: ${result.previous_value?.toFixed(2)} → ${result.new_value?.toFixed(2)} coins (+10 coins)`);
         refetchBalance();
-        loadData();
+        loadData(true);
       } else {
         alert(`Purchase failed: ${result.error}`);
       }
@@ -142,23 +161,33 @@ export default function TradingDashboard() {
   const handleApprovePurchaseRequest = async (requestId: string) => {
     if (!confirm('Approve this purchase request? The card will be transferred to the buyer.')) return;
 
-    const result = await approvePurchaseRequest(requestId);
-    if (result.success) {
-      alert('Purchase request approved! Card transferred successfully.');
-      refetchBalance();
-      loadData();
-    } else {
-      alert(`Error: ${result.error}`);
+    try {
+      const result = await approvePurchaseRequest(requestId);
+      if (result.success) {
+        alert('Purchase request approved! Card transferred successfully.');
+        refetchBalance();
+        loadData(true);
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error approving request:', error);
+      alert('Failed to approve request. Please try again.');
     }
   };
 
   const handleDeclinePurchaseRequest = async (requestId: string) => {
-    const result = await declinePurchaseRequest(requestId);
-    if (result.success) {
-      alert('Purchase request declined.');
-      loadData();
-    } else {
-      alert(`Error: ${result.error}`);
+    try {
+      const result = await declinePurchaseRequest(requestId);
+      if (result.success) {
+        alert('Purchase request declined.');
+        loadData(true);
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error declining request:', error);
+      alert('Failed to decline request. Please try again.');
     }
   };
 
@@ -215,11 +244,34 @@ export default function TradingDashboard() {
               </button>
               <h1 className="text-xl font-bold text-white">Card Trading</h1>
             </div>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg transition-all disabled:opacity-50 border border-gray-700"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <span className="text-sm font-medium hidden sm:inline">
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </span>
+            </button>
           </div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {loadError && (
+          <div className="mb-6 p-4 bg-red-900/30 border border-red-500/50 rounded-xl flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <p className="text-red-300 text-sm flex-1">{loadError}</p>
+            <button
+              onClick={handleRefresh}
+              className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-semibold rounded-lg transition-all"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         <div className="mb-8 bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="p-4 bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-600/50 rounded-xl">
@@ -242,9 +294,9 @@ export default function TradingDashboard() {
               <p className="text-3xl font-bold text-cyan-400">{portfolioValue.toFixed(2)}</p>
             </div>
 
-            <div className="p-4 bg-gradient-to-br from-purple-900/30 to-pink-900/30 border border-purple-600/50 rounded-xl">
+            <div className="p-4 bg-gradient-to-br from-amber-900/30 to-orange-900/30 border border-amber-600/50 rounded-xl">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
                   <Bell className="w-5 h-5 text-black" />
                 </div>
                 <span className="text-sm text-gray-400">Pending Requests</span>
@@ -432,9 +484,9 @@ export default function TradingDashboard() {
                         </div>
 
                         {card.times_traded > 0 && (
-                          <div className="flex justify-between items-center p-2 bg-purple-900/20 rounded-lg">
-                            <span className="text-xs text-purple-300">Traded {card.times_traded} times</span>
-                            <TrendingUp className="w-4 h-4 text-purple-400" />
+                          <div className="flex justify-between items-center p-2 bg-amber-900/20 rounded-lg">
+                            <span className="text-xs text-amber-300">Traded {card.times_traded} times</span>
+                            <TrendingUp className="w-4 h-4 text-amber-400" />
                           </div>
                         )}
 
@@ -579,14 +631,14 @@ export default function TradingDashboard() {
         {selectedTab === 'not-bought' && (
           <NotBoughtCardsTab onRequestSent={() => {
             refetchBalance();
-            loadData();
+            loadData(true);
           }} />
         )}
 
         {selectedTab === 'no-manager' && (
           <NoManagerCardsTab onRequestSent={() => {
             refetchBalance();
-            loadData();
+            loadData(true);
           }} />
         )}
 
@@ -659,7 +711,7 @@ export default function TradingDashboard() {
           <CardSwapTab
             onSwapComplete={() => {
               refetchBalance();
-              loadData();
+              loadData(true);
             }}
           />
         )}
