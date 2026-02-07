@@ -245,8 +245,13 @@ export default function EditProfile() {
 
     // Validate age if provided
     const ageNum = age ? parseInt(age.toString()) : null;
-    if (ageNum !== null && (ageNum < 11 || ageNum > 150)) {
-      setMessage('Age must be between 11 and 150');
+    if (ageNum !== null && ageNum < 11) {
+      setMessage('You must be at least 11 years old to use this app.');
+      setSaving(false);
+      return;
+    }
+    if (ageNum !== null && ageNum > 150) {
+      setMessage('Please enter a valid age (maximum 150).');
       setSaving(false);
       return;
     }
@@ -699,7 +704,7 @@ export default function EditProfile() {
                   Age (11-150)
                 </label>
                 <p className="text-xs text-gray-400 mb-3">
-                  This determines your privacy settings. Users 11-17 have additional safety features enabled by default.
+                  Minimum age: 11. This determines your privacy settings. Users 11-17 have additional safety features enabled by default.
                 </p>
                 <input
                   id="age"
@@ -716,14 +721,14 @@ export default function EditProfile() {
                       if (ageNum >= 11 && ageNum < 18) {
                         setFindableBySchool(false);
                         setHideFromLeaderboard(true);
-                      } else {
+                      } else if (ageNum >= 18) {
                         setFindableBySchool(true);
                         setHideFromLeaderboard(false);
                       }
                     }
                   }}
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                  placeholder="Enter your age"
+                  placeholder="Enter your age (11-150)"
                 />
               </div>
 

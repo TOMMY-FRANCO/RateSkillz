@@ -33,8 +33,13 @@ export default function Signup() {
     }
 
     const ageNum = age ? parseInt(age) : null;
-    if (ageNum !== null && (ageNum < 11 || ageNum > 150)) {
-      setError('Age must be between 11 and 150');
+    if (ageNum !== null && ageNum < 11) {
+      setError('You must be at least 11 years old to use this app.');
+      setLoading(false);
+      return;
+    }
+    if (ageNum !== null && ageNum > 150) {
+      setError('Please enter a valid age (maximum 150).');
       setLoading(false);
       return;
     }
@@ -150,9 +155,9 @@ export default function Signup() {
                   value={age}
                   onChange={(e) => setAge(e.target.value)}
                   className="w-full"
-                  placeholder="Enter your age"
+                  placeholder="Enter your age (11-150)"
                 />
-                <p className="mt-1 text-xs text-[#6B7280]">Age is used for Safety & Privacy Settings (11-150)</p>
+                <p className="mt-1 text-xs text-[#6B7280]">Minimum age: 11. Used for Safety & Privacy Settings</p>
               </div>
             </div>
 
