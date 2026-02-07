@@ -99,30 +99,38 @@ Deno.serve(async (req: Request) => {
       </html>
     `;
 
-    // In a production environment, you would use a real email service here
-    // For this implementation, we'll log the email (in production, use SMTP or email service)
+    // For development: Log the reset link to console
+    // The link is also returned in the response for testing
     console.log("=== PASSWORD RESET EMAIL ===");
     console.log("To:", email);
     console.log("Reset Link:", resetLink);
     console.log("Token:", token);
     console.log("===========================");
 
-    // TODO: In production, replace this with actual SMTP email sending
-    // Example with a service like SendGrid, AWS SES, or similar:
+    // PRODUCTION SMTP OPTIONS (zero-cost):
+    // Option 1: Use free tier of services like Brevo (formerly Sendinblue) - 300 emails/day free
+    // Option 2: Use Resend.com - 100 emails/day free, 3,000/month
+    // Option 3: Use standard SMTP with free email provider (Gmail, etc.)
+    //
+    // To implement SMTP, uncomment and configure below:
     /*
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('SENDGRID_API_KEY')}`,
+        'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        personalizations: [{ to: [{ email }] }],
-        from: { email: 'noreply@ratingskill.com', name: 'RatingSkill' },
+        from: 'RatingSkill <noreply@ratingskill.com>',
+        to: email,
         subject: 'Reset Your Password - RatingSkill',
-        content: [{ type: 'text/html', value: emailBody }],
+        html: emailBody,
       }),
     });
+
+    if (!response.ok) {
+      throw new Error('Failed to send email');
+    }
     */
 
     return new Response(
