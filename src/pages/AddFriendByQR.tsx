@@ -20,6 +20,7 @@ export default function AddFriendByQR() {
 
   useEffect(() => {
     const userId = searchParams.get('user_id');
+    console.log('[QR Scan] Extracted user_id from URL:', userId);
     if (userId) {
       setTargetUserId(userId);
       loadTargetProfile(userId);
@@ -33,6 +34,8 @@ export default function AddFriendByQR() {
     setLoading(true);
     setError('');
 
+    console.log('[QR Scan] Loading profile for user_id:', userId);
+
     try {
       const { data, error: fetchError } = await supabase
         .from('profiles')
@@ -43,18 +46,25 @@ export default function AddFriendByQR() {
       if (fetchError) throw fetchError;
 
       if (!data) {
+        console.error('[QR Scan] No profile found for user_id:', userId);
         setError('User not found');
         setLoading(false);
         return;
       }
 
+      console.log('[QR Scan] Target profile loaded:', { id: data.id, username: data.username });
       setTargetProfile(data);
 
-      if (user && user.id !== userId) {
-        await checkFriendshipStatus(user.id, userId);
+      if (user) {
+        console.log('[QR Scan] Current user:', { id: user.id });
+        if (user.id === userId) {
+          console.log('[QR Scan] WARNING: Target user is same as current user (self-friending attempt)');
+        } else {
+          await checkFriendshipStatus(user.id, userId);
+        }
       }
     } catch (err: any) {
-      console.error('Error loading profile:', err);
+      console.error('[QR Scan] Error loading profile:', err);
       setError('Failed to load user profile');
     } finally {
       setLoading(false);
@@ -96,26 +106,34 @@ export default function AddFriendByQR() {
     }
 
     if (user.id === targetUserId) {
-      setError("You cannot send a friend request to yourself");
+      setError("Cannot add yourself as friend");
       return;
     }
+
+    console.log('[QR Scan] Sending friend request:', {
+      senderId: user.id,
+      receiverId: targetUserId,
+      senderUsername: profile.username
+    });
 
     setSending(true);
     setError('');
 
     try {
-      const { error: requestError } = await sendFriendRequest(user.id, targetUserId, profile.username);
+      const { error: requestError } = await sendFriendRequest(targetUserId);
 
       if (requestError) {
-        throw new Error(requestError);
+        console.error('[QR Scan] Friend request error:', requestError);
+        throw new Error(requestError.message || 'Failed to send friend request');
       }
 
+      console.log('[QR Scan] Friend request sent successfully');
       setSuccess(true);
       setTimeout(() => {
         navigate('/friends');
       }, 2000);
     } catch (err: any) {
-      console.error('Error sending friend request:', err);
+      console.error('[QR Scan] Error sending friend request:', err);
       setError(err.message || 'Failed to send friend request');
     } finally {
       setSending(false);

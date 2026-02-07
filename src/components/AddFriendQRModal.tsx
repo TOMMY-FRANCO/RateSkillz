@@ -29,6 +29,7 @@ export default function AddFriendQRModal({ isOpen, onClose, userId, username }: 
     try {
       const baseUrl = getAppUrl();
       const url = `${baseUrl}/add-friend?user_id=${encodeURIComponent(userId)}`;
+      console.log('[QR Generation] Generating QR code:', { userId, username, url });
       setFriendUrl(url);
 
       if (canvasRef.current) {
@@ -40,9 +41,10 @@ export default function AddFriendQRModal({ isOpen, onClose, userId, username }: 
             light: '#FFFFFF',
           },
         });
+        console.log('[QR Generation] QR code generated successfully');
       }
     } catch (err) {
-      console.error('QR code generation error:', err);
+      console.error('[QR Generation] QR code generation error:', err);
       setError('Failed to generate QR code');
     } finally {
       setLoading(false);

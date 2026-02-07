@@ -23,6 +23,14 @@ export async function sendFriendRequest(receiverId: string) {
 
     const senderId = currentUser.user.id;
 
+    // Prevent self-friending
+    if (senderId === receiverId) {
+      console.error('[Friend Request] Attempt to send friend request to self blocked');
+      throw new Error('Cannot add yourself as friend');
+    }
+
+    console.log('[Friend Request] Checking existing friendship:', { senderId, receiverId });
+
     const { data: existing } = await supabase
       .from('friends')
       .select('id, status')
@@ -40,6 +48,8 @@ export async function sendFriendRequest(receiverId: string) {
       }
     }
 
+    console.log('[Friend Request] Creating friend request:', { senderId, receiverId });
+
     const { data, error } = await supabase
       .from('friends')
       .insert({
@@ -50,10 +60,15 @@ export async function sendFriendRequest(receiverId: string) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[Friend Request] Database error:', error);
+      throw error;
+    }
+
+    console.log('[Friend Request] Friend request created successfully:', data.id);
     return { data, error: null };
   } catch (error: any) {
-    console.error('Error sending friend request:', error);
+    console.error('[Friend Request] Error:', error.message);
     return { data: null, error };
   }
 }
