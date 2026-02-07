@@ -31,7 +31,8 @@ export async function createCompleteProfile(
   userId: string,
   email: string,
   username?: string,
-  fullName?: string
+  fullName?: string,
+  age?: number | null
 ): Promise<ProfileCreationResult> {
   const result: ProfileCreationResult = {
     success: false,
@@ -43,12 +44,18 @@ export async function createCompleteProfile(
   console.log('CREATING COMPLETE PROFILE');
   console.log(`User ID: ${userId}`);
   console.log(`Email: ${email}`);
+  console.log(`Age: ${age || 'not provided'}`);
   console.log('========================================');
 
   try {
     const generatedUsername = username?.toLowerCase() ||
       email.split('@')[0].toLowerCase().replace(/[^a-z0-9_.]/g, '').substring(0, 16) ||
       `user${userId.substring(0, 8)}`;
+
+    // Determine privacy defaults based on age
+    const isMinor = age !== null && age !== undefined && age >= 11 && age < 18;
+    const hideFromLeaderboard = isMinor;
+    const findableBySchool = !isMinor;
 
     console.log('[1/5] Creating profile record...');
     const { data: profileData, error: profileError } = await supabase
@@ -58,11 +65,14 @@ export async function createCompleteProfile(
         username: generatedUsername,
         email: email,
         full_name: fullName || '',
+        age: age,
         username_customized: false,
         username_change_count: 0,
         coin_balance: 0,
         overall_rating: 50,
         profile_views_count: 0,
+        hide_from_leaderboard: hideFromLeaderboard,
+        findable_by_school: findableBySchool,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         last_active: new Date().toISOString()
@@ -232,7 +242,8 @@ export async function ensureProfileExists(
   userId: string,
   email: string,
   username?: string,
-  fullName?: string
+  fullName?: string,
+  age?: number | null
 ): Promise<any> {
   console.log('[EnsureProfile] Checking if profile exists...');
 
@@ -245,6 +256,17 @@ export async function ensureProfileExists(
       .select('*')
       .eq('id', userId)
       .single();
+
+    // If profile exists but age was provided and different, update it
+    if (age !== null && age !== undefined && data && data.age !== age) {
+      console.log('[EnsureProfile] Updating age for existing profile...');
+      await supabase
+        .from('profiles')
+        .update({ age })
+        .eq('id', userId);
+      data.age = age;
+    }
+
     return data;
   }
 
@@ -252,11 +274,20 @@ export async function ensureProfileExists(
   const profileFromTrigger = await waitForProfile(userId, 15, 500);
 
   if (profileFromTrigger) {
+    // If profile was created by trigger but age was provided, update it
+    if (age !== null && age !== undefined && profileFromTrigger.age !== age) {
+      console.log('[EnsureProfile] Updating age for trigger-created profile...');
+      await supabase
+        .from('profiles')
+        .update({ age })
+        .eq('id', userId);
+      profileFromTrigger.age = age;
+    }
     return profileFromTrigger;
   }
 
   console.warn('[EnsureProfile] Trigger did not create profile, creating manually...');
-  const result = await createCompleteProfile(userId, email, username, fullName);
+  const result = await createCompleteProfile(userId, email, username, fullName, age);
 
   if (!result.success || !result.profile) {
     throw new Error(

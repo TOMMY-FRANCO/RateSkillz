@@ -26,6 +26,12 @@ export interface Profile {
   terms_accepted_at?: string;
   username_customized?: boolean;
   gender?: string;
+  age?: number;
+  findable_by_school?: boolean;
+  hide_from_leaderboard?: boolean;
+  secondary_school_id?: string;
+  college_id?: string;
+  university_id?: string;
 }
 
 export function isUserOnline(lastActive?: string): boolean {
@@ -40,7 +46,7 @@ interface AuthContextType {
   session: { user: { id: string } } | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, username: string, fullName: string, recaptchaToken: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, username: string, fullName: string, age?: number | null) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
@@ -240,7 +246,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [profile?.id]);
 
-  const signUp = async (email: string, password: string, username: string, fullName: string, recaptchaToken: string) => {
+  const signUp = async (email: string, password: string, username: string, fullName: string, age?: number | null) => {
     if (!supabase) {
       console.error('[SignUp] Supabase not configured');
       return { error: new Error('Supabase not configured') };
@@ -252,6 +258,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log(`  Email: ${email}`);
     console.log(`  Username: ${username}`);
     console.log(`  Full Name: ${fullName}`);
+    console.log(`  Age: ${age || 'not provided'}`);
     console.log('========================================');
 
     try {
@@ -267,7 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
           body: JSON.stringify({
             email,
-            recaptchaToken,
+            recaptchaToken: '',
           }),
         }
       );
@@ -338,7 +345,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authData.user.id,
         email,
         username,
-        fullName
+        fullName,
+        age
       );
 
       if (!profileData) {

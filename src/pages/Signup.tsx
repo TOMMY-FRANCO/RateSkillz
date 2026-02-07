@@ -8,6 +8,7 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
+  const [age, setAge] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,13 +32,20 @@ export default function Signup() {
       return;
     }
 
+    const ageNum = age ? parseInt(age) : null;
+    if (ageNum !== null && (ageNum < 11 || ageNum > 150)) {
+      setError('Age must be between 11 and 150');
+      setLoading(false);
+      return;
+    }
+
     if (!termsAccepted) {
       setError('You must accept the Terms of Service to create an account');
       setLoading(false);
       return;
     }
 
-    const { error } = await signUp(email, password, username, fullName);
+    const { error } = await signUp(email, password, username, fullName, ageNum);
 
     if (error) {
       setError(error.message);
@@ -128,6 +136,23 @@ export default function Signup() {
                   placeholder="••••••••"
                 />
                 <p className="mt-1 text-xs text-[#6B7280]">Minimum 6 characters</p>
+              </div>
+
+              <div>
+                <label htmlFor="age" className="block text-sm font-semibold text-white mb-2 uppercase tracking-wider">
+                  Age (Optional)
+                </label>
+                <input
+                  id="age"
+                  type="number"
+                  min="11"
+                  max="150"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  className="w-full"
+                  placeholder="Enter your age"
+                />
+                <p className="mt-1 text-xs text-[#6B7280]">Age is used for Safety & Privacy Settings (11-150)</p>
               </div>
             </div>
 
