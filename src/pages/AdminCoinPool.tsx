@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Coins, RefreshCw, AlertCircle, CheckCircle, TrendingUp, Users, Database, Activity, Lock, Shield, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import SystemLedgerManagement from '../components/SystemLedgerManagement';
 
 interface ResourcePool {
   id: string;
@@ -451,6 +452,8 @@ export default function AdminCoinPool() {
                 ))}
               </div>
             </div>
+
+            <SystemLedgerManagement />
 
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
               <div className="flex items-center justify-between mb-6">
