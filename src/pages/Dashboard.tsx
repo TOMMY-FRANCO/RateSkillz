@@ -8,7 +8,7 @@ import TermsAcceptanceModal from '../components/TermsAcceptanceModal';
 import { CoinBalance } from '../components/CoinBalance';
 import Tutorial from '../components/Tutorial';
 import TutorialPrompt from '../components/TutorialPrompt';
-import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search, BookOpen, QrCode, UserPlus, Star } from 'lucide-react';
+import { Settings, Users, LogOut, Edit, Trophy, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search, BookOpen, QrCode, UserPlus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { displayUsername } from '../lib/username';
 import { getUserStats } from '../lib/ratings';
@@ -23,9 +23,6 @@ import { WhatsAppDashboardShare } from '../components/WhatsAppDashboardShare';
 import InviteQRModal from '../components/InviteQRModal';
 import AddFriendQRModal from '../components/AddFriendQRModal';
 import ModerationCaseAlert from '../components/ModerationCaseAlert';
-import { NeonPanel } from '../components/ui/NeonPanel';
-import { NeonCard } from '../components/ui/NeonCard';
-import { NeonLoader } from '../components/ui/NeonLoader';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -120,100 +117,88 @@ export default function Dashboard() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-space flex items-center justify-center">
-        <NeonLoader size="lg" variant="cyan" text="Initializing..." />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-white">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-space pb-24 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-5 pointer-events-none">
-        <div className="absolute top-0 left-0 w-[800px] h-[800px] bg-neon-cyan rounded-full blur-[200px]"></div>
-        <div className="absolute bottom-0 right-0 w-[800px] h-[800px] bg-neon-green rounded-full blur-[200px]"></div>
-      </div>
-
-      <nav className="sticky top-0 z-50 bg-space/90 backdrop-blur-md border-b-2 border-neon-cyan/30">
+    <div className="min-h-screen pb-24">
+      <div className="glass-container rounded-none border-l-0 border-r-0 border-t-0 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-neon-cyan to-neon-green rounded-lg flex items-center justify-center shadow-neon-cyan">
-                <Star className="w-6 h-6 text-white" fill="white" />
-              </div>
-              <h1 className="font-heading text-2xl font-bold text-neon-cyan neon-text-cyan">
-                RATINGSKILL
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-xl font-bold text-white heading-glow">
+                RatingSkill®
               </h1>
             </div>
 
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate('/shop')}
-                className="bg-transparent border-none cursor-pointer hover:scale-105 transition-transform"
+                className="bg-none border-none cursor-pointer hover:scale-105 transition-transform"
               >
                 <CoinBalance />
               </button>
               <button
                 onClick={handleSignOut}
-                className="text-white/60 hover:text-red-400 transition-colors bg-transparent border-none cursor-pointer"
-                title="Sign Out"
+                className="text-[#B0B8C8] hover:text-red-400 transition-colors bg-none border-none cursor-pointer"
               >
-                <LogOut className="w-6 h-6" />
+                <LogOut className="w-5 h-5" />
               </button>
             </div>
           </div>
         </div>
-      </nav>
+      </div>
 
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center mb-8 animate-fade-in scanline-effect">
-          <h2 className="font-heading text-4xl sm:text-5xl font-bold text-white mb-2 uppercase neon-text-cyan">
-            Welcome, {displayUsername(profile.username)}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="text-center mb-4 animate-fade-in">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 heading-glow">
+            Welcome, {displayUsername(profile.username)}!
           </h2>
-          <div className="flex items-center justify-center gap-3 mb-2">
+          <div className="flex items-center justify-center gap-2 mb-1">
             <OnlineStatus lastActive={profile.last_active} size="large" />
           </div>
-          <p className="text-white/70 text-base sm:text-lg font-body">
+          <p className="text-[#B0B8C8] text-sm sm:text-base">
             {(userStats?.rating_count || 0) === 0
               ? 'Invite friends to rate your player card'
-              : `Rated by ${userStats?.rating_count || 0} ${userStats?.rating_count === 1 ? 'friend' : 'friends'}`}
+              : `Your card has been rated by ${userStats?.rating_count || 0} ${userStats?.rating_count === 1 ? 'friend' : 'friends'}`}
           </p>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <NeonLoader size="lg" variant="cyan" text="Loading Player Card..." />
-          </div>
-        ) : (
-          <div className="flex justify-center mb-8">
-            <div className="animate-slide-in-up">
-              <PlayerCard
-                profile={profile}
-                userStats={userStats}
-                rank={rank}
-                showDownloadButton={true}
-                overallRating={profile.overall_rating}
-                isVerified={isVerified}
-                hasSocialBadge={hasSocialBadge}
-              />
-            </div>
-          </div>
-        )}
+        <div className="flex justify-center mb-4">
+          {loading ? (
+            <div className="text-white">Loading your card...</div>
+          ) : (
+            <PlayerCard
+              profile={profile}
+              userStats={userStats}
+              rank={rank}
+              showDownloadButton={true}
+              overallRating={profile.overall_rating}
+              isVerified={isVerified}
+              hasSocialBadge={hasSocialBadge}
+            />
+          )}
+        </div>
 
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-6">
           <button
             onClick={() => navigate(`/profile/${profile.username}?preview=true`)}
-            className="px-6 py-3 bg-space/50 border-2 border-neon-green text-neon-green hover:bg-neon-green/10 font-heading text-lg uppercase tracking-wider transition-all duration-300 shadow-neon-green hover:shadow-neon-green-strong flex items-center gap-2"
+            className="btn-secondary flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base"
           >
-            <Eye className="w-5 h-5" />
-            Preview Profile
+            <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span>Preview Profile</span>
+            <span className="hidden sm:inline text-xs opacity-80">See how others view your profile</span>
           </button>
         </div>
 
-        <div className="max-w-5xl mx-auto mb-8">
+        <div className="max-w-4xl mx-auto mb-6">
           <ModerationCaseAlert />
         </div>
 
-        <div className="max-w-5xl mx-auto mb-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="max-w-4xl mx-auto mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <WhatsAppDashboardShare
             username={profile.username}
             profileUrl={`${getAppUrl()}/profile/${profile.username}`}
@@ -227,248 +212,254 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="mb-6">
-          <h3 className="font-heading text-2xl font-bold text-center text-neon-cyan neon-text-cyan mb-2 uppercase">
-            Mission Control
-          </h3>
-          <p className="text-center text-white/60 font-heading uppercase tracking-wider text-sm">
-            Your Command Center
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-6xl mx-auto">
-          <NeonCard variant="cyan" onClick={() => navigate('/inbox')} className="relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 max-w-6xl mx-auto">
+          <button
+            onClick={() => navigate('/inbox')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
+          >
             <NotificationBadge count={getCount(['message', 'coin_received', 'coin_request'])} soundType="message-received" />
-            <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-neon-cyan to-neon-cyan-bright rounded-lg flex items-center justify-center shadow-neon-cyan">
-                  <MessageCircle className="w-6 h-6 text-space" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-heading text-xl font-bold text-white uppercase">Messages</h3>
-                  <p className="text-white/60 text-sm font-body">Chat with friends</p>
-                </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#C44569] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
+                <MessageCircle className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Messages</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Chat with friends</p>
               </div>
             </div>
-          </NeonCard>
+          </button>
 
-          <NeonCard variant="green" onClick={() => navigate('/search-friends')}>
-            <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-neon-green to-neon-green-bright rounded-lg flex items-center justify-center shadow-neon-green">
-                  <Search className="w-6 h-6 text-space" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-heading text-xl font-bold text-white uppercase">Search</h3>
-                  <p className="text-white/60 text-sm font-body">Find friends</p>
-                </div>
+          <button
+            onClick={() => navigate('/search-friends')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <Search className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Search Friends</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Find & connect</p>
               </div>
             </div>
-          </NeonCard>
+          </button>
 
-          <NeonCard variant="cyan" onClick={() => navigate('/trading')} className="relative">
+          <button
+            onClick={() => navigate('/trading')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
+          >
             <NotificationBadge count={getCount(['swap_offer', 'purchase_offer', 'card_sold', 'purchase_request'])} soundType="card-swap" />
-            <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-neon-cyan to-neon-cyan-bright rounded-lg flex items-center justify-center shadow-neon-cyan">
-                  <ShoppingBag className="w-6 h-6 text-space" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-heading text-xl font-bold text-white uppercase">Trading</h3>
-                  <p className="text-white/60 text-sm font-body">Buy & sell cards</p>
-                </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
+                <ShoppingBag className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Card Trading</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Buy & sell cards</p>
               </div>
             </div>
-          </NeonCard>
+          </button>
 
-          <NeonCard variant="green" onClick={() => navigate('/battle-mode')} className="relative border-4">
-            <NotificationBadge count={getCount(['battle_request'])} className={profile.is_manager ? 'top-12' : ''} />
+          <button
+            onClick={() => navigate('/battle-mode')}
+            className="glass-card p-3 sm:p-4 border-2 border-[#38BDF8]/50 cursor-pointer text-left w-full relative"
+          >
+            <NotificationBadge count={getCount(['battle_request'])} className={profile.is_manager ? 'top-10' : ''} />
             {profile.is_manager && (
-              <span className="absolute top-2 right-2 px-3 py-1 bg-gradient-to-r from-neon-cyan to-neon-green text-space text-xs font-heading font-bold rounded shadow-neon-cyan uppercase tracking-wider">
+              <span className="absolute top-1 right-1 px-2 py-0.5 bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black text-[10px] font-bold rounded-md shadow-lg shadow-[#FFD700]/30 uppercase tracking-wider">
                 Manager
               </span>
             )}
-            <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-neon-green to-neon-green-bright rounded-lg flex items-center justify-center shadow-neon-green">
-                  <Swords className="w-6 h-6 text-space" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-heading text-xl font-bold text-white uppercase">Battle</h3>
-                  <p className="text-white/60 text-sm font-body">
-                    {profile.is_manager ? 'Card battles' : 'View battles'}
-                  </p>
-                </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#38BDF8] to-[#0EA5E9] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
+                <Swords className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Battle Mode</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">
+                  {profile.is_manager ? 'Card battles & wagers' : 'View battles & challenges'}
+                </p>
               </div>
             </div>
-          </NeonCard>
+          </button>
 
-          <NeonCard variant="cyan" onClick={() => navigate('/shop')}>
-            <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-neon-cyan to-neon-cyan-bright rounded-lg flex items-center justify-center shadow-neon-cyan">
-                  <ShoppingBag className="w-6 h-6 text-space" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-heading text-xl font-bold text-white uppercase">Shop</h3>
-                  <p className="text-white/60 text-sm font-body">Buy coins</p>
-                </div>
+          <button
+            onClick={() => navigate('/shop')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FFD700]/30">
+                <ShoppingBag className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Coin Shop</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Buy coins</p>
               </div>
             </div>
-          </NeonCard>
+          </button>
 
-          <NeonCard variant="green" onClick={() => navigate('/watch-ad')} className="relative">
+          <button
+            onClick={() => navigate('/watch-ad')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
+          >
             <NotificationBadge count={notificationCounts.ad_available} />
-            <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-neon-green to-neon-green-bright rounded-lg flex items-center justify-center shadow-neon-green">
-                  <Tv className="w-6 h-6 text-space" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-heading text-xl font-bold text-white uppercase">Earn</h3>
-                  <p className="text-white/60 text-sm font-body">Get 5 coins/day</p>
-                </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00D67A] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <Tv className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Watch & Earn</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Get 5 coins/day</p>
               </div>
             </div>
-          </NeonCard>
+          </button>
 
-          <NeonCard variant="cyan" onClick={() => navigate('/transactions')} className="relative">
+          <button
+            onClick={() => navigate('/transactions')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
+          >
             <NotificationBadge count={getCount(['transaction'])} />
-            <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-neon-cyan to-neon-cyan-bright rounded-lg flex items-center justify-center shadow-neon-cyan">
-                  <TrendingUp className="w-6 h-6 text-space" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-heading text-xl font-bold text-white uppercase">Ledger</h3>
-                  <p className="text-white/60 text-sm font-body">View history</p>
-                </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#38BDF8] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
+                <TrendingUp className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Transactions</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">View history</p>
               </div>
             </div>
-          </NeonCard>
+          </button>
 
-          <NeonCard variant="green" onClick={() => navigate('/leaderboard')} className="relative">
+          <button
+            onClick={() => navigate('/leaderboard')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
+          >
             <NotificationBadge count={getCount(['rank_update'])} />
-            <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-neon-green to-neon-green-bright rounded-lg flex items-center justify-center shadow-neon-green">
-                  <Trophy className="w-6 h-6 text-space" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-heading text-xl font-bold text-white uppercase">Ranks</h3>
-                  <p className="text-white/60 text-sm font-body">Top 150</p>
-                </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FFD700]/30">
+                <Trophy className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Leaderboard</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Top 150 rankings</p>
               </div>
             </div>
-          </NeonCard>
+          </button>
 
-          <NeonCard variant="cyan" onClick={() => navigate('/friends')} className="relative">
+          <button
+            onClick={() => navigate('/friends')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
+          >
             <NotificationBadge count={Math.max(0, pendingRequestsCount - getFriendsBadgeSeenCount())} soundType="friend-request" />
-            <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-neon-cyan to-neon-cyan-bright rounded-lg flex items-center justify-center shadow-neon-cyan">
-                  <Users className="w-6 h-6 text-space" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-heading text-xl font-bold text-white uppercase">Friends</h3>
-                  <p className="text-white/60 text-sm font-body">Connections</p>
-                </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <Users className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Friends</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Manage connections</p>
               </div>
             </div>
-          </NeonCard>
+          </button>
 
-          <NeonCard variant="green" onClick={() => navigate('/viewed-me')} className="relative">
+          <button
+            onClick={() => navigate('/viewed-me')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
+          >
             <NotificationBadge count={unreadProfileViews} />
-            <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-neon-green to-neon-green-bright rounded-lg flex items-center justify-center shadow-neon-green">
-                  <Eye className="w-6 h-6 text-space" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-heading text-xl font-bold text-white uppercase">Viewed</h3>
-                  <p className="text-white/60 text-sm font-body">Profile visits</p>
-                </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
+                <Eye className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Viewed Me</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">See who visited</p>
               </div>
             </div>
-          </NeonCard>
+          </button>
 
-          <NeonCard variant="cyan" onClick={() => navigate('/edit-profile')}>
-            <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-neon-cyan to-neon-cyan-bright rounded-lg flex items-center justify-center shadow-neon-cyan">
-                  <Edit className="w-6 h-6 text-space" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-heading text-xl font-bold text-white uppercase">Edit</h3>
-                  <p className="text-white/60 text-sm font-body">Update profile</p>
-                </div>
+          <button
+            onClick={() => navigate('/edit-profile')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <Edit className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Edit Profile</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Update your info</p>
               </div>
             </div>
-          </NeonCard>
+          </button>
 
-          <NeonCard variant="green" onClick={() => navigate('/settings')} className="relative">
+          <button
+            onClick={() => navigate('/settings')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
+          >
             <NotificationBadge count={getCount(['setting_change'])} />
-            <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-neon-green to-neon-green-bright rounded-lg flex items-center justify-center shadow-neon-green">
-                  <Settings className="w-6 h-6 text-space" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-heading text-xl font-bold text-white uppercase">Settings</h3>
-                  <p className="text-white/60 text-sm font-body">Configure</p>
-                </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <Settings className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Settings</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Account options</p>
               </div>
             </div>
-          </NeonCard>
+          </button>
 
-          <NeonCard variant="cyan" onClick={() => setShowTutorial(true)} className="relative border-2">
+          <button
+            onClick={() => setShowTutorial(true)}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative border-2 border-blue-500/30"
+          >
             {!tutorialCompleted && (
-              <span className="absolute top-2 right-2 px-3 py-1 bg-gradient-to-r from-blue-500 to-neon-green text-white text-xs font-heading font-bold rounded shadow-neon-green uppercase tracking-wider animate-pulse">
+              <span className="absolute top-1 right-1 px-2 py-0.5 bg-gradient-to-r from-blue-500 to-green-500 text-white text-[10px] font-bold rounded-md shadow-lg shadow-blue-500/30 uppercase tracking-wider animate-pulse">
                 +5 Coins
               </span>
             )}
-            <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-neon-green rounded-lg flex items-center justify-center shadow-neon-green">
-                  <BookOpen className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-heading text-xl font-bold text-white uppercase">Tutorial</h3>
-                  <p className="text-white/60 text-sm font-body">
-                    {tutorialCompleted ? 'Review' : 'Earn 5 coins'}
-                  </p>
-                </div>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-green-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/30">
+                <BookOpen className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Tutorial</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">
+                  {tutorialCompleted ? 'Review guide' : 'Learn & earn 5 coins'}
+                </p>
               </div>
             </div>
-          </NeonCard>
+          </button>
 
-          <NeonCard variant="green" onClick={() => setShowInviteQR(true)}>
-            <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-neon-green to-neon-green-bright rounded-lg flex items-center justify-center shadow-neon-green">
-                  <QrCode className="w-6 h-6 text-space" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-heading text-xl font-bold text-white uppercase">QR Code</h3>
-                  <p className="text-white/60 text-sm font-body">Invite users</p>
-                </div>
+          <button
+            onClick={() => setShowInviteQR(true)}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <QrCode className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Show QR Code</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Invite new users</p>
               </div>
             </div>
-          </NeonCard>
+          </button>
 
-          <NeonCard variant="cyan" onClick={() => setShowFriendQR(true)}>
-            <div className="p-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-neon-cyan to-neon-cyan-bright rounded-lg flex items-center justify-center shadow-neon-cyan">
-                  <UserPlus className="w-6 h-6 text-space" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-heading text-xl font-bold text-white uppercase">Add Friend</h3>
-                  <p className="text-white/60 text-sm font-body">Friend QR</p>
-                </div>
+          <button
+            onClick={() => setShowFriendQR(true)}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#38BDF8] to-[#0EA5E9] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
+                <UserPlus className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Add Friend QR Code</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Share friend code</p>
               </div>
             </div>
-          </NeonCard>
+          </button>
         </div>
       </main>
 
