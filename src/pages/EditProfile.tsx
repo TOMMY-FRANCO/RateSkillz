@@ -50,6 +50,7 @@ export default function EditProfile() {
   const [age, setAge] = useState(profile?.age || '');
   const [findableBySchool, setFindableBySchool] = useState(profile?.findable_by_school ?? true);
   const [showSafetyPopup, setShowSafetyPopup] = useState(false);
+  const [hideFromLeaderboard, setHideFromLeaderboard] = useState(profile?.hide_from_leaderboard ?? false);
 
   useEffect(() => {
     if (profile) {
@@ -261,6 +262,7 @@ export default function EditProfile() {
       university_id: universityId || null,
       age: ageNum,
       findable_by_school: findableBySchool,
+      hide_from_leaderboard: hideFromLeaderboard,
     });
 
     if (error) {
@@ -708,13 +710,15 @@ export default function EditProfile() {
                   onChange={(e) => {
                     const val = e.target.value;
                     setAge(val);
-                    // Auto-set findable_by_school based on age
+                    // Auto-set privacy settings based on age
                     const ageNum = parseInt(val);
                     if (!isNaN(ageNum)) {
-                      if (ageNum < 18) {
+                      if (ageNum >= 11 && ageNum < 18) {
                         setFindableBySchool(false);
+                        setHideFromLeaderboard(true);
                       } else {
                         setFindableBySchool(true);
+                        setHideFromLeaderboard(false);
                       }
                     }
                   }}
@@ -761,6 +765,51 @@ export default function EditProfile() {
                       <>
                         <EyeOff className="w-4 h-4 text-gray-400" />
                         <span className="text-gray-400 font-medium">Hidden from school search</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Leaderboard Visibility Toggle */}
+              {age && (
+                <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 mt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <label htmlFor="leaderboard-visibility" className="block text-sm font-medium text-white mb-1">
+                        Show me on leaderboards
+                      </label>
+                      <p className="text-xs text-gray-400">
+                        {parseInt(age.toString()) >= 11 && parseInt(age.toString()) < 18
+                          ? 'For your privacy, you are hidden from leaderboards by default. You can enable this to appear on public rankings.'
+                          : 'Control whether you appear on public leaderboards and rankings.'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      id="leaderboard-visibility"
+                      onClick={() => setHideFromLeaderboard(!hideFromLeaderboard)}
+                      className={`ml-4 relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-gray-800 ${
+                        !hideFromLeaderboard ? 'bg-green-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                          !hideFromLeaderboard ? 'translate-x-7' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 text-sm">
+                    {!hideFromLeaderboard ? (
+                      <>
+                        <Eye className="w-4 h-4 text-green-400" />
+                        <span className="text-green-400 font-medium">Visible on leaderboards</span>
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="w-4 h-4 text-gray-400" />
+                        <span className="text-gray-400 font-medium">Hidden from leaderboards</span>
                       </>
                     )}
                   </div>
