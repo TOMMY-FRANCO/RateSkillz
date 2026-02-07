@@ -22,6 +22,7 @@ import { FriendMilestoneReward } from '../components/FriendMilestoneReward';
 import { WhatsAppDashboardShare } from '../components/WhatsAppDashboardShare';
 import InviteQRModal from '../components/InviteQRModal';
 import AddFriendQRModal from '../components/AddFriendQRModal';
+import ModerationCaseAlert from '../components/ModerationCaseAlert';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -191,6 +192,10 @@ export default function Dashboard() {
             <span>Preview Profile</span>
             <span className="hidden sm:inline text-xs opacity-80">See how others view your profile</span>
           </button>
+        </div>
+
+        <div className="max-w-4xl mx-auto mb-6">
+          <ModerationCaseAlert />
         </div>
 
         <div className="max-w-4xl mx-auto mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -2,31 +2,40 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Shield, Flag, Ban, CheckCircle, ArrowLeft, AlertTriangle, Loader2 } from 'lucide-react';
+import { Shield, Flag, AlertTriangle, Loader2, ArrowLeft, Clock, CheckCircle, XCircle, AlertOctagon } from 'lucide-react';
 
-interface Report {
-  report_id: string;
-  reported_user_id: string;
-  reported_username: string;
-  reported_display_name: string;
+interface ModerationCase {
+  case_id: string;
+  target_user_id: string;
+  target_username: string;
   reporter_id: string;
   reporter_username: string;
-  reason: string;
+  reason_code: string;
+  reason_details: string | null;
   status: string;
+  severity: string;
+  appeal_deadline: string;
+  appeal_text: string | null;
+  appeal_submitted_at: string | null;
+  is_resolved: boolean;
+  resolution_action: string | null;
+  resolved_by: string | null;
+  resolved_at: string | null;
   admin_notes: string | null;
   created_at: string;
-  resolved_at: string | null;
-  resolved_by: string | null;
+  updated_at: string;
 }
 
 export default function AdminModeration() {
   const { profile } = useAuth();
   const navigate = useNavigate();
-  const [reports, setReports] = useState<Report[]>([]);
+  const [cases, setCases] = useState<ModerationCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [processingReportId, setProcessingReportId] = useState<string | null>(null);
+  const [processingCaseId, setProcessingCaseId] = useState<string | null>(null);
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
+  const [selectedResolution, setSelectedResolution] = useState<Record<string, string>>({});
+  const [expandedCaseId, setExpandedCaseId] = useState<string | null>(null);
   const adminCheckDoneRef = useRef(false);
 
   useEffect(() => {
@@ -44,19 +53,19 @@ export default function AdminModeration() {
     }
 
     if (!adminCheckDoneRef.current) {
-      console.log('[AdminModeration] Admin verified - loading reports');
+      console.log('[AdminModeration] Admin verified - loading cases');
       adminCheckDoneRef.current = true;
-      loadReports();
+      loadCases();
     }
   }, [profile, navigate]);
 
-  const loadReports = async () => {
-    console.log('[AdminModeration] Starting to load reports...');
+  const loadCases = async () => {
+    console.log('[AdminModeration] Starting to load cases...');
     setLoading(true);
     setError('');
 
     try {
-      const { data, error: rpcError } = await supabase.rpc('get_active_reports');
+      const { data, error: rpcError } = await supabase.rpc('get_all_moderation_cases');
 
       if (rpcError) {
         console.error('[AdminModeration] RPC error:', rpcError);
@@ -70,92 +79,103 @@ export default function AdminModeration() {
         throw rpcError;
       }
 
-      console.log('[AdminModeration] Reports loaded successfully:', data?.length || 0);
-      setReports(data || []);
+      console.log('[AdminModeration] Cases loaded successfully:', data?.length || 0);
+      setCases(data || []);
       setError('');
     } catch (err) {
-      console.error('[AdminModeration] Error loading reports:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load reports';
+      console.error('[AdminModeration] Error loading cases:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load cases';
       setError(errorMessage);
-      setReports([]);
+      setCases([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBanUser = async (reportId: string, targetUserId: string) => {
-    if (!confirm('Are you sure you want to BAN this user? This action will disable their account.')) {
+  const handleResolveCase = async (caseId: string) => {
+    const resolution = selectedResolution[caseId];
+    if (!resolution) {
+      setError('Please select a resolution action');
       return;
     }
 
-    console.log('[AdminModeration] Banning user:', { reportId, targetUserId });
-    setProcessingReportId(reportId);
+    const confirmMessage = resolution === 'Permanent Block'
+      ? 'Are you sure you want to PERMANENTLY BLOCK this user? This action will disable their account and put them on a 30-day legal hold.'
+      : `Are you sure you want to resolve this case with: ${resolution}?`;
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    console.log('[AdminModeration] Resolving case:', { caseId, resolution });
+    setProcessingCaseId(caseId);
     setError('');
 
     try {
-      const notes = adminNotes[reportId] || '';
+      const notes = adminNotes[caseId] || '';
 
-      const { data, error: rpcError } = await supabase.rpc('ban_user', {
-        p_report_id: reportId,
-        p_target_user_id: targetUserId,
-        p_notes: notes
+      const { data, error: rpcError } = await supabase.rpc('resolve_moderation_case', {
+        p_case_id: caseId,
+        p_resolution_action: resolution,
+        p_admin_notes: notes || null
       });
 
       if (rpcError) {
-        console.error('[AdminModeration] Ban user RPC error:', rpcError);
+        console.error('[AdminModeration] Resolve case RPC error:', rpcError);
         throw rpcError;
       }
 
       if (data && !data.success) {
-        console.error('[AdminModeration] Ban user failed:', data.error);
-        throw new Error(data.error || 'Failed to ban user');
+        console.error('[AdminModeration] Resolve case failed:', data.error);
+        throw new Error(data.error || 'Failed to resolve case');
       }
 
-      console.log('[AdminModeration] User banned successfully');
-      await loadReports();
+      console.log('[AdminModeration] Case resolved successfully');
+      await loadCases();
+      setExpandedCaseId(null);
     } catch (err) {
-      console.error('[AdminModeration] Error banning user:', err);
-      setError(err instanceof Error ? err.message : 'Failed to ban user');
+      console.error('[AdminModeration] Error resolving case:', err);
+      setError(err instanceof Error ? err.message : 'Failed to resolve case');
     } finally {
-      setProcessingReportId(null);
+      setProcessingCaseId(null);
     }
   };
 
-  const handleClearReport = async (reportId: string) => {
-    if (!confirm('Are you sure you want to CLEAR this report? This marks the user as safe.')) {
-      return;
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'Critical': return 'text-red-400 bg-red-500/20 border-red-500/30';
+      case 'High': return 'text-orange-400 bg-orange-500/20 border-orange-500/30';
+      case 'Medium': return 'text-yellow-400 bg-yellow-500/20 border-yellow-500/30';
+      default: return 'text-gray-400 bg-gray-500/20 border-gray-500/30';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Appealed': return 'text-cyan-400 bg-cyan-500/20';
+      case 'Pending': return 'text-yellow-400 bg-yellow-500/20';
+      case 'Resolved': return 'text-green-400 bg-green-500/20';
+      case 'Auto-Escalated': return 'text-red-400 bg-red-500/20';
+      default: return 'text-gray-400 bg-gray-500/20';
+    }
+  };
+
+  const getTimeRemaining = (deadline: string) => {
+    const now = new Date();
+    const end = new Date(deadline);
+    const diff = end.getTime() - now.getTime();
+
+    if (diff <= 0) return 'Expired';
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (hours >= 24) {
+      const days = Math.floor(hours / 24);
+      return `${days}d ${hours % 24}h`;
     }
 
-    console.log('[AdminModeration] Clearing report:', { reportId });
-    setProcessingReportId(reportId);
-    setError('');
-
-    try {
-      const notes = adminNotes[reportId] || '';
-
-      const { data, error: rpcError } = await supabase.rpc('clear_report', {
-        p_report_id: reportId,
-        p_notes: notes
-      });
-
-      if (rpcError) {
-        console.error('[AdminModeration] Clear report RPC error:', rpcError);
-        throw rpcError;
-      }
-
-      if (data && !data.success) {
-        console.error('[AdminModeration] Clear report failed:', data.error);
-        throw new Error(data.error || 'Failed to clear report');
-      }
-
-      console.log('[AdminModeration] Report cleared successfully');
-      await loadReports();
-    } catch (err) {
-      console.error('[AdminModeration] Error clearing report:', err);
-      setError(err instanceof Error ? err.message : 'Failed to clear report');
-    } finally {
-      setProcessingReportId(null);
-    }
+    return `${hours}h ${minutes}m`;
   };
 
   const formatDate = (dateString: string) => {
@@ -174,8 +194,8 @@ export default function AdminModeration() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      <nav className="bg-gray-900 border-b border-gray-800">
+    <div className="min-h-screen bg-black pb-24">
+      <nav className="bg-gray-900 border-b border-gray-800 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -188,17 +208,17 @@ export default function AdminModeration() {
               <div className="flex items-center gap-3">
                 <Shield className="w-6 h-6 text-red-400" />
                 <div>
-                  <h1 className="text-xl font-bold text-white">Admin HQ - London</h1>
+                  <h1 className="text-xl font-bold text-white">Admin HQ - Moderation Center</h1>
                   {profile && (
                     <p className="text-xs text-gray-400">
-                      Logged in as: {profile.username} {profile.is_admin ? '(Admin)' : ''}
+                      {profile.username} • Admin
                     </p>
                   )}
                 </div>
               </div>
             </div>
             <button
-              onClick={loadReports}
+              onClick={loadCases}
               disabled={loading}
               className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg transition-all disabled:opacity-50"
             >
@@ -209,39 +229,48 @@ export default function AdminModeration() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-red-900/50 to-red-800/30 border border-red-700/50 rounded-xl p-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-gradient-to-br from-cyan-900/30 to-cyan-800/20 border border-cyan-700/50 rounded-xl p-6">
             <div className="flex items-center gap-3">
-              <AlertTriangle className="w-8 h-8 text-red-400" />
+              <Flag className="w-8 h-8 text-cyan-400" />
               <div>
-                <p className="text-sm text-gray-400">Active Reports</p>
+                <p className="text-sm text-gray-400">Total Cases</p>
+                <p className="text-3xl font-bold text-white">{cases.length}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 border border-yellow-700/50 rounded-xl p-6">
+            <div className="flex items-center gap-3">
+              <Clock className="w-8 h-8 text-yellow-400" />
+              <div>
+                <p className="text-sm text-gray-400">Pending</p>
                 <p className="text-3xl font-bold text-white">
-                  {reports.filter(r => r.status === 'active').length}
+                  {cases.filter(c => c.status === 'Pending').length}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-900/50 to-green-800/30 border border-green-700/50 rounded-xl p-6">
+          <div className="bg-gradient-to-br from-cyan-900/30 to-blue-800/20 border border-cyan-700/50 rounded-xl p-6">
+            <div className="flex items-center gap-3">
+              <AlertOctagon className="w-8 h-8 text-cyan-400" />
+              <div>
+                <p className="text-sm text-gray-400">Appealed</p>
+                <p className="text-3xl font-bold text-white">
+                  {cases.filter(c => c.status === 'Appealed').length}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-700/50 rounded-xl p-6">
             <div className="flex items-center gap-3">
               <CheckCircle className="w-8 h-8 text-green-400" />
               <div>
-                <p className="text-sm text-gray-400">Cleared</p>
+                <p className="text-sm text-gray-400">Resolved</p>
                 <p className="text-3xl font-bold text-white">
-                  {reports.filter(r => r.status === 'cleared').length}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 border border-gray-700/50 rounded-xl p-6">
-            <div className="flex items-center gap-3">
-              <Ban className="w-8 h-8 text-gray-400" />
-              <div>
-                <p className="text-sm text-gray-400">Banned</p>
-                <p className="text-3xl font-bold text-white">
-                  {reports.filter(r => r.status === 'banned').length}
+                  {cases.filter(c => c.is_resolved).length}
                 </p>
               </div>
             </div>
@@ -251,164 +280,189 @@ export default function AdminModeration() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mb-4" />
-            <p className="text-gray-400">Loading reports...</p>
+            <p className="text-gray-400">Loading moderation cases...</p>
           </div>
         ) : error ? (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-8 text-center">
             <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">Failed to Load Reports</h3>
+            <h3 className="text-xl font-bold text-white mb-2">Failed to Load Cases</h3>
             <p className="text-red-400 mb-4">{error}</p>
             <button
-              onClick={loadReports}
+              onClick={loadCases}
               className="px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg transition-all"
             >
               Try Again
             </button>
           </div>
-        ) : reports.length === 0 ? (
+        ) : cases.length === 0 ? (
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-12 text-center">
             <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
             <h3 className="text-2xl font-bold text-white mb-2">All Clear!</h3>
-            <p className="text-gray-400">No reports to review at the moment.</p>
+            <p className="text-gray-400">No moderation cases to review at the moment.</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {reports.map((report) => (
-              <div
-                key={report.report_id}
-                className={`bg-gray-900 border rounded-xl p-6 ${
-                  report.status === 'active'
-                    ? 'border-red-500/50'
-                    : report.status === 'cleared'
-                    ? 'border-green-500/50'
-                    : 'border-gray-700'
-                }`}
-              >
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                      report.status === 'active'
-                        ? 'bg-red-500/20'
-                        : report.status === 'cleared'
-                        ? 'bg-green-500/20'
-                        : 'bg-gray-700'
-                    }`}>
-                      <Flag className={`w-6 h-6 ${
-                        report.status === 'active'
-                          ? 'text-red-400'
-                          : report.status === 'cleared'
-                          ? 'text-green-400'
-                          : 'text-gray-400'
-                      }`} />
+            {cases.map((moderationCase) => {
+              const isExpanded = expandedCaseId === moderationCase.case_id;
+              const timeRemaining = getTimeRemaining(moderationCase.appeal_deadline);
+
+              return (
+                <div
+                  key={moderationCase.case_id}
+                  className={`bg-gray-900 border rounded-xl transition-all ${
+                    moderationCase.status === 'Appealed'
+                      ? 'border-cyan-500/50 shadow-lg shadow-cyan-500/20'
+                      : moderationCase.status === 'Pending'
+                      ? 'border-yellow-500/50'
+                      : moderationCase.is_resolved
+                      ? 'border-green-500/30'
+                      : 'border-gray-700'
+                  }`}
+                >
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-bold text-white">
+                            {moderationCase.target_username}
+                          </h3>
+                          <div className={`px-3 py-1 rounded-full text-xs font-bold border ${getSeverityColor(moderationCase.severity)}`}>
+                            {moderationCase.severity}
+                          </div>
+                          <div className={`px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(moderationCase.status)}`}>
+                            {moderationCase.status}
+                          </div>
+                        </div>
+                        <p className="text-gray-400 text-sm mb-1">
+                          <span className="font-semibold">{moderationCase.reason_code}</span>
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                          Reported by: {moderationCase.reporter_username} • {formatDate(moderationCase.created_at)}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => setExpandedCaseId(isExpanded ? null : moderationCase.case_id)}
+                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-semibold rounded-lg transition-all"
+                      >
+                        {isExpanded ? 'Collapse' : 'View Details'}
+                      </button>
                     </div>
-                    <div>
-                      <p className="text-lg font-bold text-white">
-                        Report: {report.reported_username}
-                      </p>
-                      <p className="text-sm text-gray-400">
-                        {report.reported_display_name || 'No display name'}
-                      </p>
+
+                    {moderationCase.reason_details && (
+                      <div className="bg-black/30 rounded-lg p-3 mb-4">
+                        <p className="text-sm text-gray-300">{moderationCase.reason_details}</p>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-gray-400" />
+                        <span className={`${timeRemaining === 'Expired' ? 'text-red-400' : 'text-gray-300'}`}>
+                          Appeal: {timeRemaining}
+                        </span>
+                      </div>
+                      {moderationCase.appeal_submitted_at && (
+                        <div className="text-cyan-400 font-semibold">
+                          ✓ Appeal Submitted
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-xs font-bold ${
-                    report.status === 'active'
-                      ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                      : report.status === 'cleared'
-                      ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                      : 'bg-gray-700 text-gray-300 border border-gray-600'
-                  }`}>
-                    {report.status.toUpperCase()}
+
+                    {isExpanded && (
+                      <div className="mt-6 pt-6 border-t border-gray-700 space-y-4">
+                        {moderationCase.appeal_text && (
+                          <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-4">
+                            <p className="text-sm font-semibold text-cyan-300 mb-2">User's Appeal:</p>
+                            <p className="text-white">{moderationCase.appeal_text}</p>
+                            <p className="text-xs text-cyan-400 mt-2">
+                              Submitted: {formatDate(moderationCase.appeal_submitted_at!)}
+                            </p>
+                          </div>
+                        )}
+
+                        {!moderationCase.is_resolved ? (
+                          <div className="bg-gray-800 rounded-lg p-4 space-y-4">
+                            <div>
+                              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                                Resolution Action
+                              </label>
+                              <select
+                                value={selectedResolution[moderationCase.case_id] || ''}
+                                onChange={(e) => setSelectedResolution(prev => ({
+                                  ...prev,
+                                  [moderationCase.case_id]: e.target.value
+                                }))}
+                                className="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-500"
+                                disabled={processingCaseId === moderationCase.case_id}
+                              >
+                                <option value="">Select action...</option>
+                                <option value="None">Dismiss (No Action)</option>
+                                <option value="Warning">Issue Warning</option>
+                                <option value="7-Day Suspension">7-Day Suspension</option>
+                                <option value="Permanent Block">Permanent Block</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                                Admin Notes (Optional)
+                              </label>
+                              <textarea
+                                value={adminNotes[moderationCase.case_id] || ''}
+                                onChange={(e) => setAdminNotes(prev => ({
+                                  ...prev,
+                                  [moderationCase.case_id]: e.target.value
+                                }))}
+                                placeholder="Add notes about your decision..."
+                                rows={3}
+                                className="w-full px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 resize-none"
+                                disabled={processingCaseId === moderationCase.case_id}
+                              />
+                            </div>
+
+                            <button
+                              onClick={() => handleResolveCase(moderationCase.case_id)}
+                              disabled={
+                                processingCaseId === moderationCase.case_id ||
+                                !selectedResolution[moderationCase.case_id]
+                              }
+                              className="w-full py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                              {processingCaseId === moderationCase.case_id ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <span>Processing...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="w-4 h-4" />
+                                  <span>Resolve Case</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                            <p className="text-green-300 font-semibold mb-2">
+                              ✓ Case Resolved: {moderationCase.resolution_action}
+                            </p>
+                            {moderationCase.admin_notes && (
+                              <p className="text-gray-300 text-sm mb-2">
+                                <span className="font-semibold">Admin Notes:</span> {moderationCase.admin_notes}
+                              </p>
+                            )}
+                            <p className="text-xs text-gray-400">
+                              Resolved: {formatDate(moderationCase.resolved_at!)}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                {/* Details Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Reported By</p>
-                    <p className="text-white font-medium">{report.reporter_username}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Reason</p>
-                    <p className="text-white font-medium capitalize">{report.reason}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Submitted</p>
-                    <p className="text-white font-medium">{formatDate(report.created_at)}</p>
-                  </div>
-                  {report.resolved_at && (
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Resolved</p>
-                      <p className="text-white font-medium">{formatDate(report.resolved_at)}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Admin Notes */}
-                {report.status === 'active' ? (
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Admin Notes (Optional)
-                    </label>
-                    <textarea
-                      value={adminNotes[report.report_id] || ''}
-                      onChange={(e) => setAdminNotes({
-                        ...adminNotes,
-                        [report.report_id]: e.target.value
-                      })}
-                      placeholder="Add notes about this decision..."
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none"
-                      rows={2}
-                    />
-                  </div>
-                ) : report.admin_notes && (
-                  <div className="mb-4 p-3 bg-gray-800 rounded-lg border border-gray-700">
-                    <p className="text-xs text-gray-400 mb-1">Admin Notes:</p>
-                    <p className="text-white text-sm">{report.admin_notes}</p>
-                  </div>
-                )}
-
-                {/* Action Buttons - Only for active reports */}
-                {report.status === 'active' && (
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => handleBanUser(report.report_id, report.reported_user_id)}
-                      disabled={processingReportId === report.report_id}
-                      className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {processingReportId === report.report_id ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          <span>Processing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Ban className="w-5 h-5" />
-                          <span>BAN USER</span>
-                        </>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleClearReport(report.report_id)}
-                      disabled={processingReportId === report.report_id}
-                      className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {processingReportId === report.report_id ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          <span>Processing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="w-5 h-5" />
-                          <span>CLEAR REPORT</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </main>

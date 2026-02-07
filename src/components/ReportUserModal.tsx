@@ -8,19 +8,35 @@ interface ReportUserModalProps {
   onClose: () => void;
 }
 
+const REASON_CODES = [
+  { value: 'Bullying/Harassment', label: 'Bullying/Harassment', description: 'Threats, intimidation, or repeated unwanted contact' },
+  { value: 'Hate Speech', label: 'Hate Speech', description: 'Discriminatory language or content targeting protected groups' },
+  { value: 'Scam/Spam', label: 'Scam/Spam', description: 'Fraudulent activity, phishing, or unsolicited advertising' },
+  { value: 'Inappropriate Content', label: 'Inappropriate Content', description: 'Offensive, graphic, or age-inappropriate material' },
+  { value: 'Impersonation', label: 'Impersonation', description: 'Pretending to be someone else or using fake identity' }
+];
+
 export default function ReportUserModal({ reportedUserId, reportedUsername, onClose }: ReportUserModalProps) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [reasonCode, setReasonCode] = useState('');
+  const [reasonDetails, setReasonDetails] = useState('');
 
   const handleSubmit = async () => {
+    if (!reasonCode) {
+      setError('Please select a reason for reporting');
+      return;
+    }
+
     setSubmitting(true);
     setError('');
 
     try {
-      const { data, error: rpcError } = await supabase.rpc('submit_report', {
-        p_reported_user_id: reportedUserId,
-        p_reason: 'harassment'
+      const { data, error: rpcError } = await supabase.rpc('submit_moderation_case', {
+        p_target_user_id: reportedUserId,
+        p_reason_code: reasonCode,
+        p_reason_details: reasonDetails || null
       });
 
       if (rpcError) throw rpcError;
@@ -71,9 +87,12 @@ export default function ReportUserModal({ reportedUserId, reportedUsername, onCl
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Report Sent</h3>
-              <p className="text-gray-400">
-                Our team will review it. Thank you for helping keep our community safe.
+              <h3 className="text-xl font-bold text-white mb-2">Report Submitted</h3>
+              <p className="text-gray-400 mb-2">
+                Moderation case created. The user has been shadow-banned and will receive an "Intent to Block" notification.
+              </p>
+              <p className="text-gray-500 text-sm">
+                Thank you for helping keep our community safe.
               </p>
             </div>
           ) : (
@@ -93,13 +112,54 @@ export default function ReportUserModal({ reportedUserId, reportedUsername, onCl
               </div>
 
               <div className="space-y-4 mb-6">
-                <p className="text-gray-300">
-                  This report will be sent to our UK moderation team for immediate review.
-                  We take all reports seriously and will investigate this matter.
-                </p>
-                <p className="text-gray-400 text-sm">
-                  Our team will review this report and take appropriate action if necessary.
-                </p>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    Reason for Report <span className="text-red-400">*</span>
+                  </label>
+                  <select
+                    value={reasonCode}
+                    onChange={(e) => setReasonCode(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                    disabled={submitting}
+                  >
+                    <option value="">Select a reason...</option>
+                    {REASON_CODES.map((reason) => (
+                      <option key={reason.value} value={reason.value}>
+                        {reason.label}
+                      </option>
+                    ))}
+                  </select>
+                  {reasonCode && (
+                    <p className="mt-2 text-xs text-gray-400">
+                      {REASON_CODES.find(r => r.value === reasonCode)?.description}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-2">
+                    Additional Details (Optional)
+                  </label>
+                  <textarea
+                    value={reasonDetails}
+                    onChange={(e) => setReasonDetails(e.target.value)}
+                    placeholder="Provide any additional context that might help our team..."
+                    rows={3}
+                    maxLength={500}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors resize-none"
+                    disabled={submitting}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    {reasonDetails.length}/500 characters
+                  </p>
+                </div>
+
+                <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
+                  <p className="text-cyan-200 text-xs">
+                    The user will be shadow-banned during investigation and has 72 hours to appeal.
+                    Our moderation team will review this case promptly.
+                  </p>
+                </div>
               </div>
 
               {error && (
@@ -119,7 +179,7 @@ export default function ReportUserModal({ reportedUserId, reportedUsername, onCl
                 </button>
                 <button
                   onClick={handleSubmit}
-                  disabled={submitting}
+                  disabled={submitting || !reasonCode}
                   className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {submitting ? (
