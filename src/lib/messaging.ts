@@ -70,32 +70,48 @@ export async function getUserConversations(userId: string): Promise<Conversation
       .order('last_message_at', { ascending: false, nullsFirst: false });
 
     if (error) throw error;
-    if (!conversations) return [];
+    if (!conversations || conversations.length === 0) return [];
 
-    const conversationsWithUsers = await Promise.all(
-      conversations.map(async (conv) => {
-        const otherUserId = conv.user_one_id === userId ? conv.user_two_id : conv.user_one_id;
-
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id, username, full_name, avatar_url')
-          .eq('id', otherUserId)
-          .maybeSingle();
-
-        const { count } = await supabase
-          .from('messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('conversation_id', conv.id)
-          .eq('recipient_id', userId)
-          .eq('is_read', false);
-
-        return {
-          ...conv,
-          other_user: profile || undefined,
-          unread_count: count || 0,
-        };
-      })
+    // PERFORMANCE FIX: Fetch all profiles in a single query to prevent N+1
+    const otherUserIds = conversations.map(conv =>
+      conv.user_one_id === userId ? conv.user_two_id : conv.user_one_id
     );
+
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, avatar_url')
+      .in('id', otherUserIds);
+
+    if (profilesError) throw profilesError;
+
+    // Create profile lookup map for O(1) access
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+    // PERFORMANCE FIX: Fetch all unread counts in a single aggregated query
+    const { data: unreadCounts, error: unreadError } = await supabase
+      .from('messages')
+      .select('conversation_id')
+      .eq('recipient_id', userId)
+      .eq('is_read', false)
+      .in('conversation_id', conversations.map(c => c.id));
+
+    if (unreadError) throw unreadError;
+
+    // Count unread messages per conversation
+    const unreadMap = new Map<string, number>();
+    unreadCounts?.forEach(msg => {
+      unreadMap.set(msg.conversation_id, (unreadMap.get(msg.conversation_id) || 0) + 1);
+    });
+
+    // Combine all data
+    const conversationsWithUsers = conversations.map(conv => {
+      const otherUserId = conv.user_one_id === userId ? conv.user_two_id : conv.user_one_id;
+      return {
+        ...conv,
+        other_user: profileMap.get(otherUserId) || undefined,
+        unread_count: unreadMap.get(conv.id) || 0,
+      };
+    });
 
     return conversationsWithUsers;
   } catch (error) {
