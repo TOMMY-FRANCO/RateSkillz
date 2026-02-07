@@ -167,10 +167,10 @@ async function awardAdCoins(supabase: any, userId: string) {
   }
 
   return new Response(
-    JSON.stringify({ 
-      success: true, 
-      earned: true, 
-      amount: 10,
+    JSON.stringify({
+      success: true,
+      earned: true,
+      amount: 5,
       message: data.message
     }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
