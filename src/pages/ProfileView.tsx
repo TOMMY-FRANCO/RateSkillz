@@ -9,7 +9,7 @@ import EditSocialLinks from '../components/EditSocialLinks';
 import OnlineStatus from '../components/OnlineStatus';
 import CardOwnershipStatus from '../components/CardOwnershipStatus';
 import ReportUserModal from '../components/ReportUserModal';
-import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2, Coins, Lock, X, Loader2, MessageSquare, MessageCircle, Flag } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, ThumbsDown, Send, UserPlus, UserCheck, UserX, Clock, Users, Eye, Share2, Coins, Lock, X, Loader2, MessageSquare, MessageCircle, Flag, AlertTriangle } from 'lucide-react';
 import { formatCoinBalance, formatCoinBalanceFull } from '../lib/formatBalance';
 import type { Profile } from '../contexts/AuthContext';
 import { awardCommentCoins } from '../lib/coins';
@@ -49,6 +49,7 @@ export default function ProfileView() {
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
+  const [commentError, setCommentError] = useState('');
   const [loading, setLoading] = useState(true);
   const [likes, setLikes] = useState(0);
   const [dislikes, setDislikes] = useState(0);
@@ -453,6 +454,8 @@ export default function ProfileView() {
     if (!currentUser || !profile || !newComment.trim() || friendStatus !== 'accepted') return;
 
     setSubmitting(true);
+    setCommentError('');
+
     try {
       const { data, error } = await supabase
         .from('comments')
@@ -465,9 +468,23 @@ export default function ProfileView() {
         .select()
         .single();
 
-      if (!error && data) {
+      if (error) {
+        // Check if error is from profanity filter
+        if (error.message.includes('inappropriate language') ||
+            error.message.includes('links or URLs') ||
+            error.message.includes('not allowed')) {
+          setCommentError(error.message);
+        } else {
+          setCommentError('Failed to post comment. Please try again.');
+        }
+        console.error('Error submitting comment:', error);
+        return;
+      }
+
+      if (data) {
         setComments([data, ...comments]);
         setNewComment('');
+        setCommentError('');
 
         try {
           const coinResult = await awardCommentCoins(profile.id, data.id);
@@ -480,8 +497,13 @@ export default function ProfileView() {
           console.log('Coin reward info:', coinError.message);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting comment:', error);
+      if (error.message) {
+        setCommentError(error.message);
+      } else {
+        setCommentError('Failed to post comment. Please try again.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -1024,7 +1046,10 @@ export default function ProfileView() {
                         <input
                           type="text"
                           value={newComment}
-                          onChange={(e) => setNewComment(e.target.value)}
+                          onChange={(e) => {
+                            setNewComment(e.target.value);
+                            if (commentError) setCommentError('');
+                          }}
                           placeholder="Add a comment..."
                           className="flex-1 px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                         />
@@ -1037,6 +1062,14 @@ export default function ProfileView() {
                         </button>
                       </div>
                     </form>
+                    {commentError && (
+                      <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                          <p className="text-xs sm:text-sm text-red-400">{commentError}</p>
+                        </div>
+                      </div>
+                    )}
                     {coinEarned !== null && (
                       <div className="mb-3 p-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/50 rounded-lg animate-pulse">
                         <div className="flex items-center justify-center gap-2 text-yellow-400">

@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Shield, Flag, AlertTriangle, Loader2, ArrowLeft, Clock, CheckCircle, XCircle, AlertOctagon } from 'lucide-react';
+import { Shield, Flag, AlertTriangle, Loader2, ArrowLeft, Clock, CheckCircle, XCircle, AlertOctagon, MessageCircleOff, Filter } from 'lucide-react';
 
 interface ModerationCase {
   case_id: string;
@@ -36,6 +36,8 @@ export default function AdminModeration() {
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
   const [selectedResolution, setSelectedResolution] = useState<Record<string, string>>({});
   const [expandedCaseId, setExpandedCaseId] = useState<string | null>(null);
+  const [filterStats, setFilterStats] = useState<any>(null);
+  const [showFilteredComments, setShowFilteredComments] = useState(false);
   const adminCheckDoneRef = useRef(false);
 
   useEffect(() => {
@@ -56,6 +58,7 @@ export default function AdminModeration() {
       console.log('[AdminModeration] Admin verified - loading cases');
       adminCheckDoneRef.current = true;
       loadCases();
+      loadFilterStats();
     }
   }, [profile, navigate]);
 
@@ -89,6 +92,23 @@ export default function AdminModeration() {
       setCases([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadFilterStats = async () => {
+    try {
+      const { data, error: rpcError } = await supabase.rpc('get_filtered_comments_stats');
+
+      if (rpcError) {
+        console.error('[AdminModeration] Error loading filter stats:', rpcError);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        setFilterStats(data[0]);
+      }
+    } catch (err) {
+      console.error('[AdminModeration] Error loading filter stats:', err);
     }
   };
 
@@ -276,6 +296,92 @@ export default function AdminModeration() {
             </div>
           </div>
         </div>
+
+        {/* Filtered Comments Section */}
+        {filterStats && (
+          <div className="mb-8">
+            <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/20 border border-purple-700/50 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <Filter className="w-6 h-6 text-purple-400" />
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Profanity Filter</h2>
+                    <p className="text-sm text-gray-400">Auto-blocking inappropriate comments</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowFilteredComments(!showFilteredComments)}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all"
+                >
+                  {showFilteredComments ? 'Hide Details' : 'View Details'}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="bg-black/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageCircleOff className="w-5 h-5 text-purple-400" />
+                    <p className="text-sm text-gray-400">Total Blocked</p>
+                  </div>
+                  <p className="text-3xl font-bold text-white">{filterStats.total_filtered || 0}</p>
+                </div>
+
+                <div className="bg-black/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="w-5 h-5 text-yellow-400" />
+                    <p className="text-sm text-gray-400">Today</p>
+                  </div>
+                  <p className="text-3xl font-bold text-white">{filterStats.filtered_today || 0}</p>
+                </div>
+
+                <div className="bg-black/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-5 h-5 text-orange-400" />
+                    <p className="text-sm text-gray-400">This Week</p>
+                  </div>
+                  <p className="text-3xl font-bold text-white">{filterStats.filtered_this_week || 0}</p>
+                </div>
+              </div>
+
+              {showFilteredComments && filterStats.recent_logs && (
+                <div className="mt-6 pt-6 border-t border-purple-700/50">
+                  <h3 className="text-lg font-bold text-white mb-4">Recent Blocked Comments</h3>
+                  <div className="space-y-3">
+                    {filterStats.recent_logs.slice(0, 10).map((log: any) => (
+                      <div key={log.id} className="bg-black/30 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-white">{log.username}</p>
+                            <span className={`px-2 py-1 rounded text-xs font-bold ${
+                              log.filter_reason === 'profanity' ? 'bg-red-500/20 text-red-400' :
+                              log.filter_reason === 'url' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-gray-500/20 text-gray-400'
+                            }`}>
+                              {log.filter_reason.toUpperCase()}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {new Date(log.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                        <p className="text-sm text-gray-300 mb-2 italic">"{log.comment_text}"</p>
+                        {log.matched_words && log.matched_words.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {log.matched_words.map((word: string, idx: number) => (
+                              <span key={idx} className="px-2 py-1 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-300">
+                                {word}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
