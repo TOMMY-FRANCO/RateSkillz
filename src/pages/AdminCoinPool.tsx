@@ -57,6 +57,8 @@ export default function AdminCoinPool() {
   const [logFilter, setLogFilter] = useState<'active' | 'resolved' | 'all'>('active');
   const [clearingWarnings, setClearingWarnings] = useState(false);
   const [clearResult, setClearResult] = useState<string | null>(null);
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     checkAdminAccess();
@@ -75,21 +77,28 @@ export default function AdminCoinPool() {
   }, [logFilter]);
 
   async function checkAdminAccess() {
+    console.log('[AdminCoinPool] Starting admin access check...');
+    console.log('[AdminCoinPool] User:', user?.id, user?.email);
+
     try {
       if (!user) {
-        navigate('/');
+        console.error('[AdminCoinPool] No user found - redirecting to home');
+        setAdminError('Not logged in. Please log in to access this page.');
+        setCheckingAdmin(false);
+        setTimeout(() => navigate('/'), 2000);
         return;
       }
 
       let isUserAdmin = false;
 
       try {
+        console.log('[AdminCoinPool] Calling is_user_admin RPC...');
         const { data, error } = await supabase
           .rpc('is_user_admin', { p_user_id: user.id })
           .single();
 
         if (error) {
-          console.warn('RPC call failed, falling back to direct query:', error);
+          console.warn('[AdminCoinPool] RPC call failed, falling back to direct query:', error);
 
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
@@ -97,17 +106,29 @@ export default function AdminCoinPool() {
             .eq('id', user.id)
             .single();
 
-          if (profileError) throw profileError;
+          if (profileError) {
+            console.error('[AdminCoinPool] Direct query also failed:', profileError);
+            throw profileError;
+          }
+
+          console.log('[AdminCoinPool] Direct query result:', profileData);
           isUserAdmin = profileData?.is_admin || false;
         } else {
+          console.log('[AdminCoinPool] RPC result:', data);
           isUserAdmin = data || false;
         }
-      } catch (err) {
-        console.error('Error checking admin status:', err);
+      } catch (err: any) {
+        console.error('[AdminCoinPool] Error checking admin status:', err);
+        setAdminError(`Error checking admin status: ${err.message || 'Unknown error'}`);
         isUserAdmin = false;
       }
 
+      console.log('[AdminCoinPool] Admin check result:', isUserAdmin);
+
       if (!isUserAdmin) {
+        console.warn('[AdminCoinPool] User is not an admin - access denied');
+        setAdminError('Access denied. You do not have admin privileges.');
+
         await supabase.rpc('log_admin_access', {
           p_user_id: user.id,
           p_action_type: 'access_denied',
@@ -116,11 +137,14 @@ export default function AdminCoinPool() {
           p_notes: 'User attempted to access admin dashboard without admin privileges'
         }).catch(() => {});
 
-        navigate('/');
+        setCheckingAdmin(false);
+        setTimeout(() => navigate('/'), 2000);
         return;
       }
 
+      console.log('[AdminCoinPool] Admin access granted!');
       setIsAdmin(true);
+      setAdminError(null);
 
       await supabase.rpc('log_admin_access', {
         p_user_id: user.id,
@@ -130,11 +154,15 @@ export default function AdminCoinPool() {
         p_notes: 'Admin accessed coin pool dashboard'
       }).catch(() => {});
 
-    } catch (error) {
-      console.error('Error checking admin access:', error);
-      navigate('/');
-    } finally {
+    } catch (error: any) {
+      console.error('[AdminCoinPool] Critical error checking admin access:', error);
+      setAdminError(`Critical error: ${error.message || 'Unknown error'}`);
       setCheckingAdmin(false);
+      setTimeout(() => navigate('/'), 2000);
+    } finally {
+      if (isAdmin) {
+        setCheckingAdmin(false);
+      }
     }
   }
 
@@ -149,16 +177,24 @@ export default function AdminCoinPool() {
   async function loadCoinPoolStats() {
     try {
       setLoading(true);
+      setLoadError(null);
+      console.log('[AdminCoinPool] Loading coin pool stats...');
+
       const { data, error } = await supabase
         .rpc('get_coin_pool_status')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[AdminCoinPool] Error from get_coin_pool_status:', error);
+        throw error;
+      }
 
+      console.log('[AdminCoinPool] Coin pool stats loaded:', data);
       setStats(data);
       setLastRefresh(new Date());
-    } catch (error) {
-      console.error('Error loading coin pool stats:', error);
+    } catch (error: any) {
+      console.error('[AdminCoinPool] Error loading coin pool stats:', error);
+      setLoadError(`Failed to load coin pool stats: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -255,12 +291,24 @@ export default function AdminCoinPool() {
     }).format(date);
   }
 
-  if (checkingAdmin) {
+  if (checkingAdmin || adminError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <Shield className="w-12 h-12 text-blue-400 animate-pulse mx-auto mb-4" />
-          <p className="text-white/60">Verifying admin access...</p>
+        <div className="text-center max-w-md mx-auto px-4">
+          {adminError ? (
+            <>
+              <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-2">Access Denied</h2>
+              <p className="text-white/80 mb-4">{adminError}</p>
+              <p className="text-white/60 text-sm">Redirecting to home page...</p>
+            </>
+          ) : (
+            <>
+              <Shield className="w-12 h-12 text-blue-400 animate-pulse mx-auto mb-4" />
+              <p className="text-white/60">Verifying admin access...</p>
+              <p className="text-white/40 text-sm mt-2">Please wait while we check your permissions</p>
+            </>
+          )}
         </div>
       </div>
     );
@@ -310,10 +358,29 @@ export default function AdminCoinPool() {
           </div>
         </div>
 
+        {loadError && (
+          <div className="bg-red-500/20 backdrop-blur-sm rounded-xl p-6 mb-6 border border-red-500/50">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-red-400 font-bold mb-2">Error Loading Data</h3>
+                <p className="text-white/80 text-sm">{loadError}</p>
+                <button
+                  onClick={handleRefresh}
+                  className="mt-3 px-4 py-2 bg-red-500/30 hover:bg-red-500/40 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {loading && !stats ? (
           <div className="text-center py-12">
             <div className="animate-spin w-8 h-8 border-4 border-white/20 border-t-white rounded-full mx-auto mb-4"></div>
             <p className="text-white/60">Loading pool status...</p>
+            <p className="text-white/40 text-sm mt-2">This may take a moment...</p>
           </div>
         ) : stats ? (
           <>
