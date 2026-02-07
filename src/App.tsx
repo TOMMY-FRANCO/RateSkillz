@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
+import { startTokenCleanup } from './lib/passwordReset';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -29,6 +31,8 @@ import AdminCoinPool from './pages/AdminCoinPool';
 import AdminModeration from './pages/AdminModeration';
 import ShimmerDemo from './pages/ShimmerDemo';
 import AddFriendByQR from './pages/AddFriendByQR';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function LoadingScreen() {
@@ -91,6 +95,16 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   console.log('🚀 App component rendering');
+
+  useEffect(() => {
+    // Start periodic cleanup of expired password reset tokens
+    const cleanupInterval = startTokenCleanup();
+
+    return () => {
+      clearInterval(cleanupInterval);
+    };
+  }, []);
+
   return (
     <ErrorBoundary>
       <Router>
@@ -119,6 +133,8 @@ function App() {
               </PublicRoute>
             }
           />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route
             path="/dashboard"
             element={
