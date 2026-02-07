@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -27,36 +27,57 @@ export default function AdminModeration() {
   const [error, setError] = useState('');
   const [processingReportId, setProcessingReportId] = useState<string | null>(null);
   const [adminNotes, setAdminNotes] = useState<Record<string, string>>({});
+  const adminCheckDoneRef = useRef(false);
 
   useEffect(() => {
-    // Check if user is admin
+    console.log('[AdminModeration] Profile check:', { profile: profile?.username, isAdmin: profile?.is_admin });
+
     if (!profile) {
-      navigate('/dashboard');
+      console.log('[AdminModeration] No profile - waiting...');
       return;
     }
 
     if (!profile.is_admin) {
-      // Return 404-like experience for non-admins
-      navigate('/dashboard');
+      console.log('[AdminModeration] Not admin - redirecting to dashboard');
+      navigate('/dashboard', { replace: true });
       return;
     }
 
-    loadReports();
+    if (!adminCheckDoneRef.current) {
+      console.log('[AdminModeration] Admin verified - loading reports');
+      adminCheckDoneRef.current = true;
+      loadReports();
+    }
   }, [profile, navigate]);
 
   const loadReports = async () => {
+    console.log('[AdminModeration] Starting to load reports...');
     setLoading(true);
     setError('');
 
     try {
       const { data, error: rpcError } = await supabase.rpc('get_active_reports');
 
-      if (rpcError) throw rpcError;
+      if (rpcError) {
+        console.error('[AdminModeration] RPC error:', rpcError);
 
+        if (rpcError.message?.includes('Unauthorized') || rpcError.message?.includes('admin access required')) {
+          setError('Access denied: Admin privileges required');
+          navigate('/dashboard', { replace: true });
+          return;
+        }
+
+        throw rpcError;
+      }
+
+      console.log('[AdminModeration] Reports loaded successfully:', data?.length || 0);
       setReports(data || []);
+      setError('');
     } catch (err) {
-      console.error('Error loading reports:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load reports');
+      console.error('[AdminModeration] Error loading reports:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load reports';
+      setError(errorMessage);
+      setReports([]);
     } finally {
       setLoading(false);
     }
@@ -67,6 +88,7 @@ export default function AdminModeration() {
       return;
     }
 
+    console.log('[AdminModeration] Banning user:', { reportId, targetUserId });
     setProcessingReportId(reportId);
     setError('');
 
@@ -79,16 +101,20 @@ export default function AdminModeration() {
         p_notes: notes
       });
 
-      if (rpcError) throw rpcError;
+      if (rpcError) {
+        console.error('[AdminModeration] Ban user RPC error:', rpcError);
+        throw rpcError;
+      }
 
       if (data && !data.success) {
+        console.error('[AdminModeration] Ban user failed:', data.error);
         throw new Error(data.error || 'Failed to ban user');
       }
 
-      // Reload reports
+      console.log('[AdminModeration] User banned successfully');
       await loadReports();
     } catch (err) {
-      console.error('Error banning user:', err);
+      console.error('[AdminModeration] Error banning user:', err);
       setError(err instanceof Error ? err.message : 'Failed to ban user');
     } finally {
       setProcessingReportId(null);
@@ -100,6 +126,7 @@ export default function AdminModeration() {
       return;
     }
 
+    console.log('[AdminModeration] Clearing report:', { reportId });
     setProcessingReportId(reportId);
     setError('');
 
@@ -111,16 +138,20 @@ export default function AdminModeration() {
         p_notes: notes
       });
 
-      if (rpcError) throw rpcError;
+      if (rpcError) {
+        console.error('[AdminModeration] Clear report RPC error:', rpcError);
+        throw rpcError;
+      }
 
       if (data && !data.success) {
+        console.error('[AdminModeration] Clear report failed:', data.error);
         throw new Error(data.error || 'Failed to clear report');
       }
 
-      // Reload reports
+      console.log('[AdminModeration] Report cleared successfully');
       await loadReports();
     } catch (err) {
-      console.error('Error clearing report:', err);
+      console.error('[AdminModeration] Error clearing report:', err);
       setError(err instanceof Error ? err.message : 'Failed to clear report');
     } finally {
       setProcessingReportId(null);
@@ -156,7 +187,14 @@ export default function AdminModeration() {
               </button>
               <div className="flex items-center gap-3">
                 <Shield className="w-6 h-6 text-red-400" />
-                <h1 className="text-xl font-bold text-white">Admin HQ - London</h1>
+                <div>
+                  <h1 className="text-xl font-bold text-white">Admin HQ - London</h1>
+                  {profile && (
+                    <p className="text-xs text-gray-400">
+                      Logged in as: {profile.username} {profile.is_admin ? '(Admin)' : ''}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
             <button
@@ -210,15 +248,22 @@ export default function AdminModeration() {
           </div>
         </div>
 
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
-            <p className="text-red-400">{error}</p>
-          </div>
-        )}
-
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-12 h-12 text-cyan-400 animate-spin" />
+          <div className="flex flex-col items-center justify-center py-20">
+            <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mb-4" />
+            <p className="text-gray-400">Loading reports...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-8 text-center">
+            <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-white mb-2">Failed to Load Reports</h3>
+            <p className="text-red-400 mb-4">{error}</p>
+            <button
+              onClick={loadReports}
+              className="px-6 py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold rounded-lg transition-all"
+            >
+              Try Again
+            </button>
           </div>
         ) : reports.length === 0 ? (
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-12 text-center">

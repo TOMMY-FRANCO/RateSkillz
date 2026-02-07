@@ -57,6 +57,24 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, profile, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (profile && !profile.is_admin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
@@ -248,17 +266,17 @@ function App() {
           <Route
             path="/admin/coin-pool"
             element={
-              <ProtectedRoute>
+              <AdminRoute>
                 <AdminCoinPool />
-              </ProtectedRoute>
+              </AdminRoute>
             }
           />
           <Route
             path="/admin-hq-london"
             element={
-              <ProtectedRoute>
+              <AdminRoute>
                 <AdminModeration />
-              </ProtectedRoute>
+              </AdminRoute>
             }
           />
           <Route path="/card/:username" element={<PublicCard />} />
