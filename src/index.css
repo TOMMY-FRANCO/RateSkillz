@@ -5,23 +5,21 @@
 @tailwind utilities;
 
 :root {
-  --midnight-top: #0a1628;
-  --midnight-bottom: #000000;
-  --deep-dark: #0f1829;
-  --panel-bg: rgba(15, 24, 41, 0.85);
-  --glass-bg: rgba(15, 24, 41, 0.6);
-  --glass-border: rgba(0, 224, 255, 0.3);
-  --cyan-glow: #00E0FF;
-  --cyan-bright: #5FFFFF;
-  --hyper-green: #00FF85;
-  --glowing-blue: #38BDF8;
-  --vibrant-cyan: #00E0FF;
+  --space-black: #0A0E27;
+  --jungle-green: #0B2F1F;
+  --neon-cyan: #00D9FF;
+  --neon-green: #39FF14;
+  --neon-cyan-bright: #66E7FF;
+  --neon-green-bright: #7FFF66;
+  --panel-bg: rgba(10, 14, 39, 0.85);
+  --glass-bg: rgba(10, 14, 39, 0.6);
+  --glass-border: rgba(0, 217, 255, 0.3);
   --text-primary: #FFFFFF;
   --text-secondary: rgba(255, 255, 255, 0.8);
   --text-tertiary: rgba(255, 255, 255, 0.6);
 
-  --shimmer-accent-color: rgba(245, 158, 11, 0.12);
-  --shimmer-slow-color: rgba(245, 158, 11, 0.08);
+  --shimmer-accent-color: rgba(0, 217, 255, 0.12);
+  --shimmer-slow-color: rgba(57, 255, 20, 0.08);
   --shimmer-base: rgba(255, 255, 255, 0.06);
   --shimmer-speed-fast: 2.5s;
   --shimmer-speed-slow: 3.5s;
@@ -41,7 +39,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: linear-gradient(180deg, var(--midnight-top) 0%, var(--midnight-bottom) 100%);
+  background: linear-gradient(135deg, var(--space-black) 0%, var(--jungle-green) 100%);
   background-attachment: fixed;
   color: var(--text-primary);
   overflow-x: hidden;
@@ -56,7 +54,7 @@ body::before {
   left: 50%;
   width: 800px;
   height: 800px;
-  background: var(--cyan-glow);
+  background: var(--neon-cyan);
   opacity: 0.08;
   filter: blur(100px);
   border-radius: 50%;
@@ -549,4 +547,54 @@ input::placeholder, textarea::placeholder {
     transparent
   );
   margin: 24px 0;
+}
+
+.neon-text-cyan {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px rgba(0, 217, 255, 0.8), 0 0 20px rgba(0, 217, 255, 0.4);
+}
+
+.neon-text-green {
+  color: var(--neon-green);
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.8), 0 0 20px rgba(57, 255, 20, 0.4);
+}
+
+.neon-box-cyan {
+  box-shadow: 0 0 15px rgba(0, 217, 255, 0.6), inset 0 0 10px rgba(0, 217, 255, 0.2);
+}
+
+.neon-box-green {
+  box-shadow: 0 0 15px rgba(57, 255, 20, 0.6), inset 0 0 10px rgba(57, 255, 20, 0.2);
+}
+
+@keyframes neon-flicker {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(0, 217, 255, 0.8), 0 0 20px rgba(0, 217, 255, 0.4);
+  }
+  50% {
+    text-shadow: 0 0 5px rgba(0, 217, 255, 0.6), 0 0 10px rgba(0, 217, 255, 0.2);
+  }
+}
+
+.neon-flicker {
+  animation: neon-flicker 0.15s infinite alternate;
+}
+
+.scanline-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanline-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(to bottom, transparent, var(--neon-cyan) 50%, transparent);
+  animation: scanline 4s linear infinite;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 10;
 }
