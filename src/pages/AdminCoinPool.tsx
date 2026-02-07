@@ -129,13 +129,17 @@ export default function AdminCoinPool() {
         console.warn('[AdminCoinPool] User is not an admin - access denied');
         setAdminError('Access denied. You do not have admin privileges.');
 
-        await supabase.rpc('log_admin_access', {
-          p_user_id: user.id,
-          p_action_type: 'access_denied',
-          p_resource_accessed: 'admin_coin_pool',
-          p_access_granted: false,
-          p_notes: 'User attempted to access admin dashboard without admin privileges'
-        }).catch(() => {});
+        try {
+          await supabase.rpc('log_admin_access', {
+            p_user_id: user.id,
+            p_action_type: 'access_denied',
+            p_resource_accessed: 'admin_coin_pool',
+            p_access_granted: false,
+            p_notes: 'User attempted to access admin dashboard without admin privileges'
+          });
+        } catch (logError) {
+          console.warn('[AdminCoinPool] Failed to log access denial:', logError);
+        }
 
         setCheckingAdmin(false);
         setTimeout(() => navigate('/'), 2000);
@@ -146,13 +150,17 @@ export default function AdminCoinPool() {
       setIsAdmin(true);
       setAdminError(null);
 
-      await supabase.rpc('log_admin_access', {
-        p_user_id: user.id,
-        p_action_type: 'access_granted',
-        p_resource_accessed: 'admin_coin_pool',
-        p_access_granted: true,
-        p_notes: 'Admin accessed coin pool dashboard'
-      }).catch(() => {});
+      try {
+        await supabase.rpc('log_admin_access', {
+          p_user_id: user.id,
+          p_action_type: 'access_granted',
+          p_resource_accessed: 'admin_coin_pool',
+          p_access_granted: true,
+          p_notes: 'Admin accessed coin pool dashboard'
+        });
+      } catch (logError) {
+        console.warn('[AdminCoinPool] Failed to log access grant:', logError);
+      }
 
     } catch (error: any) {
       console.error('[AdminCoinPool] Critical error checking admin access:', error);
