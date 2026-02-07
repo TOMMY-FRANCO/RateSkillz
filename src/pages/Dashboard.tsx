@@ -238,7 +238,7 @@ export default function Dashboard() {
             onClick={() => navigate('/trading')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={getCount(['swap_offer', 'purchase_offer', 'card_sold'])} soundType="card-swap" />
+            <NotificationBadge count={getCount(['swap_offer', 'purchase_offer', 'card_sold', 'purchase_request'])} soundType="card-swap" />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
                 <ShoppingBag className="w-5 h-5 text-black" />

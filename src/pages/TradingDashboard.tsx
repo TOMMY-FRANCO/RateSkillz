@@ -51,7 +51,7 @@ export default function TradingDashboard() {
   useEffect(() => {
     if (profile) {
       loadData();
-      markNotificationsReadBatch(profile.id, ['swap_offer', 'purchase_offer', 'card_sold']);
+      markNotificationsReadBatch(profile.id, ['swap_offer', 'purchase_offer', 'card_sold', 'purchase_request']);
     }
   }, [profile?.id]);
 

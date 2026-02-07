@@ -20,6 +20,7 @@ export function useNotifications(userId: string | undefined) {
     transaction: 0,
     rank_update: 0,
     setting_change: 0,
+    purchase_request: 0,
     ad_available: 0,
   });
   const [loading, setLoading] = useState(true);

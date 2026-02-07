@@ -11,7 +11,8 @@ export type NotificationType =
   | 'profile_view'
   | 'transaction'
   | 'rank_update'
-  | 'setting_change';
+  | 'setting_change'
+  | 'purchase_request';
 
 export interface NotificationCount {
   notification_type: NotificationType;
@@ -30,6 +31,7 @@ export interface NotificationCounts {
   transaction: number;
   rank_update: number;
   setting_change: number;
+  purchase_request: number;
   ad_available: number;
 }
 
@@ -45,6 +47,7 @@ const EMPTY_COUNTS: NotificationCounts = {
   transaction: 0,
   rank_update: 0,
   setting_change: 0,
+  purchase_request: 0,
   ad_available: 0,
 };
 
