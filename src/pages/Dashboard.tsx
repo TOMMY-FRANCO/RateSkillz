@@ -8,7 +8,7 @@ import TermsAcceptanceModal from '../components/TermsAcceptanceModal';
 import { CoinBalance } from '../components/CoinBalance';
 import Tutorial from '../components/Tutorial';
 import TutorialPrompt from '../components/TutorialPrompt';
-import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search, BookOpen } from 'lucide-react';
+import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search, BookOpen, QrCode, UserPlus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { displayUsername } from '../lib/username';
 import { getUserStats } from '../lib/ratings';
@@ -19,6 +19,8 @@ import { getFriendsBadgeSeenCount } from '../lib/notifications';
 import { SocialSharingReward } from '../components/SocialSharingReward';
 import { FriendMilestoneReward } from '../components/FriendMilestoneReward';
 import { WhatsAppDashboardShare } from '../components/WhatsAppDashboardShare';
+import InviteQRModal from '../components/InviteQRModal';
+import AddFriendQRModal from '../components/AddFriendQRModal';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -35,6 +37,8 @@ export default function Dashboard() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showTutorialPrompt, setShowTutorialPrompt] = useState(false);
   const [tutorialCompleted, setTutorialCompleted] = useState(false);
+  const [showInviteQR, setShowInviteQR] = useState(false);
+  const [showFriendQR, setShowFriendQR] = useState(false);
   const { unreadCount: unreadMessagesCount } = useUnreadMessages();
   const { counts: notificationCounts, getCount, loading: notificationsLoading } = useNotifications(profile?.id);
 
@@ -420,6 +424,36 @@ export default function Dashboard() {
               </div>
             </div>
           </button>
+
+          <button
+            onClick={() => setShowInviteQR(true)}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <QrCode className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Show QR Code</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Invite new users</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setShowFriendQR(true)}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#38BDF8] to-[#0EA5E9] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
+                <UserPlus className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Add Friend QR Code</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Share friend code</p>
+              </div>
+            </div>
+          </button>
         </div>
       </main>
 
@@ -456,6 +490,19 @@ export default function Dashboard() {
           setTutorialCompleted(true);
           window.location.reload();
         }}
+      />
+
+      <InviteQRModal
+        isOpen={showInviteQR}
+        onClose={() => setShowInviteQR(false)}
+        username={profile.username}
+      />
+
+      <AddFriendQRModal
+        isOpen={showFriendQR}
+        onClose={() => setShowFriendQR(false)}
+        userId={profile.id}
+        username={profile.username}
       />
     </div>
   );
