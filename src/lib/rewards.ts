@@ -18,6 +18,12 @@ export interface RewardStatus {
   friend_milestone_claimed_count: number;
 }
 
+export interface FriendMilestoneStatus {
+  friend_count: number;
+  claimed_milestones: number[];
+  total_coins_earned: number;
+}
+
 export async function claimWhatsAppVerificationReward(userId: string): Promise<RewardResult> {
   try {
     const { data, error } = await supabase.rpc('claim_whatsapp_verification_reward', {
@@ -188,6 +194,45 @@ export async function getRewardLogs(userId: string) {
   } catch (error) {
     console.error('Error getting reward logs:', error);
     return [];
+  }
+}
+
+export async function getFriendMilestoneStatus(userId: string): Promise<FriendMilestoneStatus | null> {
+  try {
+    const [profileResult, rewardLogsResult] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('friend_count')
+        .eq('id', userId)
+        .maybeSingle(),
+      supabase
+        .from('reward_logs')
+        .select('milestone_level, amount')
+        .eq('user_id', userId)
+        .in('reward_type', ['friend_milestone_5', 'friend_milestone_10', 'friend_milestone_25', 'friend_milestone_50'])
+        .eq('status', 'claimed')
+    ]);
+
+    if (profileResult.error) throw profileResult.error;
+    if (rewardLogsResult.error) throw rewardLogsResult.error;
+
+    const friendCount = profileResult.data?.friend_count || 0;
+    const claimedMilestones = (rewardLogsResult.data || [])
+      .map(log => log.milestone_level)
+      .filter((level): level is number => level !== null)
+      .sort((a, b) => a - b);
+
+    const totalCoinsEarned = (rewardLogsResult.data || [])
+      .reduce((sum, log) => sum + (log.amount || 0), 0);
+
+    return {
+      friend_count: friendCount,
+      claimed_milestones: claimedMilestones,
+      total_coins_earned: totalCoinsEarned
+    };
+  } catch (error) {
+    console.error('Error getting friend milestone status:', error);
+    return null;
   }
 }
 
