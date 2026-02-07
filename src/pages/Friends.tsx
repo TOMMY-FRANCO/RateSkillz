@@ -76,7 +76,22 @@ export default function Friends() {
         throw fetchError;
       }
 
-      if (friendsData) {
+      if (friendsData && friendsData.length > 0) {
+        // FIX: Fetch all profiles in a single query to prevent N+1 problem
+        const allOtherUserIds = friendsData.map(friendship => {
+          return friendship.friend_id === currentUser.id ? friendship.user_id : friendship.friend_id;
+        });
+
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', allOtherUserIds);
+
+        if (profilesError) throw profilesError;
+
+        // Create a map for quick profile lookup
+        const profileMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
+
         const incoming: FriendRequest[] = [];
         const outgoing: FriendRequest[] = [];
         const accepted: FriendRequest[] = [];
@@ -84,12 +99,7 @@ export default function Friends() {
         for (const friendship of friendsData) {
           const isIncoming = friendship.friend_id === currentUser.id;
           const otherUserId = isIncoming ? friendship.user_id : friendship.friend_id;
-
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', otherUserId)
-            .maybeSingle();
+          const profileData = profileMap.get(otherUserId);
 
           if (profileData) {
             const request = {
@@ -126,6 +136,10 @@ export default function Friends() {
           const presence = await getMultipleUserPresence(Array.from(allUserIds));
           setUserPresence(presence);
         }
+      } else {
+        setIncomingRequests([]);
+        setOutgoingRequests([]);
+        setFriends([]);
       }
 
       setLoading(false);
