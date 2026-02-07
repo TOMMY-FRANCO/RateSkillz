@@ -175,7 +175,7 @@ export default function Shop() {
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-2">Watch Adverts</h3>
                   <p className="text-[#B0B8C8] text-sm mb-2">
-                    Earn <span className="text-[#00FF85] font-semibold">10 coins</span> per advert viewed
+                    Earn <span className="text-[#00FF85] font-semibold">5 coins</span> per advert viewed
                   </p>
                   <ul className="text-[#6B7280] text-xs space-y-1">
                     <li>• One advert per day limit</li>

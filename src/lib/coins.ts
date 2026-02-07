@@ -171,8 +171,5 @@ export interface CoinPackage {
 
 export const COIN_PACKAGES: CoinPackage[] = [
   { id: 'starter', price: 1.00, coins: 100 },
-  { id: 'basic', price: 2.00, coins: 200 },
-  { id: 'popular', price: 5.00, coins: 500, popular: true },
-  { id: 'premium', price: 20.00, coins: 2000 },
-  { id: 'ultimate', price: 50.00, coins: 5000 },
+  { id: 'value', price: 2.00, coins: 300, popular: true },
 ];
