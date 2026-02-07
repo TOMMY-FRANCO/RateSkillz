@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Coins, RefreshCw, AlertCircle, CheckCircle, TrendingUp, Users, Database, Activity, Lock, Shield, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -59,9 +59,10 @@ export default function AdminCoinPool() {
   const [clearResult, setClearResult] = useState<string | null>(null);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const adminVerifiedRef = useRef(false);
 
   useEffect(() => {
-    if (!isAdmin) {
+    if (!adminVerifiedRef.current && user) {
       checkAdminAccess();
     }
   }, [user]);
@@ -80,8 +81,8 @@ export default function AdminCoinPool() {
 
   async function checkAdminAccess() {
     // Don't re-check if already verified as admin
-    if (isAdmin) {
-      console.log('[AdminCoinPool] Already verified as admin, skipping check');
+    if (adminVerifiedRef.current) {
+      console.log('[AdminCoinPool] Already verified as admin (ref check), skipping check');
       return;
     }
 
@@ -155,6 +156,7 @@ export default function AdminCoinPool() {
       }
 
       console.log('[AdminCoinPool] Admin access granted!');
+      adminVerifiedRef.current = true;
       setIsAdmin(true);
       setAdminError(null);
       setCheckingAdmin(false);
