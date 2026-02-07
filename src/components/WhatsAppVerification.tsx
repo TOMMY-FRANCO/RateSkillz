@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CheckCircle, Share2, Loader2, X, Gift } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { claimWhatsAppVerificationReward } from '../lib/rewards';
+import { getAppUrl } from '../lib/appConfig';
 
 interface WhatsAppVerificationProps {
   isVerified: boolean;
@@ -44,7 +45,7 @@ export function WhatsAppVerification({
 
       setVerificationToken(data);
 
-      const verificationUrl = `${window.location.origin}/verify/${data}`;
+      const verificationUrl = `${getAppUrl()}/verify/${data}`;
       const shareText = `Check out my RatingSkill card! ${verificationUrl}`;
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
 

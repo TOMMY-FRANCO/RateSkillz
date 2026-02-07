@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, UserPlus, Loader2 } from 'lucide-react';
 import QRCode from 'qrcode';
+import { getAppUrl } from '../lib/appConfig';
 
 interface AddFriendQRModalProps {
   isOpen: boolean;
@@ -26,7 +27,7 @@ export default function AddFriendQRModal({ isOpen, onClose, userId, username }: 
     setError('');
 
     try {
-      const baseUrl = window.location.origin;
+      const baseUrl = getAppUrl();
       const url = `${baseUrl}/add-friend?user_id=${encodeURIComponent(userId)}`;
       setFriendUrl(url);
 

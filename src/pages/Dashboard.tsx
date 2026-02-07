@@ -12,6 +12,7 @@ import { Settings, Users, LogOut, Edit, Bell, Trophy, Coins, ShoppingBag, Tv, Tr
 import { supabase } from '../lib/supabase';
 import { displayUsername } from '../lib/username';
 import { getUserStats } from '../lib/ratings';
+import { getAppUrl } from '../lib/appConfig';
 import { useUnreadMessages } from '../hooks/useUnreadMessages';
 import { useNotifications } from '../hooks/useNotifications';
 import NotificationBadge from '../components/NotificationBadge';
@@ -195,11 +196,11 @@ export default function Dashboard() {
         <div className="max-w-4xl mx-auto mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <WhatsAppDashboardShare
             username={profile.username}
-            profileUrl={`${window.location.origin}/profile/${profile.username}`}
+            profileUrl={`${getAppUrl()}/profile/${profile.username}`}
           />
           <SocialSharingReward
             username={profile.username}
-            profileUrl={`${window.location.origin}/profile/${profile.username}`}
+            profileUrl={`${getAppUrl()}/profile/${profile.username}`}
           />
           <div className="sm:col-span-2">
             <FriendMilestoneReward />

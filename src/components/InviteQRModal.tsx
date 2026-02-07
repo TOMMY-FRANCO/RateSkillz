@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, Share2, Loader2 } from 'lucide-react';
 import QRCode from 'qrcode';
+import { getAppUrl } from '../lib/appConfig';
 
 interface InviteQRModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ export default function InviteQRModal({ isOpen, onClose, username }: InviteQRMod
     setError('');
 
     try {
-      const baseUrl = window.location.origin;
+      const baseUrl = getAppUrl();
       const url = `${baseUrl}/invite?ref=${encodeURIComponent(username)}`;
       setInviteUrl(url);
 
