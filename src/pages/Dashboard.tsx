@@ -347,11 +347,11 @@ export default function Dashboard() {
             <NotificationBadge count={Math.max(0, pendingRequestsCount - getFriendsBadgeSeenCount())} soundType="friend-request" />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
-                <Bell className="w-5 h-5 text-black" />
+                <Users className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">Notifications</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Friend requests</p>
+                <h3 className="text-white font-bold text-sm sm:text-base">Friends</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Manage connections</p>
               </div>
             </div>
           </button>
