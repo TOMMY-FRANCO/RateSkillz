@@ -61,7 +61,9 @@ export default function AdminCoinPool() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    checkAdminAccess();
+    if (!isAdmin) {
+      checkAdminAccess();
+    }
   }, [user]);
 
   useEffect(() => {
@@ -77,6 +79,12 @@ export default function AdminCoinPool() {
   }, [logFilter]);
 
   async function checkAdminAccess() {
+    // Don't re-check if already verified as admin
+    if (isAdmin) {
+      console.log('[AdminCoinPool] Already verified as admin, skipping check');
+      return;
+    }
+
     console.log('[AdminCoinPool] Starting admin access check...');
     console.log('[AdminCoinPool] User:', user?.id, user?.email);
 
