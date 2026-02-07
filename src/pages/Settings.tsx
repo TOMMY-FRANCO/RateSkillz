@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, LogOut, User, Users, Bell, FileText, Shield, UserCheck, Volume2 } from 'lucide-react';
+import { ArrowLeft, LogOut, User, Bell, FileText, Shield, UserCheck, Volume2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import type { Profile } from '../contexts/AuthContext';
-import OnlineStatus from '../components/OnlineStatus';
 import UsernameChanger from '../components/UsernameChanger';
 import { displayUsername } from '../lib/username';
 import { WhatsAppVerification } from '../components/WhatsAppVerification';
@@ -16,8 +14,6 @@ import { logAudioToggle } from '../lib/soundAnalytics';
 export default function Settings() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(true);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [isVerified, setIsVerified] = useState(false);
   const [hasSocialBadge, setHasSocialBadge] = useState(false);
@@ -25,7 +21,6 @@ export default function Settings() {
   const { prefs: audioPrefs, updatePrefs: updateAudioPrefs } = useSoundEffects();
 
   useEffect(() => {
-    loadProfiles();
     if (profile) {
       fetchPendingRequests();
       fetchVerificationStatus();
@@ -65,23 +60,6 @@ export default function Settings() {
       setPendingRequestsCount(data?.length || 0);
     } catch (error) {
       console.error('Error fetching pending requests:', error);
-    }
-  };
-
-  const loadProfiles = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('last_active', { ascending: false });
-
-      if (!error && data) {
-        setAllProfiles(data.filter((p) => p.id !== profile?.id));
-      }
-    } catch (error) {
-      console.error('Error loading profiles:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -234,49 +212,6 @@ export default function Settings() {
               <LogOut className="w-5 h-5" />
               <span>Sign Out</span>
             </button>
-          </div>
-
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center space-x-2">
-              <Users className="w-6 h-6" />
-              <span>Browse Players</span>
-            </h2>
-            {loading ? (
-              <p className="text-gray-400">Loading players...</p>
-            ) : allProfiles.length === 0 ? (
-              <p className="text-gray-400">No other players yet. Invite friends to join!</p>
-            ) : (
-              <div className="space-y-3">
-                {allProfiles.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => navigate(`/profile/${p.username}`)}
-                    className="w-full flex items-center justify-between p-4 bg-gray-800 hover:bg-gray-750 border border-gray-700 hover:border-cyan-500/50 rounded-lg transition-all cursor-pointer text-left"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center overflow-hidden">
-                        {p.avatar_url ? (
-                          <img
-                            src={p.avatar_url}
-                            alt={p.username}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <User className="w-6 h-6 text-gray-500" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-white font-semibold">{displayUsername(p.username)}</p>
-                        <p className="text-gray-400 text-sm">
-                          {p.position || 'No position'} {p.team ? `• ${p.team}` : ''}
-                        </p>
-                      </div>
-                    </div>
-                    <OnlineStatus lastActive={p.last_active} size="small" />
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
