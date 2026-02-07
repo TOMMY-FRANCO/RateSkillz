@@ -149,6 +149,7 @@ export default function AdminCoinPool() {
       console.log('[AdminCoinPool] Admin access granted!');
       setIsAdmin(true);
       setAdminError(null);
+      setCheckingAdmin(false);
 
       try {
         await supabase.rpc('log_admin_access', {
@@ -167,10 +168,6 @@ export default function AdminCoinPool() {
       setAdminError(`Critical error: ${error.message || 'Unknown error'}`);
       setCheckingAdmin(false);
       setTimeout(() => navigate('/'), 2000);
-    } finally {
-      if (isAdmin) {
-        setCheckingAdmin(false);
-      }
     }
   }
 
