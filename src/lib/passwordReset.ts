@@ -1,48 +1,6 @@
 import { supabase } from './supabase';
 
 /**
- * Cleanup expired password reset tokens
- * This should be called periodically (e.g., every 5 minutes)
- */
-export const cleanupExpiredTokens = async (): Promise<void> => {
-  try {
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cleanup-expired-tokens`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    const result = await response.json();
-
-    if (result.success) {
-      console.log('[Password Reset] Token cleanup completed:', result.deleted_count, 'tokens removed');
-    } else {
-      console.error('[Password Reset] Token cleanup failed:', result.error);
-    }
-  } catch (error) {
-    console.error('[Password Reset] Error cleaning up tokens:', error);
-  }
-};
-
-/**
- * Start periodic token cleanup (every 5 minutes)
- */
-export const startTokenCleanup = (): NodeJS.Timeout => {
-  // Run immediately
-  cleanupExpiredTokens();
-
-  // Then run every 5 minutes
-  return setInterval(() => {
-    cleanupExpiredTokens();
-  }, 5 * 60 * 1000); // 5 minutes
-};
-
-/**
  * Request a password reset
  */
 export const requestPasswordReset = async (email: string): Promise<{

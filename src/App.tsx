@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
-import { startTokenCleanup } from './lib/passwordReset';
 import { measureWebVitals, perfMonitor } from './lib/performance';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -98,9 +97,6 @@ function App() {
   console.log('🚀 App component rendering');
 
   useEffect(() => {
-    // Start periodic cleanup of expired password reset tokens
-    const cleanupInterval = startTokenCleanup();
-
     // Initialize performance monitoring
     measureWebVitals();
 
@@ -113,14 +109,9 @@ function App() {
       }, 10000);
 
       return () => {
-        clearInterval(cleanupInterval);
         clearTimeout(perfTimeout);
       };
     }
-
-    return () => {
-      clearInterval(cleanupInterval);
-    };
   }, []);
 
   return (
