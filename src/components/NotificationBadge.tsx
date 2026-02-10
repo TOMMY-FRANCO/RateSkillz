@@ -1,22 +1,47 @@
 import { useEffect, useRef, useState } from 'react';
-import { playSound } from '../lib/sounds';
-
-type BadgeSoundType = 'notification' | 'coin-received' | 'friend-request' | 'card-swap' | 'message-received';
+import {
+  playNotificationSound,
+  getSoundNameForNotificationType,
+  type NotificationType,
+} from '../lib/notificationSoundPreferences';
+import { getAudioPreferences } from '../lib/sounds';
 
 interface NotificationBadgeProps {
   count: number;
   className?: string;
-  soundType?: BadgeSoundType;
+  userId?: string;
+  notificationType?: NotificationType | 'ad_available';
 }
 
-export default function NotificationBadge({ count, className = '', soundType = 'notification' }: NotificationBadgeProps) {
+export default function NotificationBadge({
+  count,
+  className = '',
+  userId,
+  notificationType,
+}: NotificationBadgeProps) {
   const prevCountRef = useRef(count);
   const [visible, setVisible] = useState(count > 0);
   const [fadingOut, setFadingOut] = useState(false);
 
   useEffect(() => {
-    if (count > prevCountRef.current && prevCountRef.current >= 0) {
-      playSound(soundType);
+    // Play sound only if:
+    // 1. Count increased
+    // 2. User ID is provided
+    // 3. Notification type is provided
+    // 4. Master audio is enabled
+    const audioPrefs = getAudioPreferences();
+
+    if (
+      count > prevCountRef.current &&
+      prevCountRef.current >= 0 &&
+      userId &&
+      notificationType &&
+      audioPrefs.master
+    ) {
+      // Play sound with preferences check
+      playNotificationSound(userId, notificationType).catch((error) => {
+        console.error('Error playing notification sound:', error);
+      });
     }
 
     if (count > 0) {
@@ -33,7 +58,7 @@ export default function NotificationBadge({ count, className = '', soundType = '
     }
 
     prevCountRef.current = count;
-  }, [count, soundType]);
+  }, [count, userId, notificationType]);
 
   if (!visible) return null;
 

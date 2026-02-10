@@ -217,7 +217,11 @@ export default function Dashboard() {
             onClick={() => navigate('/inbox')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={getCount(['message', 'coin_received', 'coin_request'])} soundType="message-received" />
+            <NotificationBadge
+              count={getCount(['message', 'coin_received', 'coin_request'])}
+              userId={profile?.id}
+              notificationType="message"
+            />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#C44569] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
                 <MessageCircle className="w-5 h-5 text-black" />
@@ -248,7 +252,11 @@ export default function Dashboard() {
             onClick={() => navigate('/trading')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={getCount(['swap_offer', 'purchase_offer', 'card_sold', 'purchase_request'])} soundType="card-swap" />
+            <NotificationBadge
+              count={getCount(['swap_offer', 'purchase_offer', 'card_sold', 'purchase_request'])}
+              userId={profile?.id}
+              notificationType="card_sold"
+            />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
                 <ShoppingBag className="w-5 h-5 text-black" />
@@ -264,7 +272,12 @@ export default function Dashboard() {
             onClick={() => navigate('/battle-mode')}
             className="glass-card p-3 sm:p-4 border-2 border-[#38BDF8]/50 cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={getCount(['battle_request'])} className={profile.is_manager ? 'top-10' : ''} />
+            <NotificationBadge
+              count={getCount(['battle_request'])}
+              userId={profile?.id}
+              notificationType="battle_request"
+              className={profile.is_manager ? 'top-10' : ''}
+            />
             {profile.is_manager && (
               <span className="absolute top-1 right-1 px-2 py-0.5 bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black text-[10px] font-bold rounded-md shadow-lg shadow-[#FFD700]/30 uppercase tracking-wider">
                 Manager
@@ -302,7 +315,11 @@ export default function Dashboard() {
             onClick={() => navigate('/watch-ad')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={notificationCounts.ad_available} />
+            <NotificationBadge
+              count={notificationCounts.ad_available}
+              userId={profile?.id}
+              notificationType="ad_available"
+            />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00D67A] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <Tv className="w-5 h-5 text-black" />
@@ -318,7 +335,11 @@ export default function Dashboard() {
             onClick={() => navigate('/transactions')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={getCount(['transaction'])} />
+            <NotificationBadge
+              count={getCount(['transaction'])}
+              userId={profile?.id}
+              notificationType="transaction"
+            />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#38BDF8] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
                 <TrendingUp className="w-5 h-5 text-black" />
@@ -334,7 +355,11 @@ export default function Dashboard() {
             onClick={() => navigate('/leaderboard')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={getCount(['rank_update'])} />
+            <NotificationBadge
+              count={getCount(['rank_update'])}
+              userId={profile?.id}
+              notificationType="rank_update"
+            />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FFD700]/30">
                 <Trophy className="w-5 h-5 text-black" />
@@ -350,7 +375,11 @@ export default function Dashboard() {
             onClick={() => navigate('/friends')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={Math.max(0, pendingRequestsCount - getFriendsBadgeSeenCount())} soundType="friend-request" />
+            <NotificationBadge
+              count={Math.max(0, pendingRequestsCount - getFriendsBadgeSeenCount())}
+              userId={profile?.id}
+              notificationType="coin_request"
+            />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <Users className="w-5 h-5 text-black" />
@@ -366,7 +395,11 @@ export default function Dashboard() {
             onClick={() => navigate('/viewed-me')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={unreadProfileViews} />
+            <NotificationBadge
+              count={unreadProfileViews}
+              userId={profile?.id}
+              notificationType="profile_view"
+            />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
                 <Eye className="w-5 h-5 text-black" />
@@ -397,7 +430,11 @@ export default function Dashboard() {
             onClick={() => navigate('/settings')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
-            <NotificationBadge count={getCount(['setting_change'])} />
+            <NotificationBadge
+              count={getCount(['setting_change'])}
+              userId={profile?.id}
+              notificationType="setting_change"
+            />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <Settings className="w-5 h-5 text-black" />
