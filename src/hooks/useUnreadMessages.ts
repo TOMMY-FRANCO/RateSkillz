@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getUnreadCount } from '../lib/messaging';
-typescriptimport { useCallback } from 'react';
+import { useCallback } from 'react';
 
 export function useUnreadMessages() {
   const { user } = useAuth();
