@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getNotificationCounts,
   markNotificationsRead,
@@ -7,52 +7,99 @@ import {
   type NotificationType,
 } from '../lib/notifications';
 
-export function useNotifications(userId: string | undefined) {
-  const [counts, setCounts] = useState<NotificationCounts>({
-    message: 0,
-    coin_received: 0,
-    coin_request: 0,
-    swap_offer: 0,
-    purchase_offer: 0,
-    card_sold: 0,
-    battle_request: 0,
-    profile_view: 0,
-    transaction: 0,
-    rank_update: 0,
-    setting_change: 0,
-    purchase_request: 0,
-    ad_available: 0,
-  });
-  const [loading, setLoading] = useState(true);
+const DEFAULT_COUNTS: NotificationCounts = {
+  message: 0,
+  coin_received: 0,
+  coin_request: 0,
+  swap_offer: 0,
+  purchase_offer: 0,
+  card_sold: 0,
+  battle_request: 0,
+  profile_view: 0,
+  transaction: 0,
+  rank_update: 0,
+  setting_change: 0,
+  purchase_request: 0,
+  ad_available: 0,
+};
 
-  const fetchCounts = useCallback(async () => {
+export function useNotifications(userId: string | undefined) {
+  const [counts, setCounts] = useState<NotificationCounts>(DEFAULT_COUNTS);
+  const [loading, setLoading] = useState(true);
+  const isMountedRef = useRef(true);
+  const userIdRef = useRef(userId);
+
+  userIdRef.current = userId;
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!userId) {
+      setCounts(DEFAULT_COUNTS);
       setLoading(false);
       return;
     }
 
-    try {
-      const newCounts = await getNotificationCounts(userId);
-      setCounts(newCounts);
-    } catch (error) {
-      console.error('Error fetching notification counts:', error);
-    } finally {
-      setLoading(false);
+    let cancelled = false;
+
+    async function fetch() {
+      try {
+        setLoading(true);
+        const newCounts = await getNotificationCounts(userId!);
+        if (!cancelled && isMountedRef.current) {
+          setCounts(newCounts);
+        }
+      } catch (error) {
+        console.error('Error fetching notification counts:', error);
+      } finally {
+        if (!cancelled && isMountedRef.current) {
+          setLoading(false);
+        }
+      }
     }
+
+    fetch();
+
+    return () => {
+      cancelled = true;
+    };
   }, [userId]);
 
-  useEffect(() => {
-    fetchCounts();
-  }, [fetchCounts]);
+  const refetch = useCallback(async () => {
+    const currentUserId = userIdRef.current;
+    if (!currentUserId) return;
+
+    try {
+      const newCounts = await getNotificationCounts(currentUserId);
+      if (isMountedRef.current) {
+        setCounts(newCounts);
+      }
+    } catch (error) {
+      console.error('Error fetching notification counts:', error);
+    }
+  }, []);
 
   const markAsRead = useCallback(
     async (notificationType: NotificationType) => {
-      if (!userId) return;
+      const currentUserId = userIdRef.current;
+      if (!currentUserId) return;
 
-      await markNotificationsRead(userId, notificationType);
-      await fetchCounts();
+      try {
+        await markNotificationsRead(currentUserId, notificationType);
+        const newCounts = await getNotificationCounts(currentUserId);
+        if (isMountedRef.current) {
+          setCounts(newCounts);
+        }
+      } catch (error) {
+        console.error('Error marking notifications as read:', error);
+      }
     },
-    [userId, fetchCounts]
+    []
   );
 
   const dismissAdBadge = useCallback(() => {
@@ -72,7 +119,7 @@ export function useNotifications(userId: string | undefined) {
     loading,
     markAsRead,
     getCount,
-    refetch: fetchCounts,
+    refetch,
     dismissAdBadge,
   };
 }
