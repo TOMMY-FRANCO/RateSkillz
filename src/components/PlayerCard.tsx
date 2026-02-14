@@ -1,7 +1,6 @@
 import { useRef } from 'react';
 import { Profile } from '../contexts/AuthContext';
 import { User, Download, Coins, Award } from 'lucide-react';
-import html2canvas from 'html2canvas';
 import { displayUsername } from '../lib/username';
 import { calculateOverallRating, getCardTier, getTierBadgeColors } from '../lib/cardTiers';
 import { VerificationBadge } from './VerificationBadge';
@@ -82,6 +81,7 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
     if (!cardRef.current) return;
 
     try {
+      const { default: html2canvas } = await import('html2canvas');
       const canvas = await html2canvas(cardRef.current, {
         backgroundColor: null,
         scale: 2,
