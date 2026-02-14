@@ -140,9 +140,17 @@ export async function getRewardStatus(userId: string): Promise<RewardStatus | nu
       .from('profiles')
       .select('is_verified, has_shared_x, has_shared_facebook, shared_reward_claimed, social_badge_reward_claimed, friend_count')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      console.error('Error fetching profile for reward status:', profileError);
+      throw profileError;
+    }
+
+    if (!profile) {
+      console.warn('Profile not found for user:', userId);
+      return null;
+    }
 
     const [whatsappResult, milestoneCountResult] = await Promise.all([
       supabase
@@ -165,12 +173,12 @@ export async function getRewardStatus(userId: string): Promise<RewardStatus | nu
     const claimedCount = milestoneCountResult.count || 0;
 
     return {
-      whatsapp_verified: profile.is_verified || false,
+      whatsapp_verified: profile.is_verified ?? false,
       whatsapp_reward_claimed: whatsappResult.data !== null,
-      has_shared_x: profile.has_shared_x || false,
-      has_shared_facebook: profile.has_shared_facebook || false,
-      social_reward_claimed: profile.shared_reward_claimed || false,
-      friend_count: profile.friend_count || 0,
+      has_shared_x: profile.has_shared_x ?? false,
+      has_shared_facebook: profile.has_shared_facebook ?? false,
+      social_reward_claimed: profile.shared_reward_claimed ?? false,
+      friend_count: profile.friend_count ?? 0,
       friend_milestone_reward_claimed: claimedCount >= 5,
       friend_milestone_claimed_count: claimedCount,
     };
