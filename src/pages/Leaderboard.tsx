@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, User, Coins, Crown, Swords } from 'lucide-react';
+import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, User, Coins, Crown, Swords, RefreshCw } from 'lucide-react';
 import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
 import PriceOfCardsTab from '../components/leaderboard/PriceOfCardsTab';
@@ -32,6 +32,10 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true);
   const [userPresence, setUserPresence] = useState<Map<string, UserPresence>>(new Map());
   const [activeTab, setActiveTab] = useState<TabType>('global');
+  const [refreshing, setRefreshing] = useState(false);
+  const [pullStart, setPullStart] = useState(0);
+  const [pullDistance, setPullDistance] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (activeTab === 'global') {
@@ -44,11 +48,12 @@ export default function Leaderboard() {
 
   const fetchLeaderboard = async () => {
     try {
-      // Use leaderboard_cache for optimized query
+      // Use leaderboard_cache for optimized query - limit to top 20
       const { data, error } = await supabase
         .from('leaderboard_cache')
         .select('rank, user_id, overall_rating, username, avatar_url, position, team, gender')
-        .order('rank', { ascending: true });
+        .order('rank', { ascending: true })
+        .limit(20);
 
       if (error) throw error;
 
@@ -81,6 +86,35 @@ export default function Leaderboard() {
     }
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchLeaderboard();
+    setRefreshing(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (containerRef.current && containerRef.current.scrollTop === 0) {
+      setPullStart(e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (pullStart > 0) {
+      const distance = e.touches[0].clientY - pullStart;
+      if (distance > 0 && distance < 150) {
+        setPullDistance(distance);
+      }
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (pullDistance > 80) {
+      await handleRefresh();
+    }
+    setPullStart(0);
+    setPullDistance(0);
+  };
+
   const getRankChange = (entry: LeaderboardEntry) => {
     if (!entry.previous_rank) return null;
     const change = entry.previous_rank - entry.rank;
@@ -108,7 +142,27 @@ export default function Leaderboard() {
   }
 
   return (
-    <div className="min-h-screen pb-24">
+    <div
+      className="min-h-screen pb-24"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      ref={containerRef}
+    >
+      {/* Pull to refresh indicator */}
+      {pullDistance > 0 && (
+        <div
+          className="fixed top-16 left-0 right-0 flex justify-center z-40 transition-all"
+          style={{ transform: `translateY(${Math.min(pullDistance - 80, 0)}px)` }}
+        >
+          <div className="glass-card px-4 py-2 rounded-full">
+            <RefreshCw
+              className={`w-5 h-5 text-cyan-400 ${pullDistance > 80 ? 'animate-spin' : ''}`}
+            />
+          </div>
+        </div>
+      )}
+
       <nav className="glass-container rounded-none border-l-0 border-r-0 border-t-0 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -124,12 +178,28 @@ export default function Leaderboard() {
               Leaderboards
             </h1>
 
-            <div className="w-20"></div>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center space-x-2 text-[#B0B8C8] hover:text-[#00E0FF] transition-colors bg-transparent border-none cursor-pointer disabled:opacity-50"
+              title="Refresh leaderboard"
+            >
+              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {refreshing && activeTab === 'global' && (
+          <div className="mb-4 text-center">
+            <div className="inline-flex items-center gap-2 glass-card px-4 py-2 rounded-full">
+              <RefreshCw className="w-4 h-4 text-cyan-400 animate-spin" />
+              <span className="text-sm text-cyan-400">Refreshing rankings...</span>
+            </div>
+          </div>
+        )}
+
         <div className="mb-8">
           <div className="flex justify-center gap-2 flex-wrap">
             <button
