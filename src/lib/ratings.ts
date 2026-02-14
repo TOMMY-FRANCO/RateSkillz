@@ -167,7 +167,6 @@ export async function saveRating(rating: PlayerRating): Promise<RatingResult> {
           def: rating.def,
           phy: rating.phy,
           comment: rating.comment,
-          updated_at: new Date().toISOString(),
         })
         .eq('rater_id', rating.rater_id)
         .eq('player_id', rating.player_id)
@@ -203,8 +202,6 @@ export async function saveRating(rating: PlayerRating): Promise<RatingResult> {
           def: rating.def,
           phy: rating.phy,
           comment: rating.comment,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
         })
         .select()
         .single();
