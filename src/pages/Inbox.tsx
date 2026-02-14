@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Conversation, getUserConversations, formatTimestamp } from '../lib/messaging';
@@ -9,6 +9,7 @@ import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
 import { markNotificationsReadBatch } from '../lib/notifications';
+import { checkAndNotifyNewMessages } from '../lib/messageNotifications';
 
 export default function Inbox() {
   const { user } = useAuth();
@@ -17,6 +18,9 @@ export default function Inbox() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [userPresence, setUserPresence] = useState<Map<string, UserPresence>>(new Map());
+  const [pullDistance, setPullDistance] = useState(0);
+  const touchStartY = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const loadConversations = useCallback(async () => {
     if (!user) return;
@@ -45,9 +49,40 @@ export default function Inbox() {
   }, [user, loadConversations]);
 
   const handleRefresh = async () => {
+    if (!user) return;
     setRefreshing(true);
-    await loadConversations();
+    await Promise.all([
+      loadConversations(),
+      checkAndNotifyNewMessages(user.id),
+    ]);
     setRefreshing(false);
+    setPullDistance(0);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (containerRef.current && containerRef.current.scrollTop === 0) {
+      touchStartY.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === 0 || refreshing) return;
+
+    const touchY = e.touches[0].clientY;
+    const diff = touchY - touchStartY.current;
+
+    if (diff > 0 && containerRef.current && containerRef.current.scrollTop === 0) {
+      setPullDistance(Math.min(diff, 100));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (pullDistance > 60 && !refreshing) {
+      handleRefresh();
+    } else {
+      setPullDistance(0);
+    }
+    touchStartY.current = 0;
   };
 
   const handleConversationClick = (conversation: Conversation) => {
@@ -96,7 +131,22 @@ export default function Inbox() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div
+      className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"
+      ref={containerRef}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {pullDistance > 0 && (
+        <div
+          className="fixed top-0 left-0 right-0 flex justify-center items-center z-50 bg-gradient-to-b from-cyan-500/20 to-transparent transition-all"
+          style={{ height: `${pullDistance}px`, opacity: pullDistance / 100 }}
+        >
+          <RefreshCw className={`text-cyan-400 ${pullDistance > 60 ? 'animate-spin' : ''}`} size={24} />
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-8">
           <button

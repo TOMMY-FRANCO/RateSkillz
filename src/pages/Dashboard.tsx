@@ -25,6 +25,7 @@ import AddFriendQRModal from '../components/AddFriendQRModal';
 import ModerationCaseAlert from '../components/ModerationCaseAlert';
 import BalanceDiscrepancyWarning from '../components/BalanceDiscrepancyWarning';
 import { checkBalanceIntegrity } from '../lib/balanceReconciliation';
+import { checkAndNotifyNewMessages } from '../lib/messageNotifications';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -136,6 +137,7 @@ export default function Dashboard() {
       const [balanceCheck] = await Promise.all([
         checkBalanceIntegrity(),
         loadDashboardData(),
+        profile ? checkAndNotifyNewMessages(profile.id) : Promise.resolve(0),
       ]);
 
       if (balanceCheck.success && balanceCheck.hasDiscrepancy) {
@@ -154,7 +156,7 @@ export default function Dashboard() {
       setIsRefreshing(false);
       setPullDistance(0);
     }
-  }, [isRefreshing]);
+  }, [isRefreshing, profile]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (containerRef.current && containerRef.current.scrollTop === 0) {

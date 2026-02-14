@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { ensureProfileExists } from '../lib/profileCreation';
 import { reconcileUserBalance } from '../lib/balanceReconciliation';
 import { reconcileCoinPool } from '../lib/coinPoolReconciliation';
+import { requestNotificationPermission } from '../lib/messageNotifications';
 
 export interface Profile {
   id: string;
@@ -190,6 +191,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (profileData) {
             setProfile(profileData);
             console.log('[Session] Profile loaded successfully');
+
+            // Request notification permission on first login
+            setTimeout(() => {
+              requestNotificationPermission().catch(error => {
+                console.error('[Session] Notification permission request failed:', error);
+              });
+            }, 1000);
 
             // Defer reconciliation to after initial render for faster startup
             setTimeout(() => {
