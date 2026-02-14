@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { getAppUrl } from './appConfig';
+import { getCoinProductByAmount } from '../stripe-config';
 
 interface CreateCheckoutSessionParams {
   priceId: string;
@@ -68,26 +69,25 @@ export async function createCoinPurchaseCheckout(coins: number, priceGBP: number
 }
 
 /**
- * Maps coin amounts to Stripe Price IDs
+ * Maps coin amounts to Stripe Price IDs from centralized stripe-config.ts
  * Only two packages available: 100 coins (£1.00) and 300 coins (£2.00)
  */
 function getCoinPriceId(coins: number, priceGBP: number): string {
-  // This is a mapping of coins to Stripe Price IDs
-  // Only two packages are active in the shop
-  const priceMap: Record<string, string> = {
-    '100': 'price_1Spet513eRaZbd3FIFVEtQpE',    // £1.00
-    '300': 'price_1Spevl13eRaZbd3Ftn2r6yvv',    // £2.00 (updated from 200 to 300 coins)
-  };
+  const product = getCoinProductByAmount(coins);
 
-  const priceId = priceMap[coins.toString()];
-
-  if (!priceId || priceId.includes('REPLACE')) {
+  if (!product) {
     throw new Error(
-      'Stripe Price IDs not configured. Please:\n' +
-      '1. Create prices in Stripe Dashboard (https://dashboard.stripe.com/prices)\n' +
-      '2. Update the priceMap in src/lib/stripe.ts with actual Price IDs'
+      `No Stripe product configured for ${coins} coins at £${priceGBP}. ` +
+      'Please update STRIPE_COIN_PRODUCTS in src/stripe-config.ts'
     );
   }
 
-  return priceId;
+  if (product.price !== priceGBP) {
+    console.warn(
+      `Price mismatch: Expected £${product.price} for ${coins} coins, but got £${priceGBP}. ` +
+      'Using configured price.'
+    );
+  }
+
+  return product.priceId;
 }
