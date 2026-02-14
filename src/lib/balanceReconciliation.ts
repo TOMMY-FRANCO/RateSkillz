@@ -14,7 +14,7 @@ export async function reconcileUserBalance(userId: string): Promise<{
   error?: string;
 }> {
   try {
-    console.log('[Balance Reconciliation] Starting reconciliation for user:', userId);
+    console.log('[Balance Reconciliation] Starting reconciliation');
 
     const { data, error } = await supabase
       .rpc('reconcile_user_balance', {
@@ -32,11 +32,7 @@ export async function reconcileUserBalance(userId: string): Promise<{
     }
 
     if (data?.corrected) {
-      console.log('[Balance Reconciliation] Balance corrected:', {
-        old: data.old_balance,
-        new: data.new_balance,
-        discrepancy: data.discrepancy
-      });
+      console.log('[Balance Reconciliation] Balance corrected');
     } else {
       console.log('[Balance Reconciliation] Balance already correct');
     }

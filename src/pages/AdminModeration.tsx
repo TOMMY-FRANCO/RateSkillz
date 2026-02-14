@@ -83,7 +83,7 @@ export default function AdminModeration() {
         throw rpcError;
       }
 
-      console.log('[AdminModeration] Cases loaded successfully:', data?.length || 0);
+      console.log('[AdminModeration] Cases loaded successfully');
       setCases(data || []);
       setError('');
     } catch (err) {

@@ -20,7 +20,6 @@ export default function AddFriendByQR() {
 
   useEffect(() => {
     const userId = searchParams.get('user_id');
-    console.log('[QR Scan] Extracted user_id from URL:', userId);
     if (userId) {
       setTargetUserId(userId);
       loadTargetProfile(userId);
@@ -34,7 +33,7 @@ export default function AddFriendByQR() {
     setLoading(true);
     setError('');
 
-    console.log('[QR Scan] Loading profile for user_id:', userId);
+    console.log('[QR Scan] Loading profile');
 
     try {
       const { data, error: fetchError } = await supabase
@@ -46,19 +45,18 @@ export default function AddFriendByQR() {
       if (fetchError) throw fetchError;
 
       if (!data) {
-        console.error('[QR Scan] No profile found for user_id:', userId);
+        console.error('[QR Scan] No profile found');
         setError('User not found');
         setLoading(false);
         return;
       }
 
-      console.log('[QR Scan] Target profile loaded:', { id: data.id, username: data.username });
+      console.log('[QR Scan] Profile loaded');
       setTargetProfile(data);
 
       if (user) {
-        console.log('[QR Scan] Current user:', { id: user.id });
         if (user.id === userId) {
-          console.log('[QR Scan] WARNING: Target user is same as current user (self-friending attempt)');
+          console.log('[QR Scan] Self-friending attempt detected');
         } else {
           await checkFriendshipStatus(user.id, userId);
         }

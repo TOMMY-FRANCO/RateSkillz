@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        console.log('[Session] Loading user session:', session.user.id);
+        console.log('[Session] Loading user session');
 
         if (mounted) {
           setUser({ id: session.user.id });
@@ -156,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   ...session.user.user_metadata,
                 },
               });
-              console.log(`[Session] OAuth account recorded for ${provider}`);
+              console.log('[Session] OAuth account recorded');
             }
           } catch (oauthError) {
             console.error('[Session] Error recording OAuth account:', oauthError);
@@ -367,13 +367,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setLoading(true);
-    console.log('========================================');
-    console.log('[SignIn] STARTING SIGN-IN PROCESS');
-    console.log(`  Email: ${email}`);
-    console.log('========================================');
+    console.log('[SignIn] Starting sign-in process');
 
     try {
-      console.log('[SignIn] [1/3] Authenticating...');
+      console.log('[SignIn] Authenticating...');
       const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -389,10 +386,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Sign in failed. Please try again.');
       }
 
-      console.log('[SignIn] ✓ Authentication successful');
-      console.log(`  User ID: ${authData.user.id}`);
-
-      console.log('[SignIn] [2/3] Loading your profile...');
+      console.log('[SignIn] Authentication successful');
+      console.log('[SignIn] Loading profile...');
       const username = (authData.user.user_metadata?.username || authData.user.email?.split('@')[0] || 'user').toLowerCase();
       const fullName = authData.user.user_metadata?.full_name || '';
 
@@ -407,9 +402,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Profile setup failed. Please contact support.');
       }
 
-      console.log('[SignIn] ✓ Profile loaded');
-
-      console.log('[SignIn] [3/3] Updating activity...');
+      console.log('[SignIn] Profile loaded');
+      console.log('[SignIn] Updating activity...');
       const now = new Date().toISOString();
       await supabase
         .from('profiles')
@@ -430,18 +424,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession({ user: { id: authData.user.id } });
       setProfile({ ...profileData, last_active: now });
 
-      console.log('========================================');
-      console.log('[SignIn] ✓ SIGN-IN COMPLETED SUCCESSFULLY');
-      console.log(`  Welcome back, ${profileData.username}!`);
-      console.log('========================================');
+      console.log('[SignIn] Sign-in completed successfully');
 
       return { error: null };
     } catch (error: any) {
-      console.error('========================================');
-      console.error('[SignIn] ✗ SIGN-IN FAILED');
-      console.error('  Error:', error.message);
-      if (error.code) console.error('  Code:', error.code);
-      console.error('========================================');
+      console.error('[SignIn] Sign-in failed');
 
       let errorMessage = 'Failed to sign in. Please try again.';
 

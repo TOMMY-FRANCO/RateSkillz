@@ -111,13 +111,11 @@ export default function Tutorial({ isOpen, onClose, onComplete }: TutorialProps)
     setIsCompleting(true);
 
     try {
-      console.log('Calling complete_tutorial for user:', user.id);
+      console.log('Completing tutorial');
 
       const { data, error } = await supabase.rpc('complete_tutorial', {
         user_uuid: user.id
       });
-
-      console.log('Tutorial completion response:', { data, error });
 
       if (error) {
         console.error('RPC error:', error);
@@ -127,7 +125,7 @@ export default function Tutorial({ isOpen, onClose, onComplete }: TutorialProps)
       }
 
       if (data?.success) {
-        console.log('Tutorial completed successfully!', data);
+        console.log('Tutorial completed successfully');
         setCoinsEarned(data.coins_earned || 5);
         setShowCompletion(true);
 

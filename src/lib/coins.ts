@@ -55,7 +55,6 @@ export async function canWatchAdToday(): Promise<{
   minutes_remaining?: number;
 }> {
   const userId = (await supabase.auth.getUser()).data.user?.id;
-  console.log('[canWatchAdToday] Checking for user:', userId);
 
   if (!userId) {
     console.error('[canWatchAdToday] No user ID found');
@@ -71,8 +70,6 @@ export async function canWatchAdToday(): Promise<{
     return { can_watch: false, message: 'Error checking availability' };
   }
 
-  console.log('[canWatchAdToday] RPC response:', data);
-
   // data is an array with one row
   const status = data?.[0];
 
@@ -85,12 +82,6 @@ export async function canWatchAdToday(): Promise<{
   const minutesRemaining = Math.floor((hoursUntilNext % 1) * 60);
   const hoursRemaining = Math.floor(hoursUntilNext);
 
-  console.log('[canWatchAdToday] Parsed status:', {
-    can_watch: status.can_watch,
-    hours_remaining: hoursRemaining,
-    minutes_remaining: minutesRemaining
-  });
-
   return {
     can_watch: status.can_watch,
     message: status.message,
@@ -101,9 +92,8 @@ export async function canWatchAdToday(): Promise<{
 }
 
 export async function awardAdCoins(): Promise<{ earned: boolean; amount: number; message?: string; error?: string }> {
-  console.log('[awardAdCoins] Calling edge function...');
+  console.log('[awardAdCoins] Calling edge function');
   const headers = await getAuthHeaders();
-  console.log('[awardAdCoins] Headers prepared, making request to:', `${COIN_OPERATIONS_URL}/award-ad`);
 
   const response = await fetch(`${COIN_OPERATIONS_URL}/award-ad`, {
     method: 'POST',
@@ -119,7 +109,7 @@ export async function awardAdCoins(): Promise<{ earned: boolean; amount: number;
   }
 
   const result = await response.json();
-  console.log('[awardAdCoins] Success response:', result);
+  console.log('[awardAdCoins] Success');
   return result;
 }
 

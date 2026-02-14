@@ -42,12 +42,7 @@ export async function createCompleteProfile(
     warnings: []
   };
 
-  console.log('========================================');
-  console.log('CREATING COMPLETE PROFILE');
-  console.log(`User ID: ${userId}`);
-  console.log(`Email: ${email}`);
-  console.log(`Age: ${age || 'not provided'}`);
-  console.log('========================================');
+  console.log('[ProfileCreation] Creating profile');
 
   try {
     const generatedUsername = username?.toLowerCase() ||
@@ -185,11 +180,7 @@ export async function createCompleteProfile(
 
     if (result.profile) {
       result.success = true;
-      console.log('========================================');
-      console.log('✓ PROFILE CREATION COMPLETED');
-      console.log(`  Errors: ${result.errors.length}`);
-      console.log(`  Warnings: ${result.warnings.length}`);
-      console.log('========================================');
+      console.log('[ProfileCreation] Profile creation completed');
     } else {
       result.errors.push('Profile record was not created');
     }

@@ -80,7 +80,6 @@ export default function PublicCard() {
         console.error('Error loading coin balance:', balanceError);
       }
 
-      console.log(`Coin balance for ${profileData.username}:`, balanceData?.balance || 0);
       setCoinBalance(balanceData?.balance || 0);
       setBalanceLoading(false);
 

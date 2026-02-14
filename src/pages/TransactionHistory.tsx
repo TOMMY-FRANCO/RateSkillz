@@ -61,8 +61,7 @@ export default function TransactionHistory() {
       setLoading(true);
       setError(null);
       const result = await getTransactions(page, 20);
-      console.log('[TransactionHistory] Loaded transactions:', result.transactions.length);
-      console.log('[TransactionHistory] Pagination:', result.pagination);
+      console.log('[TransactionHistory] Transactions loaded');
 
       setTransactions(result.transactions);
       setPagination(result.pagination);

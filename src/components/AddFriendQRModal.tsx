@@ -29,7 +29,7 @@ export default function AddFriendQRModal({ isOpen, onClose, userId, username }: 
     try {
       const baseUrl = getAppUrl();
       const url = `${baseUrl}/add-friend?user_id=${encodeURIComponent(userId)}`;
-      console.log('[QR Generation] Generating QR code:', { userId, username, url });
+      console.log('[QR Generation] Generating QR code');
       setFriendUrl(url);
 
       if (canvasRef.current) {

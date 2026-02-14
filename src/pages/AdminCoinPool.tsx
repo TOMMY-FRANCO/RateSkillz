@@ -151,7 +151,7 @@ export default function AdminCoinPool() {
         throw error;
       }
 
-      console.log('[AdminCoinPool] Coin pool stats loaded:', data);
+      console.log('[AdminCoinPool] Coin pool stats loaded');
       setStats(data);
       setLastRefresh(new Date());
     } catch (error: any) {
@@ -200,7 +200,7 @@ export default function AdminCoinPool() {
 
       if (error) throw error;
 
-      console.log('Sync result:', data);
+      console.log('Sync completed');
       await loadAllData();
     } catch (error) {
       console.error('Sync failed:', error);

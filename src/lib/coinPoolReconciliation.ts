@@ -29,11 +29,7 @@ export async function reconcileCoinPool(): Promise<{
     }
 
     if (data?.corrected) {
-      console.log('[Coin Pool Reconciliation] Pool corrected:', {
-        old_distributed: data.old_distributed,
-        new_distributed: data.new_distributed,
-        discrepancy: data.discrepancy
-      });
+      console.log('[Coin Pool Reconciliation] Pool corrected');
     } else {
       console.log('[Coin Pool Reconciliation] Pool already correct');
     }

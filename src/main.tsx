@@ -19,9 +19,9 @@ async function syncCoinPoolOnStartup() {
     }
 
     if (data.corrected) {
-      console.warn('⚠️ Coin pool discrepancy corrected on startup:', data);
+      console.warn('⚠️ Coin pool discrepancy corrected on startup');
     } else {
-      console.log('✅ Coin pool is in sync:', data);
+      console.log('✅ Coin pool is in sync');
     }
   } catch (error) {
     console.error('❌ Failed to sync coin pool on startup:', error);

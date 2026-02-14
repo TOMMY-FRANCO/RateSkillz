@@ -75,7 +75,7 @@ export function useCoinPool() {
 
       if (syncError) throw syncError;
 
-      console.log('Coin pool sync result:', data);
+      console.log('Coin pool synced');
 
       await fetchStats();
 

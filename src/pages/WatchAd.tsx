@@ -47,7 +47,6 @@ export default function WatchAd() {
     console.log('[WatchAd] Checking ad availability...');
     try {
       const result = await canWatchAdToday();
-      console.log('[WatchAd] Ad availability result:', result);
       setCanWatch(result.can_watch);
       if (!result.can_watch) {
         const hours = result.hours_remaining || 0;
@@ -56,12 +55,10 @@ export default function WatchAd() {
         setMinutesRemaining(minutes);
         setError(result.message || `Next ad available in ${hours} hours ${minutes} minutes`);
         setNextAvailable(result.next_available_gmt || null);
-        console.log('[WatchAd] User NOT eligible - hours remaining:', hours, 'minutes:', minutes);
       } else {
         setError(null);
         setHoursRemaining(0);
         setMinutesRemaining(0);
-        console.log('[WatchAd] User IS eligible to watch ad');
       }
     } catch (error) {
       console.error('[WatchAd] Failed to check ad availability:', error);
@@ -91,9 +88,8 @@ export default function WatchAd() {
 
     try {
       const result = await awardAdCoins();
-      console.log('[WatchAd] Award result:', result);
       if (result.earned) {
-        console.log('[WatchAd] Successfully earned coins! New balance coming...');
+        console.log('[WatchAd] Coins earned successfully');
         setCompleted(true);
         setCanWatch(false);
         await loadBalance();

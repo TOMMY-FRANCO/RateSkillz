@@ -13,7 +13,7 @@ export function CoinPoolDisplay() {
       const result = await syncPool();
       setShowSyncMessage(true);
       setTimeout(() => setShowSyncMessage(false), 3000);
-      console.log('Sync completed:', result);
+      console.log('Sync completed');
     } catch (error) {
       console.error('Sync failed:', error);
     }

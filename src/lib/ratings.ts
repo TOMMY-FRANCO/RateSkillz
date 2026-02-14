@@ -59,7 +59,7 @@ export async function checkIfFriends(userId: string, friendId: string): Promise<
 
 export async function getMyRatingForUser(raterId: string, playerId: string): Promise<PlayerRating | null> {
   try {
-    console.log(`[GetMyRating] Fetching rating from ${raterId} for player ${playerId}`);
+    console.log('[GetMyRating] Fetching rating');
 
     const { data, error } = await supabase
       .from('ratings')
@@ -74,7 +74,7 @@ export async function getMyRatingForUser(raterId: string, playerId: string): Pro
     }
 
     if (data) {
-      console.log('[GetMyRating] Found existing rating:', data);
+      console.log('[GetMyRating] Found existing rating');
     } else {
       console.log('[GetMyRating] No existing rating found');
     }
@@ -88,7 +88,7 @@ export async function getMyRatingForUser(raterId: string, playerId: string): Pro
 
 export async function getUserStats(userId: string): Promise<UserStats | null> {
   try {
-    console.log(`[GetUserStats] Fetching stats for user ${userId}`);
+    console.log('[GetUserStats] Fetching stats');
 
     const { data, error } = await supabase
       .from('user_stats')
@@ -102,10 +102,7 @@ export async function getUserStats(userId: string): Promise<UserStats | null> {
     }
 
     if (data) {
-      console.log('[GetUserStats] Found stats:', {
-        overall: data.overall,
-        rating_count: data.rating_count,
-      });
+      console.log('[GetUserStats] Found stats');
     } else {
       console.log('[GetUserStats] No stats found, user may have no ratings yet');
     }
@@ -119,12 +116,7 @@ export async function getUserStats(userId: string): Promise<UserStats | null> {
 
 export async function saveRating(rating: PlayerRating): Promise<RatingResult> {
   try {
-    console.log('========================================');
-    console.log('[SaveRating] SAVING RATING');
-    console.log(`  Rater: ${rating.rater_id}`);
-    console.log(`  Player: ${rating.player_id}`);
-    console.log(`  Stats: PAC=${rating.pac}, SHO=${rating.sho}, PAS=${rating.pas}, DRI=${rating.dri}, DEF=${rating.def}, PHY=${rating.phy}`);
-    console.log('========================================');
+    console.log('[SaveRating] Saving rating');
 
     if (rating.rater_id === rating.player_id) {
       console.error('[SaveRating] ✗ Cannot rate yourself');
@@ -190,9 +182,7 @@ export async function saveRating(rating: PlayerRating): Promise<RatingResult> {
         };
       }
 
-      console.log('[SaveRating] ✓ Rating updated successfully');
-      console.log('[SaveRating] Trigger will auto-calculate averages');
-      console.log('========================================');
+      console.log('[SaveRating] Rating updated successfully');
 
       return {
         success: true,
@@ -227,9 +217,7 @@ export async function saveRating(rating: PlayerRating): Promise<RatingResult> {
         };
       }
 
-      console.log('[SaveRating] ✓ Rating saved successfully');
-      console.log('[SaveRating] Trigger will auto-calculate averages');
-      console.log('========================================');
+      console.log('[SaveRating] Rating saved successfully');
 
       return {
         success: true,
@@ -237,10 +225,7 @@ export async function saveRating(rating: PlayerRating): Promise<RatingResult> {
       };
     }
   } catch (error: any) {
-    console.error('========================================');
-    console.error('[SaveRating] ✗ FATAL ERROR');
-    console.error('  Error:', error.message);
-    console.error('========================================');
+    console.error('[SaveRating] Error saving rating');
     return {
       success: false,
       error: error.message || 'An unexpected error occurred',
@@ -250,7 +235,7 @@ export async function saveRating(rating: PlayerRating): Promise<RatingResult> {
 
 export async function deleteRating(raterId: string, playerId: string): Promise<RatingResult> {
   try {
-    console.log(`[DeleteRating] Deleting rating from ${raterId} for player ${playerId}`);
+    console.log('[DeleteRating] Deleting rating');
 
     const { error } = await supabase
       .from('ratings')
@@ -266,8 +251,7 @@ export async function deleteRating(raterId: string, playerId: string): Promise<R
       };
     }
 
-    console.log('[DeleteRating] ✓ Rating deleted successfully');
-    console.log('[DeleteRating] Trigger will auto-recalculate averages');
+    console.log('[DeleteRating] Rating deleted successfully');
 
     return {
       success: true,
@@ -283,7 +267,7 @@ export async function deleteRating(raterId: string, playerId: string): Promise<R
 
 export async function getAllRatingsForUser(playerId: string): Promise<PlayerRating[]> {
   try {
-    console.log(`[GetAllRatings] Fetching all ratings for player ${playerId}`);
+    console.log('[GetAllRatings] Fetching ratings');
 
     const { data, error } = await supabase
       .from('ratings')
@@ -295,7 +279,7 @@ export async function getAllRatingsForUser(playerId: string): Promise<PlayerRati
       return [];
     }
 
-    console.log(`[GetAllRatings] Found ${data?.length || 0} ratings`);
+    console.log('[GetAllRatings] Ratings fetched');
     return data || [];
   } catch (error) {
     console.error('[GetAllRatings] Exception:', error);

@@ -65,7 +65,7 @@ export async function sendFriendRequest(receiverId: string) {
       throw error;
     }
 
-    console.log('[Friend Request] Friend request created successfully:', data.id);
+    console.log('[Friend Request] Friend request created successfully');
     return { data, error: null };
   } catch (error: any) {
     console.error('[Friend Request] Error:', error.message);
