@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { Eye, UserPlus, UserCheck, UserX, Clock, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { sendFriendRequest, removeFriend } from '../lib/friendRequests';
 import { useTierBadges } from '../hooks/useTierBadges';
@@ -38,6 +39,7 @@ const VIEWERS_PER_PAGE = 20;
 export default function ViewedMe() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
   const [viewers, setViewers] = useState<ViewerData[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalViewers, setTotalViewers] = useState(0);
@@ -171,7 +173,7 @@ export default function ViewedMe() {
       });
     } catch (error: any) {
       console.error('Error sending friend request:', error);
-      alert(error?.message || 'Failed to send friend request');
+      toast.error(error?.message || 'Failed to send friend request');
     } finally {
       setSendingRequest(null);
     }
@@ -189,7 +191,7 @@ export default function ViewedMe() {
         return next;
       });
     } catch (error: any) {
-      alert(error?.message || 'Failed to cancel request');
+      toast.error(error?.message || 'Failed to cancel request');
     } finally {
       setSendingRequest(null);
     }
@@ -210,7 +212,7 @@ export default function ViewedMe() {
         return next;
       });
     } catch (error: any) {
-      alert(error?.message || 'Failed to accept request');
+      toast.error(error?.message || 'Failed to accept request');
     } finally {
       setSendingRequest(null);
     }
@@ -229,7 +231,7 @@ export default function ViewedMe() {
         return next;
       });
     } catch (error: any) {
-      alert(error?.message || 'Failed to remove friend');
+      toast.error(error?.message || 'Failed to remove friend');
     } finally {
       setSendingRequest(null);
     }

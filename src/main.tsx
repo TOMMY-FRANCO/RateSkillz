@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { AuthProvider } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { supabase } from './lib/supabase';
 
 console.log('🚀 main.tsx: Starting app render');
@@ -32,6 +33,8 @@ syncCoinPoolOnStartup();
 
 createRoot(document.getElementById('root')!).render(
   <AuthProvider>
-    <App />
+    <ToastProvider>
+      <App />
+    </ToastProvider>
   </AuthProvider>
 );

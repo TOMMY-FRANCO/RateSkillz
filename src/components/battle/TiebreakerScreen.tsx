@@ -10,6 +10,7 @@ import {
   getBattle,
 } from '../../lib/battleMode';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 
 interface TiebreakerScreenProps {
   battle: Battle;
@@ -42,6 +43,7 @@ export function TiebreakerScreen({
   onComplete,
 }: TiebreakerScreenProps) {
   const { user } = useAuth();
+  const toast = useToast();
   const [battle, setBattle] = useState(initialBattle);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
@@ -80,11 +82,11 @@ export function TiebreakerScreen({
           setBattle(updated);
         }
       } else {
-        alert(result.error || 'Failed to submit tiebreaker move');
+        toast.error(result.error || 'Failed to submit tiebreaker move');
       }
     } catch (error) {
       console.error('Error submitting tiebreaker:', error);
-      alert('Failed to submit tiebreaker move');
+      toast.error('Failed to submit tiebreaker move');
     } finally {
       setSubmitting(false);
     }
