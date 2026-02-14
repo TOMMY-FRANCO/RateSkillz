@@ -168,10 +168,17 @@ export default function ProfileView() {
       setViewsCount(0);
       setCommentsCount(0);
 
-      const presence = await getUserPresence(profileData.id);
-      if (presence) {
-        setUserPresenceData(presence.last_seen);
-      }
+      setFriendsCount(profileData.friend_count || 0);
+
+      const socialLinksData = {
+        user_id: summaryData.user_id,
+        instagram_url: (summaryData as any).instagram_url,
+        twitter_url: (summaryData as any).twitter_url,
+        youtube_url: (summaryData as any).youtube_url,
+        tiktok_url: (summaryData as any).tiktok_url,
+        twitch_url: (summaryData as any).twitch_url,
+      };
+      setSocialLinks(socialLinksData);
 
       if (currentUser && profileData.id !== currentUser.id && !isPreviewMode) {
         recordUniqueProfileView(profileData.id, currentUser.id).then((viewResult) => {
@@ -189,32 +196,61 @@ export default function ProfileView() {
         }).catch(err => console.error('Error recording view:', err));
       }
 
-      setFriendsCount(profileData.friend_count || 0);
+      const isOtherUser = currentUser && profileData.id !== currentUser.id;
 
-      if (currentUser && profileData.id !== currentUser.id) {
-        const { data: friendData } = await supabase
-          .from('friends')
-          .select('id, user_id, friend_id, status')
-          .or(`and(user_id.eq.${currentUser.id},friend_id.eq.${profileData.id}),and(user_id.eq.${profileData.id},friend_id.eq.${currentUser.id})`)
-          .maybeSingle();
+      const [
+        presenceResult,
+        friendResult,
+        statsResult,
+        myRatingResult,
+        commentsResult,
+        likesResult,
+        cardOwnershipResult,
+      ] = await Promise.all([
+        getUserPresence(profileData.id).catch(() => null),
+        isOtherUser
+          ? supabase
+              .from('friends')
+              .select('id, user_id, friend_id, status')
+              .or(`and(user_id.eq.${currentUser!.id},friend_id.eq.${profileData.id}),and(user_id.eq.${profileData.id},friend_id.eq.${currentUser!.id})`)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
+        getUserStats(profileData.id).catch(() => null),
+        isOtherUser
+          ? getMyRatingForUser(currentUser!.id, profileData.id).catch(() => null)
+          : Promise.resolve(null),
+        supabase
+          .from('comments')
+          .select('id, profile_id, user_id, content, upvotes, downvotes, username, created_at')
+          .eq('profile_id', profileData.id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('profile_likes')
+          .select('id, profile_id, user_id, is_like')
+          .eq('profile_id', profileData.id),
+        getCardOwnership(profileData.id).catch(() => null),
+      ]);
 
-        if (friendData) {
-          setFriendshipId(friendData.id);
-          if (friendData.status === 'accepted') {
-            setFriendStatus('accepted');
-          } else if (friendData.status === 'blocked') {
-            setFriendStatus('blocked');
-          } else if (friendData.status === 'pending') {
-            setFriendStatus(friendData.user_id === currentUser.id ? 'pending_sent' : 'pending_received');
-          }
-        } else {
-          setFriendStatus('none');
-        }
+      if (presenceResult) {
+        setUserPresenceData(presenceResult.last_seen);
       }
 
-      const stats = await getUserStats(profileData.id);
-      if (stats) {
-        setUserStats(stats);
+      const friendData = friendResult?.data;
+      if (isOtherUser && friendData) {
+        setFriendshipId(friendData.id);
+        if (friendData.status === 'accepted') {
+          setFriendStatus('accepted');
+        } else if (friendData.status === 'blocked') {
+          setFriendStatus('blocked');
+        } else if (friendData.status === 'pending') {
+          setFriendStatus(friendData.user_id === currentUser!.id ? 'pending_sent' : 'pending_received');
+        }
+      } else {
+        setFriendStatus('none');
+      }
+
+      if (statsResult) {
+        setUserStats(statsResult);
       } else {
         setUserStats({
           pac: summaryData.pac_rating || 50,
@@ -227,31 +263,24 @@ export default function ProfileView() {
         } as any);
       }
 
-      if (currentUser && profileData.id !== currentUser.id) {
-        const myRatingData = await getMyRatingForUser(currentUser.id, profileData.id);
-        setMyRating(myRatingData);
-
-        if (myRatingData) {
+      if (isOtherUser) {
+        setMyRating(myRatingResult);
+        if (myRatingResult) {
           setEditingRatings({
-            pac: myRatingData.pac,
-            sho: myRatingData.sho,
-            pas: myRatingData.pas,
-            dri: myRatingData.dri,
-            def: myRatingData.def,
-            phy: myRatingData.phy,
+            pac: myRatingResult.pac,
+            sho: myRatingResult.sho,
+            pas: myRatingResult.pas,
+            dri: myRatingResult.dri,
+            def: myRatingResult.def,
+            phy: myRatingResult.phy,
           });
         }
       }
 
-      const { data: commentsData } = await supabase
-        .from('comments')
-        .select('id, profile_id, user_id, content, upvotes, downvotes, username, created_at')
-        .eq('profile_id', profileData.id)
-        .order('created_at', { ascending: false });
-
+      const commentsData = commentsResult.data;
       setComments(commentsData || []);
 
-      if (currentUser && commentsData) {
+      if (currentUser && commentsData && commentsData.length > 0) {
         const { data: votesData } = await supabase
           .from('comment_votes')
           .select('id, comment_id, user_id, is_upvote')
@@ -265,11 +294,7 @@ export default function ProfileView() {
         setCommentVotes(votesMap);
       }
 
-      const { data: likesData } = await supabase
-        .from('profile_likes')
-        .select('id, profile_id, user_id, is_like')
-        .eq('profile_id', profileData.id);
-
+      const likesData = likesResult.data;
       const likesCount = likesData?.filter((l) => l.is_like).length || 0;
       const dislikesCount = likesData?.filter((l) => !l.is_like).length || 0;
       setLikes(likesCount);
@@ -282,20 +307,7 @@ export default function ProfileView() {
         }
       }
 
-      // Use social links from profile_summary cache
-      const socialLinksData = {
-        user_id: summaryData.user_id,
-        instagram_url: summaryData.instagram_url,
-        twitter_url: summaryData.twitter_url,
-        youtube_url: summaryData.youtube_url,
-        tiktok_url: summaryData.tiktok_url,
-        twitch_url: summaryData.twitch_url,
-      };
-
-      setSocialLinks(socialLinksData);
-
-      const cardOwnershipData = await getCardOwnership(profileData.id);
-      setCardOwnership(cardOwnershipData);
+      setCardOwnership(cardOwnershipResult);
 
       setLoading(false);
     } catch (error) {
