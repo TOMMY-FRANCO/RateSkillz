@@ -41,25 +41,26 @@ export default function AdminModeration() {
   const adminCheckDoneRef = useRef(false);
 
   useEffect(() => {
-    console.log('[AdminModeration] Profile check:', { profile: profile?.username, isAdmin: profile?.is_admin });
+    if (!profile) return;
 
-    if (!profile) {
-      console.log('[AdminModeration] No profile - waiting...');
-      return;
-    }
+    if (adminCheckDoneRef.current) return;
 
-    if (!profile.is_admin) {
-      console.log('[AdminModeration] Not admin - redirecting to dashboard');
-      navigate('/dashboard', { replace: true });
-      return;
-    }
+    async function verifyAdmin() {
+      const { data, error } = await supabase
+        .rpc('is_user_admin')
+        .single();
 
-    if (!adminCheckDoneRef.current) {
-      console.log('[AdminModeration] Admin verified - loading cases');
+      if (error || !data) {
+        navigate('/dashboard', { replace: true });
+        return;
+      }
+
       adminCheckDoneRef.current = true;
       loadCases();
       loadFilterStats();
     }
+
+    verifyAdmin();
   }, [profile, navigate]);
 
   const loadCases = async () => {

@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
+import { supabase } from './lib/supabase';
 import { measureWebVitals, perfMonitor } from './lib/performance';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -62,9 +63,23 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, profile, loading } = useAuth();
+  const { user, loading } = useAuth();
+  const [adminVerified, setAdminVerified] = useState<boolean | null>(null);
 
-  if (loading) {
+  useEffect(() => {
+    if (!user || loading) return;
+
+    let cancelled = false;
+    supabase.rpc('is_user_admin').single().then(({ data, error }) => {
+      if (!cancelled) {
+        setAdminVerified(!error && data === true);
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [user, loading]);
+
+  if (loading || adminVerified === null) {
     return <LoadingScreen />;
   }
 
@@ -72,7 +87,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (profile && !profile.is_admin) {
+  if (!adminVerified) {
     return <Navigate to="/dashboard" replace />;
   }
 

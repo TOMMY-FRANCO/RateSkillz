@@ -80,102 +80,49 @@ export default function AdminCoinPool() {
   }, [logFilter]);
 
   async function checkAdminAccess() {
-    // Don't re-check if already verified as admin
-    if (adminVerifiedRef.current) {
-      console.log('[AdminCoinPool] Already verified as admin (ref check), skipping check');
-      return;
-    }
-
-    console.log('[AdminCoinPool] Starting admin access check...');
-    console.log('[AdminCoinPool] User:', user?.id, user?.email);
+    if (adminVerifiedRef.current) return;
 
     try {
       if (!user) {
-        console.error('[AdminCoinPool] No user found - redirecting to home');
         setAdminError('Not logged in. Please log in to access this page.');
         setCheckingAdmin(false);
         setTimeout(() => navigate('/'), 2000);
         return;
       }
 
-      let isUserAdmin = false;
+      const { data, error } = await supabase
+        .rpc('is_user_admin')
+        .single();
 
-      try {
-        console.log('[AdminCoinPool] Calling is_user_admin RPC...');
-        const { data, error } = await supabase
-          .rpc('is_user_admin', { p_user_id: user.id })
-          .single();
-
-        if (error) {
-          console.warn('[AdminCoinPool] RPC call failed, falling back to direct query:', error);
-
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('is_admin')
-            .eq('id', user.id)
-            .single();
-
-          if (profileError) {
-            console.error('[AdminCoinPool] Direct query also failed:', profileError);
-            throw profileError;
-          }
-
-          console.log('[AdminCoinPool] Direct query result:', profileData);
-          isUserAdmin = profileData?.is_admin || false;
-        } else {
-          console.log('[AdminCoinPool] RPC result:', data);
-          isUserAdmin = data || false;
-        }
-      } catch (err: any) {
-        console.error('[AdminCoinPool] Error checking admin status:', err);
-        setAdminError(`Error checking admin status: ${err.message || 'Unknown error'}`);
-        isUserAdmin = false;
-      }
-
-      console.log('[AdminCoinPool] Admin check result:', isUserAdmin);
-
-      if (!isUserAdmin) {
-        console.warn('[AdminCoinPool] User is not an admin - access denied');
+      if (error || !data) {
         setAdminError('Access denied. You do not have admin privileges.');
-
-        try {
-          await supabase.rpc('log_admin_access', {
-            p_user_id: user.id,
-            p_action_type: 'access_denied',
-            p_resource_accessed: 'admin_coin_pool',
-            p_access_granted: false,
-            p_notes: 'User attempted to access admin dashboard without admin privileges'
-          });
-        } catch (logError) {
-          console.warn('[AdminCoinPool] Failed to log access denial:', logError);
-        }
-
+        supabase.rpc('log_admin_access', {
+          p_user_id: user.id,
+          p_action_type: 'access_denied',
+          p_resource_accessed: 'admin_coin_pool',
+          p_access_granted: false,
+          p_notes: 'Server-side admin check failed'
+        }).catch(() => {});
         setCheckingAdmin(false);
         setTimeout(() => navigate('/'), 2000);
         return;
       }
 
-      console.log('[AdminCoinPool] Admin access granted!');
       adminVerifiedRef.current = true;
       setIsAdmin(true);
       setAdminError(null);
       setCheckingAdmin(false);
 
-      try {
-        await supabase.rpc('log_admin_access', {
-          p_user_id: user.id,
-          p_action_type: 'access_granted',
-          p_resource_accessed: 'admin_coin_pool',
-          p_access_granted: true,
-          p_notes: 'Admin accessed coin pool dashboard'
-        });
-      } catch (logError) {
-        console.warn('[AdminCoinPool] Failed to log access grant:', logError);
-      }
+      supabase.rpc('log_admin_access', {
+        p_user_id: user.id,
+        p_action_type: 'access_granted',
+        p_resource_accessed: 'admin_coin_pool',
+        p_access_granted: true,
+        p_notes: 'Admin accessed coin pool dashboard'
+      }).catch(() => {});
 
     } catch (error: any) {
-      console.error('[AdminCoinPool] Critical error checking admin access:', error);
-      setAdminError(`Critical error: ${error.message || 'Unknown error'}`);
+      setAdminError('Access denied.');
       setCheckingAdmin(false);
       setTimeout(() => navigate('/'), 2000);
     }
