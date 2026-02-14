@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createCheckoutSession } from '../../lib/stripe';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../contexts/AuthContext';
 import { AuthModal } from '../auth/AuthModal';
 
 interface ProductCardProps {

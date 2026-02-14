@@ -4,7 +4,7 @@ import { GlassCard } from '../ui/GlassCard';
 import { GlassButton } from '../ui/GlassButton';
 import { SkillSelectionScreen } from './SkillSelectionScreen';
 import { TiebreakerScreen } from './TiebreakerScreen';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../contexts/AuthContext';
 import { BattleResultSkeleton, BattleResultReveal } from '../ui/HighValueSkeletons';
 import { ShimmerBar, StaggerItem } from '../ui/Shimmer';
 import {

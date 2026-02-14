@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Coins, TrendingUp, ShoppingBag, MessageSquare, Tv, Crown, ArrowUpCircle, ArrowDownCircle, RefreshCw, AlertCircle, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getTransactions } from '../lib/coins';
 import { useCoinBalance } from '../hooks/useCoinBalance';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { markNotificationsRead } from '../lib/notifications';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
 import { SkeletonAvatar } from '../components/ui/SkeletonPresets';

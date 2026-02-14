@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Twitter, Facebook, Gift, CheckCircle } from 'lucide-react';
 import { markSocialPlatformShared, claimSocialSharingReward, getRewardStatus } from '../lib/rewards';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SocialSharingRewardProps {
   username: string;

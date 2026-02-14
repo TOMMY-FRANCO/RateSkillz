@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { ProductCard } from '../components/stripe/ProductCard';
 import { SubscriptionStatus } from '../components/stripe/SubscriptionStatus';
 import { AuthModal } from '../components/auth/AuthModal';

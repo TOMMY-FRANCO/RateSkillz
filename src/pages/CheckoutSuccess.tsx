@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, ArrowRight, Home, Coins, Sparkles } from 'lucide-react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
 export function CheckoutSuccess() {

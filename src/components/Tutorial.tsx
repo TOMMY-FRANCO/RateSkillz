@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, Trophy, Sparkles } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 
 interface TutorialProps {
   isOpen: boolean;

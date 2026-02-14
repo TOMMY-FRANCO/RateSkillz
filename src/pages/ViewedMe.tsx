@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { Eye, UserPlus, UserCheck, UserX, Clock, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { sendFriendRequest, removeFriend } from '../lib/friendRequests';
 import { useTierBadges } from '../hooks/useTierBadges';

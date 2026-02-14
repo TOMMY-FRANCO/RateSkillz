@@ -9,7 +9,7 @@ import {
   subscribeToBattle,
   getBattle,
 } from '../../lib/battleMode';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface TiebreakerScreenProps {
   battle: Battle;

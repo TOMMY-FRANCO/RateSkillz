@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, CheckCircle, Trophy, Lock } from 'lucide-react';
 import { getFriendMilestoneStatus } from '../lib/rewards';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { ShimmerBar, StaggerItem } from './ui/Shimmer';
 import { playSound } from '../lib/sounds';
 

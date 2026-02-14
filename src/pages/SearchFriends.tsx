@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { Search, Filter, X, Loader2, UserPlus, UserCheck, UserX, Clock, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { sendFriendRequest, removeFriend } from '../lib/friendRequests';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
