@@ -1,7 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
+
+declare global {
+  interface Window {
+    grecaptcha: any;
+  }
+}
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -12,8 +18,34 @@ export default function Signup() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = `https://www.google.com/recaptcha/api.js?render=${import.meta.env.VITE_RECAPTCHA_SITE_KEY}`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setRecaptchaLoaded(true);
+    document.body.appendChild(script);
+    return () => { document.body.removeChild(script); };
+  }, []);
+
+  const executeRecaptcha = async (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!window.grecaptcha || !recaptchaLoaded) {
+        reject(new Error('reCAPTCHA not loaded'));
+        return;
+      }
+      window.grecaptcha.ready(() => {
+        window.grecaptcha
+          .execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, { action: 'signup' })
+          .then((token: string) => resolve(token))
+          .catch((err: any) => reject(err));
+      });
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,13 +82,19 @@ export default function Signup() {
       return;
     }
 
-    const { error } = await signUp(email, password, username, fullName, ageNum);
+    try {
+      const recaptchaToken = await executeRecaptcha();
+      const { error } = await signUp(email, password, username, fullName, recaptchaToken, ageNum);
 
-    if (error) {
-      setError(error.message);
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+      } else {
+        navigate('/dashboard');
+      }
+    } catch {
+      setError('Security verification failed. Please refresh and try again.');
       setLoading(false);
-    } else {
-      navigate('/dashboard');
     }
   };
 

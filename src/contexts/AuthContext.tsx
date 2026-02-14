@@ -46,7 +46,7 @@ interface AuthContextType {
   session: { user: { id: string } } | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, username: string, fullName: string, age?: number | null) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, username: string, fullName: string, recaptchaToken: string, age?: number | null) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
@@ -246,24 +246,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [profile?.id]);
 
-  const signUp = async (email: string, password: string, username: string, fullName: string, age?: number | null) => {
+  const signUp = async (email: string, password: string, username: string, fullName: string, recaptchaToken: string, age?: number | null) => {
     if (!supabase) {
-      console.error('[SignUp] Supabase not configured');
       return { error: new Error('Supabase not configured') };
     }
 
+    if (!recaptchaToken) {
+      return { error: new Error('Verification failed. Please refresh and try again.') };
+    }
+
     setLoading(true);
-    console.log('========================================');
-    console.log('[SignUp] STARTING SIGN-UP PROCESS');
-    console.log(`  Email: ${email}`);
-    console.log(`  Username: ${username}`);
-    console.log(`  Full Name: ${fullName}`);
-    console.log(`  Age: ${age || 'not provided'}`);
-    console.log('========================================');
 
     try {
-      // Step 1: Verify with signup-verification Edge Function
-      console.log('[SignUp] [1/5] Running security verification...');
       const verificationResponse = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/signup-verification`,
         {
@@ -274,26 +268,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
           body: JSON.stringify({
             email,
-            recaptchaToken: '',
+            recaptchaToken,
           }),
         }
       );
 
       if (!verificationResponse.ok) {
         const verificationError = await verificationResponse.json();
-        console.error('[SignUp] Verification failed:', verificationError);
         throw new Error(verificationError.error || 'Verification failed');
       }
 
       const verificationData = await verificationResponse.json();
-      console.log('[SignUp] ✓ Security verification passed');
-      console.log(`  Rate limit: ${verificationData.checks.rateLimit ? 'OK' : 'FAIL'}`);
-      console.log(`  Email available: ${verificationData.checks.emailAvailable ? 'OK' : 'FAIL'}`);
-      console.log(`  reCAPTCHA: ${verificationData.checks.recaptcha ? 'OK' : 'FAIL'}`);
-
       const clientIp = verificationData.clientIp;
 
-      console.log('[SignUp] [2/5] Checking username availability...');
       const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
         .select('username')
@@ -301,18 +288,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (checkError && checkError.code !== 'PGRST116') {
-        console.error('[SignUp] Database error checking username:', checkError);
         throw new Error(`Database error: ${checkError.message}`);
       }
 
       if (existingProfile) {
-        console.log('[SignUp] ✗ Username already taken');
         return { error: new Error('Username already taken. Please choose a different username.') };
       }
-
-      console.log('[SignUp] ✓ Username available');
-
-      console.log('[SignUp] [3/5] Creating authentication account...');
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -326,20 +307,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (signUpError) {
-        console.error('[SignUp] Authentication error:', signUpError);
         throw signUpError;
       }
 
       if (!authData.user) {
-        console.error('[SignUp] No user returned from authentication');
         throw new Error('Account creation failed. Please try again.');
       }
-
-      console.log('[SignUp] ✓ Authentication account created');
-      console.log(`  User ID: ${authData.user.id}`);
-
-      console.log('[SignUp] [4/5] Setting up your profile...');
-      console.log('  Waiting for database trigger or creating manually if needed...');
 
       const profileData = await ensureProfileExists(
         authData.user.id,
@@ -353,17 +326,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Profile setup failed. Please try logging in to complete setup.');
       }
 
-      console.log('[SignUp] ✓ Profile setup complete');
-
-      console.log('[SignUp] [5/5] Finalizing account setup...');
-
-      // Increment rate limit counter
       if (clientIp && clientIp !== 'unknown') {
         try {
           await supabase.rpc('increment_signup_count', { p_ip_address: clientIp });
-          console.log('[SignUp] Rate limit counter incremented');
-        } catch (rateLimitError) {
-          console.error('[SignUp] Failed to increment rate limit counter:', rateLimitError);
+        } catch (_) {
         }
       }
 
@@ -371,18 +337,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession({ user: { id: authData.user.id } });
       setProfile(profileData);
 
-      console.log('========================================');
-      console.log('[SignUp] ✓ SIGN-UP COMPLETED SUCCESSFULLY');
-      console.log('========================================');
-
       return { error: null };
     } catch (error: any) {
-      console.error('========================================');
-      console.error('[SignUp] ✗ SIGN-UP FAILED');
-      console.error('  Error:', error.message);
-      if (error.code) console.error('  Code:', error.code);
-      if (error.details) console.error('  Details:', error.details);
-      console.error('========================================');
 
       let errorMessage = 'Failed to create account. Please try again.';
 
