@@ -46,8 +46,7 @@ export default function EditSocialLinks({ isOpen, onClose, userId, currentLinks,
           youtube_url: youtube.trim() || null,
           facebook_url: facebook.trim() || null,
           twitter_url: twitter.trim() || null,
-          tiktok_url: tiktok.trim() || null,
-          updated_at: new Date().toISOString(),
+          tiktok_url: tiktok.trim() || null
         }, {
           onConflict: 'user_id'
         });

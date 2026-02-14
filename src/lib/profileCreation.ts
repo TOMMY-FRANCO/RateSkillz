@@ -69,10 +69,7 @@ export async function createCompleteProfile(
         overall_rating: 50,
         profile_views_count: 0,
         hide_from_leaderboard: hideFromLeaderboard,
-        findable_by_school: findableBySchool,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        last_active: new Date().toISOString()
+        findable_by_school: findableBySchool
       })
       .select()
       .single();
@@ -111,9 +108,7 @@ export async function createCompleteProfile(
         def: 50,
         phy: 50,
         overall: 50,
-        rating_count: 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        rating_count: 0
       });
 
     if (statsError && statsError.code !== '23505') {
@@ -133,10 +128,7 @@ export async function createCompleteProfile(
         current_price: 20.00,
         base_price: 20.00,
         is_listed_for_sale: false,
-        times_traded: 0,
-        acquired_at: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        times_traded: 0
       });
 
     if (cardError && cardError.code !== '23505') {
@@ -150,9 +142,7 @@ export async function createCompleteProfile(
     const { error: socialError } = await supabase
       .from('social_links')
       .insert({
-        user_id: userId,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        user_id: userId
       });
 
     if (socialError && socialError.code !== '23505') {
@@ -166,9 +156,7 @@ export async function createCompleteProfile(
     const { error: presenceError } = await supabase
       .from('user_presence')
       .insert({
-        user_id: userId,
-        last_seen: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        user_id: userId
       });
 
     if (presenceError && presenceError.code !== '23505') {

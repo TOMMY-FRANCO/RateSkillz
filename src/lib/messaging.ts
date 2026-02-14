@@ -245,8 +245,7 @@ export async function setTypingStatus(
       await supabase.from('typing_status').upsert({
         user_id: userId,
         conversation_id: conversationId,
-        is_typing: true,
-        updated_at: new Date().toISOString(),
+        is_typing: true
       });
     } else {
       await supabase

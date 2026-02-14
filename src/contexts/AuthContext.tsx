@@ -475,15 +475,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!profile || !supabase) return { error: new Error('No user logged in') };
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('id', profile.id);
+        .eq('id', profile.id)
+        .select()
+        .single();
 
       if (error) throw error;
 
-      const updatedProfile = { ...profile, ...updates, updated_at: new Date().toISOString() };
-      setProfile(updatedProfile);
+      if (data) {
+        setProfile(data);
+      } else {
+        const updatedProfile = { ...profile, ...updates };
+        setProfile(updatedProfile);
+      }
       return { error: null };
     } catch (error: any) {
       console.error('Update profile error:', error);
