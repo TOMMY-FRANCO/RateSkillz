@@ -3,20 +3,18 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-console.log('🔧 Supabase Configuration Check:');
-console.log('  Supabase URL:', supabaseUrl || '❌ MISSING');
-console.log('  API Key exists:', !!supabaseAnonKey ? '✅ YES' : '❌ NO');
+const missing: string[] = [];
+if (!supabaseUrl) missing.push('VITE_SUPABASE_URL');
+if (!supabaseAnonKey) missing.push('VITE_SUPABASE_ANON_KEY');
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Missing Supabase environment variables!');
-  console.error('  - VITE_SUPABASE_URL:', supabaseUrl ? 'defined' : 'MISSING');
-  console.error('  - VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'defined' : 'MISSING');
-  console.warn('⚠️  App will use localStorage fallback mode');
+if (missing.length > 0) {
+  throw new Error(
+    `Missing required environment variables: ${missing.join(', ')}. ` +
+    'Add them to your .env file and restart the dev server.'
+  );
 }
 
-export const supabase = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null as any;
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export type Profile = {
   id: string;
