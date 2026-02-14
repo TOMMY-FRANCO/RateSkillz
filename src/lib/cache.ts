@@ -117,6 +117,20 @@ class MemoryCache {
 // Singleton instance
 export const cache = new MemoryCache();
 
+// Cleanup interval when the application/window unloads
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    cache.stopCleanup();
+  });
+}
+
+// Hot module reloading cleanup for development
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    cache.stopCleanup();
+  });
+}
+
 /**
  * Cache TTL constants (in milliseconds)
  */
