@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Upload, User, ArrowLeft, Save, Search, Shield, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { uploadAvatar, getAvatarUrl } from '../lib/avatarStorage';
 import SafetyPopup from '../components/SafetyPopup';
 
 interface EducationOption {
@@ -22,6 +23,7 @@ export default function EditProfile() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [avatarPreview, setAvatarPreview] = useState(profile?.avatar_url || '');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPosition, setAvatarPosition] = useState(
     profile?.avatar_position || { x: 0, y: 0, scale: 1 }
   );
@@ -215,17 +217,26 @@ export default function EditProfile() {
       }
 
       const file = e.target.files[0];
-      const reader = new FileReader();
 
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        setAvatarPreview(dataUrl);
-        setShowPositioning(true);
-        setMessage('Use the controls below to position your image');
+      if (file.size > 5 * 1024 * 1024) {
+        setMessage('File size must be less than 5MB');
         setUploading(false);
-      };
+        return;
+      }
 
-      reader.readAsDataURL(file);
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        setMessage('Only image files (JPEG, PNG, GIF, WEBP) are allowed');
+        setUploading(false);
+        return;
+      }
+
+      setAvatarFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      setAvatarPreview(previewUrl);
+      setShowPositioning(true);
+      setMessage('Use the controls below to position your image');
+      setUploading(false);
     } catch (error) {
       setMessage('Error uploading photo: ' + (error as Error).message);
       setUploading(false);
@@ -233,9 +244,30 @@ export default function EditProfile() {
   };
 
   const saveAvatar = async () => {
-    await updateProfile({ avatar_url: avatarPreview, avatar_position: avatarPosition });
-    setShowPositioning(false);
-    setMessage('Photo saved successfully!');
+    if (!avatarFile || !profile) {
+      setMessage('No file selected');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const { path } = await uploadAvatar(avatarFile, profile.id);
+      await updateProfile({ avatar_url: path, avatar_position: avatarPosition });
+
+      if (avatarPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+
+      const publicUrl = getAvatarUrl(path);
+      setAvatarPreview(publicUrl || '');
+      setAvatarFile(null);
+      setShowPositioning(false);
+      setMessage('Photo saved successfully!');
+      setUploading(false);
+    } catch (error) {
+      setMessage('Error saving photo: ' + (error as Error).message);
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

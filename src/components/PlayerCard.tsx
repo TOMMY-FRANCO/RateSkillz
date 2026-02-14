@@ -3,6 +3,7 @@ import { Profile } from '../contexts/AuthContext';
 import { User, Download, Coins, Award } from 'lucide-react';
 import { displayUsername } from '../lib/username';
 import { calculateOverallRating, getCardTier, getTierBadgeColors } from '../lib/cardTiers';
+import { getAvatarUrl } from '../lib/avatarStorage';
 import { VerificationBadge } from './VerificationBadge';
 
 export interface Rating {
@@ -184,7 +185,7 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
             <div className="relative w-[120px] h-[120px] rounded-full overflow-hidden border-4 border-white/20 shadow-xl">
               {profile.avatar_url ? (
                 <img
-                  src={profile.avatar_url}
+                  src={getAvatarUrl(profile.avatar_url) || profile.avatar_url}
                   alt={profile.username}
                   width="120"
                   height="120"
