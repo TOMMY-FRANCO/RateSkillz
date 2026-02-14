@@ -409,6 +409,8 @@ export default function Friends() {
                           <img
                             src={request.profile.avatar_url}
                             alt={request.profile.username}
+                            width="64"
+                            height="64"
                             className="w-16 h-16 rounded-full object-cover border-2 border-cyan-500"
                             loading="lazy"
                           />
@@ -482,6 +484,8 @@ export default function Friends() {
                           <img
                             src={request.profile.avatar_url}
                             alt={request.profile.username}
+                            width="64"
+                            height="64"
                             className="w-16 h-16 rounded-full object-cover border-2 border-gray-600"
                             loading="lazy"
                           />
@@ -546,6 +550,8 @@ export default function Friends() {
                           <img
                             src={friend.profile.avatar_url}
                             alt={friend.profile.username}
+                            width="64"
+                            height="64"
                             className="w-16 h-16 rounded-full object-cover border-2 border-green-500"
                             loading="lazy"
                           />

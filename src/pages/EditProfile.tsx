@@ -321,6 +321,8 @@ export default function EditProfile() {
                   <img
                     src={avatarPreview}
                     alt="Profile"
+                    width="128"
+                    height="128"
                     className="w-full h-full object-cover"
                     style={{
                       transform: `translate(${avatarPosition.x}px, ${avatarPosition.y}px) scale(${avatarPosition.scale})`,

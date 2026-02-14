@@ -136,6 +136,8 @@ export default function Inbox() {
                       <img
                         src={conversation.other_user.avatar_url}
                         alt={conversation.other_user.username}
+                        width="56"
+                        height="56"
                         className="w-14 h-14 rounded-full object-cover"
                         loading="lazy"
                       />

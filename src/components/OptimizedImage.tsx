@@ -7,6 +7,8 @@ interface OptimizedImageProps {
   className?: string;
   fallbackIcon?: React.ReactNode;
   loading?: 'lazy' | 'eager';
+  width?: number | string;
+  height?: number | string;
 }
 
 /**
@@ -23,6 +25,8 @@ export default function OptimizedImage({
   className = '',
   fallbackIcon,
   loading = 'lazy',
+  width,
+  height,
 }: OptimizedImageProps) {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,6 +93,8 @@ export default function OptimizedImage({
         ref={imgRef}
         src={imageSrc || undefined}
         alt={alt}
+        width={width}
+        height={height}
         className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
         onLoad={handleLoad}
         onError={handleError}

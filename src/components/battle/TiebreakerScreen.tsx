@@ -136,6 +136,8 @@ export function TiebreakerScreen({
                   <img
                     src={card.image_url}
                     alt={card.player_name}
+                    width="200"
+                    height="128"
                     className="w-full h-32 object-cover rounded-lg mb-2"
                     loading="lazy"
                   />

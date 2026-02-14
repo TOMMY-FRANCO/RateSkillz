@@ -213,6 +213,8 @@ export default function AddFriendByQR() {
                         <img
                           src={targetProfile.avatar_url}
                           alt={targetProfile.username}
+                          width="64"
+                          height="64"
                           className="w-16 h-16 rounded-xl object-cover"
                           loading="lazy"
                         />

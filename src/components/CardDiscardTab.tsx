@@ -185,6 +185,8 @@ export default function CardDiscardTab() {
                       <img
                         src={card.player_avatar_url}
                         alt={card.player_username}
+                        width="48"
+                        height="48"
                         className="w-12 h-12 rounded-full object-cover"
                         loading="lazy"
                       />
@@ -286,6 +288,8 @@ export default function CardDiscardTab() {
                         <img
                           src={item.player_avatar_url}
                           alt={item.player_username}
+                          width="40"
+                          height="40"
                           className="w-10 h-10 rounded-full object-cover"
                           loading="lazy"
                         />
@@ -355,6 +359,8 @@ export default function CardDiscardTab() {
                   <img
                     src={selectedCard.player_avatar_url}
                     alt={selectedCard.player_username}
+                    width="48"
+                    height="48"
                     className="w-12 h-12 rounded-full object-cover"
                     loading="lazy"
                   />

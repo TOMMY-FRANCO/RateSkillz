@@ -278,6 +278,8 @@ export default function TopManagersTab() {
                       <img
                         src={manager.avatar_url}
                         alt={manager.username}
+                        width="64"
+                        height="64"
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />

@@ -175,6 +175,8 @@ export default function ArenaLeaderboardTab() {
                       <img
                         src={entry.avatar_url}
                         alt={entry.username}
+                        width="48"
+                        height="48"
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />

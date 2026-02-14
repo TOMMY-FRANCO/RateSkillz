@@ -94,6 +94,8 @@ export default function ArenaSelection({ onSelectArena }: ArenaSelectionProps) {
                 <img
                   src={arena.imageUrl}
                   alt={arena.city}
+                  width="128"
+                  height="130"
                   className={`w-full h-full object-cover ${!arena.isActive ? 'grayscale' : 'group-hover:scale-105 transition-transform duration-500'}`}
                   loading="lazy"
                   onError={(e) => {

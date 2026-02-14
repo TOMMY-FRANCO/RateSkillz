@@ -348,6 +348,8 @@ export default function PriceOfCardsTab() {
                       <img
                         src={card.player_avatar_url}
                         alt={card.player_username}
+                        width="64"
+                        height="64"
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />

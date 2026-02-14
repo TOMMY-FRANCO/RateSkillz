@@ -289,6 +289,8 @@ export default function Leaderboard() {
                       <img
                         src={entry.avatar_url}
                         alt={entry.username}
+                        width="64"
+                        height="64"
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
