@@ -2,11 +2,9 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, User, Coins, Crown, Swords, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, User, Swords, RefreshCw } from 'lucide-react';
 import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
-import PriceOfCardsTab from '../components/leaderboard/PriceOfCardsTab';
-import TopManagersTab from '../components/leaderboard/TopManagersTab';
 import ArenaLeaderboardTab from '../components/leaderboard/ArenaLeaderboardTab';
 import { markNotificationsRead } from '../lib/notifications';
 
@@ -23,7 +21,7 @@ interface LeaderboardEntry {
   gender: string | null;
 }
 
-type TabType = 'global' | 'prices' | 'managers' | 'arenas';
+type TabType = 'global' | 'arenas';
 
 export default function Leaderboard() {
   const { profile } = useAuth();
@@ -201,7 +199,7 @@ export default function Leaderboard() {
         )}
 
         <div className="mb-8">
-          <div className="flex justify-center gap-2 flex-wrap">
+          <div className="flex justify-center gap-3">
             <button
               onClick={() => setActiveTab('global')}
               className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
@@ -212,30 +210,6 @@ export default function Leaderboard() {
             >
               <Trophy className="w-5 h-5" />
               <span>Global Rankings</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('prices')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
-                activeTab === 'prices'
-                  ? 'btn-primary'
-                  : 'btn-ghost'
-              }`}
-            >
-              <Coins className="w-5 h-5" />
-              <span>Price of Cards</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('managers')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
-                activeTab === 'managers'
-                  ? 'btn-primary'
-                  : 'btn-ghost'
-              }`}
-            >
-              <Crown className="w-5 h-5" />
-              <span>Top Managers</span>
             </button>
 
             <button
@@ -382,10 +356,6 @@ export default function Leaderboard() {
             )}
           </div>
         )}
-
-        {activeTab === 'prices' && <PriceOfCardsTab />}
-
-        {activeTab === 'managers' && <TopManagersTab />}
 
         {activeTab === 'arenas' && <ArenaLeaderboardTab />}
       </main>
