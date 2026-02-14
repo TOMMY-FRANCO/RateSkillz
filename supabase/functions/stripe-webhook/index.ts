@@ -5,11 +5,6 @@ import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
 const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
 
-console.log('🔧 Stripe Webhook Secret Check:');
-console.log(`   Secret exists: ${!!stripeWebhookSecret}`);
-console.log(`   Secret length: ${stripeWebhookSecret?.length || 0}`);
-console.log(`   Secret format: ${stripeWebhookSecret?.substring(0, 7)}...${stripeWebhookSecret?.substring(stripeWebhookSecret.length - 10)}`);
-
 const stripe = new Stripe(stripeSecret, {
   appInfo: {
     name: 'Bolt Integration',
@@ -32,33 +27,20 @@ Deno.serve(async (req) => {
     const signature = req.headers.get('stripe-signature');
 
     if (!signature) {
-      console.error('❌ No Stripe signature header found');
+      console.error('No Stripe signature header found');
       return new Response('No signature found', { status: 400 });
     }
 
-    console.log('🔍 Signature verification check:');
-    console.log(`   Signature header exists: true`);
-    console.log(`   Signature: ${signature.substring(0, 50)}...`);
-
     const body = await req.text();
-    console.log(`   Body length: ${body.length} bytes`);
-    console.log(`   Body preview: ${body.substring(0, 100)}...`);
 
     let event: Stripe.Event;
 
     try {
-      console.log('🔐 Attempting signature verification...');
       event = await stripe.webhooks.constructEventAsync(body, signature, stripeWebhookSecret);
-      console.log('✅ Signature verification SUCCESSFUL');
-      console.log(`   Event Type: ${event.type}`);
-      console.log(`   Event ID: ${event.id}`);
+      console.log(`Webhook event received: ${event.type} (${event.id})`);
     } catch (error: any) {
-      console.error('❌ Webhook signature verification FAILED');
-      console.error(`   Error: ${error.message}`);
-      console.error(`   Error type: ${error.type}`);
-      console.error(`   Secret format: ${stripeWebhookSecret?.substring(0, 7)}...`);
-      console.error(`   Secret length: ${stripeWebhookSecret?.length}`);
-      return new Response(`Webhook signature verification failed: ${error.message}`, { status: 400 });
+      console.error('Webhook signature verification failed');
+      return new Response('Webhook signature verification failed', { status: 400 });
     }
 
     EdgeRuntime.waitUntil(handleEvent(event));
