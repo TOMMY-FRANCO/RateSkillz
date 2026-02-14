@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Coins, TrendingUp, ShoppingBag, MessageSquare, Tv, Crown, ArrowUpCircle, ArrowDownCircle, RefreshCw, AlertCircle, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getTransactions } from '../lib/coins';
@@ -7,6 +7,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { markNotificationsRead } from '../lib/notifications';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
 import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
+import BalanceDiscrepancyWarning from '../components/BalanceDiscrepancyWarning';
+import { checkBalanceIntegrity } from '../lib/balanceReconciliation';
 
 interface Transaction {
   id: string;
@@ -42,6 +44,16 @@ export default function TransactionHistory() {
   const [refreshingBalance, setRefreshingBalance] = useState(false);
   const { balance: currentBalance, loading: balanceLoading, refetch: refetchBalance } = useCoinBalance();
   const [balanceValidation, setBalanceValidation] = useState<{ isValid: boolean; message: string } | null>(null);
+  const [balanceDiscrepancy, setBalanceDiscrepancy] = useState<{
+    hasDiscrepancy: boolean;
+    profileBalance: number;
+    calculatedBalance: number;
+    discrepancy: number;
+  } | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const touchStartY = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadTransactions(pagination.page);
@@ -83,6 +95,61 @@ export default function TransactionHistory() {
       setRefreshingBalance(false);
     }
   }
+
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+
+    try {
+      const [balanceCheck] = await Promise.all([
+        checkBalanceIntegrity(),
+        loadTransactions(pagination.page),
+        refetchBalance(),
+      ]);
+
+      if (balanceCheck.success && balanceCheck.hasDiscrepancy) {
+        setBalanceDiscrepancy({
+          hasDiscrepancy: true,
+          profileBalance: balanceCheck.profileBalance,
+          calculatedBalance: balanceCheck.calculatedBalance,
+          discrepancy: balanceCheck.discrepancy,
+        });
+      } else {
+        setBalanceDiscrepancy(null);
+      }
+    } catch (error) {
+      console.error('Refresh error:', error);
+    } finally {
+      setIsRefreshing(false);
+      setPullDistance(0);
+    }
+  }, [isRefreshing, pagination.page]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (containerRef.current && containerRef.current.scrollTop === 0) {
+      touchStartY.current = e.touches[0].clientY;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === 0 || isRefreshing) return;
+
+    const touchY = e.touches[0].clientY;
+    const diff = touchY - touchStartY.current;
+
+    if (diff > 0 && containerRef.current && containerRef.current.scrollTop === 0) {
+      setPullDistance(Math.min(diff, 100));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (pullDistance > 60 && !isRefreshing) {
+      handleRefresh();
+    } else {
+      setPullDistance(0);
+    }
+    touchStartY.current = 0;
+  };
 
   function handlePreviousPage() {
     if (pagination.page > 1) {
@@ -200,15 +267,48 @@ export default function TransactionHistory() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-white/80 hover:text-white mb-6 transition-colors"
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900" ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+      {pullDistance > 0 && (
+        <div
+          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-gradient-to-b from-gray-900/90 to-transparent"
+          style={{ height: `${pullDistance}px`, opacity: pullDistance / 100 }}
         >
-          <ArrowLeft className="w-5 h-5" />
-          Back
-        </button>
+          <RefreshCw className={`w-6 h-6 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
+        </div>
+      )}
+
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            Back
+          </button>
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="text-white/80 hover:text-white transition-colors disabled:opacity-50"
+            aria-label="Refresh"
+          >
+            <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+
+        {balanceDiscrepancy && balanceDiscrepancy.hasDiscrepancy && (
+          <BalanceDiscrepancyWarning
+            profileBalance={balanceDiscrepancy.profileBalance}
+            calculatedBalance={balanceDiscrepancy.calculatedBalance}
+            discrepancy={balanceDiscrepancy.discrepancy}
+            onDismiss={() => setBalanceDiscrepancy(null)}
+            onReconciled={() => {
+              setBalanceDiscrepancy(null);
+              loadTransactions(pagination.page);
+              refetchBalance();
+            }}
+          />
+        )}
 
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full mb-4 shadow-lg">

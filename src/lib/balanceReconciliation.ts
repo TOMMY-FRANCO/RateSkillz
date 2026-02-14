@@ -93,3 +93,62 @@ export async function checkBalanceDiscrepancy(userId: string): Promise<{
     };
   }
 }
+
+/**
+ * Pull-based balance integrity check for current user.
+ * Called manually via pull-to-refresh or refresh button.
+ * NO real-time monitoring or automatic triggers.
+ */
+export async function checkBalanceIntegrity(): Promise<{
+  success: boolean;
+  hasDiscrepancy: boolean;
+  profileBalance: number;
+  calculatedBalance: number;
+  discrepancy: number;
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabase.rpc('check_balance_integrity');
+
+    if (error) {
+      console.error('[Balance Integrity] Error:', error);
+      return {
+        success: false,
+        hasDiscrepancy: false,
+        profileBalance: 0,
+        calculatedBalance: 0,
+        discrepancy: 0,
+        error: error.message
+      };
+    }
+
+    if (!data || !data.success) {
+      return {
+        success: false,
+        hasDiscrepancy: false,
+        profileBalance: 0,
+        calculatedBalance: 0,
+        discrepancy: 0,
+        error: data?.error || 'Unknown error'
+      };
+    }
+
+    return {
+      success: true,
+      hasDiscrepancy: data.has_discrepancy || false,
+      profileBalance: parseFloat(data.profile_balance) || 0,
+      calculatedBalance: parseFloat(data.calculated_balance) || 0,
+      discrepancy: parseFloat(data.discrepancy) || 0
+    };
+  } catch (error: any) {
+    console.error('[Balance Integrity] Exception:', error);
+    return {
+      success: false,
+      hasDiscrepancy: false,
+      profileBalance: 0,
+      calculatedBalance: 0,
+      discrepancy: 0,
+      error: error.message
+    };
+  }
+}
