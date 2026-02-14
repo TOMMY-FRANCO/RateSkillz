@@ -574,9 +574,9 @@ export async function getPendingPurchaseRequests(userId: string): Promise<Purcha
     .from('purchase_requests')
     .select(`
       *,
-      buyer:profiles!purchase_requests_buyer_id_fkey(username, full_name),
-      seller:profiles!purchase_requests_seller_id_fkey(username, full_name),
-      card_user:profiles!purchase_requests_card_user_id_fkey(username, full_name)
+      buyer:profiles!buyer_id(username, full_name),
+      seller:profiles!seller_id(username, full_name),
+      card_user:profiles!card_user_id(username, full_name)
     `)
     .eq('seller_id', userId)
     .eq('status', 'pending')

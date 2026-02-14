@@ -176,7 +176,7 @@ export async function getActiveSwapListings(): Promise<SwapListing[]> {
             .from('card_ownership')
             .select(`
               *,
-              profile:profiles!card_ownership_card_user_id_fkey(
+              profile:profiles!card_user_id(
                 id,
                 username,
                 full_name,
@@ -228,7 +228,7 @@ export async function getMySwapListings(userId: string): Promise<SwapListing[]> 
           .from('card_ownership')
           .select(`
             *,
-            profile:profiles!card_ownership_card_user_id_fkey(
+            profile:profiles!card_user_id(
               id,
               username,
               full_name,
@@ -274,7 +274,7 @@ export async function getPendingSwapOffers(userId: string): Promise<CardSwap[]> 
             .from('card_ownership')
             .select(`
               *,
-              profile:profiles!card_ownership_card_user_id_fkey(
+              profile:profiles!card_user_id(
                 id,
                 username,
                 full_name,
@@ -290,7 +290,7 @@ export async function getPendingSwapOffers(userId: string): Promise<CardSwap[]> 
             .from('card_ownership')
             .select(`
               *,
-              profile:profiles!card_ownership_card_user_id_fkey(
+              profile:profiles!card_user_id(
                 id,
                 username,
                 full_name,
@@ -351,7 +351,7 @@ export async function getSwapHistory(userId: string): Promise<CardSwap[]> {
             .from('card_ownership')
             .select(`
               *,
-              profile:profiles!card_ownership_card_user_id_fkey(
+              profile:profiles!card_user_id(
                 id,
                 username,
                 full_name,
@@ -367,7 +367,7 @@ export async function getSwapHistory(userId: string): Promise<CardSwap[]> {
             .from('card_ownership')
             .select(`
               *,
-              profile:profiles!card_ownership_card_user_id_fkey(
+              profile:profiles!card_user_id(
                 id,
                 username,
                 full_name,
@@ -414,7 +414,7 @@ export async function getManagedCards(userId: string): Promise<CardOwnership[]> 
       .from('card_ownership')
       .select(`
         *,
-        profile:profiles!card_ownership_card_user_id_fkey(
+        profile:profiles!card_user_id(
           id,
           username,
           full_name,
