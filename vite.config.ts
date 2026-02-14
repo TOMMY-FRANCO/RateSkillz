@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'icon.svg'],
       manifest: {
-        name: 'Player Cards',
-        short_name: 'PlayerCards',
+        name: 'RatingSkill',
+        short_name: 'RatingSkill',
         description: 'Create, trade, and manage player cards in this immersive gaming platform',
         theme_color: '#0f172a',
         background_color: '#0f172a',

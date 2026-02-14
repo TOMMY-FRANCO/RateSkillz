@@ -1,6 +1,6 @@
 {
-  "name": "Player Cards",
-  "short_name": "PlayerCards",
+  "name": "RatingSkill",
+  "short_name": "RatingSkill",
   "description": "Create, trade, and manage player cards in this immersive gaming platform",
   "start_url": "/",
   "display": "standalone",
