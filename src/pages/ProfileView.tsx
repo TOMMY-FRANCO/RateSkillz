@@ -212,16 +212,20 @@ export default function ProfileView() {
         }
       }
 
-      // Use stats from profile_summary cache
-      const stats = {
-        pac: summaryData.pac_rating || 50,
-        sho: summaryData.sho_rating || 50,
-        pas: summaryData.pas_rating || 50,
-        dri: summaryData.dri_rating || 50,
-        def: summaryData.def_rating || 50,
-        phy: summaryData.phy_rating || 50,
-      };
-      setUserStats(stats);
+      const stats = await getUserStats(profileData.id);
+      if (stats) {
+        setUserStats(stats);
+      } else {
+        setUserStats({
+          pac: summaryData.pac_rating || 50,
+          sho: summaryData.sho_rating || 50,
+          pas: summaryData.pas_rating || 50,
+          dri: summaryData.dri_rating || 50,
+          def: summaryData.def_rating || 50,
+          phy: summaryData.phy_rating || 50,
+          rating_count: 0,
+        } as any);
+      }
 
       if (currentUser && profileData.id !== currentUser.id) {
         const myRatingData = await getMyRatingForUser(currentUser.id, profileData.id);
@@ -712,6 +716,18 @@ export default function ProfileView() {
       )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="text-center mb-2">
+          {userStats === null ? (
+            <p className="text-gray-500 text-sm animate-pulse">Loading ratings...</p>
+          ) : (
+            <p className="text-[#B0B8C8] text-sm sm:text-base">
+              {(userStats?.rating_count || 0) === 0
+                ? 'Card has not been rated yet'
+                : `Card has been rated by ${userStats.rating_count} ${userStats.rating_count === 1 ? 'friend' : 'friends'}`}
+            </p>
+          )}
+        </div>
+
         <div className="flex justify-center mb-4">
           <PlayerCard
             profile={profile}
