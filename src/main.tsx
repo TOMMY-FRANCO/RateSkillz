@@ -7,6 +7,14 @@ import { supabase } from './lib/supabase';
 
 console.log('🚀 main.tsx: Starting app render');
 
+createRoot(document.getElementById('root')!).render(
+  <AuthProvider>
+    <ToastProvider>
+      <App />
+    </ToastProvider>
+  </AuthProvider>
+);
+
 async function syncCoinPoolOnStartup() {
   try {
     console.log('🔄 Running coin pool integrity sync on startup...');
@@ -29,12 +37,4 @@ async function syncCoinPoolOnStartup() {
   }
 }
 
-syncCoinPoolOnStartup();
-
-createRoot(document.getElementById('root')!).render(
-  <AuthProvider>
-    <ToastProvider>
-      <App />
-    </ToastProvider>
-  </AuthProvider>
-);
+setTimeout(syncCoinPoolOnStartup, 3000);

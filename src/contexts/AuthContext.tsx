@@ -191,15 +191,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setProfile(profileData);
             console.log('[Session] Profile loaded successfully');
 
-            // Reconcile balance on app load to fix any discrepancies
-            reconcileUserBalance(session.user.id).catch(error => {
-              console.error('[Session] Balance reconciliation failed:', error);
-            });
+            // Defer reconciliation to after initial render for faster startup
+            setTimeout(() => {
+              // Reconcile balance on app load to fix any discrepancies
+              reconcileUserBalance(session.user.id).catch(error => {
+                console.error('[Session] Balance reconciliation failed:', error);
+              });
 
-            // Reconcile coin pool on app load to fix any pool discrepancies
-            reconcileCoinPool().catch(error => {
-              console.error('[Session] Pool reconciliation failed:', error);
-            });
+              // Reconcile coin pool on app load to fix any pool discrepancies
+              reconcileCoinPool().catch(error => {
+                console.error('[Session] Pool reconciliation failed:', error);
+              });
+            }, 2000);
           } else {
             console.warn('[Session] Could not load profile after retries');
           }

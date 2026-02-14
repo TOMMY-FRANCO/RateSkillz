@@ -233,11 +233,22 @@ export function measureWebVitals(): void {
   if (!('PerformanceObserver' in window)) return;
 
   try {
+    // First Contentful Paint (FCP)
+    const fcpObserver = new PerformanceObserver((list) => {
+      const entries = list.getEntries();
+      entries.forEach((entry: any) => {
+        perfMonitor.recordMetric('web_vital:fcp', entry.startTime);
+        console.log(`⚡ First Contentful Paint: ${entry.startTime.toFixed(2)}ms`);
+      });
+    });
+    fcpObserver.observe({ entryTypes: ['paint'] });
+
     // Largest Contentful Paint (LCP)
     const lcpObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       const lastEntry = entries[entries.length - 1];
       perfMonitor.recordMetric('web_vital:lcp', lastEntry.startTime);
+      console.log(`⚡ Largest Contentful Paint: ${lastEntry.startTime.toFixed(2)}ms`);
     });
     lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
 
@@ -245,7 +256,9 @@ export function measureWebVitals(): void {
     const fidObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       entries.forEach((entry: any) => {
-        perfMonitor.recordMetric('web_vital:fid', entry.processingStart - entry.startTime);
+        const delay = entry.processingStart - entry.startTime;
+        perfMonitor.recordMetric('web_vital:fid', delay);
+        console.log(`⚡ First Input Delay: ${delay.toFixed(2)}ms`);
       });
     });
     fidObserver.observe({ entryTypes: ['first-input'] });
@@ -262,6 +275,15 @@ export function measureWebVitals(): void {
       perfMonitor.recordMetric('web_vital:cls', clsScore);
     });
     clsObserver.observe({ entryTypes: ['layout-shift'] });
+
+    // Log initial page load time
+    if (window.performance && window.performance.timing) {
+      window.addEventListener('load', () => {
+        const loadTime = window.performance.timing.loadEventEnd - window.performance.timing.navigationStart;
+        perfMonitor.recordMetric('page_load_total', loadTime);
+        console.log(`⚡ Page Load Total: ${loadTime.toFixed(2)}ms`);
+      });
+    }
   } catch (error) {
     console.warn('Failed to measure web vitals:', error);
   }

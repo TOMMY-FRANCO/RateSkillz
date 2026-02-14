@@ -1,49 +1,67 @@
-import { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect, useState, lazy, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { measureWebVitals, perfMonitor } from './lib/performance';
+import ErrorBoundary from './components/ErrorBoundary';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
+
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
-import EditProfile from './pages/EditProfile';
-import Friends from './pages/Friends';
-import Settings from './pages/Settings';
-import ProfileView from './pages/ProfileView';
-import Leaderboard from './pages/Leaderboard';
-import PublicCard from './pages/PublicCard';
-import Shop from './pages/Shop';
-import TransactionHistory from './pages/TransactionHistory';
-import WatchAd from './pages/WatchAd';
-import { Store } from './pages/Store';
-import { CheckoutSuccess } from './pages/CheckoutSuccess';
-import TradingDashboard from './pages/TradingDashboard';
-import BattleMode from './pages/BattleMode';
-import Inbox from './pages/Inbox';
-import Chat from './pages/Chat';
-import TermsOfService from './pages/TermsOfService';
-import { VerifyProfile } from './pages/VerifyProfile';
-import SearchFriends from './pages/SearchFriends';
-import ViewedMe from './pages/ViewedMe';
-import BalanceRecovery from './pages/BalanceRecovery';
-import AdminCoinPool from './pages/AdminCoinPool';
-import AdminModeration from './pages/AdminModeration';
-import ShimmerDemo from './pages/ShimmerDemo';
-import AddFriendByQR from './pages/AddFriendByQR';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
-import ErrorBoundary from './components/ErrorBoundary';
-import PWAInstallPrompt from './components/PWAInstallPrompt';
+
+const EditProfile = lazy(() => import('./pages/EditProfile'));
+const Friends = lazy(() => import('./pages/Friends'));
+const Settings = lazy(() => import('./pages/Settings'));
+const ProfileView = lazy(() => import('./pages/ProfileView'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+const PublicCard = lazy(() => import('./pages/PublicCard'));
+const Shop = lazy(() => import('./pages/Shop'));
+const TransactionHistory = lazy(() => import('./pages/TransactionHistory'));
+const WatchAd = lazy(() => import('./pages/WatchAd'));
+const Store = lazy(() => import('./pages/Store').then(m => ({ default: m.Store })));
+const CheckoutSuccess = lazy(() => import('./pages/CheckoutSuccess').then(m => ({ default: m.CheckoutSuccess })));
+const TradingDashboard = lazy(() => import('./pages/TradingDashboard'));
+const BattleMode = lazy(() => import('./pages/BattleMode'));
+const Inbox = lazy(() => import('./pages/Inbox'));
+const Chat = lazy(() => import('./pages/Chat'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const VerifyProfile = lazy(() => import('./pages/VerifyProfile').then(m => ({ default: m.VerifyProfile })));
+const SearchFriends = lazy(() => import('./pages/SearchFriends'));
+const ViewedMe = lazy(() => import('./pages/ViewedMe'));
+const BalanceRecovery = lazy(() => import('./pages/BalanceRecovery'));
+const AdminCoinPool = lazy(() => import('./pages/AdminCoinPool'));
+const AdminModeration = lazy(() => import('./pages/AdminModeration'));
+const ShimmerDemo = lazy(() => import('./pages/ShimmerDemo'));
+const AddFriendByQR = lazy(() => import('./pages/AddFriendByQR'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 
 function LoadingScreen() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center">
-      <div className="text-center">
-        <Loader2 className="w-12 h-12 text-cyan-400 animate-spin mx-auto mb-4" />
-        <p className="text-cyan-400 text-lg font-semibold">Loading RatingSkill...</p>
-        <p className="text-gray-400 text-sm mt-2">Please wait</p>
+      <div className="text-center space-y-6">
+        <div className="relative">
+          <div className="w-16 h-16 mx-auto">
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full opacity-20 animate-pulse"></div>
+            <Loader2 className="w-16 h-16 text-cyan-400 animate-spin relative z-10" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+            RatingSkill
+          </h2>
+          <div className="flex items-center justify-center space-x-1">
+            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          </div>
+        </div>
+        <div className="w-48 h-1 bg-gray-700 rounded-full mx-auto overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 animate-pulse"></div>
+        </div>
       </div>
     </div>
   );
@@ -133,7 +151,8 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <Routes>
+        <Suspense fallback={<LoadingScreen />}>
+          <Routes>
           <Route
             path="/"
             element={
@@ -327,7 +346,8 @@ function App() {
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          </Routes>
+        </Suspense>
         <PWAInstallPrompt />
       </Router>
     </ErrorBoundary>
