@@ -183,7 +183,7 @@ export default function WatchAd() {
             <div className="max-w-xl mx-auto aspect-video bg-black/50 rounded-xl border-2 border-white/20 flex items-center justify-center mb-4">
               <div className="text-center">
                 <div className="text-6xl mb-4">📺</div>
-                <p className="text-white/60">https://www.youtube.com/watch?v=fq3jfvf4KUo...</p>
+                <p className="text-white/60">Ad Playing...</p>
               </div>
             </div>
 
