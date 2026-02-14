@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Mail, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -29,58 +28,29 @@ export default function ForgotPassword() {
     setSuccess(false);
 
     try {
-      // Request password reset token
-      const { data, error: rpcError } = await supabase
-        .rpc('request_password_reset', {
-          p_email: email.trim().toLowerCase()
-        });
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/password-reset-email`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ email: email.trim().toLowerCase() }),
+        }
+      );
 
-      if (rpcError) {
-        console.error('Password reset request error:', rpcError);
-        throw rpcError;
-      }
+      const result = await response.json();
 
-      if (data && !data.success) {
-        setError(data.error || 'Failed to send password reset email');
+      if (!response.ok && result?.error?.includes('Too many')) {
+        setError('Too many password reset requests. Please try again later.');
         return;
       }
 
-      // If successful, send the actual password reset email via edge function
-      if (data && data.success && data.token) {
-        // Call edge function to send email
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/password-reset-email`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            },
-            body: JSON.stringify({
-              email: data.email,
-              token: data.token,
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          console.error('Email sending failed:', await response.text());
-          // Don't show error to user for security reasons
-        }
-      }
-
-      // Show success message regardless (security - don't reveal if email exists)
       setSuccess(true);
       setEmail('');
-    } catch (err: any) {
-      console.error('Error requesting password reset:', err);
-
-      // Check for rate limiting error
-      if (err.message && err.message.includes('Too many')) {
-        setError('Too many password reset requests. Please try again later.');
-      } else {
-        setError('Failed to send password reset email. Please try again.');
-      }
+    } catch (_err) {
+      setError('Failed to send password reset email. Please try again.');
     } finally {
       setLoading(false);
     }

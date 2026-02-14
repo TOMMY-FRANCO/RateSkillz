@@ -9,32 +9,35 @@ export const requestPasswordReset = async (email: string): Promise<{
   message?: string;
 }> => {
   try {
-    const { data, error } = await supabase.rpc('request_password_reset', {
-      p_email: email.trim().toLowerCase()
-    });
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/password-reset-email`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      }
+    );
 
-    if (error) {
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
       return {
         success: false,
-        error: error.message
-      };
-    }
-
-    if (!data || !data.success) {
-      return {
-        success: false,
-        error: data?.error || 'Failed to request password reset'
+        error: result?.error || 'Failed to request password reset',
       };
     }
 
     return {
       success: true,
-      message: data.message
+      message: result.message,
     };
   } catch (error: any) {
     return {
       success: false,
-      error: error.message || 'An unexpected error occurred'
+      error: error.message || 'An unexpected error occurred',
     };
   }
 };
