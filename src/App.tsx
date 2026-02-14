@@ -35,6 +35,7 @@ import AddFriendByQR from './pages/AddFriendByQR';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import ErrorBoundary from './components/ErrorBoundary';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 function LoadingScreen() {
   return (
@@ -327,6 +328,7 @@ function App() {
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <PWAInstallPrompt />
       </Router>
     </ErrorBoundary>
   );
