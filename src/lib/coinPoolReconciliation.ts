@@ -64,7 +64,7 @@ export async function checkCoinPoolDiscrepancy(): Promise<{
   try {
     const { data, error } = await supabase
       .from('coin_pool_verification')
-      .select('*')
+      .select('pool_type, status, discrepancy, recorded_distributed, actual_distributed, recorded_remaining, actual_remaining')
       .eq('pool_type', 'community')
       .maybeSingle();
 

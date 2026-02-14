@@ -83,7 +83,7 @@ export default function ViewedMe() {
     try {
       const { data: cacheData, error: cacheError } = await supabase
         .from('profile_view_cache')
-        .select('*')
+        .select('user_id, last_viewer_id, last_viewer_username, last_viewed_at, recent_viewers_count, overall_rating, position, team, last_seen, updated_at, is_verified')
         .eq('user_id', user.id)
         .maybeSingle();
 

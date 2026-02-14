@@ -63,7 +63,7 @@ export async function getMyRatingForUser(raterId: string, playerId: string): Pro
 
     const { data, error } = await supabase
       .from('ratings')
-      .select('*')
+      .select('id, rater_id, player_id, pac, sho, pas, dri, def, phy, comment, created_at, updated_at')
       .eq('rater_id', raterId)
       .eq('player_id', playerId)
       .maybeSingle();
@@ -92,7 +92,7 @@ export async function getUserStats(userId: string): Promise<UserStats | null> {
 
     const { data, error } = await supabase
       .from('user_stats')
-      .select('*')
+      .select('id, user_id, pac, sho, pas, dri, def, phy, overall, rating_count, created_at, updated_at')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -287,7 +287,7 @@ export async function getAllRatingsForUser(playerId: string): Promise<PlayerRati
 
     const { data, error } = await supabase
       .from('ratings')
-      .select('*')
+      .select('id, rater_id, player_id, pac, sho, pas, dri, def, phy, comment, created_at, updated_at')
       .eq('player_id', playerId);
 
     if (error) {

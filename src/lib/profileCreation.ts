@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
 
+const PROFILE_COLUMNS = 'id, username, full_name, email, avatar_url, avatar_position, bio, position, number, team, height, weight, overall_rating, created_at, updated_at, last_active, terms_accepted_at, username_customized, gender, age, findable_by_school, hide_from_leaderboard, coin_balance, friend_count, is_verified, is_manager, is_admin, is_banned, profile_views_count, has_social_badge, manager_wins';
+
 export interface ProfileCreationResult {
   success: boolean;
   profile?: any;
@@ -85,7 +87,7 @@ export async function createCompleteProfile(
         console.log('[1/5] ✓ Profile already exists (conflict), fetching...');
         const { data: existingProfile } = await supabase
           .from('profiles')
-          .select('*')
+          .select(PROFILE_COLUMNS)
           .eq('id', userId)
           .single();
 
@@ -214,7 +216,7 @@ export async function waitForProfile(
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select(PROFILE_COLUMNS)
       .eq('id', userId)
       .maybeSingle();
 
@@ -253,7 +255,7 @@ export async function ensureProfileExists(
     console.log('[EnsureProfile] ✓ Profile already exists, fetching...');
     const { data } = await supabase
       .from('profiles')
-      .select('*')
+      .select(PROFILE_COLUMNS)
       .eq('id', userId)
       .single();
 

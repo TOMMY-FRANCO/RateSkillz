@@ -132,7 +132,7 @@ export async function cancelBattle(battleId: string, userId: string) {
 export async function getUserBattles(userId: string): Promise<Battle[]> {
   const { data, error } = await supabase
     .from('battles')
-    .select('*')
+    .select('id, manager1_id, manager2_id, wager_amount, status, created_at, completed_at, winner_id, current_turn_user_id, turn_started_at, first_player_id, card_selections, used_skills, player1_remaining_cards, player2_remaining_cards, is_tiebreaker')
     .or(`manager1_id.eq.${userId},manager2_id.eq.${userId}`)
     .order('created_at', { ascending: false })
     .limit(20);
@@ -144,7 +144,7 @@ export async function getUserBattles(userId: string): Promise<Battle[]> {
 export async function getBattle(battleId: string): Promise<Battle> {
   const { data, error } = await supabase
     .from('battles')
-    .select('*')
+    .select('id, manager1_id, manager2_id, wager_amount, status, created_at, completed_at, winner_id, current_turn_user_id, turn_started_at, first_player_id, card_selections, used_skills, player1_remaining_cards, player2_remaining_cards, is_tiebreaker')
     .eq('id', battleId)
     .single();
 

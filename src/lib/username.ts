@@ -126,7 +126,7 @@ export async function getUsernameHistory(userId: string) {
   try {
     const { data, error } = await supabase
       .from('username_history')
-      .select('*')
+      .select('id, user_id, old_username, new_username, changed_at')
       .eq('user_id', userId)
       .order('changed_at', { ascending: false })
       .limit(10);

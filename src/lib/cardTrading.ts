@@ -73,10 +73,12 @@ export interface CardSaleResult {
 }
 
 
+const CARD_CACHE_COLUMNS = 'card_user_id, owner_id, current_price, base_price, is_listed_for_sale, times_traded, last_sale_price, acquired_at, card_user_username, original_owner_username, card_user_avatar, owner_username, owner_avatar';
+
 export async function getCardOwnership(cardUserId: string): Promise<CardOwnership | null> {
   const { data, error } = await supabase
     .from('card_market_cache')
-    .select('*')
+    .select(CARD_CACHE_COLUMNS)
     .eq('card_user_id', cardUserId)
     .maybeSingle();
 
@@ -93,7 +95,7 @@ export async function getCardOwnership(cardUserId: string): Promise<CardOwnershi
 export async function getCardsOwnedByUser(userId: string): Promise<CardOwnership[]> {
   const { data, error } = await supabase
     .from('card_market_cache')
-    .select('*')
+    .select(CARD_CACHE_COLUMNS)
     .eq('owner_id', userId)
     .neq('card_user_id', userId)
     .order('acquired_at', { ascending: false });
@@ -125,7 +127,7 @@ export async function getCardsOwnedByUser(userId: string): Promise<CardOwnership
 export async function getCardTransactionHistory(cardUserId: string): Promise<CardTransaction[]> {
   const { data, error } = await supabase
     .from('card_transactions')
-    .select('*')
+    .select('id, card_user_id, seller_id, buyer_id, sale_price, transaction_type, created_at, card_value_at_sale, previous_value, new_value')
     .eq('card_user_id', cardUserId)
     .order('created_at', { ascending: false })
     .limit(20);
@@ -154,7 +156,7 @@ export async function getPortfolioValue(userId: string): Promise<number> {
 export async function getMostValuableCards(limit: number = 10): Promise<CardOwnership[]> {
   const { data, error } = await supabase
     .from('card_market_cache')
-    .select('*')
+    .select(CARD_CACHE_COLUMNS)
     .order('current_price', { ascending: false })
     .limit(limit);
 
@@ -169,7 +171,7 @@ export async function getMostValuableCards(limit: number = 10): Promise<CardOwne
 export async function getMostTradedCards(limit: number = 10): Promise<CardOwnership[]> {
   const { data, error } = await supabase
     .from('card_market_cache')
-    .select('*')
+    .select(CARD_CACHE_COLUMNS)
     .order('times_traded', { ascending: false })
     .limit(limit);
 
@@ -322,7 +324,7 @@ export async function checkPurchaseRestrictionsBatch(
 export async function getListedCardsForSale(): Promise<CardOwnership[]> {
   const { data, error } = await supabase
     .from('card_market_cache')
-    .select('*')
+    .select(CARD_CACHE_COLUMNS)
     .eq('is_listed_for_sale', true)
     .order('current_price', { ascending: true });
 
@@ -374,7 +376,7 @@ export interface PurchaseRequest {
 export async function getNotBoughtCards(): Promise<CardWithRatings[]> {
   const { data: cards, error } = await supabase
     .from('card_market_cache')
-    .select('*')
+    .select(CARD_CACHE_COLUMNS)
     .eq('times_traded', 0)
     .order('acquired_at', { ascending: false });
 
@@ -436,7 +438,7 @@ export async function getNotBoughtCards(): Promise<CardWithRatings[]> {
 export async function getNoManagerCards(): Promise<CardWithRatings[]> {
   const { data: cards, error } = await supabase
     .from('card_market_cache')
-    .select('*')
+    .select(CARD_CACHE_COLUMNS)
     .gt('times_traded', 0)
     .order('current_price', { ascending: true });
 

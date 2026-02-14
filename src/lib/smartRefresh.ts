@@ -82,7 +82,7 @@ class SmartRefresh {
 
     let query = supabase
       .from('profiles')
-      .select('*');
+      .select('id, username, full_name, email, avatar_url, avatar_position, bio, position, number, team, height, weight, overall_rating, created_at, updated_at, last_active, terms_accepted_at, username_customized, gender, age, coin_balance, friend_count, is_verified, is_manager, is_admin, is_banned, profile_views_count, has_social_badge, manager_wins');
 
     if (lastRefresh) {
       // Only fetch profiles updated since last refresh
@@ -112,7 +112,7 @@ class SmartRefresh {
 
     let query = supabase
       .from('messages')
-      .select('*')
+      .select('id, conversation_id, sender_id, recipient_id, content, is_read, read_at, created_at')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
@@ -140,7 +140,7 @@ class SmartRefresh {
 
     let query = supabase
       .from('notifications')
-      .select('*')
+      .select('id, user_id, actor_id, type, message, metadata, is_read, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
@@ -168,7 +168,7 @@ class SmartRefresh {
 
     let query = supabase
       .from('card_market_cache')
-      .select('*');
+      .select('card_user_id, owner_id, current_price, base_price, is_listed_for_sale, times_traded, last_sale_price, acquired_at, updated_at, card_user_username, original_owner_username, card_user_avatar, owner_username, owner_avatar');
 
     if (lastRefresh) {
       // Only fetch cards updated since last refresh
@@ -206,7 +206,7 @@ class SmartRefresh {
 
     const { data, error } = await supabase
       .from('leaderboard_cache')
-      .select('*')
+      .select('rank, user_id, overall_rating, username, avatar_url, position, team, gender, updated_at')
       .order('rank', { ascending: true })
       .limit(100);
 
@@ -238,7 +238,7 @@ class SmartRefresh {
 
     let query = supabase
       .from('friends')
-      .select('*')
+      .select('id, user_id, friend_id, status, created_at')
       .or(`user_id.eq.${userId},friend_id.eq.${userId}`);
 
     if (lastRefresh) {

@@ -123,7 +123,7 @@ export default function ProfileView() {
       // Use profile_summary cache for optimized query
       const { data: summaryData, error: summaryError } = await supabase
         .from('profile_summary')
-        .select('*')
+        .select('user_id, username, full_name, avatar_url, bio, position, team, age, overall_rating, is_verified, is_manager, is_admin, is_banned, friend_count, last_seen, created_at, manager_wins, pac_rating, sho_rating, pas_rating, dri_rating, def_rating, phy_rating')
         .eq('username', username)
         .maybeSingle();
 
@@ -194,7 +194,7 @@ export default function ProfileView() {
       if (currentUser && profileData.id !== currentUser.id) {
         const { data: friendData } = await supabase
           .from('friends')
-          .select('*')
+          .select('id, user_id, friend_id, status')
           .or(`and(user_id.eq.${currentUser.id},friend_id.eq.${profileData.id}),and(user_id.eq.${profileData.id},friend_id.eq.${currentUser.id})`)
           .maybeSingle();
 
@@ -245,7 +245,7 @@ export default function ProfileView() {
 
       const { data: commentsData } = await supabase
         .from('comments')
-        .select('*')
+        .select('id, profile_id, user_id, content, upvotes, downvotes, username, created_at')
         .eq('profile_id', profileData.id)
         .order('created_at', { ascending: false });
 
@@ -254,7 +254,7 @@ export default function ProfileView() {
       if (currentUser && commentsData) {
         const { data: votesData } = await supabase
           .from('comment_votes')
-          .select('*')
+          .select('id, comment_id, user_id, is_upvote')
           .eq('user_id', currentUser.id)
           .in('comment_id', commentsData.map(c => c.id));
 
@@ -267,7 +267,7 @@ export default function ProfileView() {
 
       const { data: likesData } = await supabase
         .from('profile_likes')
-        .select('*')
+        .select('id, profile_id, user_id, is_like')
         .eq('profile_id', profileData.id);
 
       const likesCount = likesData?.filter((l) => l.is_like).length || 0;

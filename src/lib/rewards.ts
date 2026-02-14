@@ -122,7 +122,7 @@ export async function getFriendMilestoneClaimedCount(userId: string): Promise<nu
   try {
     const { count, error } = await supabase
       .from('reward_logs')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('reward_type', 'friend_milestone_per_friend')
       .eq('status', 'claimed');
@@ -154,7 +154,7 @@ export async function getRewardStatus(userId: string): Promise<RewardStatus | nu
         .maybeSingle(),
       supabase
         .from('reward_logs')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
         .eq('reward_type', 'friend_milestone_per_friend')
         .eq('status', 'claimed'),
@@ -184,7 +184,7 @@ export async function getRewardLogs(userId: string) {
   try {
     const { data, error } = await supabase
       .from('reward_logs')
-      .select('*')
+      .select('id, user_id, reward_type, amount, status, claimed_date, milestone_level, metadata')
       .eq('user_id', userId)
       .order('claimed_date', { ascending: false });
 

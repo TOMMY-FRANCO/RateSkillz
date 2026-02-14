@@ -41,7 +41,7 @@ export async function getUserPresence(userId: string): Promise<UserPresence | nu
   try {
     const { data, error } = await supabase
       .from('user_presence')
-      .select('*')
+      .select('user_id, last_seen, updated_at')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -65,7 +65,7 @@ export async function getMultipleUserPresence(userIds: string[]): Promise<Map<st
   try {
     const { data, error } = await supabase
       .from('user_presence')
-      .select('*')
+      .select('user_id, last_seen, updated_at')
       .in('user_id', userIds);
 
     if (error) {

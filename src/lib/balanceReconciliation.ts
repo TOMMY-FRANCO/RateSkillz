@@ -65,7 +65,7 @@ export async function checkBalanceDiscrepancy(userId: string): Promise<{
   try {
     const { data, error } = await supabase
       .from('balance_verification')
-      .select('*')
+      .select('user_id, status, discrepancy, profile_balance, latest_transaction_balance')
       .eq('user_id', userId)
       .maybeSingle();
 

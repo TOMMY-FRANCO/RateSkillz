@@ -69,7 +69,7 @@ export default function Friends() {
     try {
       const { data: friendsData, error: fetchError } = await supabase
         .from('friends')
-        .select('*')
+        .select('id, user_id, friend_id, status, created_at')
         .or(`user_id.eq.${currentUser.id},friend_id.eq.${currentUser.id}`);
 
       if (fetchError) {
@@ -84,7 +84,7 @@ export default function Friends() {
 
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, username, full_name, avatar_url, overall_rating, is_verified, has_social_badge')
           .in('id', allOtherUserIds);
 
         if (profilesError) throw profilesError;

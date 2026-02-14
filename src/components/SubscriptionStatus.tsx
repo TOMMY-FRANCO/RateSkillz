@@ -25,7 +25,7 @@ export function SubscriptionStatus() {
     try {
       const { data, error } = await supabase
         .from('stripe_user_subscriptions')
-        .select('*')
+        .select('subscription_status, price_id, current_period_end, cancel_at_period_end')
         .single();
 
       if (error && error.code !== 'PGRST116') {

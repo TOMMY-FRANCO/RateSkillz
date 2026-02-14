@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, User, Coins, Crown } from 'lucide-react';
+import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, User, Coins, Crown, Swords } from 'lucide-react';
 import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
 import PriceOfCardsTab from '../components/leaderboard/PriceOfCardsTab';
 import TopManagersTab from '../components/leaderboard/TopManagersTab';
+import ArenaLeaderboardTab from '../components/leaderboard/ArenaLeaderboardTab';
 import { markNotificationsRead } from '../lib/notifications';
 
 interface LeaderboardEntry {
@@ -22,7 +23,7 @@ interface LeaderboardEntry {
   gender: string | null;
 }
 
-type TabType = 'global' | 'prices' | 'managers';
+type TabType = 'global' | 'prices' | 'managers' | 'arenas';
 
 export default function Leaderboard() {
   const { profile } = useAuth();
@@ -46,7 +47,7 @@ export default function Leaderboard() {
       // Use leaderboard_cache for optimized query
       const { data, error } = await supabase
         .from('leaderboard_cache')
-        .select('*')
+        .select('rank, user_id, overall_rating, username, avatar_url, position, team, gender')
         .order('rank', { ascending: true });
 
       if (error) throw error;
@@ -165,6 +166,18 @@ export default function Leaderboard() {
             >
               <Crown className="w-5 h-5" />
               <span>Top Managers</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('arenas')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
+                activeTab === 'arenas'
+                  ? 'btn-primary'
+                  : 'btn-ghost'
+              }`}
+            >
+              <Swords className="w-5 h-5" />
+              <span>Arenas</span>
             </button>
           </div>
         </div>
@@ -300,6 +313,8 @@ export default function Leaderboard() {
         {activeTab === 'prices' && <PriceOfCardsTab />}
 
         {activeTab === 'managers' && <TopManagersTab />}
+
+        {activeTab === 'arenas' && <ArenaLeaderboardTab />}
       </main>
     </div>
   );

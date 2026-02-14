@@ -162,7 +162,7 @@ export async function getActiveSwapListings(): Promise<SwapListing[]> {
   try {
     const { data: listings, error } = await supabase
       .from('card_swap_listings')
-      .select('*')
+      .select('id, user_id, card_user_id, listed_at, status, created_at')
       .eq('status', 'active')
       .order('listed_at', { ascending: false });
 
@@ -214,7 +214,7 @@ export async function getMySwapListings(userId: string): Promise<SwapListing[]> 
   try {
     const { data: listings, error } = await supabase
       .from('card_swap_listings')
-      .select('*')
+      .select('id, user_id, card_user_id, listed_at, status, created_at')
       .eq('user_id', userId)
       .eq('status', 'active')
       .order('listed_at', { ascending: false });
@@ -259,7 +259,7 @@ export async function getPendingSwapOffers(userId: string): Promise<CardSwap[]> 
   try {
     const { data: swaps, error } = await supabase
       .from('card_swaps')
-      .select('*')
+      .select('id, manager_a_id, manager_b_id, card_a_user_id, card_b_user_id, status, initiated_by, created_at, completed_at')
       .eq('status', 'pending')
       .or(`manager_a_id.eq.${userId},manager_b_id.eq.${userId}`)
       .order('created_at', { ascending: false });
@@ -335,7 +335,7 @@ export async function getSwapHistory(userId: string): Promise<CardSwap[]> {
   try {
     const { data: swaps, error } = await supabase
       .from('card_swaps')
-      .select('*')
+      .select('id, manager_a_id, manager_b_id, card_a_user_id, card_b_user_id, status, initiated_by, created_at, completed_at')
       .eq('status', 'completed')
       .or(`manager_a_id.eq.${userId},manager_b_id.eq.${userId}`)
       .order('completed_at', { ascending: false })

@@ -31,7 +31,7 @@ export async function fetchAllTierBadges(): Promise<{ data: TierBadge[] | null; 
   try {
     const { data, error } = await supabase
       .from('tier_badges')
-      .select('*')
+      .select('id, tier_name, overall_rating_min, overall_rating_max, color_code, metallic_property, gradient_from, gradient_via, gradient_to, border_color, glow_color, shimmer_gradient')
       .order('overall_rating_min', { ascending: true });
 
     if (error) {
@@ -52,7 +52,7 @@ export async function getTierByRating(rating: number): Promise<{ data: TierBadge
 
     const { data, error } = await supabase
       .from('tier_badges')
-      .select('*')
+      .select('id, tier_name, overall_rating_min, overall_rating_max, color_code, metallic_property, gradient_from, gradient_via, gradient_to, border_color, glow_color, shimmer_gradient')
       .lte('overall_rating_min', rating)
       .gte('overall_rating_max', rating)
       .maybeSingle();

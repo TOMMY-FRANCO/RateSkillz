@@ -65,7 +65,7 @@ export async function getUserConversations(userId: string): Promise<Conversation
   try {
     const { data: conversations, error } = await supabase
       .from('conversations')
-      .select('*')
+      .select('id, user_one_id, user_two_id, last_message_at, last_message_preview, created_at')
       .or(`user_one_id.eq.${userId},user_two_id.eq.${userId}`)
       .order('last_message_at', { ascending: false, nullsFirst: false });
 
@@ -124,7 +124,7 @@ export async function getConversationMessages(conversationId: string): Promise<M
   try {
     const { data, error } = await supabase
       .from('messages')
-      .select('*')
+      .select('id, conversation_id, sender_id, recipient_id, content, is_read, read_at, created_at')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
@@ -211,7 +211,7 @@ export async function getUserStatus(userId: string): Promise<UserStatus | null> 
   try {
     const { data, error } = await supabase
       .from('user_presence')
-      .select('*')
+      .select('user_id, last_seen, updated_at')
       .eq('user_id', userId)
       .maybeSingle();
 

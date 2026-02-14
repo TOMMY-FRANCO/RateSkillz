@@ -34,7 +34,7 @@ export default function PublicCard() {
     try {
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, username, full_name, avatar_url, avatar_position, bio, position, number, team, height, weight, overall_rating, is_verified, has_social_badge, friend_count, profile_views_count, coin_balance, created_at, profile_picture_url')
         .eq('username', username)
         .maybeSingle();
 
@@ -55,7 +55,7 @@ export default function PublicCard() {
 
       const { data: socialLinksData } = await supabase
         .from('social_links')
-        .select('*')
+        .select('user_id, instagram, snapchat, tiktok, youtube, twitter, facebook, website, created_at, updated_at')
         .eq('user_id', profileData.id)
         .maybeSingle();
 
@@ -65,7 +65,7 @@ export default function PublicCard() {
 
       const { data: likesData } = await supabase
         .from('profile_likes')
-        .select('*')
+        .select('id')
         .eq('profile_id', profileData.id)
         .eq('is_like', true);
       setLikesCount(likesData?.length || 0);

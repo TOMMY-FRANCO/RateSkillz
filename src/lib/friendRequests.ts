@@ -109,7 +109,7 @@ export async function getFriendRequests(userId: string) {
   try {
     const { data, error } = await supabase
       .from('friends')
-      .select('*')
+      .select('id, user_id, friend_id, status, created_at')
       .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
       .order('created_at', { ascending: false });
 
@@ -125,7 +125,7 @@ export async function getFriendCount(userId: string) {
   try {
     const { count, error } = await supabase
       .from('friends')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact', head: true })
       .eq('status', 'accepted')
       .or(`user_id.eq.${userId},friend_id.eq.${userId}`);
 
