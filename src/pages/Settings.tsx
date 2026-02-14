@@ -32,7 +32,7 @@ export default function Settings() {
       fetchPendingRequests();
       fetchVerificationStatus();
     }
-  }, [profile]);
+  }, [profile?.id]);
 
   const fetchVerificationStatus = async () => {
     if (!profile) return;

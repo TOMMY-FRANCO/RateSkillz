@@ -54,7 +54,7 @@ export default function Dashboard() {
         setShowUsernamePrompt(true);
       }
     }
-  }, [profile]);
+  }, [profile?.id]);
 
   const loadDashboardData = async () => {
     if (!profile) return;

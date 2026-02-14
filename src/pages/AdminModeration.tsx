@@ -61,7 +61,7 @@ export default function AdminModeration() {
     }
 
     verifyAdmin();
-  }, [profile, navigate]);
+  }, [profile?.id, navigate]);
 
   const loadCases = async () => {
     console.log('[AdminModeration] Starting to load cases...');

@@ -120,7 +120,7 @@ export default function TradingDashboard() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [profile]);
+  }, [profile?.id]);
 
   const handleRefresh = () => {
     if (refreshing) return;

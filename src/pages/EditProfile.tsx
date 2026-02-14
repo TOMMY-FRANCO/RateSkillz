@@ -56,7 +56,7 @@ export default function EditProfile() {
     if (profile) {
       loadCurrentEducation();
     }
-  }, [profile]);
+  }, [profile?.id]);
 
   const loadCurrentEducation = async () => {
     if (!profile) return;
