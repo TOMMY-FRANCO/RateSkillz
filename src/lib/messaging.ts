@@ -188,7 +188,7 @@ export async function getUnreadCount(userId: string): Promise<number> {
   }
 }
 
-export async function updateUserStatus(userId: string, isOnline: boolean): Promise<void> {
+export async function updateUserStatus(userId: string): Promise<void> {
   try {
     const now = new Date().toISOString();
     const { error } = await supabase
