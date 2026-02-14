@@ -180,11 +180,14 @@ export default function WatchAd() {
               <p className="text-white/60">Please keep watching...</p>
             </div>
 
-            <div className="max-w-xl mx-auto aspect-video bg-black/50 rounded-xl border-2 border-white/20 flex items-center justify-center mb-4">
-              <div className="text-center">
-                <div className="text-6xl mb-4">📺</div>
-                <p className="text-white/60">Ad Playing...</p>
-              </div>
+            <div className="max-w-xl mx-auto aspect-video rounded-xl border-2 border-white/20 overflow-hidden mb-4">
+              <iframe
+                className="w-full h-full"
+                src="https://www.youtube.com/embed/fq3jfvf4KUo?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0"
+                title="Ad Video"
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+              />
             </div>
 
             <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
