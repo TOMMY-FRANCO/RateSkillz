@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
+import { validatePassword, getPasswordRequirements } from '../lib/passwordValidation';
 
 declare global {
   interface Window {
@@ -58,8 +59,9 @@ export default function Signup() {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    const validation = validatePassword(password);
+    if (!validation.isValid) {
+      setError(validation.error || 'Invalid password');
       setLoading(false);
       return;
     }
@@ -176,9 +178,9 @@ export default function Signup() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full"
-                  placeholder="••••••••"
+                  placeholder="8+ chars, 1 number, 1 symbol (!@#$%^&*)"
                 />
-                <p className="mt-1 text-xs text-[#6B7280]">Minimum 6 characters</p>
+                <p className="mt-1 text-xs text-[#6B7280]">{getPasswordRequirements()}</p>
               </div>
 
               <div>

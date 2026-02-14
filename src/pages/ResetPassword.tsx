@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { Lock, Loader2, CheckCircle, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { validatePassword, getPasswordRequirements } from '../lib/passwordValidation';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -67,8 +68,9 @@ export default function ResetPassword() {
       return;
     }
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+    const validation = validatePassword(password);
+    if (!validation.isValid) {
+      setError(validation.error || 'Invalid password');
       return;
     }
 
@@ -234,7 +236,7 @@ export default function ResetPassword() {
                     setPassword(e.target.value);
                     if (error) setError('');
                   }}
-                  placeholder="Enter new password (min 8 characters)"
+                  placeholder="8+ chars, 1 number, 1 symbol (!@#$%^&*)"
                   className="w-full px-4 py-3 pr-12 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                   disabled={submitting}
                   autoComplete="new-password"
@@ -247,6 +249,7 @@ export default function ResetPassword() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              <p className="text-xs text-gray-400 mt-2">{getPasswordRequirements()}</p>
             </div>
 
             <div>

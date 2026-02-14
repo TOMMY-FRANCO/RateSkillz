@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { validatePassword, getPasswordRequirements } from '../../lib/passwordValidation';
 import { OAuthButtons } from './OAuthButtons';
 
 interface SignupFormProps {
@@ -25,8 +26,9 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    const validation = validatePassword(password);
+    if (!validation.isValid) {
+      setError(validation.error || 'Invalid password');
       return;
     }
 
@@ -98,8 +100,9 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
             onChange={(e) => setPassword(e.target.value)}
             required
             className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/40 focus:outline-none focus:border-[#00E0FF]/50 transition-colors"
-            placeholder="At least 6 characters"
+            placeholder="8+ chars, 1 number, 1 symbol (!@#$%^&*)"
           />
+          <p className="text-xs text-white/50 mt-1">{getPasswordRequirements()}</p>
         </div>
 
         <div>

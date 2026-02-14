@@ -39,12 +39,44 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Validate password length
+    // Validate password requirements
     if (new_password.length < 8) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Password must be at least 8 characters long"
+          error: "Password must be at least 8 characters"
+        }),
+        {
+          status: 400,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    if (!/\d/.test(new_password)) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Password must contain at least 1 number"
+        }),
+        {
+          status: 400,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    if (!/[!@#$%^&*]/.test(new_password)) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Password must contain at least 1 symbol (!@#$%^&*)"
         }),
         {
           status: 400,
