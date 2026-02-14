@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   playNotificationSound,
-  getSoundNameForNotificationType,
   type NotificationType,
 } from '../lib/notificationSoundPreferences';
-import { getAudioPreferences } from '../lib/sounds';
 
 interface NotificationBadgeProps {
   count: number;
@@ -24,21 +22,12 @@ export default function NotificationBadge({
   const [fadingOut, setFadingOut] = useState(false);
 
   useEffect(() => {
-    // Play sound only if:
-    // 1. Count increased
-    // 2. User ID is provided
-    // 3. Notification type is provided
-    // 4. Master audio is enabled
-    const audioPrefs = getAudioPreferences();
-
     if (
       count > prevCountRef.current &&
       prevCountRef.current >= 0 &&
       userId &&
-      notificationType &&
-      audioPrefs.master
+      notificationType
     ) {
-      // Play sound with preferences check
       playNotificationSound(userId, notificationType).catch((error) => {
         console.error('Error playing notification sound:', error);
       });

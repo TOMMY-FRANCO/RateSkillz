@@ -12,32 +12,6 @@ type SoundName =
   | 'message-sent'
   | 'message-received';
 
-type SoundCategory = 'transactions' | 'battles' | 'notifications';
-
-const SOUND_CATEGORIES: Record<SoundName, SoundCategory> = {
-  'coin-purchase': 'transactions',
-  'battle-win': 'battles',
-  'battle-loss': 'battles',
-  'rank-up': 'notifications',
-  'rank-down': 'notifications',
-  'notification': 'notifications',
-  'coin-received': 'transactions',
-  'friend-request': 'notifications',
-  'card-swap': 'transactions',
-  'milestone': 'notifications',
-  'message-sent': 'notifications',
-  'message-received': 'notifications',
-};
-
-interface AudioPreferences {
-  master: boolean;
-  transactions: boolean;
-  battles: boolean;
-  notifications: boolean;
-}
-
-const PREFS_KEY = 'ratingskill_audio_prefs';
-
 let audioCtx: AudioContext | null = null;
 let unlocked = false;
 
@@ -86,27 +60,6 @@ function setupUnlockListeners() {
 
 if (typeof window !== 'undefined') {
   setupUnlockListeners();
-}
-
-export function getAudioPreferences(): AudioPreferences {
-  try {
-    const raw = localStorage.getItem(PREFS_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return { master: true, transactions: true, battles: true, notifications: true };
-}
-
-export function setAudioPreferences(prefs: AudioPreferences) {
-  try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
-  } catch {}
-}
-
-function isSoundAllowed(name: SoundName): boolean {
-  const prefs = getAudioPreferences();
-  if (!prefs.master) return false;
-  const category = SOUND_CATEGORIES[name];
-  return prefs[category];
 }
 
 function tone(
@@ -234,7 +187,6 @@ const SYNTH: Record<SoundName, (ctx: AudioContext) => void> = {
 
 export function playSound(name: SoundName) {
   try {
-    if (!isSoundAllowed(name)) return;
     const ctx = getContext();
     if (!ctx) return;
     if (ctx.state === 'suspended') {
@@ -255,17 +207,4 @@ export function playSoundPreview(name: SoundName) {
   } catch {}
 }
 
-const CATEGORY_PREVIEW: Record<SoundCategory | 'master', SoundName> = {
-  master: 'notification',
-  transactions: 'coin-purchase',
-  battles: 'battle-win',
-  notifications: 'notification',
-};
-
-export function getPreviewSoundForCategory(
-  category: SoundCategory | 'master'
-): SoundName {
-  return CATEGORY_PREVIEW[category];
-}
-
-export type { SoundName, SoundCategory, AudioPreferences };
+export type { SoundName };

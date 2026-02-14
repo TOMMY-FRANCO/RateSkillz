@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, LogOut, User, Bell, FileText, Shield, UserCheck, Volume2 } from 'lucide-react';
+import { ArrowLeft, LogOut, User, Bell, FileText, Shield, UserCheck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import UsernameChanger from '../components/UsernameChanger';
 import { displayUsername } from '../lib/username';
 import { WhatsAppVerification } from '../components/WhatsAppVerification';
 import { VerificationBadge } from '../components/VerificationBadge';
-import { useSoundEffects } from '../hooks/useSoundEffects';
-import { playSoundPreview, getPreviewSoundForCategory } from '../lib/sounds';
-import { logAudioToggle } from '../lib/soundAnalytics';
+import { playSoundPreview } from '../lib/sounds';
 import { useNotificationSoundPreferences } from '../hooks/useNotificationSoundPreferences';
 import { getSoundNameForNotificationType } from '../lib/notificationSoundPreferences';
 import type { NotificationType } from '../lib/notifications';
@@ -21,7 +19,6 @@ export default function Settings() {
   const [isVerified, setIsVerified] = useState(false);
   const [hasSocialBadge, setHasSocialBadge] = useState(false);
   const [friendCount, setFriendCount] = useState(0);
-  const { prefs: audioPrefs, updatePrefs: updateAudioPrefs } = useSoundEffects();
   const {
     preferences: notificationSoundPrefs,
     loading: notificationSoundLoading,
@@ -207,19 +204,12 @@ export default function Settings() {
 
           <UsernameChanger />
 
-          <AudioSettingsPanel
-            audioPrefs={audioPrefs}
-            updateAudioPrefs={updateAudioPrefs}
-            userId={profile.id}
-          />
-
           <NotificationSoundSettingsPanel
             preferences={notificationSoundPrefs}
             loading={notificationSoundLoading}
             updatePreference={updateNotificationSound}
             resetToDefaults={resetToDefaults}
             disableAll={disableAll}
-            masterAudioEnabled={audioPrefs.master}
           />
 
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
@@ -258,107 +248,12 @@ export default function Settings() {
   );
 }
 
-interface AudioSettingsPanelProps {
-  audioPrefs: { master: boolean; transactions: boolean; battles: boolean; notifications: boolean };
-  updateAudioPrefs: (update: Partial<AudioSettingsPanelProps['audioPrefs']>) => void;
-  userId: string;
-}
-
-const AUDIO_TOGGLES = [
-  { key: 'master' as const, label: 'Master Audio', desc: 'Enable all sound effects' },
-  { key: 'transactions' as const, label: 'Transactions', desc: 'Purchases, coin transfers, swaps' },
-  { key: 'battles' as const, label: 'Battles', desc: 'Win/loss results' },
-  { key: 'notifications' as const, label: 'Notifications', desc: 'Alerts, rank changes, milestones' },
-] as const;
-
-function AudioSettingsPanel({ audioPrefs, updateAudioPrefs, userId }: AudioSettingsPanelProps) {
-  const [playingKey, setPlayingKey] = useState<string | null>(null);
-
-  const handleToggle = (key: typeof AUDIO_TOGGLES[number]['key']) => {
-    const newVal = !audioPrefs[key];
-    updateAudioPrefs({ [key]: newVal });
-    logAudioToggle(userId, key, newVal);
-
-    const masterOn = key === 'master' ? newVal : audioPrefs.master;
-    if (newVal && masterOn) {
-      const previewSound = getPreviewSoundForCategory(key);
-      playSoundPreview(previewSound);
-      setPlayingKey(key);
-      setTimeout(() => setPlayingKey(null), 1000);
-    }
-  };
-
-  return (
-    <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
-      <h2 className="text-xl font-bold text-white mb-4 flex items-center space-x-2">
-        <Volume2 className="w-6 h-6" />
-        <span>Sound Effects</span>
-      </h2>
-      <div className="space-y-4">
-        {AUDIO_TOGGLES.map(({ key, label, desc }) => {
-          const isActive = audioPrefs[key] && (key === 'master' || audioPrefs.master);
-          const isPlaying = playingKey === key;
-
-          return (
-            <div key={key} className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700">
-              <div className="flex-1 min-w-0 mr-3">
-                <div className="flex items-center gap-2">
-                  <p className="text-white font-semibold text-sm">{label}</p>
-                  {isPlaying && (
-                    <span className="text-[10px] text-cyan-400 font-medium animate-pulse">
-                      Playing...
-                    </span>
-                  )}
-                </div>
-                <p className="text-gray-400 text-xs">{desc}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    if (isActive) {
-                      const previewSound = getPreviewSoundForCategory(key);
-                      playSoundPreview(previewSound);
-                      setPlayingKey(key);
-                      setTimeout(() => setPlayingKey(null), 1000);
-                    }
-                  }}
-                  className={`text-xs px-2 py-1 rounded transition-colors ${
-                    isActive
-                      ? 'text-cyan-400 hover:bg-cyan-500/10 cursor-pointer'
-                      : 'text-gray-600 cursor-not-allowed'
-                  }`}
-                  disabled={!isActive}
-                >
-                  Preview
-                </button>
-                <button
-                  onClick={() => handleToggle(key)}
-                  className={`relative w-12 h-7 rounded-full transition-colors ${
-                    isActive ? 'bg-cyan-500' : 'bg-gray-600'
-                  }`}
-                >
-                  <span
-                    className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${
-                      isActive ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 interface NotificationSoundSettingsPanelProps {
   preferences: any;
   loading: boolean;
   updatePreference: (type: NotificationType | 'ad_available', enabled: boolean) => Promise<void>;
   resetToDefaults: () => Promise<void>;
   disableAll: () => Promise<void>;
-  masterAudioEnabled: boolean;
 }
 
 const NOTIFICATION_SOUND_TOGGLES = [
@@ -382,7 +277,6 @@ function NotificationSoundSettingsPanel({
   updatePreference,
   resetToDefaults,
   disableAll,
-  masterAudioEnabled,
 }: NotificationSoundSettingsPanelProps) {
   const [playingKey, setPlayingKey] = useState<string | null>(null);
 
@@ -402,7 +296,7 @@ function NotificationSoundSettingsPanel({
     const newVal = !preferences[key];
     await updatePreference(key, newVal);
 
-    if (newVal && masterAudioEnabled) {
+    if (newVal) {
       const soundName = getSoundNameForNotificationType(key);
       playSoundPreview(soundName);
       setPlayingKey(key);
@@ -439,7 +333,7 @@ function NotificationSoundSettingsPanel({
 
       <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
         {NOTIFICATION_SOUND_TOGGLES.map(({ key, label, desc }) => {
-          const isActive = preferences[key] && masterAudioEnabled;
+          const isActive = preferences[key];
           const isPlaying = playingKey === key;
 
           return (
