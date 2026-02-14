@@ -349,7 +349,7 @@ function NotificationSoundSettingsPanel({
                 </div>
                 <p className="text-gray-400 text-xs">{desc}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => {
                     if (isActive) {
@@ -370,13 +370,13 @@ function NotificationSoundSettingsPanel({
                 </button>
                 <button
                   onClick={() => handleToggle(key)}
-                  className={`relative w-12 h-7 rounded-full transition-colors ${
+                  className={`relative inline-flex items-center w-12 h-7 shrink-0 rounded-full transition-colors ${
                     preferences[key] ? 'bg-cyan-500' : 'bg-gray-600'
                   }`}
                 >
                   <span
-                    className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform ${
-                      preferences[key] ? 'translate-x-6' : 'translate-x-1'
+                    className={`absolute left-1 w-5 h-5 rounded-full bg-white transition-transform ${
+                      preferences[key] ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
                 </button>
