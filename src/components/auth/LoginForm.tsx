@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { OAuthButtons } from './OAuthButtons';
+import { ForgotPasswordModal } from './ForgotPasswordModal';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -14,6 +15,7 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,9 +78,18 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-2">
-            Password
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-white/80">
+              Password
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className="text-xs text-[#00E0FF] hover:text-[#00E0FF]/80 font-medium transition-colors"
+            >
+              Forgot Password?
+            </button>
+          </div>
           <input
             id="password"
             type="password"
@@ -110,6 +121,11 @@ export function LoginForm({ onSuccess, onSwitchToSignup }: LoginFormProps) {
           </button>
         </p>
       )}
+
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+      />
     </div>
   );
 }
