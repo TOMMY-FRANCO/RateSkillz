@@ -1,6 +1,6 @@
 import { useNavigate, Link } from 'react-router-dom';
 import { Star } from 'lucide-react';
-import { OAuthButtons } from '../components/auth/OAuthButtons';
+import { OAuthButtons } from '../components/OAuthButtons';
 
 export default function Landing() {
   const navigate = useNavigate();

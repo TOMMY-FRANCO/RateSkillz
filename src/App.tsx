@@ -30,7 +30,6 @@ import ViewedMe from './pages/ViewedMe';
 import BalanceRecovery from './pages/BalanceRecovery';
 import AdminCoinPool from './pages/AdminCoinPool';
 import AdminModeration from './pages/AdminModeration';
-import ShimmerDemo from './pages/ShimmerDemo';
 import AddFriendByQR from './pages/AddFriendByQR';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -322,7 +321,6 @@ function App() {
           <Route path="/card/:username" element={<PublicCard />} />
           <Route path="/verify/:token" element={<VerifyProfile />} />
           <Route path="/add-friend" element={<AddFriendByQR />} />
-          <Route path="/shimmer-demo" element={<ShimmerDemo />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="*" element={<Navigate to="/" replace />} />
