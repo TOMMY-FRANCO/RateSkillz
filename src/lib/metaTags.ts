@@ -1,3 +1,5 @@
+import { getAppUrl } from './appConfig';
+
 export interface MetaTagsConfig {
   title: string;
   description: string;
@@ -55,8 +57,10 @@ export function updateMetaTags(config: MetaTagsConfig) {
 }
 
 export function getAbsoluteImageUrl(imageUrl: string | null | undefined): string {
+  const baseUrl = getAppUrl();
+
   if (!imageUrl) {
-    return 'https://ratingskill.com/og-image.png';
+    return `${baseUrl}/og-image.png`;
   }
 
   if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
@@ -64,12 +68,12 @@ export function getAbsoluteImageUrl(imageUrl: string | null | undefined): string
   }
 
   if (imageUrl.startsWith('/')) {
-    return `https://ratingskill.com${imageUrl}`;
+    return `${baseUrl}${imageUrl}`;
   }
 
-  return `https://ratingskill.com/${imageUrl}`;
+  return `${baseUrl}/${imageUrl}`;
 }
 
 export function getProfileCardUrl(username: string): string {
-  return `https://ratingskill.com/card/${username}`;
+  return `${getAppUrl()}/card/${username}`;
 }

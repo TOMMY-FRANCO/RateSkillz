@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { getAppUrl } from './appConfig';
 
 interface CreateCheckoutSessionParams {
   priceId: string;
@@ -52,7 +53,7 @@ export async function createCheckoutSession(params: CreateCheckoutSessionParams)
 export async function createCoinPurchaseCheckout(coins: number, priceGBP: number): Promise<CheckoutSessionResponse> {
   const priceId = getCoinPriceId(coins, priceGBP);
 
-  const baseUrl = 'https://ratingskill.com';
+  const baseUrl = getAppUrl();
 
   return createCheckoutSession({
     priceId,

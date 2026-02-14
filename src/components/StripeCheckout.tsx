@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CreditCard, Loader2 } from 'lucide-react';
 import { StripeProduct } from '../stripe-config';
+import { getAppUrl } from '../lib/appConfig';
 
 interface StripeCheckoutProps {
   product: StripeProduct;
@@ -14,7 +15,7 @@ export function StripeCheckout({ product, onSuccess }: StripeCheckoutProps) {
     setLoading(true);
 
     try {
-      const baseUrl = 'https://ratingskill.com';
+      const baseUrl = getAppUrl();
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
         method: 'POST',
         headers: {
