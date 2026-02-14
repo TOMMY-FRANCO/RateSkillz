@@ -279,6 +279,7 @@ export default function TopManagersTab() {
                         src={manager.avatar_url}
                         alt={manager.username}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">

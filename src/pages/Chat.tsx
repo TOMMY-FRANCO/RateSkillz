@@ -340,6 +340,7 @@ export default function Chat() {
                     src={otherUser.avatar_url}
                     alt={otherUser.username}
                     className="w-12 h-12 rounded-full object-cover"
+                    loading="lazy"
                   />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">

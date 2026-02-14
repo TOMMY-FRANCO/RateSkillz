@@ -349,6 +349,7 @@ export default function SendCoinsModal({
                             src={selectedFriend.avatar_url}
                             alt=""
                             className="w-9 h-9 rounded-full object-cover"
+                            loading="lazy"
                           />
                         ) : (
                           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
@@ -432,6 +433,7 @@ export default function SendCoinsModal({
                                     src={friend.avatar_url}
                                     alt=""
                                     className="w-8 h-8 rounded-full object-cover"
+                                    loading="lazy"
                                   />
                                 ) : (
                                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">

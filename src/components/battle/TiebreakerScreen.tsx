@@ -135,6 +135,7 @@ export function TiebreakerScreen({
                     src={card.image_url}
                     alt={card.player_name}
                     className="w-full h-32 object-cover rounded-lg mb-2"
+                    loading="lazy"
                   />
                   <h4 className="text-white font-bold text-sm text-center">{card.player_name}</h4>
                   <p className="text-[#00FF85] text-center text-xs">{card.overall_rating} OVR</p>

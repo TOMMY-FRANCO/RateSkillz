@@ -349,6 +349,7 @@ export default function PriceOfCardsTab() {
                         src={card.player_avatar_url}
                         alt={card.player_username}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">

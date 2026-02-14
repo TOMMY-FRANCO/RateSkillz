@@ -187,6 +187,7 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
                   src={profile.avatar_url}
                   alt={profile.username}
                   className="w-full h-full object-cover"
+                  loading="lazy"
                   style={
                     profile.avatar_position
                       ? {

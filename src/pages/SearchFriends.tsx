@@ -843,7 +843,7 @@ export default function SearchFriends() {
                   <div className="flex items-start gap-4 mb-4">
                     <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-black text-xl overflow-hidden flex-shrink-0">
                       {result.avatar_url ? (
-                        <img src={result.avatar_url} alt={result.username} className="w-full h-full object-cover" />
+                        <img src={result.avatar_url} alt={result.username} className="w-full h-full object-cover" loading="lazy" />
                       ) : (
                         result.username[0].toUpperCase()
                       )}

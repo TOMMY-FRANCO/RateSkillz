@@ -346,6 +346,7 @@ export default function ViewedMe() {
                               src={viewer.avatar_url}
                               alt={viewer.username}
                               className="w-full h-full object-cover"
+                              loading="lazy"
                             />
                           ) : (
                             viewer.username[0].toUpperCase()

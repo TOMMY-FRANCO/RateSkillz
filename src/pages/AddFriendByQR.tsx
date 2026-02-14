@@ -216,6 +216,7 @@ export default function AddFriendByQR() {
                           src={targetProfile.avatar_url}
                           alt={targetProfile.username}
                           className="w-16 h-16 rounded-xl object-cover"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center">

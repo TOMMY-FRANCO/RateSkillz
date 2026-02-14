@@ -186,6 +186,7 @@ export default function CardDiscardTab() {
                         src={card.player_avatar_url}
                         alt={card.player_username}
                         className="w-12 h-12 rounded-full object-cover"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
@@ -286,6 +287,7 @@ export default function CardDiscardTab() {
                           src={item.player_avatar_url}
                           alt={item.player_username}
                           className="w-10 h-10 rounded-full object-cover"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
@@ -354,6 +356,7 @@ export default function CardDiscardTab() {
                     src={selectedCard.player_avatar_url}
                     alt={selectedCard.player_username}
                     className="w-12 h-12 rounded-full object-cover"
+                    loading="lazy"
                   />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">

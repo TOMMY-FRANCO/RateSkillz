@@ -410,6 +410,7 @@ export default function Friends() {
                             src={request.profile.avatar_url}
                             alt={request.profile.username}
                             className="w-16 h-16 rounded-full object-cover border-2 border-cyan-500"
+                            loading="lazy"
                           />
                         ) : (
                           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-cyan-500 flex items-center justify-center text-black font-bold text-2xl border-2 border-cyan-500">
@@ -482,6 +483,7 @@ export default function Friends() {
                             src={request.profile.avatar_url}
                             alt={request.profile.username}
                             className="w-16 h-16 rounded-full object-cover border-2 border-gray-600"
+                            loading="lazy"
                           />
                         ) : (
                           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center text-white font-bold text-2xl">
@@ -545,6 +547,7 @@ export default function Friends() {
                             src={friend.profile.avatar_url}
                             alt={friend.profile.username}
                             className="w-16 h-16 rounded-full object-cover border-2 border-green-500"
+                            loading="lazy"
                           />
                         ) : (
                           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-cyan-500 flex items-center justify-center text-black font-bold text-2xl border-2 border-green-500">

@@ -137,6 +137,7 @@ export default function Inbox() {
                         src={conversation.other_user.avatar_url}
                         alt={conversation.other_user.username}
                         className="w-14 h-14 rounded-full object-cover"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">

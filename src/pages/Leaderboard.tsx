@@ -220,6 +220,7 @@ export default function Leaderboard() {
                         src={entry.avatar_url}
                         alt={entry.username}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
