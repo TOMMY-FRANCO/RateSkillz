@@ -179,7 +179,7 @@ export default function WatchAd() {
             <div className="max-w-xl mx-auto aspect-video rounded-xl border-2 border-white/20 overflow-hidden mb-4">
               <iframe
                 className="w-full h-full"
-                src="https://www.youtube.com/embed/fq3jfvf4KUo?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0"
+                src=""https://www.youtube.com/embed/fq3jfvf4KUo?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0"
                 title="Ad Video"
                 allow="autoplay; encrypted-media"
                 allowFullScreen
