@@ -100,20 +100,32 @@ export function useProfileData(username: string | undefined, currentUserId: stri
       };
       setSocialLinks(socialLinksData);
 
+      // Fire-and-forget: record the view then refresh the count from DB
       if (currentUserId && profileData.id !== currentUserId && !isPreviewMode) {
-        recordUniqueProfileView(profileData.id, currentUserId).then((viewResult) => {
-          if (viewResult.success && viewResult.counted && viewResult.new_count) {
-            setViewsCount(viewResult.new_count);
-
-            supabase.from('notifications').insert({
-              user_id: profileData.id,
-              actor_id: currentUserId,
-              type: 'profile_view',
-              message: `viewed your profile`,
-              metadata: { profile_id: profileData.id },
-            }).catch(err => console.error('Error creating notification:', err));
-          }
-        }).catch(err => console.error('Error recording view:', err));
+        recordUniqueProfileView(profileData.id, currentUserId)
+          .then(() => {
+            supabase
+              .from('profiles')
+              .select('profile_views_count')
+              .eq('id', profileData.id)
+              .maybeSingle()
+              .then(({ data }) => {
+                if (data) setViewsCount(data.profile_views_count || 0);
+              })
+              .catch(() => {});
+          })
+          .catch(() => {});
+      } else {
+        // For own profile or preview, load the current count without recording
+        supabase
+          .from('profiles')
+          .select('profile_views_count')
+          .eq('id', profileData.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data) setViewsCount(data.profile_views_count || 0);
+          })
+          .catch(() => {});
       }
 
       const isOtherUser = currentUserId && profileData.id !== currentUserId;
