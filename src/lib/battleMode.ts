@@ -194,25 +194,3 @@ export async function getPlayerCards(userId: string): Promise<PlayerCard[]> {
   });
 }
 
-export function subscribeToBattle(
-  battleId: string,
-  callback: (battle: Battle) => void
-) {
-  const channel = supabase
-    .channel(`battle:${battleId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'battles',
-        filter: `id=eq.${battleId}`,
-      },
-      (payload) => {
-        callback(payload.new as Battle);
-      }
-    )
-    .subscribe();
-
-  return channel;
-}

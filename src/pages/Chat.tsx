@@ -6,11 +6,10 @@ import {
   getConversationMessages,
   sendMessage,
   markMessagesAsRead,
-  setTypingStatus,
   getUserStatus,
   formatTimestamp,
 } from '../lib/messaging';
-import { ArrowLeft, Send, User, Check, CheckCheck, Coins, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, User, Check, CheckCheck, Coins, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { displayUsername } from '../lib/username';
 import SendCoinsModal from '../components/SendCoinsModal';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
@@ -35,15 +34,16 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
-  const [otherUserTyping, setOtherUserTyping] = useState(false);
   const [otherUser, setOtherUser] = useState<OtherUserInfo | null>(location.state?.otherUser || null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
-  const typingClearRef = useRef<NodeJS.Timeout>();
+  const [pullDistance, setPullDistance] = useState(0);
+  const touchStartY = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const [showSendCoinsModal, setShowSendCoinsModal] = useState(false);
   const [canSendCoins, setCanSendCoins] = useState(false);
@@ -52,6 +52,15 @@ export default function Chat() {
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+
+  const loadMessages = useCallback(async () => {
+    if (!conversationId) return;
+    const msgs = await getConversationMessages(conversationId);
+    setMessages(msgs);
+    if (user) {
+      await markMessagesAsRead(conversationId, user.id);
+    }
+  }, [conversationId, user]);
 
   useEffect(() => {
     if (!user || !conversationId) return;
@@ -89,100 +98,12 @@ export default function Chat() {
         setOtherUser(profile);
       }
 
-      const msgs = await getConversationMessages(conversationId);
-      setMessages(msgs);
+      await loadMessages();
       setLoading(false);
-
-      await markMessagesAsRead(conversationId, user.id);
     };
 
     loadConversationData();
   }, [conversationId, user]);
-
-  useEffect(() => {
-    if (!user || !conversationId) return;
-
-    const channel = supabase
-      .channel(`chat-${conversationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          const msg = payload.new as Message;
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === msg.id)) return prev;
-            return [...prev, msg];
-          });
-          if (msg.sender_id !== user.id) {
-            playSound('message-received');
-            markMessagesAsRead(conversationId, user.id);
-            setOtherUserTyping(false);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          const updated = payload.new as Message;
-          setMessages((prev) =>
-            prev.map((m) => (m.id === updated.id ? { ...m, is_read: updated.is_read, read_at: updated.read_at } : m))
-          );
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [conversationId, user]);
-
-  useEffect(() => {
-    if (!user || !conversationId || !otherUser) return;
-
-    const channel = supabase
-      .channel(`typing-${conversationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'typing_status',
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          if (payload.eventType === 'DELETE') {
-            const old = payload.old as any;
-            if (old.user_id === otherUser.id) {
-              setOtherUserTyping(false);
-            }
-          } else {
-            const record = payload.new as any;
-            if (record.user_id === otherUser.id) {
-              setOtherUserTyping(record.is_typing);
-              if (typingClearRef.current) clearTimeout(typingClearRef.current);
-              typingClearRef.current = setTimeout(() => setOtherUserTyping(false), 5000);
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-      if (typingClearRef.current) clearTimeout(typingClearRef.current);
-    };
-  }, [conversationId, user, otherUser]);
 
   useEffect(() => {
     if (!otherUser) return;
@@ -228,18 +149,35 @@ export default function Chat() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  const handleTyping = () => {
-    if (!user || !conversationId) return;
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    await loadMessages();
+    setRefreshing(false);
+    setPullDistance(0);
+  };
 
-    setTypingStatus(user.id, conversationId, true);
-
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (containerRef.current && containerRef.current.scrollTop === 0) {
+      touchStartY.current = e.touches[0].clientY;
     }
+  };
 
-    typingTimeoutRef.current = setTimeout(() => {
-      setTypingStatus(user.id, conversationId, false);
-    }, 2000);
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartY.current === 0 || refreshing) return;
+    const diff = e.touches[0].clientY - touchStartY.current;
+    if (diff > 0 && containerRef.current && containerRef.current.scrollTop === 0) {
+      setPullDistance(Math.min(diff, 80));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (pullDistance > 50 && !refreshing) {
+      handleRefresh();
+    } else {
+      setPullDistance(0);
+    }
+    touchStartY.current = 0;
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -263,11 +201,6 @@ export default function Chat() {
       setNewMessage(content);
     }
     setSending(false);
-
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    setTypingStatus(user.id, conversationId, false);
   };
 
   const handleTransferComplete = async (amount: number) => {
@@ -359,9 +292,7 @@ export default function Chat() {
                   @{otherUser.username}
                 </h2>
                 <p className="text-sm text-gray-300">
-                  {otherUserTyping ? (
-                    <span className="text-cyan-400 font-medium">typing...</span>
-                  ) : isOnline ? (
+                  {isOnline ? (
                     <span className="flex items-center gap-1">
                       <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                       Online
@@ -374,11 +305,35 @@ export default function Chat() {
                 </p>
               </div>
             </div>
+
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-50"
+              title="Refresh messages"
+            >
+              <RefreshCw className={`w-5 h-5 text-white ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto max-w-4xl w-full mx-auto px-4 py-6">
+      {pullDistance > 0 && (
+        <div
+          className="flex justify-center items-center bg-gradient-to-b from-cyan-500/10 to-transparent transition-all"
+          style={{ height: `${pullDistance}px`, opacity: pullDistance / 80 }}
+        >
+          <RefreshCw className={`text-cyan-400 ${pullDistance > 50 ? 'animate-spin' : ''}`} size={20} />
+        </div>
+      )}
+
+      <div
+        className="flex-1 overflow-y-auto max-w-4xl w-full mx-auto px-4 py-6"
+        ref={containerRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <div className="space-y-3">
           {messages.length === 0 && (
             <div className="text-center py-16">
@@ -454,17 +409,6 @@ export default function Chat() {
             );
           })}
 
-          {otherUserTyping && (
-            <div className="flex justify-start animate-[fadeSlideIn_0.2s_ease-out]">
-              <div className="bg-white/10 backdrop-blur-sm px-4 py-3 rounded-2xl rounded-bl-none border border-white/20">
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-              </div>
-            </div>
-          )}
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -509,10 +453,7 @@ export default function Chat() {
             <input
               type="text"
               value={newMessage}
-              onChange={(e) => {
-                setNewMessage(e.target.value);
-                handleTyping();
-              }}
+              onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Type a message..."
               className="flex-1 bg-white/10 text-white placeholder-gray-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-500 border border-white/10"
               disabled={sending}

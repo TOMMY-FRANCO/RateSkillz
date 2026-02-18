@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Target, Zap } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Target, Zap, RefreshCw } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { GlassButton } from '../ui/GlassButton';
 import {
   Battle,
   PlayerCard,
   submitTiebreakerMove,
-  subscribeToBattle,
   getBattle,
 } from '../../lib/battleMode';
 import { useAuth } from '../../contexts/AuthContext';
@@ -49,18 +48,25 @@ export function TiebreakerScreen({
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const availableCards = myCards.filter((card) => !eliminatedCards.includes(card.id));
 
-  useEffect(() => {
-    const channel = subscribeToBattle(battle.id, (updated) => {
+  const handleRefreshBattle = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      const updated = await getBattle(battle.id);
       setBattle(updated);
       if (updated.status === 'completed' || updated.status === 'forfeited') {
         setTimeout(() => onComplete(), 2000);
       }
-    });
-    return () => { channel.unsubscribe(); };
-  }, [battle.id, onComplete]);
+    } catch (error) {
+      console.error('Error refreshing battle:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [battle.id, refreshing, onComplete]);
 
   useEffect(() => {
     if (!user) return;
@@ -99,9 +105,17 @@ export function TiebreakerScreen({
           <GlassCard className="p-8 text-center">
             <Target className="w-16 h-16 text-yellow-500 mx-auto mb-4 animate-pulse" />
             <h1 className="text-3xl font-bold text-white mb-4">Move Submitted!</h1>
-            <p className="text-white/70 text-lg">
+            <p className="text-white/70 text-lg mb-6">
               Waiting for opponent to submit their tiebreaker move...
             </p>
+            <button
+              onClick={handleRefreshBattle}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors mx-auto disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <span>{refreshing ? 'Checking...' : 'Check Result'}</span>
+            </button>
           </GlassCard>
         </div>
       </div>

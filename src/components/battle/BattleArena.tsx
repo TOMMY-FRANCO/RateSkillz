@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Swords, Clock, Flag, Target, Shield, Zap } from 'lucide-react';
+import { Swords, Clock, Flag, Target, Shield, Zap, RefreshCw } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { GlassButton } from '../ui/GlassButton';
 import { SkillSelectionScreen } from './SkillSelectionScreen';
@@ -13,7 +13,6 @@ import {
   getPlayerCards,
   submitBattleMove,
   forfeitBattle,
-  subscribeToBattle,
   getBattle,
 } from '../../lib/battleMode';
 
@@ -29,6 +28,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   const [loading, setLoading] = useState(true);
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [submitting, setSubmitting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [roundResult, setRoundResult] = useState<{ attacker_wins: boolean } | null>(null);
 
   const isMyTurn = battle.current_turn_user_id === user?.id;
@@ -45,11 +45,20 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
 
   useEffect(() => {
     loadCards();
-    const channel = subscribeToBattle(battle.id, (updated) => {
-      setBattle(updated);
-    });
-    return () => { channel.unsubscribe(); };
   }, [battle.id]);
+
+  const handleRefreshBattle = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      const updated = await getBattle(battle.id);
+      setBattle(updated);
+    } catch (error) {
+      console.error('Error refreshing battle:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [battle.id, refreshing]);
 
   useEffect(() => {
     if (isCompleted) {
@@ -285,7 +294,15 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
           <GlassCard className="p-6 mb-6 text-center">
             <Target className="w-12 h-12 text-yellow-500 mx-auto mb-4 animate-pulse" />
             <h3 className="text-2xl font-bold text-white">Opponent's Turn</h3>
-            <p className="text-white/70 mt-2">Waiting for opponent to make their move...</p>
+            <p className="text-white/70 mt-2 mb-4">Waiting for opponent to make their move...</p>
+            <button
+              onClick={handleRefreshBattle}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors mx-auto disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <span>{refreshing ? 'Checking...' : 'Check for Update'}</span>
+            </button>
           </GlassCard>
         )}
 
