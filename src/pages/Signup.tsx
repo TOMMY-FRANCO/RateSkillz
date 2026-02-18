@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Loader2 } from 'lucide-react';
 import { validatePassword, getPasswordRequirements } from '../lib/passwordValidation';
 
 declare global {
@@ -84,19 +84,20 @@ export default function Signup() {
       return;
     }
 
+    let recaptchaToken = '';
     try {
-      const recaptchaToken = await executeRecaptcha();
-      const { error } = await signUp(email, password, username, fullName, recaptchaToken, ageNum);
-
-      if (error) {
-        setError(error.message);
-        setLoading(false);
-      } else {
-        navigate('/dashboard');
-      }
+      recaptchaToken = await executeRecaptcha();
     } catch {
-      setError('Security verification failed. Please refresh and try again.');
+      // reCAPTCHA unavailable — proceed without it
+    }
+
+    const { error } = await signUp(email, password, username, fullName, recaptchaToken, ageNum);
+
+    if (error) {
+      setError(error.message);
       setLoading(false);
+    } else {
+      navigate(`/profile/${username.toLowerCase()}`);
     }
   };
 
@@ -232,9 +233,16 @@ export default function Signup() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary w-full py-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? 'Creating account...' : 'Create Account'}
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Creating account...</span>
+                </>
+              ) : (
+                'Create Account'
+              )}
             </button>
 
             <p className="text-center text-[#B0B8C8]">

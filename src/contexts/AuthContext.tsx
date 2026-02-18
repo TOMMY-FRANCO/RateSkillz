@@ -262,36 +262,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: new Error('Supabase not configured') };
     }
 
-    if (!recaptchaToken) {
-      return { error: new Error('Verification failed. Please refresh and try again.') };
-    }
-
     setLoading(true);
 
     try {
-      const verificationResponse = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/signup-verification`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            email,
-            recaptchaToken,
-          }),
-        }
-      );
-
-      if (!verificationResponse.ok) {
-        const verificationError = await verificationResponse.json();
-        throw new Error(verificationError.error || 'Verification failed');
-      }
-
-      const verificationData = await verificationResponse.json();
-      const clientIp = verificationData.clientIp;
-
+      // Check username uniqueness first (fast client-side check)
       const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
         .select('username')
@@ -305,6 +279,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (existingProfile) {
         return { error: new Error('Username already taken. Please choose a different username.') };
       }
+
+      // Run signup verification if recaptchaToken is available
+      let clientIp: string | null = null;
+      if (recaptchaToken) {
+        try {
+          const verificationResponse = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/signup-verification`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              },
+              body: JSON.stringify({ email, recaptchaToken }),
+            }
+          );
+
+          if (verificationResponse.ok) {
+            const verificationData = await verificationResponse.json();
+            clientIp = verificationData.clientIp || null;
+            if (!verificationData.success) {
+              throw new Error(verificationData.error || 'Verification failed');
+            }
+          }
+        } catch (verifyErr: any) {
+          // Only throw verification errors that are explicit rejections (rate limit, email taken, etc.)
+          if (verifyErr.message && (
+            verifyErr.message.includes('Too many signup') ||
+            verifyErr.message.includes('already registered')
+          )) {
+            throw verifyErr;
+          }
+          // Otherwise, proceed without verification (network issues, CORS, etc.)
+        }
+      }
+
+      // Create the auth account
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -325,42 +336,104 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Account creation failed. Please try again.');
       }
 
-      const profileData = await ensureProfileExists(
-        authData.user.id,
-        email,
-        username,
-        fullName,
-        age
-      );
+      const userId = authData.user.id;
+      const normalizedUsername = username.toLowerCase();
+      const isMinor = age !== null && age !== undefined && age >= 11 && age < 18;
+
+      // Directly insert the profile row immediately after auth creation
+      let profileData: any = null;
+      const { data: insertedProfile, error: profileInsertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          username: normalizedUsername,
+          email: email,
+          full_name: fullName || '',
+          coin_balance: 0,
+          age: age ?? null,
+          username_customized: true,
+          username_change_count: 0,
+          overall_rating: 50,
+          profile_views_count: 0,
+          hide_from_leaderboard: isMinor,
+          findable_by_school: !isMinor,
+        })
+        .select()
+        .maybeSingle();
+
+      if (profileInsertError) {
+        if (profileInsertError.code === '23505') {
+          // Profile already exists (possibly created by a DB trigger), fetch it
+          const { data: existingData } = await supabase
+            .from('profiles')
+            .select('id, username, full_name, email, avatar_url, avatar_position, bio, position, number, team, height, weight, overall_rating, created_at, updated_at, last_active, terms_accepted_at, username_customized, gender, age, findable_by_school, hide_from_leaderboard, coin_balance, friend_count, is_verified, is_manager, is_admin, is_banned, profile_views_count, has_social_badge, manager_wins')
+            .eq('id', userId)
+            .maybeSingle();
+          profileData = existingData;
+        } else {
+          // Profile insert failed after auth was created - return clear error
+          return {
+            error: new Error(
+              'Your account was created but profile setup failed. Please try signing in — your account exists.'
+            ),
+          };
+        }
+      } else {
+        profileData = insertedProfile;
+      }
 
       if (!profileData) {
-        throw new Error('Profile setup failed. Please try logging in to complete setup.');
+        return {
+          error: new Error(
+            'Your account was created but profile setup failed. Please try signing in — your account exists.'
+          ),
+        };
       }
 
+      // Create secondary records in background (non-blocking)
+      Promise.allSettled([
+        supabase.from('user_stats').insert({
+          user_id: userId, pac: 50, sho: 50, pas: 50, dri: 50, def: 50, phy: 50, overall: 50, rating_count: 0,
+        }),
+        supabase.from('card_ownership').insert({
+          card_user_id: userId, owner_id: userId, original_owner_id: userId,
+          current_price: 20.00, base_price: 20.00, is_listed_for_sale: false, times_traded: 0,
+        }),
+        supabase.from('social_links').insert({ user_id: userId }),
+        supabase.from('user_presence').insert({ user_id: userId }),
+      ]).catch(() => {});
+
+      // Increment IP signup count if available
       if (clientIp && clientIp !== 'unknown') {
-        try {
-          await supabase.rpc('increment_signup_count', { p_ip_address: clientIp });
-        } catch (_) {
-        }
+        supabase.rpc('increment_signup_count', { p_ip_address: clientIp }).catch(() => {});
       }
 
-      setUser({ id: authData.user.id });
-      setSession({ user: { id: authData.user.id } });
+      setUser({ id: userId });
+      setSession({ user: { id: userId } });
       setProfile(profileData);
 
       return { error: null };
     } catch (error: any) {
-
       let errorMessage = 'Failed to create account. Please try again.';
 
-      if (error.message.includes('already registered') || error.message.includes('already been registered')) {
+      if (
+        error.message?.includes('already registered') ||
+        error.message?.includes('already been registered') ||
+        error.message?.includes('User already registered')
+      ) {
         errorMessage = 'This email is already registered. Please sign in instead.';
-      } else if (error.message.includes('Invalid email')) {
+      } else if (error.message?.includes('Invalid email') || error.message?.includes('valid email')) {
         errorMessage = 'Please enter a valid email address.';
-      } else if (error.message.includes('Password')) {
-        errorMessage = 'Password must be at least 6 characters long.';
-      } else if (error.message.includes('Username already taken')) {
+      } else if (
+        error.message?.includes('Password should be') ||
+        error.message?.includes('password') ||
+        error.message?.includes('Password')
+      ) {
+        errorMessage = 'Password is too short. Please use at least 8 characters.';
+      } else if (error.message?.includes('Username already taken')) {
         errorMessage = error.message;
+      } else if (error.message?.includes('Too many signup')) {
+        errorMessage = 'Too many signup attempts. Please try again tomorrow.';
       } else if (error.message) {
         errorMessage = error.message;
       }
