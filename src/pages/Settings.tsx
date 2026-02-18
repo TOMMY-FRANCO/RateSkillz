@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, LogOut, User, Bell, FileText, Shield, UserCheck } from 'lucide-react';
+import { ArrowLeft, LogOut, User, Bell, FileText, Shield, UserCheck, Smartphone } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import UsernameChanger from '../components/UsernameChanger';
 import { displayUsername } from '../lib/username';
 import { WhatsAppVerification } from '../components/WhatsAppVerification';
 import { VerificationBadge } from '../components/VerificationBadge';
-import { playSoundPreview } from '../lib/sounds';
+import { playSoundPreview, playButtonClick, BUTTON_SOUNDS_KEY, BUTTON_VIBRATION_KEY } from '../lib/sounds';
 import { useNotificationSoundPreferences } from '../hooks/useNotificationSoundPreferences';
 import { getSoundNameForNotificationType } from '../lib/notificationSoundPreferences';
 import type { NotificationType } from '../lib/notifications';
@@ -204,6 +204,8 @@ export default function Settings() {
 
           <UsernameChanger />
 
+          <ButtonFeedbackSettingsPanel />
+
           <NotificationSoundSettingsPanel
             preferences={notificationSoundPrefs}
             loading={notificationSoundLoading}
@@ -244,6 +246,75 @@ export default function Settings() {
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+function ButtonFeedbackSettingsPanel() {
+  const [soundsOn, setSoundsOn] = useState<boolean>(
+    () => localStorage.getItem(BUTTON_SOUNDS_KEY) !== 'false'
+  );
+  const [vibrationOn, setVibrationOn] = useState<boolean>(
+    () => localStorage.getItem(BUTTON_VIBRATION_KEY) !== 'false'
+  );
+
+  const toggleSounds = () => {
+    const next = !soundsOn;
+    setSoundsOn(next);
+    localStorage.setItem(BUTTON_SOUNDS_KEY, next ? 'true' : 'false');
+    if (next) {
+      playButtonClick();
+    }
+  };
+
+  const toggleVibration = () => {
+    const next = !vibrationOn;
+    setVibrationOn(next);
+    localStorage.setItem(BUTTON_VIBRATION_KEY, next ? 'true' : 'false');
+    if (next) {
+      try {
+        if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+          navigator.vibrate(30);
+        }
+      } catch {}
+    }
+  };
+
+  return (
+    <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
+      <h2 className="text-xl font-bold text-white mb-1 flex items-center space-x-2">
+        <Smartphone className="w-6 h-6" />
+        <span>Button Feedback</span>
+      </h2>
+      <p className="text-gray-400 text-sm mb-4">
+        Sound and vibration when tapping buttons.
+      </p>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg border border-gray-700">
+          <div>
+            <p className="text-white font-semibold text-sm">Button Sounds</p>
+            <p className="text-gray-400 text-xs">Play a tap sound on button press</p>
+          </div>
+          <button
+            onClick={toggleSounds}
+            className={`relative inline-flex items-center w-12 h-7 shrink-0 rounded-full transition-colors ${soundsOn ? 'bg-cyan-500' : 'bg-gray-600'}`}
+          >
+            <span className={`absolute left-1 w-5 h-5 rounded-full bg-white transition-transform ${soundsOn ? 'translate-x-5' : 'translate-x-0'}`} />
+          </button>
+        </div>
+        <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg border border-gray-700">
+          <div>
+            <p className="text-white font-semibold text-sm">Button Vibration</p>
+            <p className="text-gray-400 text-xs">Vibrate on button press (mobile)</p>
+          </div>
+          <button
+            onClick={toggleVibration}
+            className={`relative inline-flex items-center w-12 h-7 shrink-0 rounded-full transition-colors ${vibrationOn ? 'bg-cyan-500' : 'bg-gray-600'}`}
+          >
+            <span className={`absolute left-1 w-5 h-5 rounded-full bg-white transition-transform ${vibrationOn ? 'translate-x-5' : 'translate-x-0'}`} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

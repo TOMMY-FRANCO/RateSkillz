@@ -10,7 +10,11 @@ type SoundName =
   | 'card-swap'
   | 'milestone'
   | 'message-sent'
-  | 'message-received';
+  | 'message-received'
+  | 'button-click';
+
+export const BUTTON_SOUNDS_KEY = 'buttonSoundsEnabled';
+export const BUTTON_VIBRATION_KEY = 'buttonVibrationEnabled';
 
 let audioCtx: AudioContext | null = null;
 let unlocked = false;
@@ -183,6 +187,20 @@ const SYNTH: Record<SoundName, (ctx: AudioContext) => void> = {
     tone(ctx, 700, t, 0.08, 0.08, 'sine');
     tone(ctx, 1000, t + 0.06, 0.12, 0.08, 'sine');
   },
+  'button-click': (ctx) => {
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, t);
+    osc.frequency.exponentialRampToValueAtTime(600, t + 0.03);
+    gain.gain.setValueAtTime(0.08, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.03);
+  },
 };
 
 export function playSound(name: SoundName) {
@@ -205,6 +223,32 @@ export function playSoundPreview(name: SoundName) {
     }
     SYNTH[name](ctx);
   } catch {}
+}
+
+export function playButtonClick() {
+  try {
+    if (localStorage.getItem(BUTTON_SOUNDS_KEY) === 'false') return;
+    const ctx = getContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    SYNTH['button-click'](ctx);
+  } catch {}
+}
+
+export function triggerButtonVibration() {
+  try {
+    if (localStorage.getItem(BUTTON_VIBRATION_KEY) === 'false') return;
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      navigator.vibrate(30);
+    }
+  } catch {}
+}
+
+export function triggerButtonFeedback() {
+  playButtonClick();
+  triggerButtonVibration();
 }
 
 export type { SoundName };
