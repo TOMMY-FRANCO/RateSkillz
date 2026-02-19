@@ -112,7 +112,7 @@ export default function SearchFriends() {
   const [collegeId, setCollegeId] = useState('');
   const [universityId, setUniversityId] = useState('');
 
-  const [teams, setTeams] = useState<string[]>([]);
+  const [teams, setTeams] = useState<DropdownOption[]>([]);
   const [teamsLoading, setTeamsLoading] = useState(true);
   const [teamsFailed, setTeamsFailed] = useState(false);
   const [schools, setSchools] = useState<DropdownOption[]>([]);
@@ -139,15 +139,13 @@ export default function SearchFriends() {
     setTeamsLoading(true);
     setTeamsFailed(false);
     const { data, error } = await supabase
-      .from('profiles')
-      .select('team')
-      .not('team', 'is', null)
-      .neq('team', '');
+      .from('teams')
+      .select('id, team_name')
+      .order('team_name');
     if (error || !data) {
       setTeamsFailed(true);
     } else {
-      const unique = [...new Set(data.map((r: any) => r.team as string).filter(Boolean))].sort();
-      setTeams(unique);
+      setTeams(data.map((r: any) => ({ id: r.id, name: r.team_name })));
     }
     setTeamsLoading(false);
   };
@@ -512,9 +510,9 @@ export default function SearchFriends() {
                     disabled={teamsLoading}
                     className={`${selectClass} ${teamsLoading ? 'opacity-50 cursor-wait' : ''}`}
                   >
-                    <option value="">{teamsLoading ? 'Loading...' : 'All teams'}</option>
+                    <option value="">{teamsLoading ? 'Loading...' : teams.length === 0 ? 'No teams available' : 'All teams'}</option>
                     {teams.map(t => (
-                      <option key={t} value={t}>{t}</option>
+                      <option key={t.id} value={t.name}>{t.name}</option>
                     ))}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
