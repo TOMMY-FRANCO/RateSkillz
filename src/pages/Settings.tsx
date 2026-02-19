@@ -272,11 +272,7 @@ function ButtonFeedbackSettingsPanel() {
     setVibrationOn(next);
     localStorage.setItem(BUTTON_VIBRATION_KEY, next ? 'true' : 'false');
     if (next) {
-      try {
-        if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-          navigator.vibrate(30);
-        }
-      } catch {}
+      import('../lib/haptics').then(({ vibrate }) => vibrate(30));
     }
   };
 

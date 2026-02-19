@@ -240,9 +240,7 @@ export function playButtonClick() {
 export function triggerButtonVibration() {
   try {
     if (localStorage.getItem(BUTTON_VIBRATION_KEY) === 'false') return;
-    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-      navigator.vibrate(30);
-    }
+    import('./haptics').then(({ vibrate }) => vibrate(30));
   } catch {}
 }
 
