@@ -4,6 +4,7 @@ import { ensureProfileExists } from '../lib/profileCreation';
 import { reconcileUserBalance } from '../lib/balanceReconciliation';
 import { reconcileCoinPool } from '../lib/coinPoolReconciliation';
 import { requestNotificationPermission } from '../lib/messageNotifications';
+import { clearAppBadge } from '../lib/appBadge';
 
 export interface Profile {
   id: string;
@@ -547,6 +548,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       await supabase.auth.signOut();
     }
+    clearAppBadge();
     setProfile(null);
     setUser(null);
     setSession(null);
