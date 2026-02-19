@@ -1,8 +1,7 @@
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
-import { supabase } from './lib/supabase';
 import { measureWebVitals, perfMonitor } from './lib/performance';
 import ErrorBoundary from './components/ErrorBoundary';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
@@ -95,40 +94,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  const [adminChecked, setAdminChecked] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user, profile, loading } = useAuth();
 
-  useEffect(() => {
-    if (loading) return;
-    if (!user) {
-      setAdminChecked(true);
-      return;
-    }
-
-    let cancelled = false;
-
-    supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        console.log('[AdminRoute] DB check:', { userId: user.id, is_admin: data?.is_admin, error });
-        setIsAdmin(data?.is_admin === true);
-        setAdminChecked(true);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        console.error('[AdminRoute] Query failed:', err);
-        setAdminChecked(true);
-      });
-
-    return () => { cancelled = true; };
-  }, [user?.id, loading]);
-
-  if (loading || !adminChecked) {
+  if (loading) {
     return <LoadingScreen />;
   }
 
@@ -136,7 +104,11 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!isAdmin) {
+  if (!profile) {
+    return <LoadingScreen />;
+  }
+
+  if (!profile.is_admin) {
     return <Navigate to="/dashboard" replace />;
   }
 
