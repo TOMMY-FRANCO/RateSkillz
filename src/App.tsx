@@ -50,6 +50,7 @@ const ShimmerDemo = lazy(() => import('./pages/ShimmerDemo'));
 const AddFriendByQR = lazy(() => import('./pages/AddFriendByQR'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
 
 function LoadingScreen() {
   return (
@@ -191,6 +192,7 @@ function App() {
           />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/delete-account" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><DeleteAccount /></LazyPageWrapper>} />
           <Route
             path="/dashboard"
             element={
