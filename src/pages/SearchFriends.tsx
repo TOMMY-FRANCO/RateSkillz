@@ -113,6 +113,8 @@ export default function SearchFriends() {
   const [universityId, setUniversityId] = useState('');
 
   const [teams, setTeams] = useState<string[]>([]);
+  const [teamsLoading, setTeamsLoading] = useState(true);
+  const [teamsFailed, setTeamsFailed] = useState(false);
   const [schools, setSchools] = useState<DropdownOption[]>([]);
   const [colleges, setColleges] = useState<DropdownOption[]>([]);
   const [universities, setUniversities] = useState<DropdownOption[]>([]);
@@ -123,21 +125,34 @@ export default function SearchFriends() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    loadTeams();
     loadDropdownOptions();
   }, []);
 
+  const loadTeams = async () => {
+    setTeamsLoading(true);
+    setTeamsFailed(false);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('team')
+      .not('team', 'is', null)
+      .neq('team', '');
+    if (error || !data) {
+      setTeamsFailed(true);
+    } else {
+      const unique = [...new Set(data.map((r: any) => r.team as string).filter(Boolean))].sort();
+      setTeams(unique);
+    }
+    setTeamsLoading(false);
+  };
+
   const loadDropdownOptions = async () => {
-    const [teamsRes, schoolsRes, collegesRes, universitiesRes] = await Promise.all([
-      supabase.from('searchable_users_cache').select('team').not('team', 'is', null).neq('team', ''),
+    const [schoolsRes, collegesRes, universitiesRes] = await Promise.all([
       supabase.from('schools').select('id, school_name').order('school_name'),
       supabase.from('colleges').select('id, college_name').order('college_name'),
       supabase.from('universities').select('id, university_name').order('university_name'),
     ]);
 
-    if (teamsRes.data) {
-      const unique = [...new Set(teamsRes.data.map((r: any) => r.team as string).filter(Boolean))].sort();
-      setTeams(unique);
-    }
     if (schoolsRes.data) {
       setSchools(schoolsRes.data.map((r: any) => ({ id: r.id, name: r.school_name })));
     }
@@ -440,23 +455,40 @@ export default function SearchFriends() {
 
             <div className="space-y-1">
               <label className="block text-xs font-semibold text-[#B0B8C8]">Team</label>
-              <div className="relative">
-                <select
-                  value={team}
-                  onChange={e => { setTeam(e.target.value); setCurrentPage(1); }}
-                  className={selectClass}
-                >
-                  <option value="">All teams</option>
-                  {teams.map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
-                  <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+              {teamsFailed ? (
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-[rgba(15,24,41,0.85)] border border-red-500/30">
+                  <span className="text-xs text-red-400 flex-1">Failed to load</span>
+                  <button
+                    onClick={loadTeams}
+                    className="text-xs font-semibold text-[#00E0FF] hover:text-white transition-colors"
+                  >
+                    Retry
+                  </button>
                 </div>
-              </div>
+              ) : (
+                <div className="relative">
+                  <select
+                    value={team}
+                    onChange={e => { setTeam(e.target.value); setCurrentPage(1); }}
+                    disabled={teamsLoading}
+                    className={`${selectClass} ${teamsLoading ? 'opacity-50 cursor-wait' : ''}`}
+                  >
+                    <option value="">{teamsLoading ? 'Loading...' : 'All teams'}</option>
+                    {teams.map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                    {teamsLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 text-[#B0B8C8] animate-spin" />
+                    ) : (
+                      <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1">
