@@ -35,6 +35,17 @@ function totalCount(counts: DashboardBadgeCounts): number {
   );
 }
 
+function isAdAvailableToday(lastAdViewDate: string | null | undefined): boolean {
+  if (!lastAdViewDate) return true;
+  const last = new Date(lastAdViewDate);
+  const now = new Date();
+  return (
+    last.getUTCFullYear() !== now.getUTCFullYear() ||
+    last.getUTCMonth() !== now.getUTCMonth() ||
+    last.getUTCDate() !== now.getUTCDate()
+  );
+}
+
 export async function fetchDashboardBadges(userId: string): Promise<DashboardBadgeCounts> {
   try {
     const [
@@ -42,7 +53,6 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
       profileResult,
       acceptedFriendsResult,
       battleResult,
-      adResult,
     ] = await Promise.all([
       supabase
         .from('messages')
@@ -52,7 +62,7 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
 
       supabase
         .from('profiles')
-        .select('unread_profile_views, last_visited_transactions')
+        .select('unread_profile_views, last_visited_transactions, last_ad_view_date')
         .eq('id', userId)
         .maybeSingle(),
 
@@ -68,8 +78,6 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
         .select('id', { count: 'exact', head: true })
         .eq('manager2_id', userId)
         .eq('status', 'waiting'),
-
-      supabase.rpc('get_ad_status', { p_user_id: userId }),
     ]);
 
     const lastVisitedTransactions: string | null =
@@ -91,10 +99,9 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
       transactionsCount = cap(txResult.count ?? 0);
     }
 
-    const adStatus = adResult.data?.[0];
-    const adAvailable = adStatus?.can_watch === true ? 1 : 0;
+    const adAvailable = isAdAvailableToday(profileResult.data?.last_ad_view_date) ? 1 : 0;
 
-    return {
+    const result: DashboardBadgeCounts = {
       messages: cap(messagesResult.count ?? 0),
       profileViews: cap(profileResult.data?.unread_profile_views ?? 0),
       transactions: transactionsCount,
@@ -102,6 +109,11 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
       battleRequests: cap(battleResult.count ?? 0),
       adAvailable,
     };
+
+    const total = totalCount(result);
+    console.log('[AppBadge] counts:', result, '| total:', total);
+
+    return result;
   } catch (err) {
     console.error('Error fetching dashboard badges:', err);
     return { ...ZERO };
