@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, UserCheck, UserX, Clock, Eye, Bell, CheckCircle, XCircle, AlertCircle, Coins, Send, Loader2, RefreshCw, MessageCircle } from 'lucide-react';
+import {
+  ArrowLeft, UserCheck, UserX, Clock, Eye, CheckCircle, XCircle, AlertCircle,
+  Coins, Send, Loader2, RefreshCw, MessageCircle, Search, Users, UserPlus,
+} from 'lucide-react';
 import type { Profile } from '../contexts/AuthContext';
 import { displayUsername } from '../lib/username';
 import { getMultipleUserBalances } from '../lib/balances';
@@ -13,6 +16,7 @@ import SendCoinsModal from '../components/SendCoinsModal';
 import { claimPerFriendMilestoneReward } from '../lib/rewards';
 import { getOrCreateConversation } from '../lib/messaging';
 import { setFriendsBadgeSeenCount } from '../lib/notifications';
+import { sendFriendRequest } from '../lib/friendRequests';
 
 interface FriendRequest {
   id: string;
@@ -23,17 +27,46 @@ interface FriendRequest {
   profile: Profile;
 }
 
-type TabType = 'incoming' | 'outgoing' | 'friends';
-
 interface NotificationState {
   type: 'success' | 'error' | 'info';
   message: string;
 }
 
+interface SearchResult {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  overall_rating: number;
+  is_verified: boolean;
+  last_active: string;
+}
+
+function Avatar({
+  src, name, size = 'md', borderClass = 'border-gray-600',
+}: {
+  src: string | null; name: string; size?: 'sm' | 'md'; borderClass?: string;
+}) {
+  const dim = size === 'sm' ? 'w-10 h-10 text-base' : 'w-12 h-12 sm:w-14 sm:h-14 text-lg sm:text-xl';
+  return src ? (
+    <img
+      src={src}
+      alt={name}
+      className={`${dim} rounded-full object-cover border-2 ${borderClass} flex-shrink-0`}
+      loading="lazy"
+    />
+  ) : (
+    <div
+      className={`${dim} rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center text-black font-black border-2 ${borderClass} flex-shrink-0`}
+    >
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
 export default function Friends() {
   const { profile: currentUser } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>('incoming');
+
   const [incomingRequests, setIncomingRequests] = useState<FriendRequest[]>([]);
   const [outgoingRequests, setOutgoingRequests] = useState<FriendRequest[]>([]);
   const [friends, setFriends] = useState<FriendRequest[]>([]);
@@ -44,19 +77,30 @@ export default function Friends() {
   const [userBalances, setUserBalances] = useState<Map<string, number>>(new Map());
   const [userPresence, setUserPresence] = useState<Map<string, UserPresence>>(new Map());
   const [showSendCoinsModal, setShowSendCoinsModal] = useState(false);
-  const [sendCoinsRecipient, setSendCoinsRecipient] = useState<{ id: string; username: string; full_name: string | null; is_verified: boolean } | null>(null);
+  const [sendCoinsRecipient, setSendCoinsRecipient] = useState<{
+    id: string; username: string; full_name: string | null; is_verified: boolean;
+  } | null>(null);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchDone, setSearchDone] = useState(false);
+  const [searchActionLoading, setSearchActionLoading] = useState<string | null>(null);
+  const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (currentUser) {
-      loadFriendData();
-    }
+    if (currentUser) loadFriendData();
   }, [currentUser]);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await loadFriendData();
-    setRefreshing(false);
-  };
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setSearchDone(false);
+      return;
+    }
+    const timer = setTimeout(() => handleSearch(searchQuery.trim()), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const showNotification = (type: 'success' | 'error' | 'info', message: string) => {
     setNotification({ type, message });
@@ -65,22 +109,18 @@ export default function Friends() {
 
   const loadFriendData = async () => {
     if (!currentUser) return;
-
     try {
       const { data: friendsData, error: fetchError } = await supabase
         .from('friends')
         .select('id, user_id, friend_id, status, created_at')
         .or(`user_id.eq.${currentUser.id},friend_id.eq.${currentUser.id}`);
 
-      if (fetchError) {
-        throw fetchError;
-      }
+      if (fetchError) throw fetchError;
 
       if (friendsData && friendsData.length > 0) {
-        // FIX: Fetch all profiles in a single query to prevent N+1 problem
-        const allOtherUserIds = friendsData.map(friendship => {
-          return friendship.friend_id === currentUser.id ? friendship.user_id : friendship.friend_id;
-        });
+        const allOtherUserIds = friendsData.map(f =>
+          f.friend_id === currentUser.id ? f.user_id : f.friend_id
+        );
 
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
@@ -89,9 +129,7 @@ export default function Friends() {
 
         if (profilesError) throw profilesError;
 
-        // Create a map for quick profile lookup
-        const profileMap = new Map(profilesData?.map(profile => [profile.id, profile]) || []);
-
+        const profileMap = new Map(profilesData?.map(p => [p.id, p]) || []);
         const incoming: FriendRequest[] = [];
         const outgoing: FriendRequest[] = [];
         const accepted: FriendRequest[] = [];
@@ -100,19 +138,11 @@ export default function Friends() {
           const isIncoming = friendship.friend_id === currentUser.id;
           const otherUserId = isIncoming ? friendship.user_id : friendship.friend_id;
           const profileData = profileMap.get(otherUserId);
-
           if (profileData) {
-            const request = {
-              ...friendship,
-              profile: profileData,
-            };
-
+            const request = { ...friendship, profile: profileData };
             if (friendship.status === 'pending') {
-              if (isIncoming) {
-                incoming.push(request);
-              } else {
-                outgoing.push(request);
-              }
+              if (isIncoming) incoming.push(request);
+              else outgoing.push(request);
             } else if (friendship.status === 'accepted') {
               accepted.push(request);
             }
@@ -125,15 +155,16 @@ export default function Friends() {
         setFriendsBadgeSeenCount(incoming.length);
 
         const allUserIds = new Set<string>();
-        [...incoming, ...outgoing, ...accepted].forEach(req => {
-          if (req.profile?.id) allUserIds.add(req.profile.id);
+        [...incoming, ...outgoing, ...accepted].forEach(r => {
+          if (r.profile?.id) allUserIds.add(r.profile.id);
         });
 
         if (allUserIds.size > 0) {
-          const balances = await getMultipleUserBalances(Array.from(allUserIds));
+          const [balances, presence] = await Promise.all([
+            getMultipleUserBalances(Array.from(allUserIds)),
+            getMultipleUserPresence(Array.from(allUserIds)),
+          ]);
           setUserBalances(balances);
-
-          const presence = await getMultipleUserPresence(Array.from(allUserIds));
           setUserPresence(presence);
         }
       } else {
@@ -141,40 +172,65 @@ export default function Friends() {
         setOutgoingRequests([]);
         setFriends([]);
       }
-
-      setLoading(false);
     } catch (error: any) {
       console.error('Error loading friend data:', error);
-      showNotification('error', 'Failed to load friends. Please refresh the page.');
+      showNotification('error', 'Failed to load friends. Please refresh.');
+    } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSearch = async (query: string) => {
+    if (!query || !currentUser) return;
+    setSearching(true);
+    setSearchDone(false);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url, overall_rating, is_verified, last_active')
+        .ilike('username', `%${query}%`)
+        .neq('id', currentUser.id)
+        .limit(20);
+
+      if (error) throw error;
+      setSearchResults(data || []);
+      setSearchDone(true);
+    } catch {
+      setSearchResults([]);
+      setSearchDone(true);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleSendFriendRequest = async (recipientId: string) => {
+    setSearchActionLoading(recipientId);
+    try {
+      const { error } = await sendFriendRequest(recipientId);
+      if (error) throw error;
+      setSentRequests(prev => new Set([...prev, recipientId]));
+      showNotification('success', 'Friend request sent!');
+    } catch (error: any) {
+      showNotification('error', error?.message || 'Failed to send friend request.');
+    } finally {
+      setSearchActionLoading(null);
     }
   };
 
   const handleAcceptRequest = async (requestId: string) => {
     setActionLoading(requestId);
     try {
-      const request = incomingRequests.find((r) => r.id === requestId);
-
-      const { error } = await supabase
-        .from('friends')
-        .update({ status: 'accepted' })
-        .eq('id', requestId);
-
-      if (error) {
-        throw error;
-      }
-
+      const request = incomingRequests.find(r => r.id === requestId);
+      const { error } = await supabase.from('friends').update({ status: 'accepted' }).eq('id', requestId);
+      if (error) throw error;
       showNotification('success', 'Friend request accepted!');
-
       if (request && currentUser) {
         getOrCreateConversation(currentUser.id, request.user_id).catch(() => {});
         claimPerFriendMilestoneReward(currentUser.id, request.user_id).catch(() => {});
       }
-
       await loadFriendData();
     } catch (error: any) {
-      console.error('Error accepting request:', error);
-      showNotification('error', 'Failed to accept friend request. Please try again.');
+      showNotification('error', 'Failed to accept request. Please try again.');
     } finally {
       setActionLoading(null);
     }
@@ -183,19 +239,11 @@ export default function Friends() {
   const handleDeclineRequest = async (requestId: string) => {
     setActionLoading(requestId);
     try {
-      const { error } = await supabase
-        .from('friends')
-        .delete()
-        .eq('id', requestId);
-
-      if (error) {
-        throw error;
-      }
-
+      const { error } = await supabase.from('friends').delete().eq('id', requestId);
+      if (error) throw error;
       showNotification('info', 'Friend request declined.');
       await loadFriendData();
-    } catch (error: any) {
-      console.error('Error declining request:', error);
+    } catch {
       showNotification('error', 'Failed to decline request. Please try again.');
     } finally {
       setActionLoading(null);
@@ -205,19 +253,11 @@ export default function Friends() {
   const handleCancelRequest = async (requestId: string) => {
     setActionLoading(requestId);
     try {
-      const { error } = await supabase
-        .from('friends')
-        .delete()
-        .eq('id', requestId);
-
-      if (error) {
-        throw error;
-      }
-
-      showNotification('info', 'Friend request canceled.');
+      const { error } = await supabase.from('friends').delete().eq('id', requestId);
+      if (error) throw error;
+      showNotification('info', 'Friend request cancelled.');
       await loadFriendData();
-    } catch (error: any) {
-      console.error('Error canceling request:', error);
+    } catch {
       showNotification('error', 'Failed to cancel request. Please try again.');
     } finally {
       setActionLoading(null);
@@ -225,25 +265,14 @@ export default function Friends() {
   };
 
   const handleRemoveFriend = async (requestId: string) => {
-    if (!confirm('Are you sure you want to remove this friend?')) {
-      return;
-    }
-
+    if (!confirm('Are you sure you want to remove this friend?')) return;
     setActionLoading(requestId);
     try {
-      const { error } = await supabase
-        .from('friends')
-        .delete()
-        .eq('id', requestId);
-
-      if (error) {
-        throw error;
-      }
-
+      const { error } = await supabase.from('friends').delete().eq('id', requestId);
+      if (error) throw error;
       showNotification('info', 'Friend removed.');
       await loadFriendData();
-    } catch (error: any) {
-      console.error('Error removing friend:', error);
+    } catch {
       showNotification('error', 'Failed to remove friend. Please try again.');
     } finally {
       setActionLoading(null);
@@ -276,369 +305,359 @@ export default function Friends() {
     }
   };
 
-  const getOverallRating = (profile: Profile): number => {
-    return profile.overall_rating ?? 50;
-  };
+  const isAlreadyFriend = (userId: string) =>
+    friends.some(f => f.profile.id === userId) ||
+    incomingRequests.some(r => r.profile.id === userId) ||
+    outgoingRequests.some(r => r.profile.id === userId);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white">Loading...</div>
-      </div>
-    );
-  }
+  const pendingCount = incomingRequests.length + outgoingRequests.length;
 
   return (
-    <div className="min-h-screen bg-black">
-      <nav className="bg-gray-900 border-b border-gray-800">
+    <div className="min-h-screen">
+      <nav className="glass-container rounded-none border-l-0 border-r-0 border-t-0 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => navigate('/settings')}
-                className="text-gray-300 hover:text-cyan-400 transition-colors"
+                onClick={() => navigate('/dashboard')}
+                className="text-[#B0B8C8] hover:text-[#00E0FF] transition-colors"
+                aria-label="Back"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <h1 className="text-xl font-bold text-white">Friends</h1>
+              <h1 className="text-xl font-bold text-white heading-glow">Friends</h1>
+              {pendingCount > 0 && (
+                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
+                  {pendingCount}
+                </span>
+              )}
             </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="text-gray-400 hover:text-cyan-400 transition-colors disabled:opacity-50"
-                title="Refresh"
-              >
-                <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
-              </button>
-              <div className="flex items-center space-x-2 text-gray-400">
-                <Bell className="w-5 h-5" />
-                {incomingRequests.length > 0 && (
-                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                    {incomingRequests.length}
-                  </span>
-                )}
-              </div>
-            </div>
+            <button
+              onClick={async () => { setRefreshing(true); await loadFriendData(); setRefreshing(false); }}
+              disabled={refreshing}
+              className="text-[#B0B8C8] hover:text-[#00E0FF] transition-colors disabled:opacity-50"
+              aria-label="Refresh"
+            >
+              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
       </nav>
 
       {notification && (
-        <div className="fixed top-20 right-4 z-50 max-w-sm animate-slide-in">
-          <div className={`rounded-lg shadow-lg p-4 border ${
-            notification.type === 'success'
-              ? 'bg-green-50 border-green-200'
-              : notification.type === 'error'
-              ? 'bg-red-50 border-red-200'
-              : 'bg-blue-50 border-blue-200'
+        <div className="fixed top-20 right-4 z-50 max-w-xs sm:max-w-sm animate-fade-in">
+          <div className={`glass-card p-4 border ${
+            notification.type === 'success' ? 'border-green-500/40' :
+            notification.type === 'error' ? 'border-red-500/40' : 'border-[#00E0FF]/40'
           }`}>
             <div className="flex items-center gap-2">
-              {notification.type === 'success' && <CheckCircle className="w-5 h-5 text-green-600" />}
-              {notification.type === 'error' && <XCircle className="w-5 h-5 text-red-600" />}
-              {notification.type === 'info' && <AlertCircle className="w-5 h-5 text-blue-600" />}
-              <p className={`text-sm font-medium ${
-                notification.type === 'success'
-                  ? 'text-green-800'
-                  : notification.type === 'error'
-                  ? 'text-red-800'
-                  : 'text-blue-800'
-              }`}>
-                {notification.message}
-              </p>
+              {notification.type === 'success' && <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />}
+              {notification.type === 'error' && <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />}
+              {notification.type === 'info' && <AlertCircle className="w-4 h-4 text-[#00E0FF] flex-shrink-0" />}
+              <p className="text-sm font-medium text-white">{notification.message}</p>
             </div>
           </div>
         </div>
       )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl overflow-hidden">
-          <div className="flex border-b border-gray-700">
-            <button
-              onClick={() => setActiveTab('incoming')}
-              className={`flex-1 px-6 py-4 font-semibold transition-colors relative ${
-                activeTab === 'incoming'
-                  ? 'text-cyan-400 bg-gray-800'
-                  : 'text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              Friend Requests
-              {incomingRequests.length > 0 && (
-                <span className="absolute top-2 right-4 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  {incomingRequests.length}
-                </span>
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-28">
+
+        {/* Search Section */}
+        <section>
+          <h2 className="text-sm font-semibold text-[#B0B8C8] uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Search className="w-4 h-4" />
+            Find Friends
+          </h2>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B0B8C8]" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search by username..."
+              className="w-full pl-10 pr-4 py-3 bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.3)] rounded-xl text-white placeholder-[#B0B8C8] text-sm focus:outline-none focus:border-[#00E0FF] transition-colors"
+            />
+            {searching && (
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#00E0FF] animate-spin" />
+            )}
+          </div>
+
+          {searchQuery.trim() && (
+            <div className="mt-3 space-y-2">
+              {searching && (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="w-5 h-5 text-[#00E0FF] animate-spin" />
+                </div>
               )}
-            </button>
-            <button
-              onClick={() => setActiveTab('outgoing')}
-              className={`flex-1 px-6 py-4 font-semibold transition-colors ${
-                activeTab === 'outgoing'
-                  ? 'text-cyan-400 bg-gray-800'
-                  : 'text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              Sent Requests
-            </button>
-            <button
-              onClick={() => setActiveTab('friends')}
-              className={`flex-1 px-6 py-4 font-semibold transition-colors ${
-                activeTab === 'friends'
-                  ? 'text-cyan-400 bg-gray-800'
-                  : 'text-gray-400 hover:text-gray-300'
-              }`}
-            >
-              My Friends ({friends.length})
-            </button>
-          </div>
-
-          <div className="p-6">
-            {activeTab === 'incoming' && (
-              <div className="space-y-4">
-                {incomingRequests.length === 0 ? (
-                  <p className="text-gray-400 text-center py-12">
-                    No incoming friend requests
-                  </p>
-                ) : (
-                  incomingRequests.map((request) => (
-                    <div
-                      key={request.id}
-                      className="bg-gray-800 rounded-lg p-4 border border-gray-700 flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-4">
-                        {request.profile.avatar_url ? (
-                          <img
-                            src={request.profile.avatar_url}
-                            alt={request.profile.username}
-                            width="64"
-                            height="64"
-                            className="w-16 h-16 rounded-full object-cover border-2 border-cyan-500"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-cyan-500 flex items-center justify-center text-black font-bold text-2xl border-2 border-cyan-500">
-                            {displayUsername(request.profile.username).charAt(0)}
-                          </div>
-                        )}
-                        <div>
-                          <h3 className="text-white font-bold text-lg">
-                            {displayUsername(request.profile.username)}
-                          </h3>
-                          <OnlineStatus
-                            lastActive={userPresence.get(request.profile.id)?.last_seen}
-                            size="small"
-                          />
-                          <p className="text-gray-400 text-sm mt-1">
-                            OVR {getOverallRating(request.profile)}
-                          </p>
-                          {userBalances.has(request.profile.id) && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <Coins className="w-3 h-3 text-yellow-500" />
-                              <span className="text-xs text-yellow-500 font-medium">
-                                {formatCoinBalance(userBalances.get(request.profile.id) || 0)} balance
-                              </span>
-                            </div>
-                          )}
-                          <p className="text-gray-500 text-xs mt-1">
-                            Sent {new Date(request.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex space-x-3">
-                        <button
-                          onClick={() => handleAcceptRequest(request.id)}
-                          disabled={actionLoading === request.id}
-                          className="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center space-x-2"
-                        >
-                          {actionLoading === request.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
-                          <span>Accept</span>
-                        </button>
-                        <button
-                          onClick={() => handleDeclineRequest(request.id)}
-                          disabled={actionLoading === request.id}
-                          className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center space-x-2"
-                        >
-                          {actionLoading === request.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
-                          <span>Decline</span>
-                        </button>
-                      </div>
+              {!searching && searchDone && searchResults.length === 0 && (
+                <p className="text-center text-[#B0B8C8] text-sm py-6">No users found for "{searchQuery}"</p>
+              )}
+              {!searching && searchResults.map(result => {
+                const alreadyConnected = isAlreadyFriend(result.id);
+                const requestSent = sentRequests.has(result.id);
+                const isLoading = searchActionLoading === result.id;
+                return (
+                  <div key={result.id} className="glass-card p-3 flex items-center gap-3">
+                    <Avatar src={result.avatar_url} name={result.username} size="sm" borderClass="border-[rgba(0,224,255,0.3)]" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-semibold text-sm truncate">{displayUsername(result.username)}</p>
+                      <p className="text-[#B0B8C8] text-xs">OVR {result.overall_rating}</p>
                     </div>
-                  ))
-                )}
-              </div>
-            )}
-
-            {activeTab === 'outgoing' && (
-              <div className="space-y-4">
-                {outgoingRequests.length === 0 ? (
-                  <p className="text-gray-400 text-center py-12">
-                    No pending outgoing requests
-                  </p>
-                ) : (
-                  outgoingRequests.map((request) => (
-                    <div
-                      key={request.id}
-                      className="bg-gray-800 rounded-lg p-4 border border-gray-700 flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-4">
-                        {request.profile.avatar_url ? (
-                          <img
-                            src={request.profile.avatar_url}
-                            alt={request.profile.username}
-                            width="64"
-                            height="64"
-                            className="w-16 h-16 rounded-full object-cover border-2 border-gray-600"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center text-white font-bold text-2xl">
-                            {displayUsername(request.profile.username).charAt(0)}
-                          </div>
-                        )}
-                        <div>
-                          <h3 className="text-white font-bold text-lg">
-                            {displayUsername(request.profile.username)}
-                          </h3>
-                          <OnlineStatus
-                            lastActive={userPresence.get(request.profile.id)?.last_seen}
-                            size="small"
-                          />
-                          {userBalances.has(request.profile.id) && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <Coins className="w-3 h-3 text-yellow-500" />
-                              <span className="text-xs text-yellow-500 font-medium">
-                                {formatCoinBalance(userBalances.get(request.profile.id) || 0)} balance
-                              </span>
-                            </div>
-                          )}
-                          <div className="flex items-center space-x-2 text-gray-400 text-sm mt-1">
-                            <Clock className="w-4 h-4" />
-                            <span>Pending...</span>
-                          </div>
-                          <p className="text-gray-500 text-xs">
-                            Sent {new Date(request.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
+                    <div className="flex gap-2 flex-shrink-0">
                       <button
-                        onClick={() => handleCancelRequest(request.id)}
-                        disabled={actionLoading === request.id}
-                        className="px-6 py-2 bg-gray-600 text-white font-semibold rounded-lg hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center space-x-2"
+                        onClick={() => navigate(`/profile/${result.username}`)}
+                        className="p-2 rounded-lg bg-[rgba(0,224,255,0.1)] text-[#00E0FF] hover:bg-[rgba(0,224,255,0.2)] transition-colors"
+                        aria-label="View profile"
                       >
-                        {actionLoading === request.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-                        <span>Cancel Request</span>
+                        <Eye className="w-4 h-4" />
                       </button>
+                      {!alreadyConnected && !requestSent && (
+                        <button
+                          onClick={() => handleSendFriendRequest(result.id)}
+                          disabled={isLoading}
+                          className="p-2 rounded-lg bg-[rgba(0,255,133,0.1)] text-[#00FF85] hover:bg-[rgba(0,255,133,0.2)] transition-colors disabled:opacity-50"
+                          aria-label="Add friend"
+                        >
+                          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                        </button>
+                      )}
+                      {(alreadyConnected || requestSent) && (
+                        <span className="p-2 rounded-lg bg-[rgba(0,255,133,0.05)] text-[#00FF85]/50">
+                          <UserCheck className="w-4 h-4" />
+                        </span>
+                      )}
                     </div>
-                  ))
-                )}
-              </div>
-            )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
 
-            {activeTab === 'friends' && (
-              <div className="space-y-4">
-                {friends.length === 0 ? (
-                  <p className="text-gray-400 text-center py-12">
-                    No friends yet. Start sending friend requests!
-                  </p>
-                ) : (
-                  friends.map((friend) => (
-                    <div
-                      key={friend.id}
-                      className="bg-gray-800 rounded-lg p-4 border border-gray-700 flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-4">
-                        {friend.profile.avatar_url ? (
-                          <img
-                            src={friend.profile.avatar_url}
-                            alt={friend.profile.username}
-                            width="64"
-                            height="64"
-                            className="w-16 h-16 rounded-full object-cover border-2 border-green-500"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-cyan-500 flex items-center justify-center text-black font-bold text-2xl border-2 border-green-500">
-                            {displayUsername(friend.profile.username).charAt(0)}
-                          </div>
-                        )}
-                        <div>
-                          <h3 className="text-white font-bold text-lg">
-                            {displayUsername(friend.profile.username)}
-                          </h3>
-                          <OnlineStatus
-                            lastActive={userPresence.get(friend.profile.id)?.last_seen}
-                            size="small"
-                          />
-                          <p className="text-gray-400 text-sm mt-1">
-                            OVR {getOverallRating(friend.profile)}
-                          </p>
-                          {userBalances.has(friend.profile.id) && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <Coins className="w-3 h-3 text-yellow-500" />
-                              <span className="text-xs text-yellow-500 font-medium">
-                                {formatCoinBalance(userBalances.get(friend.profile.id) || 0)} balance
-                              </span>
-                            </div>
-                          )}
-                          <p className="text-xs text-gray-500 mt-1">
-                            Friends since {new Date(friend.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
+        {/* Pending Requests Section */}
+        <section>
+          <h2 className="text-sm font-semibold text-[#B0B8C8] uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Pending Requests
+            {pendingCount > 0 && (
+              <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                {pendingCount}
+              </span>
+            )}
+          </h2>
+
+          {loading ? (
+            <div className="glass-card p-6 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 text-[#00E0FF] animate-spin" />
+            </div>
+          ) : incomingRequests.length === 0 && outgoingRequests.length === 0 ? (
+            <div className="glass-card p-6 text-center">
+              <p className="text-[#B0B8C8] text-sm">No pending requests</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {incomingRequests.map(request => (
+                <div key={request.id} className="glass-card p-4">
+                  <div className="flex items-start gap-3">
+                    <Avatar
+                      src={request.profile.avatar_url}
+                      name={displayUsername(request.profile.username)}
+                      borderClass="border-[#00E0FF]/50"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        <span className="text-white font-bold text-sm truncate">
+                          {displayUsername(request.profile.username)}
+                        </span>
+                        <span className="text-[10px] bg-[#00E0FF]/10 text-[#00E0FF] px-2 py-0.5 rounded-full font-semibold flex-shrink-0">
+                          Incoming
+                        </span>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() => handleMessageFriend(friend)}
-                          disabled={actionLoading === friend.id}
-                          className="px-4 py-2 bg-cyan-500/10 text-cyan-400 font-semibold rounded-lg hover:bg-cyan-500/20 transition-all flex items-center space-x-2 border border-cyan-500/30"
-                        >
-                          {actionLoading === friend.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
-                          <span>Message</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSendCoinsRecipient({
-                              id: friend.profile.id,
-                              username: friend.profile.username,
-                              full_name: friend.profile.full_name,
-                              is_verified: (friend.profile as any).is_verified ?? false,
-                            });
-                            setShowSendCoinsModal(true);
-                          }}
-                          className="px-4 py-2 bg-amber-500/10 text-amber-400 font-semibold rounded-lg hover:bg-amber-500/20 transition-all flex items-center space-x-2 border border-amber-500/30"
-                        >
-                          <Send className="w-4 h-4" />
-                          <span>Send Coins</span>
-                        </button>
-                        <button
-                          onClick={() => navigate(`/profile/${friend.profile.username}`)}
-                          className="px-4 py-2 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all flex items-center space-x-2"
-                        >
-                          <Eye className="w-4 h-4" />
-                          <span>View Profile</span>
-                        </button>
-                        <button
-                          onClick={() => handleRemoveFriend(friend.id)}
-                          disabled={actionLoading === friend.id}
-                          className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center space-x-2"
-                        >
-                          {actionLoading === friend.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
-                          <span>Remove</span>
-                        </button>
+                      <OnlineStatus
+                        lastActive={userPresence.get(request.profile.id)?.last_seen}
+                        size="small"
+                      />
+                      <p className="text-[#B0B8C8] text-xs mt-0.5">OVR {request.profile.overall_rating ?? 50}</p>
+                      {userBalances.has(request.profile.id) && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Coins className="w-3 h-3 text-yellow-500" />
+                          <span className="text-xs text-yellow-500">
+                            {formatCoinBalance(userBalances.get(request.profile.id) || 0)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => handleAcceptRequest(request.id)}
+                      disabled={actionLoading === request.id}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-[#00FF85] to-[#00E0FF] text-black font-bold text-sm rounded-lg hover:opacity-90 disabled:opacity-50 transition-all"
+                    >
+                      {actionLoading === request.id
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <UserCheck className="w-4 h-4" />}
+                      Accept
+                    </button>
+                    <button
+                      onClick={() => handleDeclineRequest(request.id)}
+                      disabled={actionLoading === request.id}
+                      className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-600/20 border border-red-500/30 text-red-400 font-semibold text-sm rounded-lg hover:bg-red-600/30 disabled:opacity-50 transition-all"
+                    >
+                      {actionLoading === request.id
+                        ? <Loader2 className="w-4 h-4 animate-spin" />
+                        : <UserX className="w-4 h-4" />}
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {outgoingRequests.map(request => (
+                <div key={request.id} className="glass-card p-4">
+                  <div className="flex items-start gap-3">
+                    <Avatar
+                      src={request.profile.avatar_url}
+                      name={displayUsername(request.profile.username)}
+                      borderClass="border-gray-600"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        <span className="text-white font-bold text-sm truncate">
+                          {displayUsername(request.profile.username)}
+                        </span>
+                        <span className="text-[10px] bg-yellow-500/10 text-yellow-400 px-2 py-0.5 rounded-full font-semibold flex-shrink-0">
+                          Sent
+                        </span>
+                      </div>
+                      <OnlineStatus
+                        lastActive={userPresence.get(request.profile.id)?.last_seen}
+                        size="small"
+                      />
+                      <div className="flex items-center gap-1 text-[#B0B8C8] text-xs mt-0.5">
+                        <Clock className="w-3 h-3" />
+                        <span>Awaiting response</span>
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+                  </div>
+                  <button
+                    onClick={() => handleCancelRequest(request.id)}
+                    disabled={actionLoading === request.id}
+                    className="w-full mt-3 flex items-center justify-center gap-2 py-2.5 bg-gray-700/50 border border-gray-600/50 text-[#B0B8C8] font-semibold text-sm rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-all"
+                  >
+                    {actionLoading === request.id
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : <XCircle className="w-4 h-4" />}
+                    Cancel Request
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Friends Section */}
+        <section>
+          <h2 className="text-sm font-semibold text-[#B0B8C8] uppercase tracking-wider mb-3 flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            My Friends
+            <span className="text-[#00E0FF] font-bold">{friends.length}</span>
+          </h2>
+
+          {loading ? (
+            <div className="glass-card p-6 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 text-[#00E0FF] animate-spin" />
+            </div>
+          ) : friends.length === 0 ? (
+            <div className="glass-card p-8 text-center">
+              <Users className="w-10 h-10 text-[#B0B8C8]/30 mx-auto mb-3" />
+              <p className="text-[#B0B8C8] text-sm">No friends yet</p>
+              <p className="text-[#B0B8C8]/60 text-xs mt-1">Search above to find and connect with people</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {friends.map(friend => (
+                <div key={friend.id} className="glass-card p-4">
+                  <div className="flex items-start gap-3">
+                    <Avatar
+                      src={friend.profile.avatar_url}
+                      name={displayUsername(friend.profile.username)}
+                      borderClass="border-[#00FF85]/50"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-bold text-sm truncate">
+                        {displayUsername(friend.profile.username)}
+                      </p>
+                      <OnlineStatus
+                        lastActive={userPresence.get(friend.profile.id)?.last_seen}
+                        size="small"
+                      />
+                      <p className="text-[#B0B8C8] text-xs mt-0.5">OVR {friend.profile.overall_rating ?? 50}</p>
+                      {userBalances.has(friend.profile.id) && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Coins className="w-3 h-3 text-yellow-500" />
+                          <span className="text-xs text-yellow-500">
+                            {formatCoinBalance(userBalances.get(friend.profile.id) || 0)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 mt-3">
+                    <button
+                      onClick={() => navigate(`/profile/${friend.profile.username}`)}
+                      className="flex items-center justify-center gap-1.5 py-2.5 bg-gradient-to-r from-[#00FF85] to-[#00E0FF] text-black font-bold text-xs sm:text-sm rounded-lg hover:opacity-90 transition-all"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      Profile
+                    </button>
+                    <button
+                      onClick={() => handleMessageFriend(friend)}
+                      disabled={actionLoading === friend.id}
+                      className="flex items-center justify-center gap-1.5 py-2.5 bg-[rgba(0,224,255,0.1)] border border-[rgba(0,224,255,0.3)] text-[#00E0FF] font-semibold text-xs sm:text-sm rounded-lg hover:bg-[rgba(0,224,255,0.2)] disabled:opacity-50 transition-all"
+                    >
+                      {actionLoading === friend.id
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <MessageCircle className="w-3.5 h-3.5" />}
+                      Message
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSendCoinsRecipient({
+                          id: friend.profile.id,
+                          username: friend.profile.username,
+                          full_name: friend.profile.full_name,
+                          is_verified: (friend.profile as any).is_verified ?? false,
+                        });
+                        setShowSendCoinsModal(true);
+                      }}
+                      className="flex items-center justify-center gap-1.5 py-2.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-semibold text-xs sm:text-sm rounded-lg hover:bg-amber-500/20 transition-all"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      Send Coins
+                    </button>
+                    <button
+                      onClick={() => handleRemoveFriend(friend.id)}
+                      disabled={actionLoading === friend.id}
+                      className="flex items-center justify-center gap-1.5 py-2.5 bg-red-600/10 border border-red-500/20 text-red-400 font-semibold text-xs sm:text-sm rounded-lg hover:bg-red-600/20 disabled:opacity-50 transition-all"
+                    >
+                      {actionLoading === friend.id
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <UserX className="w-3.5 h-3.5" />}
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </main>
 
       <SendCoinsModal
         isOpen={showSendCoinsModal}
-        onClose={() => {
-          setShowSendCoinsModal(false);
-          setSendCoinsRecipient(null);
-        }}
+        onClose={() => { setShowSendCoinsModal(false); setSendCoinsRecipient(null); }}
         recipientId={sendCoinsRecipient?.id}
         recipientUsername={sendCoinsRecipient?.username}
         recipientFullName={null}
