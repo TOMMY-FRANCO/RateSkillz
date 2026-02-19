@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Coins, RefreshCw, AlertCircle, CheckCircle, TrendingUp, Users, Database, Activity, Lock, Shield, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -52,85 +52,18 @@ export default function AdminCoinPool() {
   const [syncing, setSyncing] = useState(false);
   const [logsLoading, setLogsLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [logFilter, setLogFilter] = useState<'active' | 'resolved' | 'all'>('active');
   const [clearingWarnings, setClearingWarnings] = useState(false);
   const [clearResult, setClearResult] = useState<string | null>(null);
-  const [adminError, setAdminError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const adminVerifiedRef = useRef(false);
 
   useEffect(() => {
-    if (!adminVerifiedRef.current && user) {
-      checkAdminAccess();
-    }
-  }, [user]);
+    loadAllData();
+  }, []);
 
   useEffect(() => {
-    if (isAdmin) {
-      loadAllData();
-    }
-  }, [isAdmin]);
-
-  useEffect(() => {
-    if (isAdmin) {
-      loadDiscrepancyLogs();
-    }
+    loadDiscrepancyLogs();
   }, [logFilter]);
-
-  async function checkAdminAccess() {
-    if (adminVerifiedRef.current) return;
-
-    try {
-      if (!user) {
-        setAdminError('Not logged in. Please log in to access this page.');
-        setCheckingAdmin(false);
-        setTimeout(() => navigate('/'), 2000);
-        return;
-      }
-
-      const { data: profileData, error } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .maybeSingle();
-      const data = profileData?.is_admin === true;
-      console.log('[AdminCoinPool] admin check result:', { profileData, error, userId: user?.id, isAdmin: data });
-
-      if (error || !data) {
-        setAdminError('Access denied. You do not have admin privileges.');
-        supabase.rpc('log_admin_access', {
-          p_user_id: user.id,
-          p_action_type: 'access_denied',
-          p_resource_accessed: 'admin_coin_pool',
-          p_access_granted: false,
-          p_notes: 'Server-side admin check failed'
-        }).catch(() => {});
-        setCheckingAdmin(false);
-        setTimeout(() => navigate('/'), 2000);
-        return;
-      }
-
-      adminVerifiedRef.current = true;
-      setIsAdmin(true);
-      setAdminError(null);
-      setCheckingAdmin(false);
-
-      supabase.rpc('log_admin_access', {
-        p_user_id: user.id,
-        p_action_type: 'access_granted',
-        p_resource_accessed: 'admin_coin_pool',
-        p_access_granted: true,
-        p_notes: 'Admin accessed coin pool dashboard'
-      }).catch(() => {});
-
-    } catch (error: any) {
-      setAdminError('Access denied.');
-      setCheckingAdmin(false);
-      setTimeout(() => navigate('/'), 2000);
-    }
-  }
 
   async function loadAllData() {
     await Promise.all([
@@ -255,33 +188,6 @@ export default function AdminCoinPool() {
       second: '2-digit',
       hour12: false,
     }).format(date);
-  }
-
-  if (checkingAdmin || adminError) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          {adminError ? (
-            <>
-              <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-white mb-2">Access Denied</h2>
-              <p className="text-white/80 mb-4">{adminError}</p>
-              <p className="text-white/60 text-sm">Redirecting to home page...</p>
-            </>
-          ) : (
-            <>
-              <Shield className="w-12 h-12 text-blue-400 animate-pulse mx-auto mb-4" />
-              <p className="text-white/60">Verifying admin access...</p>
-              <p className="text-white/40 text-sm mt-2">Please wait while we check your permissions</p>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return null;
   }
 
   return (

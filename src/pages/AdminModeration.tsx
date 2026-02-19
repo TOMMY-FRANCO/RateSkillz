@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -38,30 +38,10 @@ export default function AdminModeration() {
   const [expandedCaseId, setExpandedCaseId] = useState<string | null>(null);
   const [filterStats, setFilterStats] = useState<any>(null);
   const [showFilteredComments, setShowFilteredComments] = useState(false);
-  const adminCheckDoneRef = useRef(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-
   useEffect(() => {
-    if (!user) return;
-    if (adminCheckDoneRef.current) return;
-
-    supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        console.log('[AdminModeration] admin check:', { isAdmin: data?.is_admin, userId: user.id });
-        if (data?.is_admin !== true) {
-          navigate('/dashboard', { replace: true });
-          return;
-        }
-        adminCheckDoneRef.current = true;
-        setIsAdmin(true);
-        loadCases();
-        loadFilterStats();
-      });
-  }, [user?.id, navigate]);
+    loadCases();
+    loadFilterStats();
+  }, []);
 
   const loadCases = async () => {
     console.log('[AdminModeration] Starting to load cases...');
@@ -209,10 +189,6 @@ export default function AdminModeration() {
       minute: '2-digit'
     });
   };
-
-  if (!isAdmin) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-black pb-24">
