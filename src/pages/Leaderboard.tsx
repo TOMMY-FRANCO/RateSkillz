@@ -51,7 +51,7 @@ export default function Leaderboard() {
         .from('leaderboard_cache')
         .select('rank, user_id, overall_rating, username, avatar_url, position, team, gender')
         .order('rank', { ascending: true })
-        .limit(20);
+        .limit(100);
 
       if (error) throw error;
 

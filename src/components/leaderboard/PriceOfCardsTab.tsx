@@ -100,10 +100,10 @@ export default function PriceOfCardsTab() {
       }
 
       const { count } = await query;
-      setTotalCards(count || 0);
+      setTotalCards(Math.min(count || 0, 100));
 
       const from = (currentPage - 1) * CARDS_PER_PAGE;
-      const to = from + CARDS_PER_PAGE - 1;
+      const to = Math.min(from + CARDS_PER_PAGE - 1, 99);
 
       const { data, error } = await query
         .order('current_price', { ascending: false })

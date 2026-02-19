@@ -71,10 +71,10 @@ export default function TopManagersTab() {
       }
 
       const { count } = await query;
-      setTotalManagers(count || 0);
+      setTotalManagers(Math.min(count || 0, 100));
 
       const from = (currentPage - 1) * MANAGERS_PER_PAGE;
-      const to = from + MANAGERS_PER_PAGE - 1;
+      const to = Math.min(from + MANAGERS_PER_PAGE - 1, 99);
 
       const { data, error } = await query
         .order('manager_wins', { ascending: false })

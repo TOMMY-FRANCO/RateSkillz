@@ -45,7 +45,7 @@ export default function ArenaLeaderboardTab() {
     try {
       const { data, error } = await supabase.rpc('get_arena_leaderboard', {
         p_arena_slug: arenaSlug,
-        p_limit: 50,
+        p_limit: 100,
       });
 
       if (error) throw error;
