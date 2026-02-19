@@ -1,11 +1,14 @@
 let unsubscribeForeground: (() => void) | null = null;
 
-async function getFirebaseSWRegistration(): Promise<ServiceWorkerRegistration | undefined> {
+async function getMainSWRegistration(): Promise<ServiceWorkerRegistration | undefined> {
   if (!('serviceWorker' in navigator)) return undefined;
   try {
-    const existing = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
-    if (existing) return existing;
-    return await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+    const regs = await navigator.serviceWorker.getRegistrations();
+    if (regs.length > 0) {
+      const ready = await navigator.serviceWorker.ready;
+      return ready;
+    }
+    return undefined;
   } catch {
     return undefined;
   }
@@ -32,7 +35,7 @@ export async function requestFCMToken(): Promise<string | null> {
 
     const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     const messaging = getMessaging(app);
-    const swReg = await getFirebaseSWRegistration();
+    const swReg = await getMainSWRegistration();
     const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
 
     const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: swReg });
@@ -72,5 +75,22 @@ export async function setupForegroundMessageHandler(
     unsubscribeForeground = onMessage(messaging, handler as any);
   } catch {
     // silently ignore — unsupported browser
+  }
+}
+
+export async function sendTestNotification(): Promise<boolean> {
+  try {
+    if (!('serviceWorker' in navigator)) return false;
+    if (Notification.permission !== 'granted') return false;
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification('RatingSkill Test', {
+      body: 'Push notifications are working correctly!',
+      icon: '/icon-192x192.png',
+      badge: '/icon-72x72.png',
+      tag: 'ratingskill-test',
+    });
+    return true;
+  } catch {
+    return false;
   }
 }
