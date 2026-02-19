@@ -21,6 +21,18 @@ try {
 
 export { messaging };
 
+async function getFirebaseSWRegistration(): Promise<ServiceWorkerRegistration | undefined> {
+  if (!('serviceWorker' in navigator)) return undefined;
+  try {
+    const existing = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js');
+    if (existing) return existing;
+    return await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+  } catch (err) {
+    console.error('[FCM] Failed to register firebase-messaging-sw.js:', err);
+    return undefined;
+  }
+}
+
 export async function requestFCMToken(): Promise<string | null> {
   try {
     if (!messaging) return null;
@@ -30,9 +42,11 @@ export async function requestFCMToken(): Promise<string | null> {
     if (permission !== 'granted') return null;
 
     const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+    const swReg = await getFirebaseSWRegistration();
+
     const token = await getToken(messaging, {
       vapidKey,
-      serviceWorkerRegistration: await navigator.serviceWorker.ready,
+      serviceWorkerRegistration: swReg,
     });
     return token ?? null;
   } catch (err) {

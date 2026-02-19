@@ -9,9 +9,27 @@ const corsHeaders = {
 
 const FIREBASE_PROJECT_ID = "ratingskill-dc1c2";
 
+function b64url(data: string): string {
+  return btoa(data)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function b64urlObject(obj: unknown): string {
+  const json = JSON.stringify(obj);
+  const bytes = new TextEncoder().encode(json);
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return b64url(binary);
+}
+
 async function getGoogleAccessToken(serviceAccountJson: string): Promise<string> {
   const sa = JSON.parse(serviceAccountJson);
   const now = Math.floor(Date.now() / 1000);
+
   const header = { alg: "RS256", typ: "JWT" };
   const payload = {
     iss: sa.client_email,
@@ -22,19 +40,12 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
     scope: "https://www.googleapis.com/auth/firebase.messaging",
   };
 
-  function b64url(obj: unknown): string {
-    return btoa(JSON.stringify(obj))
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
-  }
-
-  const signingInput = `${b64url(header)}.${b64url(payload)}`;
+  const signingInput = `${b64urlObject(header)}.${b64urlObject(payload)}`;
 
   const pemKey = sa.private_key as string;
   const pemContents = pemKey
-    .replace(/-----BEGIN PRIVATE KEY-----/, "")
-    .replace(/-----END PRIVATE KEY-----/, "")
+    .replace(/-----BEGIN PRIVATE KEY-----/g, "")
+    .replace(/-----END PRIVATE KEY-----/g, "")
     .replace(/\s/g, "");
   const binaryKey = Uint8Array.from(atob(pemContents), (c) => c.charCodeAt(0));
 
@@ -52,10 +63,11 @@ async function getGoogleAccessToken(serviceAccountJson: string): Promise<string>
     new TextEncoder().encode(signingInput)
   );
 
-  const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  let sigBinary = "";
+  for (const byte of new Uint8Array(signatureBuffer)) {
+    sigBinary += String.fromCharCode(byte);
+  }
+  const signature = b64url(sigBinary);
 
   const jwt = `${signingInput}.${signature}`;
 
@@ -96,6 +108,14 @@ Deno.serve(async (req: Request) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const firebaseServiceAccount = Deno.env.get("FIREBASE_SERVICE_ACCOUNT");
 
+    if (!firebaseServiceAccount) {
+      console.error("[FCM] FIREBASE_SERVICE_ACCOUNT secret not configured");
+      return new Response(
+        JSON.stringify({ error: "FIREBASE_SERVICE_ACCOUNT secret not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const client = createClient(supabaseUrl, serviceRoleKey);
 
     const { data: profile, error: profileError } = await client
@@ -108,20 +128,16 @@ Deno.serve(async (req: Request) => {
 
     const fcmToken: string | null = profile?.fcm_token ?? null;
     if (!fcmToken) {
+      console.log("[FCM] No FCM token for user", user_id, "- skipping");
       return new Response(
         JSON.stringify({ success: true, message: "No FCM token for user, skipping" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const count = typeof badge_count === "number" ? badge_count : parseInt(badge_count ?? "0", 10);
+    const count = typeof badge_count === "number" ? badge_count : parseInt(String(badge_count ?? "0"), 10);
 
-    if (!firebaseServiceAccount) {
-      return new Response(
-        JSON.stringify({ error: "FIREBASE_SERVICE_ACCOUNT secret not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    console.log("[FCM] Sending push to user", user_id, "badge_count:", count);
 
     const accessToken = await getGoogleAccessToken(firebaseServiceAccount);
 
@@ -131,10 +147,16 @@ Deno.serve(async (req: Request) => {
         data: {
           badge_count: String(count),
         },
+        webpush: {
+          headers: {
+            Urgency: "normal",
+          },
+        },
         apns: {
           payload: {
             aps: {
               badge: count,
+              "content-available": 1,
             },
           },
         },
@@ -153,19 +175,20 @@ Deno.serve(async (req: Request) => {
       }
     );
 
+    const fcmBody = await fcmRes.text();
+
     if (!fcmRes.ok) {
-      const errBody = await fcmRes.text();
-      console.error("[FCM] Send failed:", errBody);
+      console.error("[FCM] Send failed:", fcmRes.status, fcmBody);
       return new Response(
-        JSON.stringify({ error: "FCM send failed", detail: errBody }),
+        JSON.stringify({ error: "FCM send failed", status: fcmRes.status, detail: fcmBody }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const fcmData = await fcmRes.json();
+    console.log("[FCM] Send success:", fcmBody);
 
     return new Response(
-      JSON.stringify({ success: true, fcm_response: fcmData }),
+      JSON.stringify({ success: true, fcm_response: JSON.parse(fcmBody) }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
