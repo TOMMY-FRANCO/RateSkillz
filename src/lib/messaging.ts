@@ -9,6 +9,7 @@ export interface Message {
   is_read: boolean;
   read_at: string | null;
   created_at: string;
+  is_prewritten?: boolean;
 }
 
 export interface Conversation {
@@ -127,7 +128,7 @@ export async function getConversationMessages(conversationId: string): Promise<M
   try {
     const { data, error } = await supabase
       .from('messages')
-      .select('id, conversation_id, sender_id, recipient_id, content, is_read, read_at, created_at')
+      .select('id, conversation_id, sender_id, recipient_id, content, is_read, read_at, created_at, is_prewritten')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
@@ -143,7 +144,8 @@ export async function sendMessage(
   conversationId: string,
   senderId: string,
   recipientId: string,
-  content: string
+  content: string,
+  isPrewritten = false
 ): Promise<SendResult> {
   try {
     const { data, error } = await supabase
@@ -153,6 +155,7 @@ export async function sendMessage(
         sender_id: senderId,
         recipient_id: recipientId,
         content,
+        is_prewritten: isPrewritten,
       })
       .select()
       .single();
@@ -163,6 +166,30 @@ export async function sendMessage(
   } catch (error: any) {
     console.error('Error sending message:', error);
     return { message: null, error: error?.message || 'Failed to send message' };
+  }
+}
+
+export async function getPrewrittenMessageCount(
+  senderId: string,
+  recipientId: string
+): Promise<number> {
+  try {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const { count, error } = await supabase
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('sender_id', senderId)
+      .eq('recipient_id', recipientId)
+      .eq('is_prewritten', true)
+      .gte('created_at', startOfDay.toISOString());
+
+    if (error) throw error;
+    return count || 0;
+  } catch (error) {
+    console.error('Error getting prewritten message count:', error);
+    return 0;
   }
 }
 

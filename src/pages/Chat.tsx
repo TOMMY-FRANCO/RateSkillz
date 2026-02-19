@@ -8,6 +8,7 @@ import {
   markMessagesAsRead,
   getUserStatus,
   formatTimestamp,
+  getPrewrittenMessageCount,
 } from '../lib/messaging';
 import { ArrowLeft, Send, User, Check, CheckCheck, Coins, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { displayUsername } from '../lib/username';
@@ -17,6 +18,7 @@ import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 import { checkCanSendCoins } from '../lib/coinTransfers';
 import { supabase } from '../lib/supabase';
 import { playSound } from '../lib/sounds';
+import QuickMessageTray, { DAILY_LIMIT } from '../components/QuickMessageTray';
 
 interface OtherUserInfo {
   id: string;
@@ -48,6 +50,9 @@ export default function Chat() {
   const [showSendCoinsModal, setShowSendCoinsModal] = useState(false);
   const [canSendCoins, setCanSendCoins] = useState(false);
   const [sendCoinsTooltip, setSendCoinsTooltip] = useState('');
+
+  const [showQuickTray, setShowQuickTray] = useState(false);
+  const [prewrittenUsedToday, setPrewrittenUsedToday] = useState(0);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -128,7 +133,13 @@ export default function Chat() {
       setSendCoinsTooltip(result.reason || '');
     };
 
+    const loadPrewrittenCount = async () => {
+      const count = await getPrewrittenMessageCount(user.id, otherUser.id);
+      setPrewrittenUsedToday(count);
+    };
+
     checkEligibility();
+    loadPrewrittenCount();
 
     const loadOtherUserVerification = async () => {
       const { data } = await supabase
@@ -199,6 +210,30 @@ export default function Chat() {
     } else {
       setSendError(error || 'Failed to send message');
       setNewMessage(content);
+    }
+    setSending(false);
+  };
+
+  const handleQuickMessageSend = async (text: string) => {
+    if (!user || !conversationId || !otherUser || sending) return;
+    if (prewrittenUsedToday >= DAILY_LIMIT) return;
+
+    setSending(true);
+    setSendError(null);
+
+    const { message, error } = await sendMessage(conversationId, user.id, otherUser.id, text, true);
+    if (message) {
+      playSound('message-sent');
+      setPrewrittenUsedToday((prev) => prev + 1);
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === message.id)) return prev;
+        return [...prev, message];
+      });
+      if (prewrittenUsedToday + 1 >= DAILY_LIMIT) {
+        setShowQuickTray(false);
+      }
+    } else {
+      setSendError(error || 'Failed to send message');
     }
     setSending(false);
   };
@@ -385,6 +420,12 @@ export default function Chat() {
                         <span className="text-xs font-semibold">Coin Transfer</span>
                       </div>
                     )}
+                    {message.is_prewritten && !isCoinTransfer && (
+                      <div className="flex items-center gap-1 mb-1">
+                        <span className="text-xs">⚽</span>
+                        <span className="text-xs opacity-60 font-medium">Quick message</span>
+                      </div>
+                    )}
                     <p className="break-words">{message.content}</p>
                     <div className="flex items-center justify-end gap-1 mt-1">
                       <span className="text-xs opacity-70">
@@ -426,7 +467,15 @@ export default function Chat() {
       )}
 
       <div className="bg-black/20 backdrop-blur-sm border-t border-white/10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="max-w-4xl mx-auto px-4 pt-2 pb-4">
+          {showQuickTray && (
+            <QuickMessageTray
+              onSend={handleQuickMessageSend}
+              onClose={() => setShowQuickTray(false)}
+              usedToday={prewrittenUsedToday}
+              disabled={sending}
+            />
+          )}
           <form onSubmit={handleSend} className="flex gap-3">
             <div className="relative group">
               <button
@@ -450,6 +499,18 @@ export default function Chat() {
                 </div>
               )}
             </div>
+            <button
+              type="button"
+              onClick={() => setShowQuickTray((prev) => !prev)}
+              className={`text-xl p-3 rounded-xl transition-all flex items-center justify-center leading-none ${
+                showQuickTray
+                  ? 'bg-gradient-to-r from-cyan-600/40 to-teal-600/40 border border-cyan-500/50'
+                  : 'bg-white/10 hover:bg-white/20 border border-white/10'
+              } ${prewrittenUsedToday >= DAILY_LIMIT ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title={prewrittenUsedToday >= DAILY_LIMIT ? 'Daily quick message limit reached' : 'Quick messages'}
+            >
+              ⚽
+            </button>
             <input
               type="text"
               value={newMessage}
