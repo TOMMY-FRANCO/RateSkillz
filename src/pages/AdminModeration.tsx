@@ -27,7 +27,7 @@ interface ModerationCase {
 }
 
 export default function AdminModeration() {
-  const { profile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [cases, setCases] = useState<ModerationCase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,24 +39,29 @@ export default function AdminModeration() {
   const [filterStats, setFilterStats] = useState<any>(null);
   const [showFilteredComments, setShowFilteredComments] = useState(false);
   const adminCheckDoneRef = useRef(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    if (!profile) return;
-
+    if (!user) return;
     if (adminCheckDoneRef.current) return;
 
-    const isAdmin = (profile as any)?.is_admin === true;
-    console.log('[AdminModeration] admin check:', { isAdmin, profileId: profile?.id });
-
-    if (!isAdmin) {
-      navigate('/dashboard', { replace: true });
-      return;
-    }
-
-    adminCheckDoneRef.current = true;
-    loadCases();
-    loadFilterStats();
-  }, [profile?.id, navigate]);
+    supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        console.log('[AdminModeration] admin check:', { isAdmin: data?.is_admin, userId: user.id });
+        if (data?.is_admin !== true) {
+          navigate('/dashboard', { replace: true });
+          return;
+        }
+        adminCheckDoneRef.current = true;
+        setIsAdmin(true);
+        loadCases();
+        loadFilterStats();
+      });
+  }, [user?.id, navigate]);
 
   const loadCases = async () => {
     console.log('[AdminModeration] Starting to load cases...');
@@ -205,8 +210,8 @@ export default function AdminModeration() {
     });
   };
 
-  if (!profile?.is_admin) {
-    return null; // 404-like experience
+  if (!isAdmin) {
+    return null;
   }
 
   return (
