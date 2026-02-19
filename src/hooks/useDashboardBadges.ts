@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { updateAppBadge } from '../lib/appBadge';
+import { requestFCMToken, onForegroundMessage } from '../lib/firebase';
 
 export interface DashboardBadgeCounts {
   messages: number;
@@ -40,6 +41,37 @@ function totalCount(counts: DashboardBadgeCounts): number {
 
 function utcDateString(date: Date): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+}
+
+async function saveFCMToken(userId: string): Promise<void> {
+  try {
+    const token = await requestFCMToken();
+    if (!token) return;
+    await supabase
+      .from('profiles')
+      .update({ fcm_token: token })
+      .eq('id', userId);
+  } catch (err) {
+    console.error('[FCM] Failed to save token:', err);
+  }
+}
+
+async function sendPushNotification(userId: string, badgeCount: number): Promise<void> {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    await fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${anonKey}`,
+        Apikey: anonKey,
+      },
+      body: JSON.stringify({ user_id: userId, badge_count: badgeCount }),
+    });
+  } catch (err) {
+    console.error('[FCM] Failed to send push notification:', err);
+  }
 }
 
 export async function fetchDashboardBadges(userId: string): Promise<DashboardBadgeCounts> {
@@ -142,6 +174,7 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
 export function useDashboardBadges(userId: string | undefined) {
   const [counts, setCounts] = useState<DashboardBadgeCounts>({ ...ZERO });
   const isMountedRef = useRef(true);
+  const fcmInitialisedRef = useRef(false);
 
   const refetch = useCallback(async () => {
     if (!userId) {
@@ -149,10 +182,26 @@ export function useDashboardBadges(userId: string | undefined) {
       updateAppBadge(0);
       return;
     }
+
+    if (!fcmInitialisedRef.current) {
+      fcmInitialisedRef.current = true;
+      saveFCMToken(userId);
+
+      onForegroundMessage((payload) => {
+        const badgeCount = parseInt(
+          (payload.data && payload.data.badge_count) || '0',
+          10
+        );
+        updateAppBadge(badgeCount);
+      });
+    }
+
     const fresh = await fetchDashboardBadges(userId);
     if (isMountedRef.current) {
       setCounts(fresh);
-      updateAppBadge(totalCount(fresh));
+      const total = totalCount(fresh);
+      updateAppBadge(total);
+      sendPushNotification(userId, total);
     }
   }, [userId]);
 
