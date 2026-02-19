@@ -481,7 +481,7 @@ export default function Dashboard() {
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge
-              count={badgeCounts.pendingFriendRequests + badgeCounts.acceptedFriendRequests}
+              count={badgeCounts.acceptedFriendRequests}
               userId={profile?.id}
               notificationType="coin_request"
               capAt9

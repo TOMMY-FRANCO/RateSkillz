@@ -98,9 +98,11 @@ export default function Friends() {
     if (currentUser) {
       loadFriendData(false, 0);
       supabase
-        .from('profiles')
-        .update({ last_visited_friends: new Date().toISOString() })
-        .eq('id', currentUser.id)
+        .from('friends')
+        .update({ seen_by_sender: true })
+        .eq('user_id', currentUser.id)
+        .eq('status', 'accepted')
+        .eq('seen_by_sender', false)
         .then(() => {});
     }
   }, [currentUser]);

@@ -5,7 +5,6 @@ export interface DashboardBadgeCounts {
   messages: number;
   profileViews: number;
   transactions: number;
-  pendingFriendRequests: number;
   acceptedFriendRequests: number;
   battleRequests: number;
 }
@@ -14,7 +13,6 @@ const ZERO: DashboardBadgeCounts = {
   messages: 0,
   profileViews: 0,
   transactions: 0,
-  pendingFriendRequests: 0,
   acceptedFriendRequests: 0,
   battleRequests: 0,
 };
@@ -28,7 +26,7 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
     const [
       messagesResult,
       profileResult,
-      pendingFriendsResult,
+      acceptedFriendsResult,
       battleResult,
     ] = await Promise.all([
       supabase
@@ -39,15 +37,16 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
 
       supabase
         .from('profiles')
-        .select('unread_profile_views, last_visited_transactions, last_visited_friends')
+        .select('unread_profile_views, last_visited_transactions')
         .eq('id', userId)
         .maybeSingle(),
 
       supabase
-        .from('friend_requests')
+        .from('friends')
         .select('id', { count: 'exact', head: true })
-        .eq('receiver_id', userId)
-        .eq('status', 'pending'),
+        .eq('user_id', userId)
+        .eq('status', 'accepted')
+        .eq('seen_by_sender', false),
 
       supabase
         .from('battles')
@@ -58,8 +57,6 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
 
     const lastVisitedTransactions: string | null =
       profileResult.data?.last_visited_transactions ?? null;
-    const lastVisitedFriends: string | null =
-      profileResult.data?.last_visited_friends ?? null;
 
     let transactionsCount = 0;
     if (lastVisitedTransactions) {
@@ -77,30 +74,11 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
       transactionsCount = cap(txResult.count ?? 0);
     }
 
-    let acceptedFriendsCount = 0;
-    if (lastVisitedFriends) {
-      const acceptedResult = await supabase
-        .from('friend_requests')
-        .select('id', { count: 'exact', head: true })
-        .eq('sender_id', userId)
-        .eq('status', 'accepted')
-        .gt('updated_at', lastVisitedFriends);
-      acceptedFriendsCount = cap(acceptedResult.count ?? 0);
-    } else {
-      const acceptedResult = await supabase
-        .from('friend_requests')
-        .select('id', { count: 'exact', head: true })
-        .eq('sender_id', userId)
-        .eq('status', 'accepted');
-      acceptedFriendsCount = cap(acceptedResult.count ?? 0);
-    }
-
     return {
       messages: cap(messagesResult.count ?? 0),
       profileViews: cap(profileResult.data?.unread_profile_views ?? 0),
       transactions: transactionsCount,
-      pendingFriendRequests: cap(pendingFriendsResult.count ?? 0),
-      acceptedFriendRequests: acceptedFriendsCount,
+      acceptedFriendRequests: cap(acceptedFriendsResult.count ?? 0),
       battleRequests: cap(battleResult.count ?? 0),
     };
   } catch (err) {
