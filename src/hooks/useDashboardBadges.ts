@@ -56,10 +56,28 @@ async function saveFCMToken(userId: string): Promise<void> {
   }
 }
 
-async function sendPushNotification(userId: string, badgeCount: number): Promise<void> {
+function buildNotificationText(counts: DashboardBadgeCounts): { title: string; body: string } {
+  const parts: string[] = [];
+  if (counts.messages > 0) parts.push(`${counts.messages} new message${counts.messages > 1 ? 's' : ''}`);
+  if (counts.notifications > 0) parts.push(`${counts.notifications} notification${counts.notifications > 1 ? 's' : ''}`);
+  if (counts.acceptedFriendRequests > 0) parts.push(`${counts.acceptedFriendRequests} friend request${counts.acceptedFriendRequests > 1 ? 's' : ''} accepted`);
+  if (counts.battleRequests > 0) parts.push(`${counts.battleRequests} battle challenge${counts.battleRequests > 1 ? 's' : ''}`);
+  if (counts.profileViews > 0) parts.push(`${counts.profileViews} profile view${counts.profileViews > 1 ? 's' : ''}`);
+  if (counts.transactions > 0) parts.push(`${counts.transactions} new transaction${counts.transactions > 1 ? 's' : ''}`);
+  return {
+    title: 'RatingSkill',
+    body: parts.length > 0 ? parts.join(', ') : 'You have new activity',
+  };
+}
+
+async function sendPushNotification(userId: string, badgeCount: number, counts: DashboardBadgeCounts): Promise<void> {
+  if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+    return;
+  }
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const { title, body } = buildNotificationText(counts);
     await fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {
       method: 'POST',
       headers: {
@@ -67,7 +85,7 @@ async function sendPushNotification(userId: string, badgeCount: number): Promise
         Authorization: `Bearer ${anonKey}`,
         Apikey: anonKey,
       },
-      body: JSON.stringify({ user_id: userId, badge_count: badgeCount }),
+      body: JSON.stringify({ user_id: userId, badge_count: badgeCount, title, notification_body: body }),
     });
   } catch (err) {
     console.error('[FCM] Failed to send push notification:', err);
@@ -202,7 +220,7 @@ export function useDashboardBadges(userId: string | undefined) {
       setCounts(fresh);
       const total = totalCount(fresh);
       updateAppBadge(total);
-      sendPushNotification(userId, total);
+      sendPushNotification(userId, total, fresh);
     }
   }, [userId]);
 

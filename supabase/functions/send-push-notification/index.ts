@@ -155,7 +155,7 @@ Deno.serve(async (req: Request) => {
   try {
     console.log("[FCM] send-push-notification invoked, method:", req.method);
 
-    let body: { user_id?: string; badge_count?: unknown };
+    let body: { user_id?: string; badge_count?: unknown; title?: string; notification_body?: string };
     try {
       body = await req.json();
     } catch (parseErr) {
@@ -166,8 +166,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { user_id, badge_count } = body;
-    console.log("[FCM] user_id:", user_id, "| badge_count:", badge_count);
+    const { user_id, badge_count, title, notification_body } = body;
+    console.log("[FCM] user_id:", user_id, "| badge_count:", badge_count, "| title:", title, "| body:", notification_body);
 
     if (!user_id) {
       return new Response(
@@ -227,21 +227,44 @@ Deno.serve(async (req: Request) => {
     const fcmEndpoint = `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
     console.log("[FCM] FCM endpoint:", fcmEndpoint);
 
+    const notifTitle = (title && String(title).trim()) || "RatingSkill";
+    const notifBody = (notification_body && String(notification_body).trim()) || "You have new activity";
+
+    console.log("[FCM] Notification title:", notifTitle, "| body:", notifBody);
+
     const fcmPayload = {
       message: {
         token: fcmToken,
+        notification: {
+          title: notifTitle,
+          body: notifBody,
+        },
         data: {
           badge_count: String(count),
+          title: notifTitle,
+          body: notifBody,
         },
         webpush: {
           headers: {
-            Urgency: "normal",
+            Urgency: "high",
+          },
+          notification: {
+            title: notifTitle,
+            body: notifBody,
+            icon: "/icon-192x192.png",
+            badge: "/icon-72x72.png",
+            requireInteraction: false,
           },
         },
         apns: {
           payload: {
             aps: {
+              alert: {
+                title: notifTitle,
+                body: notifBody,
+              },
               badge: count,
+              sound: "default",
               "content-available": 1,
             },
           },
