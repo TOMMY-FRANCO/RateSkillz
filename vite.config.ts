@@ -97,6 +97,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      external: ['@capacitor/core', '@capacitor/haptics', '@capacitor/status-bar', '@capacitor/splash-screen', '@capacitor/push-notifications'],
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
