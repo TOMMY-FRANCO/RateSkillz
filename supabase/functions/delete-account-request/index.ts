@@ -8,6 +8,7 @@ const corsHeaders = {
 
 interface RequestBody {
   email: string;
+  username: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -19,7 +20,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { email }: RequestBody = await req.json();
+    const { email, username }: RequestBody = await req.json();
 
     if (!email || !email.trim()) {
       return new Response(
@@ -42,8 +43,19 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    if (!username || !username.trim()) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Username is required" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     const submittedAt = new Date().toUTCString();
     const userEmail = email.trim().toLowerCase();
+    const userUsername = username.trim();
 
     const emailBody = `
       <html>
@@ -56,6 +68,8 @@ Deno.serve(async (req: Request) => {
             .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
             .detail { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 15px; margin: 15px 0; }
             .label { font-weight: bold; color: #374151; }
+            .data-list { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 15px; margin: 15px 0; }
+            .data-list li { color: #374151; margin-bottom: 6px; }
             .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
           </style>
         </head>
@@ -68,14 +82,26 @@ Deno.serve(async (req: Request) => {
               <p>A user has submitted an account deletion request via the RatingSkill app.</p>
               <div class="detail">
                 <p><span class="label">Email Address:</span> ${userEmail}</p>
+                <p><span class="label">Username:</span> ${userUsername}</p>
                 <p><span class="label">Request Submitted:</span> ${submittedAt}</p>
                 <p><span class="label">Request Type:</span> Account &amp; Data Deletion</p>
               </div>
-              <p>Please process this deletion request within 30 days as required.</p>
-              <p>Steps to complete:</p>
+              <p><strong>Data to be deleted:</strong></p>
+              <ul class="data-list">
+                <li>Profile information (name, bio, avatar, location)</li>
+                <li>Player card and card ownership history</li>
+                <li>Coin balance and all coin transactions</li>
+                <li>Messages and conversation history</li>
+                <li>Ratings given and received</li>
+                <li>Transaction history and purchase records</li>
+                <li>Friend connections and friend requests</li>
+                <li>All other personal data associated with the account</li>
+              </ul>
+              <p>Please process this deletion request within <strong>30 days</strong> as required.</p>
+              <p><strong>Steps to complete:</strong></p>
               <ol>
-                <li>Locate the account associated with <strong>${userEmail}</strong></li>
-                <li>Delete all user data including profile, transactions, messages, and any associated records</li>
+                <li>Locate the account associated with email <strong>${userEmail}</strong> / username <strong>${userUsername}</strong></li>
+                <li>Delete all user data listed above</li>
                 <li>Confirm deletion is complete</li>
               </ol>
               <p>Best regards,<br>RatingSkill Automated System</p>
@@ -100,7 +126,7 @@ Deno.serve(async (req: Request) => {
         body: JSON.stringify({
           from: "RatingSkill <noreply@ratingskill.com>",
           to: "Dev.ratingskill@gmail.com",
-          subject: `Account Deletion Request - ${userEmail}`,
+          subject: `Account Deletion Request - ${userUsername} (${userEmail})`,
           html: emailBody,
         }),
       });

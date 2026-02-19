@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Trash2, Mail, Loader2, CheckCircle, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Trash2, Mail, User, Loader2, CheckCircle, AlertTriangle, ShieldAlert, Info } from 'lucide-react';
 
 export default function DeleteAccount() {
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -23,8 +24,13 @@ export default function DeleteAccount() {
       return;
     }
 
+    if (!username.trim()) {
+      setError('Please enter your username');
+      return;
+    }
+
     if (!confirmed) {
-      setError('Please confirm that you understand your account and all data will be permanently deleted');
+      setError('Please confirm that you understand deletion is permanent and cannot be undone');
       return;
     }
 
@@ -40,7 +46,10 @@ export default function DeleteAccount() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
-          body: JSON.stringify({ email: email.trim().toLowerCase() }),
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            username: username.trim(),
+          }),
         }
       );
 
@@ -59,9 +68,20 @@ export default function DeleteAccount() {
     }
   };
 
+  const deletedItems = [
+    'Profile information (name, bio, avatar, location)',
+    'Player card and card ownership history',
+    'Coin balance and all coin transactions',
+    'Messages and conversation history',
+    'Ratings given and received',
+    'Transaction history and purchase records',
+    'Friend connections and friend requests',
+    'All other personal data associated with your account',
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-start justify-center p-4 py-10">
+      <div className="w-full max-w-lg">
         <Link
           to="/"
           className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6"
@@ -77,15 +97,20 @@ export default function DeleteAccount() {
                 <CheckCircle className="w-8 h-8 text-green-400" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white mb-3">Request Submitted</h1>
+                <h1 className="text-2xl font-bold text-white mb-3">Request Received</h1>
                 <p className="text-gray-400 leading-relaxed">
-                  Your account deletion request has been received. It will be processed within <span className="text-white font-semibold">30 days</span>.
+                  Your account deletion request has been received and will be processed within{' '}
+                  <span className="text-white font-semibold">30 days</span>.
                 </p>
               </div>
-              <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4 text-left">
-                <p className="text-sm text-gray-400">
-                  Once processed, your account, profile, transaction history, messages, and all associated data will be permanently deleted and cannot be recovered.
-                </p>
+              <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4 text-left space-y-2">
+                <p className="text-sm text-gray-300 font-medium">What happens next:</p>
+                <ul className="text-sm text-gray-400 space-y-1 list-disc list-inside">
+                  <li>Our team will review and process your request</li>
+                  <li>Your account and all data will be permanently deleted</li>
+                  <li>Some data may be retained for up to 30 days for legal and fraud prevention purposes</li>
+                  <li>You will not receive a confirmation email once deletion is complete</li>
+                </ul>
               </div>
               <Link
                 to="/"
@@ -100,16 +125,38 @@ export default function DeleteAccount() {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-red-500/20 border border-red-500/30 rounded-full mb-4">
                   <Trash2 className="w-8 h-8 text-red-400" />
                 </div>
-                <h1 className="text-3xl font-bold text-white mb-2">Delete Account</h1>
-                <p className="text-gray-400">
-                  Submit a request to permanently delete your RatingSkill account and all associated data.
+                <h1 className="text-2xl font-bold text-white mb-2">RatingSkill Account Deletion Request</h1>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  Submitting this form will request permanent deletion of your RatingSkill account and all associated data. This action cannot be reversed.
                 </p>
               </div>
 
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 flex items-start gap-3">
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-5 flex items-start gap-3">
                 <ShieldAlert className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-red-300">
-                  This action is <strong>permanent and irreversible.</strong> All your data including your profile, coins, cards, messages, and transaction history will be deleted.
+                  <strong className="text-red-200">Warning:</strong> Deletion is permanent and irreversible. Once processed, your account cannot be restored.
+                </p>
+              </div>
+
+              <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-4 mb-5">
+                <p className="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
+                  <Trash2 className="w-4 h-4 text-red-400" />
+                  The following data will be permanently deleted:
+                </p>
+                <ul className="space-y-1.5">
+                  {deletedItems.map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-sm text-gray-400">
+                      <span className="text-red-400 mt-0.5 flex-shrink-0">&#8226;</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6 flex items-start gap-3">
+                <Info className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-300/90">
+                  Some data may be retained for up to <strong className="text-amber-200">30 days</strong> for legal and fraud prevention purposes before being permanently removed.
                 </p>
               </div>
 
@@ -145,6 +192,28 @@ export default function DeleteAccount() {
                   </div>
                 </div>
 
+                <div>
+                  <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
+                    Username
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <input
+                      id="username"
+                      type="text"
+                      value={username}
+                      onChange={(e) => {
+                        setUsername(e.target.value);
+                        if (error) setError('');
+                      }}
+                      placeholder="Enter your username"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                      disabled={loading}
+                      autoComplete="username"
+                    />
+                  </div>
+                </div>
+
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <div className="relative flex-shrink-0 mt-0.5">
                     <input
@@ -172,14 +241,14 @@ export default function DeleteAccount() {
                     </div>
                   </div>
                   <span className="text-sm text-gray-300 leading-relaxed">
-                    I understand that my account and <strong className="text-white">all associated data</strong> will be permanently deleted and cannot be recovered.
+                    I understand that deletion is <strong className="text-white">permanent and cannot be undone</strong>, and that my account and all associated data will be irreversibly removed.
                   </span>
                 </label>
 
                 <button
                   type="submit"
-                  disabled={loading || !email.trim() || !confirmed}
-                  className="w-full px-4 py-3 bg-red-600 hover:bg-red-500 disabled:bg-red-900/50 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  disabled={loading || !email.trim() || !username.trim() || !confirmed}
+                  className="w-full px-4 py-3 bg-red-600 hover:bg-red-500 disabled:bg-red-900/40 text-white font-semibold rounded-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
