@@ -26,6 +26,7 @@ import ModerationCaseAlert from '../components/ModerationCaseAlert';
 import BalanceDiscrepancyWarning from '../components/BalanceDiscrepancyWarning';
 import { checkBalanceIntegrity } from '../lib/balanceReconciliation';
 import { checkAndNotifyNewMessages } from '../lib/messageNotifications';
+import { useDashboardBadges } from '../hooks/useDashboardBadges';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -46,6 +47,7 @@ export default function Dashboard() {
   const [showFriendQR, setShowFriendQR] = useState(false);
   const { unreadCount: unreadMessagesCount } = useUnreadMessages();
   const { counts: notificationCounts, getCount, loading: notificationsLoading } = useNotifications(profile?.id);
+  const { counts: badgeCounts, refetch: refetchBadges } = useDashboardBadges(profile?.id);
 
   const [balanceDiscrepancy, setBalanceDiscrepancy] = useState<{
     hasDiscrepancy: boolean;
@@ -61,6 +63,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (profile) {
       loadDashboardData();
+      refetchBadges();
 
       if (!profile.terms_accepted_at) {
         setShowTermsModal(true);
@@ -138,6 +141,7 @@ export default function Dashboard() {
         checkBalanceIntegrity(),
         loadDashboardData(),
         profile ? checkAndNotifyNewMessages(profile.id) : Promise.resolve(0),
+        refetchBadges(),
       ]);
 
       if (balanceCheck.success && balanceCheck.hasDiscrepancy) {
@@ -316,9 +320,10 @@ export default function Dashboard() {
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge
-              count={getCount(['message', 'coin_received', 'coin_request'])}
+              count={badgeCounts.messages}
               userId={profile?.id}
               notificationType="message"
+              capAt9
             />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#C44569] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
@@ -371,10 +376,11 @@ export default function Dashboard() {
             className="glass-card p-3 sm:p-4 border-2 border-[#38BDF8]/50 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge
-              count={getCount(['battle_request'])}
+              count={badgeCounts.battleRequests}
               userId={profile?.id}
               notificationType="battle_request"
               className={profile.is_manager ? 'top-10' : ''}
+              capAt9
             />
             {profile.is_manager && (
               <span className="absolute top-1 right-1 px-2 py-0.5 bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black text-[10px] font-bold rounded-md shadow-lg shadow-[#FFD700]/30 uppercase tracking-wider">
@@ -434,9 +440,10 @@ export default function Dashboard() {
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge
-              count={getCount(['transaction'])}
+              count={badgeCounts.transactions}
               userId={profile?.id}
               notificationType="transaction"
+              capAt9
             />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#38BDF8] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
@@ -474,9 +481,10 @@ export default function Dashboard() {
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge
-              count={Math.max(0, pendingRequestsCount - getFriendsBadgeSeenCount())}
+              count={badgeCounts.pendingFriendRequests + badgeCounts.acceptedFriendRequests}
               userId={profile?.id}
               notificationType="coin_request"
+              capAt9
             />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
@@ -494,9 +502,10 @@ export default function Dashboard() {
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge
-              count={unreadProfileViews}
+              count={badgeCounts.profileViews}
               userId={profile?.id}
               notificationType="profile_view"
+              capAt9
             />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">

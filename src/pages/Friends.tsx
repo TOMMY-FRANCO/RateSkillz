@@ -95,7 +95,14 @@ export default function Friends() {
   const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (currentUser) loadFriendData(false, 0);
+    if (currentUser) {
+      loadFriendData(false, 0);
+      supabase
+        .from('profiles')
+        .update({ last_visited_friends: new Date().toISOString() })
+        .eq('id', currentUser.id)
+        .then(() => {});
+    }
   }, [currentUser]);
 
   useEffect(() => {

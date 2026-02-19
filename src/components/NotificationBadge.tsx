@@ -9,6 +9,7 @@ interface NotificationBadgeProps {
   className?: string;
   userId?: string;
   notificationType?: NotificationType | 'ad_available';
+  capAt9?: boolean;
 }
 
 export default function NotificationBadge({
@@ -16,6 +17,7 @@ export default function NotificationBadge({
   className = '',
   userId,
   notificationType,
+  capAt9 = false,
 }: NotificationBadgeProps) {
   const prevCountRef = useRef(count);
   const [visible, setVisible] = useState(count > 0);
@@ -52,7 +54,9 @@ export default function NotificationBadge({
   if (!visible) return null;
 
   const displayValue = count > 0 ? count : prevCountRef.current;
-  const displayCount = displayValue > 100 ? '100+' : displayValue.toString();
+  const displayCount = capAt9
+    ? displayValue >= 9 ? '9+' : displayValue.toString()
+    : displayValue > 100 ? '100+' : displayValue.toString();
 
   return (
     <div

@@ -5,6 +5,7 @@ import { getTransactions } from '../lib/coins';
 import { useCoinBalance } from '../hooks/useCoinBalance';
 import { useAuth } from '../contexts/AuthContext';
 import { markNotificationsRead } from '../lib/notifications';
+import { supabase } from '../lib/supabase';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
 import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 import BalanceDiscrepancyWarning from '../components/BalanceDiscrepancyWarning';
@@ -60,6 +61,11 @@ export default function TransactionHistory() {
     loadTransactions(1, false);
     if (user) {
       markNotificationsRead(user.id, 'transaction');
+      supabase
+        .from('profiles')
+        .update({ last_visited_transactions: new Date().toISOString() })
+        .eq('id', user.id)
+        .then(() => {});
     }
   }, [user]);
 
