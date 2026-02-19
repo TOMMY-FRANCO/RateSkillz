@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, LogOut, User, Bell, FileText, Shield, UserCheck, Smartphone, BellRing } from 'lucide-react';
+import { ArrowLeft, LogOut, User, Bell, FileText, Shield, UserCheck, Smartphone } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import UsernameChanger from '../components/UsernameChanger';
 import { displayUsername } from '../lib/username';
 import { WhatsAppVerification } from '../components/WhatsAppVerification';
 import { VerificationBadge } from '../components/VerificationBadge';
 import { playSoundPreview, playButtonClick, BUTTON_SOUNDS_KEY, BUTTON_VIBRATION_KEY } from '../lib/sounds';
-import { sendTestNotification } from '../lib/firebase';
 import { useNotificationSoundPreferences } from '../hooks/useNotificationSoundPreferences';
 import { getSoundNameForNotificationType } from '../lib/notificationSoundPreferences';
 import type { NotificationType } from '../lib/notifications';
@@ -20,7 +19,6 @@ export default function Settings() {
   const [isVerified, setIsVerified] = useState(false);
   const [hasSocialBadge, setHasSocialBadge] = useState(false);
   const [friendCount, setFriendCount] = useState(0);
-  const [testNotifStatus, setTestNotifStatus] = useState<'idle' | 'sent' | 'failed'>('idle');
   const {
     preferences: notificationSoundPrefs,
     loading: notificationSoundLoading,
@@ -218,26 +216,6 @@ export default function Settings() {
 
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
             <h2 className="text-xl font-bold text-white mb-4">Actions</h2>
-            <div className="space-y-3 mb-3">
-              <button
-                onClick={async () => {
-                  setTestNotifStatus('idle');
-                  const ok = await sendTestNotification();
-                  setTestNotifStatus(ok ? 'sent' : 'failed');
-                  setTimeout(() => setTestNotifStatus('idle'), 4000);
-                }}
-                className="w-full px-6 py-3 bg-cyan-600 text-white font-semibold rounded-lg hover:bg-cyan-500 transition-all flex items-center justify-center space-x-2"
-              >
-                <BellRing className="w-5 h-5" />
-                <span>
-                  {testNotifStatus === 'sent'
-                    ? 'Test notification sent!'
-                    : testNotifStatus === 'failed'
-                    ? 'Failed — check permissions'
-                    : 'Send Test Notification'}
-                </span>
-              </button>
-            </div>
             <button
               onClick={handleSignOut}
               className="w-full px-6 py-3 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-400 transition-all flex items-center justify-center space-x-2"

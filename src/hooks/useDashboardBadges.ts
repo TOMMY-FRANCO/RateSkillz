@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { updateAppBadge } from '../lib/appBadge';
-import { requestFCMToken, setupForegroundMessageHandler } from '../lib/firebase';
 
 export interface DashboardBadgeCounts {
   messages: number;
@@ -41,55 +40,6 @@ function totalCount(counts: DashboardBadgeCounts): number {
 
 function utcDateString(date: Date): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
-}
-
-async function saveFCMToken(userId: string): Promise<void> {
-  try {
-    const token = await requestFCMToken();
-    if (!token) return;
-    await supabase
-      .from('profiles')
-      .update({ fcm_token: token })
-      .eq('id', userId);
-  } catch (err) {
-    console.error('[FCM] Failed to save token:', err);
-  }
-}
-
-function buildNotificationText(counts: DashboardBadgeCounts): { title: string; body: string } {
-  const parts: string[] = [];
-  if (counts.messages > 0) parts.push(`${counts.messages} new message${counts.messages > 1 ? 's' : ''}`);
-  if (counts.notifications > 0) parts.push(`${counts.notifications} notification${counts.notifications > 1 ? 's' : ''}`);
-  if (counts.acceptedFriendRequests > 0) parts.push(`${counts.acceptedFriendRequests} friend request${counts.acceptedFriendRequests > 1 ? 's' : ''} accepted`);
-  if (counts.battleRequests > 0) parts.push(`${counts.battleRequests} battle challenge${counts.battleRequests > 1 ? 's' : ''}`);
-  if (counts.profileViews > 0) parts.push(`${counts.profileViews} profile view${counts.profileViews > 1 ? 's' : ''}`);
-  if (counts.transactions > 0) parts.push(`${counts.transactions} new transaction${counts.transactions > 1 ? 's' : ''}`);
-  return {
-    title: 'RatingSkill',
-    body: parts.length > 0 ? parts.join(', ') : 'You have new activity',
-  };
-}
-
-async function sendPushNotification(userId: string, badgeCount: number, counts: DashboardBadgeCounts): Promise<void> {
-  if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-    return;
-  }
-  try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    const { title, body } = buildNotificationText(counts);
-    await fetch(`${supabaseUrl}/functions/v1/send-push-notification`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${anonKey}`,
-        Apikey: anonKey,
-      },
-      body: JSON.stringify({ user_id: userId, badge_count: badgeCount, title, notification_body: body }),
-    });
-  } catch (err) {
-    console.error('[FCM] Failed to send push notification:', err);
-  }
 }
 
 export async function fetchDashboardBadges(userId: string): Promise<DashboardBadgeCounts> {
@@ -169,7 +119,7 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
 
     const adAvailable = (adViewResult.count ?? 0) === 0 ? 1 : 0;
 
-    const result: DashboardBadgeCounts = {
+    return {
       messages: cap(messagesResult.count ?? 0),
       profileViews: cap(profileResult.data?.unread_profile_views ?? 0),
       transactions: transactionsCount,
@@ -178,13 +128,7 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
       notifications: cap(notificationsResult.count ?? 0),
       adAvailable,
     };
-
-    const total = totalCount(result);
-    console.log('[AppBadge] counts:', result, '| total:', total);
-
-    return result;
-  } catch (err) {
-    console.error('Error fetching dashboard badges:', err);
+  } catch {
     return { ...ZERO };
   }
 }
@@ -192,7 +136,6 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
 export function useDashboardBadges(userId: string | undefined) {
   const [counts, setCounts] = useState<DashboardBadgeCounts>({ ...ZERO });
   const isMountedRef = useRef(true);
-  const fcmInitialisedRef = useRef(false);
 
   const refetch = useCallback(async () => {
     if (!userId) {
@@ -201,26 +144,10 @@ export function useDashboardBadges(userId: string | undefined) {
       return;
     }
 
-    if (!fcmInitialisedRef.current) {
-      fcmInitialisedRef.current = true;
-      setTimeout(() => {
-        saveFCMToken(userId);
-        setupForegroundMessageHandler((payload) => {
-          const badgeCount = parseInt(
-            (payload.data && payload.data.badge_count) || '0',
-            10
-          );
-          updateAppBadge(badgeCount);
-        });
-      }, 5000);
-    }
-
     const fresh = await fetchDashboardBadges(userId);
     if (isMountedRef.current) {
       setCounts(fresh);
-      const total = totalCount(fresh);
-      updateAppBadge(total);
-      sendPushNotification(userId, total, fresh);
+      updateAppBadge(totalCount(fresh));
     }
   }, [userId]);
 

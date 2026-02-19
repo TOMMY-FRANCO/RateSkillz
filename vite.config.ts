@@ -8,10 +8,6 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      strategies: 'injectManifest',
-      srcDir: 'src',
-      filename: 'sw.js',
-      injectRegister: 'auto',
       includeAssets: ['favicon.png', 'icon.svg'],
       manifest: {
         name: 'RatingSkill',
@@ -38,13 +34,60 @@ export default defineConfig({
           }
         ]
       },
-      injectManifest: {
+      workbox: {
         globPatterns: ['**/*.{js,css,html,ico,woff,woff2}'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            handler: 'NetworkOnly'
+          },
+          {
+            urlPattern: /\/api\/.*/i,
+            handler: 'NetworkOnly'
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: ({ url }) =>
+              url.pathname.startsWith('/icons/') ||
+              url.pathname === '/manifest.json' ||
+              url.pathname.startsWith('/static/') ||
+              url.pathname.startsWith('/fonts/') ||
+              url.pathname.startsWith('/images/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'static-assets-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ],
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
+        navigationPreload: false
       },
       devOptions: {
         enabled: true,
-        type: 'classic',
+        type: 'module',
         navigateFallback: 'index.html'
       }
     })
