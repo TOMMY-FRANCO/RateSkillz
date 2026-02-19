@@ -6,6 +6,8 @@ import {
   ArrowLeft, UserCheck, UserX, Clock, Eye, CheckCircle, XCircle, AlertCircle,
   Coins, Send, Loader2, RefreshCw, MessageCircle, Search, Users, UserPlus,
 } from 'lucide-react';
+
+const FRIENDS_PAGE_SIZE = 20;
 import type { Profile } from '../contexts/AuthContext';
 import { displayUsername } from '../lib/username';
 import { getMultipleUserBalances } from '../lib/balances';
@@ -70,6 +72,10 @@ export default function Friends() {
   const [incomingRequests, setIncomingRequests] = useState<FriendRequest[]>([]);
   const [outgoingRequests, setOutgoingRequests] = useState<FriendRequest[]>([]);
   const [friends, setFriends] = useState<FriendRequest[]>([]);
+  const [friendsOffset, setFriendsOffset] = useState(0);
+  const [hasMoreFriends, setHasMoreFriends] = useState(false);
+  const [loadingMoreFriends, setLoadingMoreFriends] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -89,7 +95,7 @@ export default function Friends() {
   const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (currentUser) loadFriendData();
+    if (currentUser) loadFriendData(false, 0);
   }, [currentUser]);
 
   useEffect(() => {
@@ -107,18 +113,34 @@ export default function Friends() {
     setTimeout(() => setNotification(null), 4000);
   };
 
-  const loadFriendData = async () => {
+  const loadFriendData = async (appendFriends = false, offset = 0) => {
     if (!currentUser) return;
     try {
-      const { data: friendsData, error: fetchError } = await supabase
+      setLoadError(null);
+
+      const pendingQuery = supabase
         .from('friends')
         .select('id, user_id, friend_id, status, created_at')
-        .or(`user_id.eq.${currentUser.id},friend_id.eq.${currentUser.id}`);
+        .or(`user_id.eq.${currentUser.id},friend_id.eq.${currentUser.id}`)
+        .eq('status', 'pending');
 
-      if (fetchError) throw fetchError;
+      const acceptedQuery = supabase
+        .from('friends')
+        .select('id, user_id, friend_id, status, created_at')
+        .or(`user_id.eq.${currentUser.id},friend_id.eq.${currentUser.id}`)
+        .eq('status', 'accepted')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + FRIENDS_PAGE_SIZE - 1);
 
-      if (friendsData && friendsData.length > 0) {
-        const allOtherUserIds = friendsData.map(f =>
+      const [pendingResult, acceptedResult] = await Promise.all([pendingQuery, acceptedQuery]);
+
+      if (pendingResult.error) throw pendingResult.error;
+      if (acceptedResult.error) throw acceptedResult.error;
+
+      const allRows = [...(pendingResult.data || []), ...(acceptedResult.data || [])];
+
+      if (allRows.length > 0) {
+        const allOtherUserIds = allRows.map(f =>
           f.friend_id === currentUser.id ? f.user_id : f.friend_id
         );
 
@@ -134,24 +156,37 @@ export default function Friends() {
         const outgoing: FriendRequest[] = [];
         const accepted: FriendRequest[] = [];
 
-        for (const friendship of friendsData) {
+        for (const friendship of pendingResult.data || []) {
           const isIncoming = friendship.friend_id === currentUser.id;
           const otherUserId = isIncoming ? friendship.user_id : friendship.friend_id;
           const profileData = profileMap.get(otherUserId);
           if (profileData) {
             const request = { ...friendship, profile: profileData };
-            if (friendship.status === 'pending') {
-              if (isIncoming) incoming.push(request);
-              else outgoing.push(request);
-            } else if (friendship.status === 'accepted') {
-              accepted.push(request);
-            }
+            if (isIncoming) incoming.push(request);
+            else outgoing.push(request);
           }
         }
 
-        setIncomingRequests(incoming);
-        setOutgoingRequests(outgoing);
-        setFriends(accepted);
+        for (const friendship of acceptedResult.data || []) {
+          const isIncoming = friendship.friend_id === currentUser.id;
+          const otherUserId = isIncoming ? friendship.user_id : friendship.friend_id;
+          const profileData = profileMap.get(otherUserId);
+          if (profileData) {
+            accepted.push({ ...friendship, profile: profileData });
+          }
+        }
+
+        if (!appendFriends) {
+          setIncomingRequests(incoming);
+          setOutgoingRequests(outgoing);
+          setFriends(accepted);
+          setFriendsOffset(accepted.length);
+        } else {
+          setFriends(prev => [...prev, ...accepted]);
+          setFriendsOffset(prev => prev + accepted.length);
+        }
+
+        setHasMoreFriends((acceptedResult.data || []).length === FRIENDS_PAGE_SIZE);
         setFriendsBadgeSeenCount(incoming.length);
 
         const allUserIds = new Set<string>();
@@ -164,20 +199,35 @@ export default function Friends() {
             getMultipleUserBalances(Array.from(allUserIds)),
             getMultipleUserPresence(Array.from(allUserIds)),
           ]);
-          setUserBalances(balances);
-          setUserPresence(presence);
+          if (!appendFriends) {
+            setUserBalances(balances);
+            setUserPresence(presence);
+          } else {
+            setUserBalances(prev => new Map([...prev, ...balances]));
+            setUserPresence(prev => new Map([...prev, ...presence]));
+          }
         }
-      } else {
+      } else if (!appendFriends) {
         setIncomingRequests([]);
         setOutgoingRequests([]);
         setFriends([]);
+        setHasMoreFriends(false);
       }
     } catch (error: any) {
       console.error('Error loading friend data:', error);
-      showNotification('error', 'Failed to load friends. Please refresh.');
+      if (!appendFriends) {
+        setLoadError('Failed to load friends. Please try again.');
+        showNotification('error', 'Failed to load friends. Please refresh.');
+      }
     } finally {
       setLoading(false);
+      setLoadingMoreFriends(false);
     }
+  };
+
+  const handleLoadMoreFriends = async () => {
+    setLoadingMoreFriends(true);
+    await loadFriendData(true, friendsOffset);
   };
 
   const handleSearch = async (query: string) => {
@@ -228,7 +278,8 @@ export default function Friends() {
         getOrCreateConversation(currentUser.id, request.user_id).catch(() => {});
         claimPerFriendMilestoneReward(currentUser.id, request.user_id).catch(() => {});
       }
-      await loadFriendData();
+      setFriendsOffset(0);
+      await loadFriendData(false, 0);
     } catch (error: any) {
       showNotification('error', 'Failed to accept request. Please try again.');
     } finally {
@@ -242,7 +293,8 @@ export default function Friends() {
       const { error } = await supabase.from('friends').delete().eq('id', requestId);
       if (error) throw error;
       showNotification('info', 'Friend request declined.');
-      await loadFriendData();
+      setFriendsOffset(0);
+      await loadFriendData(false, 0);
     } catch {
       showNotification('error', 'Failed to decline request. Please try again.');
     } finally {
@@ -256,7 +308,8 @@ export default function Friends() {
       const { error } = await supabase.from('friends').delete().eq('id', requestId);
       if (error) throw error;
       showNotification('info', 'Friend request cancelled.');
-      await loadFriendData();
+      setFriendsOffset(0);
+      await loadFriendData(false, 0);
     } catch {
       showNotification('error', 'Failed to cancel request. Please try again.');
     } finally {
@@ -271,7 +324,8 @@ export default function Friends() {
       const { error } = await supabase.from('friends').delete().eq('id', requestId);
       if (error) throw error;
       showNotification('info', 'Friend removed.');
-      await loadFriendData();
+      setFriendsOffset(0);
+      await loadFriendData(false, 0);
     } catch {
       showNotification('error', 'Failed to remove friend. Please try again.');
     } finally {
@@ -333,7 +387,7 @@ export default function Friends() {
               )}
             </div>
             <button
-              onClick={async () => { setRefreshing(true); await loadFriendData(); setRefreshing(false); }}
+              onClick={async () => { setRefreshing(true); setFriendsOffset(0); await loadFriendData(false, 0); setRefreshing(false); }}
               disabled={refreshing}
               className="text-[#B0B8C8] hover:text-[#00E0FF] transition-colors disabled:opacity-50"
               aria-label="Refresh"
@@ -564,11 +618,23 @@ export default function Friends() {
             <span className="text-[#00E0FF] font-bold">{friends.length}</span>
           </h2>
 
+          {loadError && (
+            <div className="glass-card p-4 border border-red-500/30 text-center mb-3">
+              <p className="text-red-400 text-sm mb-2">{loadError}</p>
+              <button
+                onClick={() => { setFriendsOffset(0); loadFriendData(false, 0); }}
+                className="px-4 py-1.5 bg-white/10 hover:bg-white/20 text-white text-sm rounded-lg transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
           {loading ? (
             <div className="glass-card p-6 flex items-center justify-center">
               <Loader2 className="w-5 h-5 text-[#00E0FF] animate-spin" />
             </div>
-          ) : friends.length === 0 ? (
+          ) : friends.length === 0 && !loadError ? (
             <div className="glass-card p-8 text-center">
               <Users className="w-10 h-10 text-[#B0B8C8]/30 mx-auto mb-3" />
               <p className="text-[#B0B8C8] text-sm">No friends yet</p>
@@ -650,6 +716,27 @@ export default function Friends() {
                   </div>
                 </div>
               ))}
+
+              {loadingMoreFriends && (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="w-5 h-5 text-[#00E0FF] animate-spin" />
+                </div>
+              )}
+
+              {!loadingMoreFriends && hasMoreFriends && friends.length > 0 && (
+                <div className="flex justify-center pt-2">
+                  <button
+                    onClick={handleLoadMoreFriends}
+                    className="px-6 py-3 glass-card text-[#00E0FF] font-semibold text-sm rounded-xl transition-all hover:border-[rgba(0,224,255,0.5)]"
+                  >
+                    Load More Friends
+                  </button>
+                </div>
+              )}
+
+              {!hasMoreFriends && friends.length > 0 && (
+                <p className="text-center text-[#B0B8C8]/50 text-xs py-3">All {friends.length} friends loaded</p>
+              )}
             </div>
           )}
         </section>

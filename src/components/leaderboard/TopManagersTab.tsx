@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Search, ChevronLeft, ChevronRight, Crown, User, Trophy, CheckCircle2 } from 'lucide-react';
-import { displayUsername } from '../../lib/username';
+import { Search, Crown, User, Loader2 } from 'lucide-react';
 import { VerificationBadge } from '../VerificationBadge';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../ui/Shimmer';
 import { SkeletonAvatar } from '../ui/SkeletonPresets';
@@ -28,8 +27,9 @@ export default function TopManagersTab() {
   const navigate = useNavigate();
   const [managers, setManagers] = useState<ManagerData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [totalManagers, setTotalManagers] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [winsFilter, setWinsFilter] = useState('');
   const [ratingFilter, setRatingFilter] = useState('');
@@ -38,87 +38,90 @@ export default function TopManagersTab() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const prevRanksRef = useRef<Map<string, number>>(new Map());
 
-  const fetchManagers = async () => {
-    setLoading(true);
+  const buildQuery = () => {
+    let query = supabase
+      .from('profiles')
+      .select('*')
+      .eq('is_manager', true);
+
+    if (searchTerm) {
+      query = query.or(`username.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%`);
+    }
+    if (winsFilter) {
+      query = query.gte('manager_wins', parseInt(winsFilter));
+    }
+    if (ratingFilter) {
+      query = query.gte('overall_rating', parseInt(ratingFilter));
+    }
+    if (teamFilter) {
+      query = query.ilike('team', `%${teamFilter}%`);
+    }
+    if (verifiedFilter === 'verified') {
+      query = query.eq('is_verified', true);
+    } else if (verifiedFilter === 'unverified') {
+      query = query.eq('is_verified', false);
+    }
+
+    return query;
+  };
+
+  const fetchManagers = async (append = false) => {
+    const offset = append ? managers.length : 0;
+    if (!append) setLoading(true);
+    setFetchError(null);
     try {
-      let query = supabase
-        .from('profiles')
-        .select('*', { count: 'exact' })
-        .eq('is_manager', true);
-
-      if (searchTerm) {
-        query = query.or(`username.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%`);
-      }
-
-      if (winsFilter) {
-        const minWins = parseInt(winsFilter);
-        query = query.gte('manager_wins', minWins);
-      }
-
-      if (ratingFilter) {
-        const minRating = parseInt(ratingFilter);
-        query = query.gte('overall_rating', minRating);
-      }
-
-      if (teamFilter) {
-        query = query.ilike('team', `%${teamFilter}%`);
-      }
-
-      if (verifiedFilter === 'verified') {
-        query = query.eq('is_verified', true);
-      } else if (verifiedFilter === 'unverified') {
-        query = query.eq('is_verified', false);
-      }
-
-      const { count } = await query;
-      setTotalManagers(Math.min(count || 0, 100));
-
-      const from = (currentPage - 1) * MANAGERS_PER_PAGE;
-      const to = Math.min(from + MANAGERS_PER_PAGE - 1, 99);
-
-      const { data, error } = await query
+      const { data, error } = await buildQuery()
         .order('manager_wins', { ascending: false })
-        .range(from, to);
+        .range(offset, offset + MANAGERS_PER_PAGE - 1);
 
       if (error) throw error;
 
-      if (data) {
-        const formattedManagers: ManagerData[] = data.map((manager: any) => ({
-          id: manager.id,
-          username: manager.username,
-          full_name: manager.full_name || '',
-          avatar_url: manager.avatar_url || null,
-          manager_wins: manager.manager_wins || 0,
-          manager_losses: manager.manager_losses || 0,
-          total_battle_earnings: parseFloat(manager.total_battle_earnings || 0),
-          overall_rating: manager.overall_rating || 50,
-          team: manager.team || null,
-          is_verified: manager.is_verified || false,
-          has_social_badge: manager.has_social_badge || false,
-        }));
+      const formatted: ManagerData[] = (data || []).map((manager: any) => ({
+        id: manager.id,
+        username: manager.username,
+        full_name: manager.full_name || '',
+        avatar_url: manager.avatar_url || null,
+        manager_wins: manager.manager_wins || 0,
+        manager_losses: manager.manager_losses || 0,
+        total_battle_earnings: parseFloat(manager.total_battle_earnings || 0),
+        overall_rating: manager.overall_rating || 50,
+        team: manager.team || null,
+        is_verified: manager.is_verified || false,
+        has_social_badge: manager.has_social_badge || false,
+      }));
 
-        const newRanks = new Map<string, number>();
-        formattedManagers.forEach((m, i) => {
-          newRanks.set(m.id, (currentPage - 1) * MANAGERS_PER_PAGE + i + 1);
-        });
+      const newRanks = new Map<string, number>(prevRanksRef.current);
+      formatted.forEach((m, i) => {
+        newRanks.set(m.id, offset + i + 1);
+      });
+      prevRanksRef.current = newRanks;
 
-        setManagers(formattedManagers);
-        prevRanksRef.current = newRanks;
+      if (append) {
+        setManagers(prev => [...prev, ...formatted]);
+      } else {
+        setManagers(formatted);
       }
 
+      setHasMore((data || []).length === MANAGERS_PER_PAGE);
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Error fetching managers:', error);
+      setFetchError('Failed to load managers. Please try again.');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    fetchManagers();
-  }, [currentPage, searchTerm, winsFilter, ratingFilter, teamFilter, verifiedFilter]);
+    setManagers([]);
+    fetchManagers(false);
+  }, [searchTerm, winsFilter, ratingFilter, teamFilter, verifiedFilter]);
 
-  const totalPages = Math.ceil(totalManagers / MANAGERS_PER_PAGE);
+  const handleLoadMore = async () => {
+    setLoadingMore(true);
+    await fetchManagers(true);
+  };
 
   const getWinLossRatio = (wins: number, losses: number) => {
     if (wins === 0 && losses === 0) return 0;
@@ -184,20 +187,14 @@ export default function TopManagersTab() {
             type="text"
             placeholder="Search manager..."
             value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
           />
         </div>
 
         <select
           value={winsFilter}
-          onChange={(e) => {
-            setWinsFilter(e.target.value);
-            setCurrentPage(1);
-          }}
+          onChange={(e) => setWinsFilter(e.target.value)}
           className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
         >
           <option value="">All Wins</option>
@@ -208,10 +205,7 @@ export default function TopManagersTab() {
 
         <select
           value={ratingFilter}
-          onChange={(e) => {
-            setRatingFilter(e.target.value);
-            setCurrentPage(1);
-          }}
+          onChange={(e) => setRatingFilter(e.target.value)}
           className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
         >
           <option value="">All Ratings</option>
@@ -226,19 +220,13 @@ export default function TopManagersTab() {
           type="text"
           placeholder="Team name..."
           value={teamFilter}
-          onChange={(e) => {
-            setTeamFilter(e.target.value);
-            setCurrentPage(1);
-          }}
+          onChange={(e) => setTeamFilter(e.target.value)}
           className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
         />
 
         <select
           value={verifiedFilter}
-          onChange={(e) => {
-            setVerifiedFilter(e.target.value);
-            setCurrentPage(1);
-          }}
+          onChange={(e) => setVerifiedFilter(e.target.value)}
           className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
         >
           <option value="">All Managers</option>
@@ -247,7 +235,19 @@ export default function TopManagersTab() {
         </select>
       </div>
 
-      {managers.length === 0 ? (
+      {fetchError && (
+        <div className="text-center py-6">
+          <p className="text-red-400 mb-3">{fetchError}</p>
+          <button
+            onClick={() => fetchManagers(false)}
+            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {managers.length === 0 && !fetchError ? (
         <div className="text-center py-12">
           <Crown className="w-16 h-16 text-gray-700 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-400 mb-2">No managers yet</h3>
@@ -256,7 +256,7 @@ export default function TopManagersTab() {
       ) : (
         <div className="space-y-2">
           {managers.map((manager, index) => {
-            const rank = (currentPage - 1) * MANAGERS_PER_PAGE + index + 1;
+            const rank = index + 1;
             const winLossRatio = getWinLossRatio(manager.manager_wins, manager.manager_losses);
 
             return (
@@ -349,30 +349,27 @@ export default function TopManagersTab() {
               </div>
             );
           })}
-        </div>
-      )}
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-4 pt-4">
-          <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className="p-2 rounded-lg bg-gray-800 border border-gray-700 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+          {loadingMore && (
+            <div className="flex justify-center py-4">
+              <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+            </div>
+          )}
 
-          <span className="text-white font-semibold">
-            Page {currentPage} of {totalPages}
-          </span>
+          {!loadingMore && hasMore && managers.length > 0 && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={handleLoadMore}
+                className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-colors border border-white/20"
+              >
+                Load More
+              </button>
+            </div>
+          )}
 
-          <button
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-            className="p-2 rounded-lg bg-gray-800 border border-gray-700 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+          {!hasMore && managers.length > 0 && (
+            <p className="text-center text-gray-500 text-sm py-4">All {managers.length} managers loaded</p>
+          )}
         </div>
       )}
     </div>

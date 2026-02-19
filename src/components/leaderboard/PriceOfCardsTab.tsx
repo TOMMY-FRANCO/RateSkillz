@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useTierBadges } from '../../hooks/useTierBadges';
-import { Search, ChevronLeft, ChevronRight, Coins, User, Trophy } from 'lucide-react';
+import { Search, Coins, User, Trophy, Loader2 } from 'lucide-react';
 import { displayUsername } from '../../lib/username';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../ui/Shimmer';
 import { SkeletonAvatar } from '../ui/SkeletonPresets';
@@ -36,8 +36,9 @@ export default function PriceOfCardsTab() {
   const { tiers } = useTierBadges();
   const [cards, setCards] = useState<CardData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [totalCards, setTotalCards] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [positionFilter, setPositionFilter] = useState('');
   const [teamFilter, setTeamFilter] = useState('');
@@ -53,130 +54,134 @@ export default function PriceOfCardsTab() {
     );
   };
 
-  const fetchCards = async () => {
-    setLoading(true);
+  const buildQuery = () => {
+    let query = supabase
+      .from('card_ownership')
+      .select(`
+        card_user_id,
+        current_price,
+        owner_id,
+        original_owner_id,
+        player:card_user_id (
+          username,
+          full_name,
+          avatar_url,
+          overall_rating,
+          position,
+          team
+        ),
+        owner:owner_id (
+          username
+        ),
+        original_owner:original_owner_id (
+          username
+        )
+      `);
+
+    if (searchTerm) {
+      query = query.or(`player.username.ilike.%${searchTerm}%,player.full_name.ilike.%${searchTerm}%`);
+    }
+    if (positionFilter) {
+      query = query.eq('player.position', positionFilter);
+    }
+    if (teamFilter) {
+      query = query.eq('player.team', teamFilter);
+    }
+    if (minRating) {
+      query = query.gte('player.overall_rating', parseInt(minRating));
+    }
+    if (maxRating) {
+      query = query.lte('player.overall_rating', parseInt(maxRating));
+    }
+
+    return query;
+  };
+
+  const fetchCards = async (append = false) => {
+    const offset = append ? cards.length : 0;
+    if (!append) setLoading(true);
+    setFetchError(null);
     try {
-      let query = supabase
-        .from('card_ownership')
-        .select(`
-          card_user_id,
-          current_price,
-          owner_id,
-          original_owner_id,
-          player:card_user_id (
-            username,
-            full_name,
-            avatar_url,
-            overall_rating,
-            position,
-            team
-          ),
-          owner:owner_id (
-            username
-          ),
-          original_owner:original_owner_id (
-            username
-          )
-        `, { count: 'exact' });
-
-      if (searchTerm) {
-        query = query.or(`player.username.ilike.%${searchTerm}%,player.full_name.ilike.%${searchTerm}%`);
-      }
-
-      if (positionFilter) {
-        query = query.eq('player.position', positionFilter);
-      }
-
-      if (teamFilter) {
-        query = query.eq('player.team', teamFilter);
-      }
-
-      if (minRating) {
-        query = query.gte('player.overall_rating', parseInt(minRating));
-      }
-
-      if (maxRating) {
-        query = query.lte('player.overall_rating', parseInt(maxRating));
-      }
-
-      const { count } = await query;
-      setTotalCards(Math.min(count || 0, 100));
-
-      const from = (currentPage - 1) * CARDS_PER_PAGE;
-      const to = Math.min(from + CARDS_PER_PAGE - 1, 99);
-
-      const { data, error } = await query
+      const { data, error } = await buildQuery()
         .order('current_price', { ascending: false })
-        .range(from, to);
+        .range(offset, offset + CARDS_PER_PAGE - 1);
 
       if (error) throw error;
 
-      if (data) {
-        const formattedCards: CardData[] = await Promise.all(
-          data.map(async (card: any) => {
-            const { data: statsData } = await supabase
-              .from('user_stats')
-              .select('pac, sho, pas, dri, def, phy')
-              .eq('user_id', card.card_user_id)
-              .single();
+      const formattedCards: CardData[] = await Promise.all(
+        (data || []).map(async (card: any) => {
+          const { data: statsData } = await supabase
+            .from('user_stats')
+            .select('pac, sho, pas, dri, def, phy')
+            .eq('user_id', card.card_user_id)
+            .single();
 
-            return {
-              card_user_id: card.card_user_id,
-              current_price: parseFloat(card.current_price),
-              owner_id: card.owner_id,
-              original_owner_id: card.original_owner_id,
-              player_username: card.player?.username || '',
-              player_full_name: card.player?.full_name || '',
-              player_avatar_url: card.player?.avatar_url || null,
-              player_overall_rating: card.player?.overall_rating || 50,
-              player_position: card.player?.position || null,
-              player_team: card.player?.team || null,
-              owner_username: card.owner?.username || '',
-              original_owner_username: card.original_owner?.username || '',
-              pac: statsData?.pac || 50,
-              sho: statsData?.sho || 50,
-              pas: statsData?.pas || 50,
-              dri: statsData?.dri || 50,
-              def: statsData?.def || 50,
-              phy: statsData?.phy || 50,
-            };
-          })
-        );
+          return {
+            card_user_id: card.card_user_id,
+            current_price: parseFloat(card.current_price),
+            owner_id: card.owner_id,
+            original_owner_id: card.original_owner_id,
+            player_username: card.player?.username || '',
+            player_full_name: card.player?.full_name || '',
+            player_avatar_url: card.player?.avatar_url || null,
+            player_overall_rating: card.player?.overall_rating || 50,
+            player_position: card.player?.position || null,
+            player_team: card.player?.team || null,
+            owner_username: card.owner?.username || '',
+            original_owner_username: card.original_owner?.username || '',
+            pac: statsData?.pac || 50,
+            sho: statsData?.sho || 50,
+            pas: statsData?.pas || 50,
+            dri: statsData?.dri || 50,
+            def: statsData?.def || 50,
+            phy: statsData?.phy || 50,
+          };
+        })
+      );
 
-        let filteredCards = formattedCards;
-
-        if (tierFilter) {
-          const tierObj = tiers.find(t => t.tier_name === tierFilter);
-          if (tierObj) {
-            filteredCards = formattedCards.filter(card =>
-              card.player_overall_rating >= tierObj.overall_rating_min &&
-              card.player_overall_rating <= tierObj.overall_rating_max
-            );
-          }
+      let filtered = formattedCards;
+      if (tierFilter) {
+        const tierObj = tiers.find(t => t.tier_name === tierFilter);
+        if (tierObj) {
+          filtered = formattedCards.filter(card =>
+            card.player_overall_rating >= tierObj.overall_rating_min &&
+            card.player_overall_rating <= tierObj.overall_rating_max
+          );
         }
-
-        const newRanks = new Map<string, number>();
-        filteredCards.forEach((c, i) => {
-          newRanks.set(c.card_user_id, (currentPage - 1) * CARDS_PER_PAGE + i + 1);
-        });
-
-        setCards(filteredCards);
-        prevRanksRef.current = newRanks;
       }
 
+      const newRanks = new Map<string, number>(prevRanksRef.current);
+      filtered.forEach((c, i) => {
+        newRanks.set(c.card_user_id, offset + i + 1);
+      });
+      prevRanksRef.current = newRanks;
+
+      if (append) {
+        setCards(prev => [...prev, ...filtered]);
+      } else {
+        setCards(filtered);
+      }
+
+      setHasMore((data || []).length === CARDS_PER_PAGE);
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Error fetching cards:', error);
+      setFetchError('Failed to load card prices. Please try again.');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    fetchCards();
-  }, [currentPage, searchTerm, positionFilter, teamFilter, tierFilter, minRating, maxRating]);
+    setCards([]);
+    fetchCards(false);
+  }, [searchTerm, positionFilter, teamFilter, tierFilter, minRating, maxRating]);
 
-  const totalPages = Math.ceil(totalCards / CARDS_PER_PAGE);
+  const handleLoadMore = async () => {
+    setLoadingMore(true);
+    await fetchCards(true);
+  };
 
   const getTimeSinceUpdate = () => {
     const seconds = Math.floor((new Date().getTime() - lastUpdated.getTime()) / 1000);
@@ -242,20 +247,14 @@ export default function PriceOfCardsTab() {
             type="text"
             placeholder="Search player name..."
             value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
           />
         </div>
 
         <select
           value={positionFilter}
-          onChange={(e) => {
-            setPositionFilter(e.target.value);
-            setCurrentPage(1);
-          }}
+          onChange={(e) => setPositionFilter(e.target.value)}
           className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
         >
           <option value="">All Positions</option>
@@ -269,19 +268,13 @@ export default function PriceOfCardsTab() {
           type="text"
           placeholder="Team name..."
           value={teamFilter}
-          onChange={(e) => {
-            setTeamFilter(e.target.value);
-            setCurrentPage(1);
-          }}
+          onChange={(e) => setTeamFilter(e.target.value)}
           className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
         />
 
         <select
           value={tierFilter}
-          onChange={(e) => {
-            setTierFilter(e.target.value);
-            setCurrentPage(1);
-          }}
+          onChange={(e) => setTierFilter(e.target.value)}
           className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-cyan-500"
         >
           <option value="">All Tiers</option>
@@ -294,10 +287,7 @@ export default function PriceOfCardsTab() {
           type="number"
           placeholder="Min OVR"
           value={minRating}
-          onChange={(e) => {
-            setMinRating(e.target.value);
-            setCurrentPage(1);
-          }}
+          onChange={(e) => setMinRating(e.target.value)}
           min="1"
           max="100"
           className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
@@ -307,17 +297,26 @@ export default function PriceOfCardsTab() {
           type="number"
           placeholder="Max OVR"
           value={maxRating}
-          onChange={(e) => {
-            setMaxRating(e.target.value);
-            setCurrentPage(1);
-          }}
+          onChange={(e) => setMaxRating(e.target.value)}
           min="1"
           max="100"
           className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
         />
       </div>
 
-      {cards.length === 0 ? (
+      {fetchError && (
+        <div className="text-center py-6">
+          <p className="text-red-400 mb-3">{fetchError}</p>
+          <button
+            onClick={() => fetchCards(false)}
+            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {cards.length === 0 && !fetchError ? (
         <div className="text-center py-12">
           <Trophy className="w-16 h-16 text-gray-700 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-400 mb-2">No cards available</h3>
@@ -327,7 +326,7 @@ export default function PriceOfCardsTab() {
         <div className="space-y-2">
           {cards.map((card, index) => {
             const tier = getTierForRating(card.player_overall_rating);
-            const rank = (currentPage - 1) * CARDS_PER_PAGE + index + 1;
+            const rank = index + 1;
 
             return (
               <div
@@ -418,30 +417,27 @@ export default function PriceOfCardsTab() {
               </div>
             );
           })}
-        </div>
-      )}
 
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-4 pt-4">
-          <button
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className="p-2 rounded-lg bg-gray-800 border border-gray-700 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+          {loadingMore && (
+            <div className="flex justify-center py-4">
+              <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+            </div>
+          )}
 
-          <span className="text-white font-semibold">
-            Page {currentPage} of {totalPages}
-          </span>
+          {!loadingMore && hasMore && cards.length > 0 && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={handleLoadMore}
+                className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-colors border border-white/20"
+              >
+                Load More
+              </button>
+            </div>
+          )}
 
-          <button
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-            className="p-2 rounded-lg bg-gray-800 border border-gray-700 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-700 transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+          {!hasMore && cards.length > 0 && (
+            <p className="text-center text-gray-500 text-sm py-4">All {cards.length} cards loaded</p>
+          )}
         </div>
       )}
     </div>

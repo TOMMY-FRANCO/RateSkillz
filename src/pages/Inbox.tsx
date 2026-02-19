@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Conversation, getUserConversations, formatTimestamp } from '../lib/messaging';
-import { MessageCircle, ArrowLeft, User, RefreshCw } from 'lucide-react';
+import { MessageCircle, ArrowLeft, User, RefreshCw, Loader2 } from 'lucide-react';
 import { displayUsername } from '../lib/username';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
 import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
@@ -16,47 +16,70 @@ export default function Inbox() {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [userPresence, setUserPresence] = useState<Map<string, UserPresence>>(new Map());
   const [pullDistance, setPullDistance] = useState(0);
   const touchStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const loadConversations = useCallback(async () => {
+  const loadConversations = useCallback(async (append = false) => {
     if (!user) return;
-    const convs = await getUserConversations(user.id);
-    setConversations(convs);
+    const offset = append ? conversations.length : 0;
+    try {
+      setFetchError(null);
+      const result = await getUserConversations(user.id, 20, offset);
+      const convs = result.conversations;
 
-    const userIds = convs.map((c) => c.other_user?.id).filter(Boolean) as string[];
-    if (userIds.length > 0) {
-      const presence = await getMultipleUserPresence(userIds);
-      setUserPresence(presence);
+      if (append) {
+        setConversations(prev => [...prev, ...convs]);
+      } else {
+        setConversations(convs);
+      }
+      setHasMore(result.hasMore);
+
+      const userIds = convs.map((c) => c.other_user?.id).filter(Boolean) as string[];
+      if (userIds.length > 0) {
+        const presence = await getMultipleUserPresence(userIds);
+        setUserPresence(prev => new Map([...prev, ...presence]));
+      }
+    } catch {
+      setFetchError('Failed to load conversations. Please try again.');
     }
-  }, [user]);
+  }, [user, conversations.length]);
 
   useEffect(() => {
     if (!user) return;
 
     const init = async () => {
       setLoading(true);
-      await loadConversations();
+      await loadConversations(false);
       setLoading(false);
     };
 
     init();
 
     markNotificationsReadBatch(user.id, ['message', 'coin_received', 'coin_request']);
-  }, [user, loadConversations]);
+  }, [user]);
 
   const handleRefresh = async () => {
     if (!user) return;
     setRefreshing(true);
+    setConversations([]);
     await Promise.all([
-      loadConversations(),
+      loadConversations(false),
       checkAndNotifyNewMessages(user.id),
     ]);
     setRefreshing(false);
     setPullDistance(0);
+  };
+
+  const handleLoadMore = async () => {
+    setLoadingMore(true);
+    await loadConversations(true);
+    setLoadingMore(false);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -166,7 +189,19 @@ export default function Inbox() {
           </button>
         </div>
 
-        {conversations.length === 0 ? (
+        {fetchError && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center mb-4">
+            <p className="text-red-400 mb-3">{fetchError}</p>
+            <button
+              onClick={() => loadConversations(false)}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors text-sm font-medium"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {conversations.length === 0 && !fetchError ? (
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-12 text-center">
             <MessageCircle className="w-16 h-16 text-white/30 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-white mb-2">No messages yet</h2>
@@ -230,6 +265,27 @@ export default function Inbox() {
                 </div>
               </button>
             ))}
+
+            {loadingMore && (
+              <div className="flex justify-center py-4">
+                <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+              </div>
+            )}
+
+            {!loadingMore && hasMore && conversations.length > 0 && (
+              <div className="flex justify-center pt-2">
+                <button
+                  onClick={handleLoadMore}
+                  className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-colors border border-white/10"
+                >
+                  Load More
+                </button>
+              </div>
+            )}
+
+            {!hasMore && conversations.length > 0 && (
+              <p className="text-center text-gray-500 text-sm py-4">All {conversations.length} conversations loaded</p>
+            )}
           </div>
         )}
       </div>

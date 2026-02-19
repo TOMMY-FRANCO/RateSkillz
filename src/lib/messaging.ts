@@ -61,16 +61,17 @@ export async function getOrCreateConversation(userId: string, otherUserId: strin
   }
 }
 
-export async function getUserConversations(userId: string): Promise<Conversation[]> {
+export async function getUserConversations(userId: string, limit = 20, offset = 0): Promise<{ conversations: Conversation[]; hasMore: boolean }> {
   try {
     const { data: conversations, error } = await supabase
       .from('conversations')
       .select('id, user_one_id, user_two_id, last_message_at, last_message_preview, created_at')
       .or(`user_one_id.eq.${userId},user_two_id.eq.${userId}`)
-      .order('last_message_at', { ascending: false, nullsFirst: false });
+      .order('last_message_at', { ascending: false, nullsFirst: false })
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
-    if (!conversations || conversations.length === 0) return [];
+    if (!conversations || conversations.length === 0) return { conversations: [], hasMore: false };
 
     // PERFORMANCE FIX: Fetch all profiles in a single query to prevent N+1
     const otherUserIds = conversations.map(conv =>
@@ -103,7 +104,6 @@ export async function getUserConversations(userId: string): Promise<Conversation
       unreadMap.set(msg.conversation_id, (unreadMap.get(msg.conversation_id) || 0) + 1);
     });
 
-    // Combine all data
     const conversationsWithUsers = conversations.map(conv => {
       const otherUserId = conv.user_one_id === userId ? conv.user_two_id : conv.user_one_id;
       return {
@@ -113,10 +113,13 @@ export async function getUserConversations(userId: string): Promise<Conversation
       };
     });
 
-    return conversationsWithUsers;
+    return {
+      conversations: conversationsWithUsers,
+      hasMore: conversations.length === limit,
+    };
   } catch (error) {
     console.error('Error getting conversations:', error);
-    return [];
+    return { conversations: [], hasMore: false };
   }
 }
 

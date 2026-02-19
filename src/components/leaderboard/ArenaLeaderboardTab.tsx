@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { MapPin, Swords, Lock, User, Trophy, Coins } from 'lucide-react';
+import { MapPin, Swords, Lock, User, Trophy, Coins, Loader2 } from 'lucide-react';
 import { ShimmerBar, StaggerItem } from '../ui/Shimmer';
+
+const PAGE_SIZE = 20;
 
 interface ArenaLeaderboardEntry {
   user_id: string;
@@ -29,45 +31,71 @@ export default function ArenaLeaderboardTab() {
   const [selectedArena, setSelectedArena] = useState('london');
   const [entries, setEntries] = useState<ArenaLeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     const arena = ARENA_TABS.find((a) => a.slug === selectedArena);
     if (arena?.isActive) {
-      fetchArenaLeaderboard(selectedArena);
+      fetchArenaLeaderboard(selectedArena, false);
     } else {
       setEntries([]);
+      setHasMore(false);
       setLoading(false);
     }
   }, [selectedArena]);
 
-  const fetchArenaLeaderboard = async (arenaSlug: string) => {
-    setLoading(true);
+  const fetchArenaLeaderboard = async (arenaSlug: string, append: boolean) => {
+    const offset = append ? entries.length : 0;
+    if (!append) setLoading(true);
+    setFetchError(null);
     try {
       const { data, error } = await supabase.rpc('get_arena_leaderboard', {
         p_arena_slug: arenaSlug,
-        p_limit: 100,
+        p_limit: PAGE_SIZE,
+        p_offset: offset,
       });
 
       if (error) throw error;
 
-      setEntries(
-        (data || []).map((e: any) => ({
-          user_id: e.user_id,
-          username: e.username,
-          avatar_url: e.avatar_url,
-          wins: Number(e.wins),
-          losses: Number(e.losses),
-          total_battles: Number(e.total_battles),
-          total_earnings: Number(e.total_earnings),
-          win_rate: Number(e.win_rate),
-        }))
-      );
+      const mapped = (data || []).map((e: any) => ({
+        user_id: e.user_id,
+        username: e.username,
+        avatar_url: e.avatar_url,
+        wins: Number(e.wins),
+        losses: Number(e.losses),
+        total_battles: Number(e.total_battles),
+        total_earnings: Number(e.total_earnings),
+        win_rate: Number(e.win_rate),
+      }));
+
+      if (append) {
+        setEntries(prev => [...prev, ...mapped]);
+      } else {
+        setEntries(mapped);
+      }
+
+      setHasMore((data || []).length === PAGE_SIZE);
     } catch (error) {
       console.error('Error fetching arena leaderboard:', error);
-      setEntries([]);
+      setFetchError('Failed to load arena rankings. Please try again.');
+      if (!append) setEntries([]);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  };
+
+  const handleLoadMore = async () => {
+    setLoadingMore(true);
+    await fetchArenaLeaderboard(selectedArena, true);
+  };
+
+  const handleArenaChange = (slug: string) => {
+    setEntries([]);
+    setHasMore(false);
+    setSelectedArena(slug);
   };
 
   const activeArena = ARENA_TABS.find((a) => a.slug === selectedArena);
@@ -93,7 +121,7 @@ export default function ArenaLeaderboardTab() {
         {ARENA_TABS.map((arena) => (
           <button
             key={arena.slug}
-            onClick={() => arena.isActive && setSelectedArena(arena.slug)}
+            onClick={() => arena.isActive && handleArenaChange(arena.slug)}
             disabled={!arena.isActive}
             className={`
               flex items-center gap-1.5 px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition-all flex-shrink-0
@@ -216,6 +244,39 @@ export default function ArenaLeaderboardTab() {
               </div>
             );
           })}
+
+          {fetchError && (
+            <div className="text-center py-6">
+              <p className="text-red-400 mb-3">{fetchError}</p>
+              <button
+                onClick={() => fetchArenaLeaderboard(selectedArena, false)}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {loadingMore && (
+            <div className="flex justify-center py-4">
+              <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+            </div>
+          )}
+
+          {!loadingMore && hasMore && entries.length > 0 && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={handleLoadMore}
+                className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-colors border border-white/20"
+              >
+                Load More
+              </button>
+            </div>
+          )}
+
+          {!hasMore && entries.length > 0 && (
+            <p className="text-center text-gray-500 text-sm py-4">All {entries.length} players loaded</p>
+          )}
         </div>
       )}
     </div>

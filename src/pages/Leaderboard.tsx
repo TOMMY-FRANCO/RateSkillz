@@ -2,11 +2,13 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, User, Swords, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, User, Swords, RefreshCw, Loader2 } from 'lucide-react';
 import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
 import ArenaLeaderboardTab from '../components/leaderboard/ArenaLeaderboardTab';
 import { markNotificationsRead } from '../lib/notifications';
+
+const PAGE_SIZE = 20;
 
 interface LeaderboardEntry {
   rank: number;
@@ -28,6 +30,9 @@ export default function Leaderboard() {
   const navigate = useNavigate();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [userPresence, setUserPresence] = useState<Map<string, UserPresence>>(new Map());
   const [activeTab, setActiveTab] = useState<TabType>('global');
   const [refreshing, setRefreshing] = useState(false);
@@ -44,18 +49,20 @@ export default function Leaderboard() {
     }
   }, [activeTab, profile]);
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = async (append = false) => {
+    const offset = append ? entries.length : 0;
     try {
-      // Use leaderboard_cache for optimized query - limit to top 20
+      if (!append) setLoading(true);
+      setFetchError(null);
+
       const { data, error } = await supabase
         .from('leaderboard_cache')
         .select('rank, user_id, overall_rating, username, avatar_url, position, team, gender')
         .order('rank', { ascending: true })
-        .limit(100);
+        .range(offset, offset + PAGE_SIZE - 1);
 
       if (error) throw error;
 
-      // Map cache fields to expected interface
       const mappedEntries = (data || []).map((entry: any) => ({
         rank: entry.rank,
         profile_id: entry.user_id,
@@ -69,24 +76,36 @@ export default function Leaderboard() {
         gender: entry.gender || null,
       }));
 
-      setEntries(mappedEntries);
+      if (append) {
+        setEntries(prev => [...prev, ...mappedEntries]);
+      } else {
+        setEntries(mappedEntries);
+      }
+
+      setHasMore((data || []).length === PAGE_SIZE);
 
       if (data && data.length > 0) {
         const userIds = data.map((entry: any) => entry.user_id);
         const presence = await getMultipleUserPresence(userIds);
-        setUserPresence(presence);
+        setUserPresence(prev => new Map([...prev, ...presence]));
       }
-
-      setLoading(false);
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
+      setFetchError('Failed to load rankings. Please try again.');
+    } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  };
+
+  const handleLoadMore = async () => {
+    setLoadingMore(true);
+    await fetchLeaderboard(true);
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchLeaderboard();
+    await fetchLeaderboard(false);
     setRefreshing(false);
   };
 
@@ -134,7 +153,10 @@ export default function Leaderboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-white text-xl">Loading leaderboard...</div>
+        <div className="flex items-center gap-3 text-white text-xl">
+          <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+          Loading leaderboard...
+        </div>
       </div>
     );
   }
@@ -347,12 +369,45 @@ export default function Leaderboard() {
             );
             })}
 
-            {entries.length === 0 && (
+            {entries.length === 0 && !fetchError && (
               <div className="text-center py-12">
                 <Trophy className="w-16 h-16 text-gray-700 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-gray-400 mb-2">No rankings yet</h3>
                 <p className="text-gray-500">Be the first to get rated by your friends!</p>
               </div>
+            )}
+
+            {fetchError && (
+              <div className="text-center py-8">
+                <p className="text-red-400 mb-4">{fetchError}</p>
+                <button
+                  onClick={() => fetchLeaderboard(false)}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {loadingMore && (
+              <div className="flex justify-center py-4">
+                <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+              </div>
+            )}
+
+            {!loadingMore && hasMore && entries.length > 0 && (
+              <div className="flex justify-center pt-2">
+                <button
+                  onClick={handleLoadMore}
+                  className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-colors border border-white/20"
+                >
+                  Load More
+                </button>
+              </div>
+            )}
+
+            {!hasMore && entries.length > 0 && (
+              <p className="text-center text-gray-500 text-sm py-4">All {entries.length} rankings loaded</p>
             )}
           </div>
         )}

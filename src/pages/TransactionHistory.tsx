@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Coins, TrendingUp, ShoppingBag, MessageSquare, Tv, Crown, ArrowUpCircle, ArrowDownCircle, RefreshCw, AlertCircle, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Coins, TrendingUp, ShoppingBag, MessageSquare, Tv, Crown, ArrowUpCircle, ArrowDownCircle, RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
 import { getTransactions } from '../lib/coins';
 import { useCoinBalance } from '../hooks/useCoinBalance';
 import { useAuth } from '../contexts/AuthContext';
@@ -33,6 +33,7 @@ export default function TransactionHistory() {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<Pagination>({
     page: 1,
@@ -56,11 +57,11 @@ export default function TransactionHistory() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    loadTransactions(pagination.page);
+    loadTransactions(1, false);
     if (user) {
       markNotificationsRead(user.id, 'transaction');
     }
-  }, [user, pagination.page]);
+  }, [user]);
 
   useEffect(() => {
     if (transactions.length > 0 && !balanceLoading) {
@@ -68,21 +69,31 @@ export default function TransactionHistory() {
     }
   }, [currentBalance, transactions, balanceLoading]);
 
-  async function loadTransactions(page: number = 1) {
+  async function loadTransactions(page: number = 1, append = false) {
     try {
-      setLoading(true);
+      if (!append) setLoading(true);
       setError(null);
       const result = await getTransactions(page, 20);
-      console.log('[TransactionHistory] Transactions loaded');
 
-      setTransactions(result.transactions);
+      if (append) {
+        setTransactions(prev => [...prev, ...result.transactions]);
+      } else {
+        setTransactions(result.transactions);
+      }
       setPagination(result.pagination);
     } catch (error) {
       console.error('[TransactionHistory] Failed to load transactions:', error);
       setError(error instanceof Error ? error.message : 'Failed to load transactions. Please try again.');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  }
+
+  async function handleLoadMore() {
+    if (!pagination.hasMore || loadingMore) return;
+    setLoadingMore(true);
+    await loadTransactions(pagination.page + 1, true);
   }
 
   async function handleRefreshBalance() {
@@ -103,7 +114,7 @@ export default function TransactionHistory() {
     try {
       const [balanceCheck] = await Promise.all([
         checkBalanceIntegrity(),
-        loadTransactions(pagination.page),
+        loadTransactions(1, false),
         refetchBalance(),
       ]);
 
@@ -150,18 +161,6 @@ export default function TransactionHistory() {
     }
     touchStartY.current = 0;
   };
-
-  function handlePreviousPage() {
-    if (pagination.page > 1) {
-      setPagination(prev => ({ ...prev, page: prev.page - 1 }));
-    }
-  }
-
-  function handleNextPage() {
-    if (pagination.hasMore) {
-      setPagination(prev => ({ ...prev, page: prev.page + 1 }));
-    }
-  }
 
   function validateBalance() {
     console.log('[TransactionHistory] Running validation...');
@@ -442,30 +441,25 @@ export default function TransactionHistory() {
               </div>
             ))}
 
-            {pagination.totalPages > 1 && (
-              <div className="mt-8 flex items-center justify-center gap-4">
-                <button
-                  onClick={handlePreviousPage}
-                  disabled={pagination.page === 1}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white font-medium transition-colors"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                  Previous
-                </button>
+            {loadingMore && (
+              <div className="flex justify-center py-4">
+                <Loader2 className="w-6 h-6 animate-spin text-yellow-400" />
+              </div>
+            )}
 
-                <div className="text-white/60 text-sm">
-                  Page {pagination.page} of {pagination.totalPages}
-                </div>
-
+            {!loadingMore && pagination.hasMore && (
+              <div className="flex justify-center mt-4">
                 <button
-                  onClick={handleNextPage}
-                  disabled={!pagination.hasMore}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white font-medium transition-colors"
+                  onClick={handleLoadMore}
+                  className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-colors border border-white/20"
                 >
-                  Next
-                  <ChevronRight className="w-5 h-5" />
+                  Load More
                 </button>
               </div>
+            )}
+
+            {!pagination.hasMore && transactions.length > 0 && (
+              <p className="text-center text-white/40 text-sm py-4">All {transactions.length} transactions loaded</p>
             )}
           </div>
         )}
