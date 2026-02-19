@@ -8,6 +8,7 @@ export interface DashboardBadgeCounts {
   transactions: number;
   acceptedFriendRequests: number;
   battleRequests: number;
+  notifications: number;
   adAvailable: number;
 }
 
@@ -17,6 +18,7 @@ const ZERO: DashboardBadgeCounts = {
   transactions: 0,
   acceptedFriendRequests: 0,
   battleRequests: 0,
+  notifications: 0,
   adAvailable: 0,
 };
 
@@ -26,33 +28,36 @@ function cap(n: number): number {
 
 function totalCount(counts: DashboardBadgeCounts): number {
   return (
-    counts.messages +
-    counts.profileViews +
-    counts.transactions +
-    counts.acceptedFriendRequests +
-    counts.battleRequests +
-    counts.adAvailable
+    (counts.messages ?? 0) +
+    (counts.profileViews ?? 0) +
+    (counts.transactions ?? 0) +
+    (counts.acceptedFriendRequests ?? 0) +
+    (counts.battleRequests ?? 0) +
+    (counts.notifications ?? 0) +
+    (counts.adAvailable ?? 0)
   );
 }
 
-function isAdAvailableToday(lastAdViewDate: string | null | undefined): boolean {
-  if (!lastAdViewDate) return true;
-  const last = new Date(lastAdViewDate);
-  const now = new Date();
-  return (
-    last.getUTCFullYear() !== now.getUTCFullYear() ||
-    last.getUTCMonth() !== now.getUTCMonth() ||
-    last.getUTCDate() !== now.getUTCDate()
-  );
+function utcDateString(date: Date): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
 }
 
 export async function fetchDashboardBadges(userId: string): Promise<DashboardBadgeCounts> {
   try {
+    const todayStart = `${utcDateString(new Date())}T00:00:00.000Z`;
+    const tomorrowStart = (() => {
+      const d = new Date();
+      d.setUTCDate(d.getUTCDate() + 1);
+      return `${utcDateString(d)}T00:00:00.000Z`;
+    })();
+
     const [
       messagesResult,
       profileResult,
       acceptedFriendsResult,
       battleResult,
+      notificationsResult,
+      adViewResult,
     ] = await Promise.all([
       supabase
         .from('messages')
@@ -62,7 +67,7 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
 
       supabase
         .from('profiles')
-        .select('unread_profile_views, last_visited_transactions, last_ad_view_date')
+        .select('unread_profile_views, last_visited_transactions')
         .eq('id', userId)
         .maybeSingle(),
 
@@ -78,6 +83,19 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
         .select('id', { count: 'exact', head: true })
         .eq('manager2_id', userId)
         .eq('status', 'waiting'),
+
+      supabase
+        .from('user_notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('is_read', false),
+
+      supabase
+        .from('ad_views')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', todayStart)
+        .lt('created_at', tomorrowStart),
     ]);
 
     const lastVisitedTransactions: string | null =
@@ -99,7 +117,7 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
       transactionsCount = cap(txResult.count ?? 0);
     }
 
-    const adAvailable = isAdAvailableToday(profileResult.data?.last_ad_view_date) ? 1 : 0;
+    const adAvailable = (adViewResult.count ?? 0) === 0 ? 1 : 0;
 
     const result: DashboardBadgeCounts = {
       messages: cap(messagesResult.count ?? 0),
@@ -107,6 +125,7 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
       transactions: transactionsCount,
       acceptedFriendRequests: cap(acceptedFriendsResult.count ?? 0),
       battleRequests: cap(battleResult.count ?? 0),
+      notifications: cap(notificationsResult.count ?? 0),
       adAvailable,
     };
 
