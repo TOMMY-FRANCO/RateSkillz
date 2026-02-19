@@ -13,36 +13,44 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage(function (payload) {
-  const data = payload.data || {};
-  const notif = payload.notification || {};
-
-  const title = notif.title || data.title || 'RatingSkill';
-  const body = notif.body || data.body || 'You have new activity';
-  const badgeCount = parseInt(data.badge_count || '0', 10);
+  var data = payload.data || {};
+  var title = data.title || 'RatingSkill';
+  var body = data.body || 'You have new activity';
+  var badgeCount = parseInt(data.badge_count || '0', 10);
 
   if (badgeCount > 0) {
-    self.navigator.setAppBadge && self.navigator.setAppBadge(badgeCount).catch(function () {});
+    if (self.navigator && self.navigator.setAppBadge) {
+      self.navigator.setAppBadge(badgeCount).catch(function () {});
+    }
   } else {
-    self.navigator.clearAppBadge && self.navigator.clearAppBadge().catch(function () {});
+    if (self.navigator && self.navigator.clearAppBadge) {
+      self.navigator.clearAppBadge().catch(function () {});
+    }
   }
 
-  return self.registration.showNotification(title, {
+  var options = {
     body: body,
     icon: '/icon-192x192.png',
     badge: '/icon-72x72.png',
+    tag: 'ratingskill-notification',
+    renotify: true,
     data: { url: '/' },
-  });
+  };
+
+  return self.registration.showNotification(title, options);
 });
 
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
-  const target = (event.notification.data && event.notification.data.url) || '/';
+  var target = (event.notification.data && event.notification.data.url) || '/';
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
-      for (var i = 0; i < clientList.length; i++) {
-        var client = clientList[i];
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (windowClients) {
+      for (var i = 0; i < windowClients.length; i++) {
+        var client = windowClients[i];
         if ('focus' in client) {
-          client.navigate(target);
+          if ('navigate' in client) {
+            client.navigate(target);
+          }
           return client.focus();
         }
       }

@@ -235,37 +235,29 @@ Deno.serve(async (req: Request) => {
     const fcmPayload = {
       message: {
         token: fcmToken,
-        notification: {
-          title: notifTitle,
-          body: notifBody,
-        },
         data: {
           badge_count: String(count),
           title: notifTitle,
           body: notifBody,
         },
+        android: {
+          priority: "high",
+        },
         webpush: {
           headers: {
             Urgency: "high",
-          },
-          notification: {
-            title: notifTitle,
-            body: notifBody,
-            icon: "/icon-192x192.png",
-            badge: "/icon-72x72.png",
-            requireInteraction: false,
+            TTL: "86400",
           },
         },
         apns: {
+          headers: {
+            "apns-priority": "10",
+          },
           payload: {
             aps: {
-              alert: {
-                title: notifTitle,
-                body: notifBody,
-              },
+              "content-available": 1,
               badge: count,
               sound: "default",
-              "content-available": 1,
             },
           },
         },
