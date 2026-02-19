@@ -9,6 +9,8 @@ interface ProfileHeaderProps {
   isPreviewMode: boolean;
   isOwner: boolean;
   onExitPreview: () => void;
+  backPath?: string;
+  backState?: Record<string, unknown>;
 }
 
 export default function ProfileHeader({
@@ -18,8 +20,20 @@ export default function ProfileHeader({
   isPreviewMode,
   isOwner,
   onExitPreview,
+  backPath,
+  backState,
 }: ProfileHeaderProps) {
   const navigate = useNavigate();
+
+  const handleBack = () => {
+    if (isPreviewMode) {
+      onExitPreview();
+    } else if (backPath) {
+      navigate(backPath, { state: backState });
+    } else {
+      navigate('/settings');
+    }
+  };
 
   return (
     <>
@@ -28,7 +42,7 @@ export default function ProfileHeader({
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => isPreviewMode ? onExitPreview() : navigate('/settings')}
+                onClick={handleBack}
                 className="text-gray-300 hover:text-cyan-400 transition-colors bg-none border-none cursor-pointer"
               >
                 <ArrowLeft className="w-5 h-5" />

@@ -19,6 +19,7 @@ import { checkCanSendCoins } from '../lib/coinTransfers';
 import { supabase } from '../lib/supabase';
 import { playSound } from '../lib/sounds';
 import QuickMessageTray, { DAILY_LIMIT } from '../components/QuickMessageTray';
+import EmojiPicker from '../components/EmojiPicker';
 
 interface OtherUserInfo {
   id: string;
@@ -34,7 +35,6 @@ export default function Chat() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [sending, setSending] = useState(false);
@@ -42,10 +42,12 @@ export default function Chat() {
   const [isOnline, setIsOnline] = useState(false);
   const [lastSeen, setLastSeen] = useState<string | null>(null);
   const [otherUser, setOtherUser] = useState<OtherUserInfo | null>(location.state?.otherUser || null);
+  const [newMessage, setNewMessage] = useState(location.state?.unsentMessage || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [pullDistance, setPullDistance] = useState(0);
   const touchStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const [showSendCoinsModal, setShowSendCoinsModal] = useState(false);
   const [canSendCoins, setCanSendCoins] = useState(false);
@@ -53,6 +55,7 @@ export default function Chat() {
 
   const [showQuickTray, setShowQuickTray] = useState(false);
   const [prewrittenUsedToday, setPrewrittenUsedToday] = useState(0);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -238,6 +241,23 @@ export default function Chat() {
     setSending(false);
   };
 
+  const handleEmojiSelect = (emoji: string) => {
+    const input = inputRef.current;
+    if (!input) {
+      setNewMessage((prev) => prev + emoji);
+      return;
+    }
+    const start = input.selectionStart ?? newMessage.length;
+    const end = input.selectionEnd ?? newMessage.length;
+    const updated = newMessage.slice(0, start) + emoji + newMessage.slice(end);
+    setNewMessage(updated);
+    requestAnimationFrame(() => {
+      input.focus();
+      const pos = start + emoji.length;
+      input.setSelectionRange(pos, pos);
+    });
+  };
+
   const handleTransferComplete = async (amount: number) => {
     if (!user || !conversationId || !otherUser) return;
 
@@ -254,6 +274,18 @@ export default function Chat() {
         return [...prev, message];
       });
     }
+  };
+
+  const navigateToProfile = () => {
+    if (!otherUser) return;
+    navigate(`/profile/${otherUser.username}`, {
+      state: {
+        fromChat: true,
+        conversationId,
+        otherUser,
+        unsentMessage: newMessage,
+      },
+    });
   };
 
   if (loading) {
@@ -302,25 +334,29 @@ export default function Chat() {
             </button>
 
             <div className="flex items-center gap-3 flex-1">
-              <div className="relative">
+              <button
+                onClick={navigateToProfile}
+                className="relative flex-shrink-0 focus:outline-none group"
+                title={`View @${otherUser.username}'s profile`}
+              >
                 {otherUser.avatar_url ? (
                   <img
                     src={otherUser.avatar_url}
                     alt={otherUser.username}
                     width="48"
                     height="48"
-                    className="w-12 h-12 rounded-full object-cover"
+                    className="w-12 h-12 rounded-full object-cover ring-2 ring-transparent group-hover:ring-cyan-400/70 transition-all duration-200"
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center ring-2 ring-transparent group-hover:ring-cyan-400/70 transition-all duration-200">
                     <User className="w-6 h-6 text-white" />
                   </div>
                 )}
                 {isOnline && (
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900"></div>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900 pointer-events-none"></div>
                 )}
-              </div>
+              </button>
 
               <div>
                 <h2 className="font-bold text-white text-lg">
@@ -387,6 +423,8 @@ export default function Chat() {
             const showDateDivider = !prevMessage ||
               new Date(message.created_at).toDateString() !== new Date(prevMessage.created_at).toDateString();
 
+            const showAvatar = !isSentByMe;
+
             return (
               <div key={message.id}>
                 {showDateDivider && (
@@ -401,8 +439,30 @@ export default function Chat() {
                   </div>
                 )}
                 <div
-                  className={`flex ${isSentByMe ? 'justify-end' : 'justify-start'} animate-[fadeSlideIn_0.2s_ease-out]`}
+                  className={`flex items-end gap-2 ${isSentByMe ? 'justify-end' : 'justify-start'} animate-[fadeSlideIn_0.2s_ease-out]`}
                 >
+                  {showAvatar && (
+                    <button
+                      onClick={navigateToProfile}
+                      className="flex-shrink-0 mb-1 focus:outline-none group"
+                      title={`View @${otherUser.username}'s profile`}
+                    >
+                      {otherUser.avatar_url ? (
+                        <img
+                          src={otherUser.avatar_url}
+                          alt={otherUser.username}
+                          width="28"
+                          height="28"
+                          className="w-7 h-7 rounded-full object-cover ring-1 ring-transparent group-hover:ring-cyan-400/60 transition-all"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center ring-1 ring-transparent group-hover:ring-cyan-400/60 transition-all">
+                          <User className="w-3.5 h-3.5 text-white" />
+                        </div>
+                      )}
+                    </button>
+                  )}
                   <div
                     className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl transition-all ${
                       isCoinTransfer
@@ -476,16 +536,22 @@ export default function Chat() {
               disabled={sending}
             />
           )}
-          <form onSubmit={handleSend} className="flex gap-3">
-            <div className="relative group">
+          {showEmojiPicker && (
+            <EmojiPicker
+              onSelect={handleEmojiSelect}
+              onClose={() => setShowEmojiPicker(false)}
+            />
+          )}
+          <form onSubmit={handleSend} className="flex items-center gap-2">
+            <div className="relative group flex-shrink-0">
               <button
                 type="button"
                 onClick={() => canSendCoins && setShowSendCoinsModal(true)}
                 disabled={!canSendCoins}
-                className={`bg-white/10 text-white p-3 rounded-xl font-bold transition-all flex items-center justify-center ${
+                className={`w-11 h-11 rounded-xl font-bold transition-all flex items-center justify-center flex-shrink-0 ${
                   canSendCoins
-                    ? 'hover:bg-yellow-500/20 hover:text-yellow-400'
-                    : 'opacity-50 cursor-not-allowed'
+                    ? 'bg-white/10 hover:bg-yellow-500/20 hover:text-yellow-400 text-white'
+                    : 'bg-white/10 text-white opacity-50 cursor-not-allowed'
                 }`}
                 title={canSendCoins ? 'Send coins' : sendCoinsTooltip}
               >
@@ -499,10 +565,15 @@ export default function Chat() {
                 </div>
               )}
             </div>
+
             <button
               type="button"
-              onClick={() => setShowQuickTray((prev) => !prev)}
-              className={`text-xl p-3 rounded-xl transition-all flex items-center justify-center leading-none ${
+              onClick={() => {
+                const next = !showQuickTray;
+                setShowQuickTray(next);
+                if (next) setShowEmojiPicker(false);
+              }}
+              className={`w-11 h-11 rounded-xl transition-all flex items-center justify-center flex-shrink-0 text-lg leading-none ${
                 showQuickTray
                   ? 'bg-gradient-to-r from-cyan-600/40 to-teal-600/40 border border-cyan-500/50'
                   : 'bg-white/10 hover:bg-white/20 border border-white/10'
@@ -511,25 +582,45 @@ export default function Chat() {
             >
               ⚽
             </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                const next = !showEmojiPicker;
+                setShowEmojiPicker(next);
+                if (next) setShowQuickTray(false);
+              }}
+              className={`w-11 h-11 rounded-xl transition-all flex items-center justify-center flex-shrink-0 text-lg leading-none ${
+                showEmojiPicker
+                  ? 'bg-gradient-to-r from-cyan-600/40 to-teal-600/40 border border-cyan-500/50'
+                  : 'bg-white/10 hover:bg-white/20 border border-white/10'
+              }`}
+              title="Emoji picker"
+            >
+              😊
+            </button>
+
             <input
+              ref={inputRef}
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Type a message..."
-              className="flex-1 bg-white/10 text-white placeholder-gray-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-500 border border-white/10"
+              className="flex-1 bg-white/10 text-white placeholder-gray-400 rounded-xl px-4 h-11 focus:outline-none focus:ring-2 focus:ring-cyan-500 border border-white/10"
               disabled={sending}
             />
+
             <button
               type="submit"
               disabled={!newMessage.trim() || sending}
-              className="bg-gradient-to-r from-cyan-600 to-teal-600 text-white px-6 py-3 rounded-xl font-bold hover:from-cyan-700 hover:to-teal-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="w-11 h-11 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-xl font-bold hover:from-cyan-700 hover:to-teal-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
+              title="Send"
             >
               {sending ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <Send className="w-5 h-5" />
               )}
-              {sending ? 'Sending' : 'Send'}
             </button>
           </form>
         </div>

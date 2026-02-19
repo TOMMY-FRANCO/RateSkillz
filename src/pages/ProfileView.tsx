@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PlayerCard from '../components/PlayerCard';
 import ShareCardModal from '../components/ShareCardModal';
@@ -22,8 +22,24 @@ export default function ProfileView() {
   const { username } = useParams<{ username: string }>();
   const { profile: currentUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const isPreviewMode = searchParams.get('preview') === 'true';
+
+  const fromChatState = location.state as {
+    fromChat?: boolean;
+    conversationId?: string;
+    otherUser?: { id: string; username: string; full_name: string | null; avatar_url: string | null };
+    unsentMessage?: string;
+  } | null;
+
+  const backPath = fromChatState?.fromChat && fromChatState?.conversationId
+    ? `/chat/${fromChatState.conversationId}`
+    : undefined;
+
+  const backState = fromChatState?.fromChat
+    ? { otherUser: fromChatState.otherUser, unsentMessage: fromChatState.unsentMessage }
+    : undefined;
 
   const [showShareModal, setShowShareModal] = useState(false);
   const [showEditSocialLinks, setShowEditSocialLinks] = useState(false);
@@ -169,6 +185,8 @@ export default function ProfileView() {
         isPreviewMode={isPreviewMode}
         isOwner={isOwner}
         onExitPreview={exitPreviewMode}
+        backPath={backPath}
+        backState={backState as Record<string, unknown> | undefined}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
