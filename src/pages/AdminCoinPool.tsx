@@ -91,8 +91,8 @@ export default function AdminCoinPool() {
       }
 
       const { data, error } = await supabase
-        .rpc('is_user_admin')
-        .single();
+        .rpc('is_user_admin');
+      console.log('[AdminCoinPool] is_user_admin result:', { data, error, userId: user?.id });
 
       if (error || !data) {
         setAdminError('Access denied. You do not have admin privileges.');

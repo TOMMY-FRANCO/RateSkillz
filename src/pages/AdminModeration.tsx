@@ -47,8 +47,8 @@ export default function AdminModeration() {
 
     async function verifyAdmin() {
       const { data, error } = await supabase
-        .rpc('is_user_admin')
-        .single();
+        .rpc('is_user_admin');
+      console.log('[AdminModeration] is_user_admin result:', { data, error });
 
       if (error || !data) {
         navigate('/dashboard', { replace: true });

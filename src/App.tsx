@@ -102,8 +102,9 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     if (!user || loading) return;
 
     let cancelled = false;
-    supabase.rpc('is_user_admin').single().then(({ data, error }) => {
+    supabase.rpc('is_user_admin').then(({ data, error }) => {
       if (!cancelled) {
+        console.log('[AdminRoute] is_user_admin result:', { data, error, userId: user?.id });
         setAdminVerified(!error && data === true);
       }
     });
