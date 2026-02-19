@@ -95,7 +95,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, profile, loading } = useAuth();
+  const { user, loading } = useAuth();
   const [adminChecked, setAdminChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -106,16 +106,26 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    let cancelled = false;
+
     supabase
       .from('profiles')
       .select('is_admin')
       .eq('id', user.id)
       .maybeSingle()
-      .then(({ data }) => {
-        console.log('[AdminRoute] DB check:', { userId: user.id, is_admin: data?.is_admin, profileCtxAdmin: profile?.is_admin });
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        console.log('[AdminRoute] DB check:', { userId: user.id, is_admin: data?.is_admin, error });
         setIsAdmin(data?.is_admin === true);
         setAdminChecked(true);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error('[AdminRoute] Query failed:', err);
+        setAdminChecked(true);
       });
+
+    return () => { cancelled = true; };
   }, [user?.id, loading]);
 
   if (loading || !adminChecked) {
