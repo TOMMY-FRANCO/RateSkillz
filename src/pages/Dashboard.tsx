@@ -464,7 +464,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <h3 className="text-white font-bold text-sm sm:text-base">Leaderboard</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Top 150 rankings</p>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Top 100 rankings</p>
               </div>
             </div>
           </button>
