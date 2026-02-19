@@ -218,15 +218,15 @@ export default function EditProfile() {
 
       const file = e.target.files[0];
 
-      if (file.size > 5 * 1024 * 1024) {
-        setMessage('File size must be less than 5MB');
+      if (file.size > 3 * 1024 * 1024) {
+        setMessage('File size must be less than 3MB');
         setUploading(false);
         return;
       }
 
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
       if (!allowedTypes.includes(file.type)) {
-        setMessage('Only image files (JPEG, PNG, GIF, WEBP) are allowed');
+        setMessage('Only JPEG and PNG images are allowed. SVG, GIF, and other formats are not supported.');
         setUploading(false);
         return;
       }
@@ -378,7 +378,7 @@ export default function EditProfile() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/jpg,image/png"
                 onChange={handleFileSelect}
                 className="hidden"
               />
