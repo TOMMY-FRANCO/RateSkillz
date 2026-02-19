@@ -27,12 +27,35 @@ interface FriendStatusEntry {
   id: string | null;
 }
 
+interface DropdownOption {
+  id: string;
+  name: string;
+}
+
 const POSITIONS = ['AM', 'SW', 'CB', 'CF', 'LB', 'RB'];
+
+const RATING_TIERS = [
+  { label: '0-10', min: 0, max: 10 },
+  { label: '10-20', min: 10, max: 20 },
+  { label: '20-30', min: 20, max: 30 },
+  { label: '30-40', min: 30, max: 40 },
+  { label: '40-50', min: 40, max: 50 },
+  { label: '50-60', min: 50, max: 60 },
+  { label: '60-70', min: 60, max: 70 },
+  { label: '70-80', min: 70, max: 80 },
+  { label: '80-90', min: 80, max: 90 },
+  { label: '90-95', min: 90, max: 95 },
+  { label: '96', min: 96, max: 96 },
+  { label: '97', min: 97, max: 97 },
+  { label: '98', min: 98, max: 98 },
+  { label: '99', min: 99, max: 99 },
+  { label: '100', min: 100, max: 100 },
+];
+
 const RESULTS_PER_PAGE = 20;
 
 function getIsOnline(updatedAt: string): boolean {
-  const diffMs = Date.now() - new Date(updatedAt).getTime();
-  return diffMs < 5 * 60 * 1000;
+  return Date.now() - new Date(updatedAt).getTime() < 5 * 60 * 1000;
 }
 
 function getTimeAgo(dateString: string): string {
@@ -48,21 +71,26 @@ function getTimeAgo(dateString: string): string {
   return new Date(dateString).toLocaleDateString();
 }
 
-function UserAvatar({ src, name, size = 'md' }: { src: string | null; name: string; size?: 'sm' | 'md' }) {
-  const dim = size === 'sm' ? 'w-10 h-10 text-sm' : 'w-12 h-12 text-base';
+function UserAvatar({ src, name }: { src: string | null; name: string }) {
   return src ? (
     <img
       src={src}
       alt={name}
-      className={`${dim} rounded-full object-cover border-2 border-[rgba(0,224,255,0.4)] flex-shrink-0`}
+      className="w-12 h-12 rounded-full object-cover border-2 border-[rgba(0,224,255,0.4)] flex-shrink-0"
       loading="lazy"
     />
   ) : (
-    <div className={`${dim} rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center text-black font-black border-2 border-[rgba(0,224,255,0.4)] flex-shrink-0`}>
+    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center text-black font-black text-base border-2 border-[rgba(0,224,255,0.4)] flex-shrink-0">
       {name.charAt(0).toUpperCase()}
     </div>
   );
 }
+
+const selectClass = `w-full px-3 py-2.5 rounded-lg text-sm font-semibold
+  bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)]
+  text-white focus:outline-none focus:border-[#00E0FF]
+  appearance-none cursor-pointer transition-colors
+  hover:border-[rgba(0,224,255,0.5)]`;
 
 export default function SearchFriends() {
   const { user } = useAuth();
@@ -75,15 +103,51 @@ export default function SearchFriends() {
   const [hasSearched, setHasSearched] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
+  const [position, setPosition] = useState('');
+  const [team, setTeam] = useState('');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [onlineOnly, setOnlineOnly] = useState(false);
-  const [teamQuery, setTeamQuery] = useState('');
+  const [ratingTier, setRatingTier] = useState('');
+  const [schoolId, setSchoolId] = useState('');
+  const [collegeId, setCollegeId] = useState('');
+  const [universityId, setUniversityId] = useState('');
+
+  const [teams, setTeams] = useState<string[]>([]);
+  const [schools, setSchools] = useState<DropdownOption[]>([]);
+  const [colleges, setColleges] = useState<DropdownOption[]>([]);
+  const [universities, setUniversities] = useState<DropdownOption[]>([]);
 
   const [friendStatuses, setFriendStatuses] = useState<Map<string, FriendStatusEntry>>(new Map());
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    loadDropdownOptions();
+  }, []);
+
+  const loadDropdownOptions = async () => {
+    const [teamsRes, schoolsRes, collegesRes, universitiesRes] = await Promise.all([
+      supabase.from('searchable_users_cache').select('team').not('team', 'is', null).neq('team', ''),
+      supabase.from('schools').select('id, school_name').order('school_name'),
+      supabase.from('colleges').select('id, college_name').order('college_name'),
+      supabase.from('universities').select('id, university_name').order('university_name'),
+    ]);
+
+    if (teamsRes.data) {
+      const unique = [...new Set(teamsRes.data.map((r: any) => r.team as string).filter(Boolean))].sort();
+      setTeams(unique);
+    }
+    if (schoolsRes.data) {
+      setSchools(schoolsRes.data.map((r: any) => ({ id: r.id, name: r.school_name })));
+    }
+    if (collegesRes.data) {
+      setColleges(collegesRes.data.map((r: any) => ({ id: r.id, name: r.college_name })));
+    }
+    if (universitiesRes.data) {
+      setUniversities(universitiesRes.data.map((r: any) => ({ id: r.id, name: r.university_name })));
+    }
+  };
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -92,41 +156,62 @@ export default function SearchFriends() {
       performSearch(1);
     }, 300);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [query, selectedPositions, verifiedOnly, onlineOnly, teamQuery]);
+  }, [query, position, team, verifiedOnly, onlineOnly, ratingTier, schoolId, collegeId, universityId]);
 
   useEffect(() => {
     performSearch(currentPage);
   }, [currentPage]);
+
+  const getEducationUserIds = async (): Promise<string[] | null> => {
+    if (!schoolId && !collegeId && !universityId) return null;
+
+    let q = supabase.from('profiles').select('id');
+    if (schoolId) q = q.eq('secondary_school_id', schoolId);
+    if (collegeId) q = q.eq('college_id', collegeId);
+    if (universityId) q = q.eq('university_id', universityId);
+
+    const { data } = await q;
+    return data ? data.map((r: any) => r.id) : [];
+  };
 
   const performSearch = async (page: number) => {
     if (!user) return;
     setLoading(true);
     setHasSearched(true);
     try {
+      const educationIds = await getEducationUserIds();
+      if (educationIds !== null && educationIds.length === 0) {
+        setResults([]);
+        setTotalResults(0);
+        setLoading(false);
+        return;
+      }
+
       let q = supabase
         .from('searchable_users_cache')
         .select('user_id, username, avatar_url, overall_rating, position, team, is_verified, updated_at', { count: 'exact' })
         .neq('user_id', user.id);
 
-      if (query.trim()) {
-        q = q.ilike('username', `%${query.trim()}%`);
+      if (query.trim()) q = q.ilike('username', `%${query.trim()}%`);
+      if (position) q = q.eq('position', position);
+      if (team) q = q.eq('team', team);
+      if (verifiedOnly) q = q.eq('is_verified', true);
+
+      if (ratingTier) {
+        const tier = RATING_TIERS.find(t => t.label === ratingTier);
+        if (tier) q = q.gte('overall_rating', tier.min).lte('overall_rating', tier.max);
       }
-      if (selectedPositions.length > 0) {
-        q = q.in('position', selectedPositions);
-      }
-      if (verifiedOnly) {
-        q = q.eq('is_verified', true);
-      }
-      if (teamQuery.trim()) {
-        q = q.ilike('team', `%${teamQuery.trim()}%`);
-      }
+
       if (onlineOnly) {
         const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
         q = q.gte('updated_at', fiveMinAgo);
       }
 
-      q = q.order('overall_rating', { ascending: false });
+      if (educationIds !== null) {
+        q = q.in('user_id', educationIds);
+      }
 
+      q = q.order('overall_rating', { ascending: false });
       const from = (page - 1) * RESULTS_PER_PAGE;
       q = q.range(from, from + RESULTS_PER_PAGE - 1);
 
@@ -146,10 +231,7 @@ export default function SearchFriends() {
 
       setResults(mapped);
       setTotalResults(count || 0);
-
-      if (mapped.length > 0) {
-        loadFriendStatuses(mapped.map(r => r.id));
-      }
+      if (mapped.length > 0) loadFriendStatuses(mapped.map(r => r.id));
     } catch (err) {
       console.error('Search error:', err);
       setResults([]);
@@ -200,7 +282,7 @@ export default function SearchFriends() {
         next.set(recipientId, { status: 'pending_sent', id: (data as any)?.id || null });
         return next;
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
     } finally {
       setActionLoading(null);
@@ -217,7 +299,7 @@ export default function SearchFriends() {
         next.set(recipientId, { status: 'none', id: null });
         return next;
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
     } finally {
       setActionLoading(null);
@@ -234,7 +316,7 @@ export default function SearchFriends() {
         next.set(recipientId, { status: 'accepted', id: friendshipId });
         return next;
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
     } finally {
       setActionLoading(null);
@@ -252,29 +334,27 @@ export default function SearchFriends() {
         next.set(recipientId, { status: 'none', id: null });
         return next;
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
     } finally {
       setActionLoading(null);
     }
   };
 
-  const togglePosition = (pos: string) => {
-    setSelectedPositions(prev =>
-      prev.includes(pos) ? prev.filter(p => p !== pos) : [...prev, pos]
-    );
-  };
-
   const clearAll = () => {
     setQuery('');
-    setSelectedPositions([]);
+    setPosition('');
+    setTeam('');
     setVerifiedOnly(false);
     setOnlineOnly(false);
-    setTeamQuery('');
+    setRatingTier('');
+    setSchoolId('');
+    setCollegeId('');
+    setUniversityId('');
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = selectedPositions.length > 0 || verifiedOnly || onlineOnly || teamQuery.trim();
+  const hasActiveFilters = position || team || verifiedOnly || onlineOnly || ratingTier || schoolId || collegeId || universityId;
   const totalPages = Math.ceil(totalResults / RESULTS_PER_PAGE);
 
   return (
@@ -320,75 +400,179 @@ export default function SearchFriends() {
           </div>
         </div>
 
-        {/* Filter row */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
-          {POSITIONS.map(pos => (
-            <button
-              key={pos}
-              onClick={() => togglePosition(pos)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                selectedPositions.includes(pos)
-                  ? 'bg-gradient-to-r from-[#00FF85] to-[#00E0FF] text-black shadow-[0_0_12px_rgba(0,224,255,0.4)]'
-                  : 'bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-[#B0B8C8] hover:border-[#00E0FF] hover:text-white'
-              }`}
-            >
-              {pos}
-            </button>
-          ))}
-
-          <button
-            onClick={() => setVerifiedOnly(v => !v)}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              verifiedOnly
-                ? 'bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black shadow-[0_0_12px_rgba(0,224,255,0.4)]'
-                : 'bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-[#B0B8C8] hover:border-[#00E0FF] hover:text-white'
-            }`}
-          >
-            <ShieldCheck className="w-3 h-3" />
-            Verified
-          </button>
-
-          <button
-            onClick={() => setOnlineOnly(v => !v)}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              onlineOnly
-                ? 'bg-gradient-to-r from-[#00FF85] to-[#00E0FF] text-black shadow-[0_0_12px_rgba(0,224,255,0.4)]'
-                : 'bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-[#B0B8C8] hover:border-[#00E0FF] hover:text-white'
-            }`}
-          >
-            <Wifi className="w-3 h-3" />
-            Online
-          </button>
-
-          <div className="flex-shrink-0 relative">
-            <input
-              type="text"
-              value={teamQuery}
-              onChange={e => setTeamQuery(e.target.value)}
-              placeholder="Team..."
-              className={`w-28 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[rgba(15,24,41,0.85)] border transition-all focus:outline-none placeholder-[#B0B8C8] text-white ${
-                teamQuery ? 'border-[#00E0FF]' : 'border-[rgba(0,224,255,0.2)] hover:border-[#00E0FF]/60'
-              }`}
-            />
-            {teamQuery && (
+        {/* Filters */}
+        <div className="glass-container p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#B0B8C8] uppercase tracking-wider">Filters</span>
+            {hasActiveFilters && (
               <button
-                onClick={() => setTeamQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[#B0B8C8] hover:text-white"
+                onClick={clearAll}
+                className="flex items-center gap-1 text-xs font-semibold text-red-400 hover:text-red-300 transition-colors"
               >
                 <X className="w-3 h-3" />
+                Clear all
               </button>
             )}
           </div>
 
-          {hasActiveFilters && (
+          {/* Row 1: Position + Team + Rating Tier */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-[#B0B8C8]">Position</label>
+              <div className="relative">
+                <select
+                  value={position}
+                  onChange={e => { setPosition(e.target.value); setCurrentPage(1); }}
+                  className={selectClass}
+                >
+                  <option value="">All positions</option>
+                  {POSITIONS.map(p => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                  <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-[#B0B8C8]">Team</label>
+              <div className="relative">
+                <select
+                  value={team}
+                  onChange={e => { setTeam(e.target.value); setCurrentPage(1); }}
+                  className={selectClass}
+                >
+                  <option value="">All teams</option>
+                  {teams.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                  <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-[#B0B8C8]">Rating Tier</label>
+              <div className="relative">
+                <select
+                  value={ratingTier}
+                  onChange={e => { setRatingTier(e.target.value); setCurrentPage(1); }}
+                  className={selectClass}
+                >
+                  <option value="">All ratings</option>
+                  {RATING_TIERS.map(t => (
+                    <option key={t.label} value={t.label}>{t.label}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                  <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 2: School + College + University */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-[#B0B8C8]">School</label>
+              <div className="relative">
+                <select
+                  value={schoolId}
+                  onChange={e => { setSchoolId(e.target.value); setCurrentPage(1); }}
+                  className={selectClass}
+                >
+                  <option value="">All schools</option>
+                  {schools.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                  <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-[#B0B8C8]">College</label>
+              <div className="relative">
+                <select
+                  value={collegeId}
+                  onChange={e => { setCollegeId(e.target.value); setCurrentPage(1); }}
+                  className={selectClass}
+                >
+                  <option value="">All colleges</option>
+                  {colleges.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                  <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-[#B0B8C8]">University</label>
+              <div className="relative">
+                <select
+                  value={universityId}
+                  onChange={e => { setUniversityId(e.target.value); setCurrentPage(1); }}
+                  className={selectClass}
+                >
+                  <option value="">All universities</option>
+                  {universities.map(u => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                  <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 3: Toggle buttons */}
+          <div className="flex gap-2 flex-wrap">
             <button
-              onClick={clearAll}
-              className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-400 border border-red-500/30 bg-red-500/5 hover:bg-red-500/10 transition-all"
+              onClick={() => { setVerifiedOnly(v => !v); setCurrentPage(1); }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                verifiedOnly
+                  ? 'bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black shadow-[0_0_12px_rgba(0,224,255,0.35)]'
+                  : 'bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-[#B0B8C8] hover:border-[#00E0FF] hover:text-white'
+              }`}
             >
-              <X className="w-3 h-3" />
-              Clear
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Verified only
             </button>
-          )}
+
+            <button
+              onClick={() => { setOnlineOnly(v => !v); setCurrentPage(1); }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                onlineOnly
+                  ? 'bg-gradient-to-r from-[#00FF85] to-[#00E0FF] text-black shadow-[0_0_12px_rgba(0,224,255,0.35)]'
+                  : 'bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-[#B0B8C8] hover:border-[#00E0FF] hover:text-white'
+              }`}
+            >
+              <Wifi className="w-3.5 h-3.5" />
+              Online now
+            </button>
+          </div>
         </div>
 
         {/* Results count */}
@@ -516,19 +700,16 @@ export default function SearchFriends() {
                             </button>
                           );
                         }
-                        if (fs?.status === 'none' || !fs) {
-                          return (
-                            <button
-                              onClick={() => handleSendRequest(result.id)}
-                              disabled={isProcessing}
-                              className="p-2 rounded-lg bg-[rgba(0,255,133,0.1)] border border-[rgba(0,255,133,0.25)] text-[#00FF85] hover:bg-[rgba(0,255,133,0.2)] disabled:opacity-50 transition-all"
-                              aria-label="Add friend"
-                            >
-                              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-                            </button>
-                          );
-                        }
-                        return null;
+                        return (
+                          <button
+                            onClick={() => handleSendRequest(result.id)}
+                            disabled={isProcessing}
+                            className="p-2 rounded-lg bg-[rgba(0,255,133,0.1)] border border-[rgba(0,255,133,0.25)] text-[#00FF85] hover:bg-[rgba(0,255,133,0.2)] disabled:opacity-50 transition-all"
+                            aria-label="Add friend"
+                          >
+                            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                          </button>
+                        );
                       })()}
                     </div>
                   </div>
