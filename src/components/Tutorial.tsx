@@ -13,9 +13,11 @@ const tutorialSteps = [
   {
     title: "Welcome to RatingSkill®",
     subtitle: "Intro to Skill-Based Gaming Platform",
-    content: `Welcome to RatingSkill®—where your real-world football skills become digital. This isn't a fantasy game with fictional players. You're the player. Your friends rate your actual abilities, your stats update based on real votes and you can build a team of real players, battle other managers and earn actual cash through skill-based competition.
+    content: `Welcome to RatingSkill®—where your real-world football skills become digital. This isn't a fantasy game with fictional players. You're the player. Your friends rate your actual abilities, your stats update based on real votes and you can build a team of real players, battle other managers and compete through skill-based competition.
 
-RatingSkill® is a community-driven platform where everyone has equal opportunity. No pay-to-win mechanics. No fake players. Just you, your skills, and your grind. The early players who dominate now will become "Legendary" status and earn the most when the economy scales. Ready to start?`
+RatingSkill® is a community-driven platform where everyone has equal opportunity. No pay-to-win mechanics. No fake players. Just you, your skills, and your grind. The early players who dominate now will become "Legendary" status as the platform grows. Ready to start?
+
+Note: All coins are in-app currency only and have no real-world monetary value.`
   },
   {
     title: "Upload Your Photo - Create Your Player Card",
@@ -48,35 +50,78 @@ The magic happens when multiple friends rate you—your stats become a crowd-sou
   {
     title: "Earn Coins - Multiple Ways to Build Your Balance",
     subtitle: "Start Earning Right Away",
-    content: `There are several ways to earn coins without spending a penny:
+    content: `There are several ways to earn coins:
 
-• Ads: +10 coins per ad per day 00:00AM GMT (decreases as phases progress)
-• Share on WhatsApp: +10 coins (send your profile link, get rewarded instantly)
-• Add Friends: +10 coins (for every 5 friends you add, once)
-• Comment on Profiles: +0.1 coins per comment (leave feedback on friends' cards)
+• Watch Ads: +5 coins per day (one 30-second ad, resets at 00:00 GMT — max 5 coins/day from ads)
+• Share on WhatsApp: +10 coins (share your profile link, rewarded instantly)
+• Share on Facebook: +10 coins (share your profile link, rewarded instantly)
+• Complete Tutorial: +5 coins (one-time reward)
+• Comment on Profiles: +0.1 coins per comment on a friend's profile
 
-These daily earners add up fast. If you watch ads consistently and add friends regularly, you can earn 30+ coins per day in the Alpha phase. In 10 days of grinding, you'll have 100 coins—enough to build your first team. There's no catch. No pay-to-win. Just consistency.`
+Tiered Friend Bonuses (one-time milestones):
+• 5 friends → +10 coins
+• 20 friends → +20 coins
+• 40 friends → +50 coins
+• 150 friends → +100 coins
+
+You can also send coins to friends — capped at 100 coins sent per day total.
+
+Note: Coins are in-app currency only with no real-world value. Only 5 coins can be earned per day through ads.`
   },
   {
     title: "Buy Players - Build a Team of Five",
     subtitle: "Assemble Your Squad",
-    content: `Once you have 100 coins, you can start buying player cards. Each card costs 20 coins at first, so 100 coins = 5 players. Strategy matters here—don't just buy random people. Buy friends you know are skilled. Check their stats. Look at their Overall Score and their individual attributes.
+    content: `Once you have enough coins, you can start buying player cards. Cards start at 20 coins and increase by 10 coins after every sale or swap. The seller receives half of that 10 coin increase, and the original card owner earns 5 coins every time their card is resold — a royalty for being rated highly.
 
-Your team's strength depends on your selections. If you pick players with inflated stats that nobody believes, you won't get battle requests. Pick a balanced, credible team and managers with similar-strength squads will want to battle you. Quality over quantity—always.`
+Cards also change colour based on overall rating rank:
+• Rank 1–50: Purple
+• Higher ranks unlock different colours
+• The rarest colours are unique to the top players: ranks 95, 96, 97, 98, 99 and 100 each have their own exclusive card colour
+
+Strategy matters — buy friends you know are skilled, check their stats and look at their Overall Score. Quality selections give you the best chance in battles.`
   },
   {
     title: "Become a Manager - Unlock Manager Status",
     subtitle: "Level Up Your Role",
     content: `Once you own 5 player cards, you unlock Manager status automatically. You earn +100 coins as a one-time bonus for reaching this milestone. Now you're not just a player—you're a manager running a squad.
 
-As a Manager, you can challenge other managers to battles, analyse matchups and compete for wins. Your team's performance reflects your management skill. The better your players and your tactical choices, the more battles you'll win. Winning battles is what generates real earnings down the road.`
+As a Manager, you can wager between 50 and 200 coins per battle. When your team wins, all five team members each earn 5 coins — even if their card wasn't directly played in that battle round.
+
+Your team's performance reflects your management skill. The better your players and your tactical choices, the more battles you'll win.`
   },
   {
     title: "Manager Battles - Compete, Analyse, Win",
     subtitle: "Battle Strategy & Skill",
     content: `Manager Battles are the competitive heart of RatingSkill®. You challenge another manager whose team has similar overall strength to yours. The battle outcome is based on player stats matchups—your Pace vs their Pace, your Shooting vs their Shooting, etc.
 
-Before you battle, analyse the matchup. Can your team handle their formation? Do your defenders outmatch their forwards? Which battles can you win? Smart managers pick opponents strategically, build winning streaks, and climb the leaderboard. This is where the grind pays off—consistent wins build your reputation and earnings potential.`
+Before you battle, analyse the matchup. Can your team handle their formation? Do your defenders outmatch their forwards? Which battles can you win? Smart managers pick opponents strategically, build winning streaks, and climb the leaderboard. Consistent wins build your reputation and your coin balance.`
+  },
+  {
+    title: "The London Arena - Leaderboard & Regional Expansion",
+    subtitle: "Compete Locally, Grow Globally",
+    content: `The London Arena is the first competitive leaderboard on RatingSkill®. Players and managers compete for the top spots in the London region — rankings are based on your overall rating, manager wins and card value.
+
+More arenas are coming soon. Once London reaches 50,000 users, new city arenas will launch:
+
+• Birmingham Arena
+• Cardiff Arena
+• Leeds Arena
+• Manchester Arena
+
+Each arena will have its own leaderboard, giving local players a chance to dominate their city before competing nationally. Get established in London now while the competition is smaller.`
+  },
+  {
+    title: "Coming Soon - Card Skins & Premium Features",
+    subtitle: "Unlock the Full Experience",
+    content: `More features are on the way to personalise your RatingSkill® experience:
+
+Coming Soon:
+• Card Skins: Customise the look of your player card with exclusive designs
+• Lifetime Subscription: 300 coins unlocks lifetime access to premium features
+• Heatmap: Visual overlay showing which attributes your card is strongest and weakest in
+• Username Search: Find any player on the platform by searching their username directly
+
+These features are in development and will be rolling out as the platform grows. Early users who build up their coin balance now will be best placed to unlock premium features the moment they launch.`
   }
 ];
 
