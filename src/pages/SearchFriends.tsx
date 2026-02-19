@@ -116,8 +116,14 @@ export default function SearchFriends() {
   const [teamsLoading, setTeamsLoading] = useState(true);
   const [teamsFailed, setTeamsFailed] = useState(false);
   const [schools, setSchools] = useState<DropdownOption[]>([]);
+  const [schoolsLoading, setSchoolsLoading] = useState(true);
+  const [schoolsFailed, setSchoolsFailed] = useState(false);
   const [colleges, setColleges] = useState<DropdownOption[]>([]);
+  const [collegesLoading, setCollegesLoading] = useState(true);
+  const [collegesFailed, setCollegesFailed] = useState(false);
   const [universities, setUniversities] = useState<DropdownOption[]>([]);
+  const [universitiesLoading, setUniversitiesLoading] = useState(true);
+  const [universitiesFailed, setUniversitiesFailed] = useState(false);
 
   const [friendStatuses, setFriendStatuses] = useState<Map<string, FriendStatusEntry>>(new Map());
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -146,22 +152,55 @@ export default function SearchFriends() {
     setTeamsLoading(false);
   };
 
-  const loadDropdownOptions = async () => {
-    const [schoolsRes, collegesRes, universitiesRes] = await Promise.all([
-      supabase.from('schools').select('id, school_name').order('school_name'),
-      supabase.from('colleges').select('id, college_name').order('college_name'),
-      supabase.from('universities').select('id, university_name').order('university_name'),
-    ]);
+  const loadSchools = async () => {
+    setSchoolsLoading(true);
+    setSchoolsFailed(false);
+    const { data, error } = await supabase
+      .from('schools')
+      .select('id, school_name')
+      .order('school_name');
+    if (error || !data) {
+      setSchoolsFailed(true);
+    } else {
+      setSchools(data.map((r: any) => ({ id: r.id, name: r.school_name })));
+    }
+    setSchoolsLoading(false);
+  };
 
-    if (schoolsRes.data) {
-      setSchools(schoolsRes.data.map((r: any) => ({ id: r.id, name: r.school_name })));
+  const loadColleges = async () => {
+    setCollegesLoading(true);
+    setCollegesFailed(false);
+    const { data, error } = await supabase
+      .from('colleges')
+      .select('id, college_name')
+      .order('college_name');
+    if (error || !data) {
+      setCollegesFailed(true);
+    } else {
+      setColleges(data.map((r: any) => ({ id: r.id, name: r.college_name })));
     }
-    if (collegesRes.data) {
-      setColleges(collegesRes.data.map((r: any) => ({ id: r.id, name: r.college_name })));
+    setCollegesLoading(false);
+  };
+
+  const loadUniversities = async () => {
+    setUniversitiesLoading(true);
+    setUniversitiesFailed(false);
+    const { data, error } = await supabase
+      .from('universities')
+      .select('id, university_name')
+      .order('university_name');
+    if (error || !data) {
+      setUniversitiesFailed(true);
+    } else {
+      setUniversities(data.map((r: any) => ({ id: r.id, name: r.university_name })));
     }
-    if (universitiesRes.data) {
-      setUniversities(universitiesRes.data.map((r: any) => ({ id: r.id, name: r.university_name })));
-    }
+    setUniversitiesLoading(false);
+  };
+
+  const loadDropdownOptions = () => {
+    loadSchools();
+    loadColleges();
+    loadUniversities();
   };
 
   useEffect(() => {
@@ -517,65 +556,101 @@ export default function SearchFriends() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1">
               <label className="block text-xs font-semibold text-[#B0B8C8]">School</label>
-              <div className="relative">
-                <select
-                  value={schoolId}
-                  onChange={e => { setSchoolId(e.target.value); setCurrentPage(1); }}
-                  className={selectClass}
-                >
-                  <option value="">All schools</option>
-                  {schools.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
-                  <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+              {schoolsFailed ? (
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-[rgba(15,24,41,0.85)] border border-red-500/30">
+                  <span className="text-xs text-red-400 flex-1">Failed to load</span>
+                  <button onClick={loadSchools} className="text-xs font-semibold text-[#00E0FF] hover:text-white transition-colors">Retry</button>
                 </div>
-              </div>
+              ) : (
+                <div className="relative">
+                  <select
+                    value={schoolId}
+                    onChange={e => { setSchoolId(e.target.value); setCurrentPage(1); }}
+                    disabled={schoolsLoading}
+                    className={`${selectClass} ${schoolsLoading ? 'opacity-50 cursor-wait' : ''}`}
+                  >
+                    <option value="">{schoolsLoading ? 'Loading...' : schools.length === 0 ? 'No schools available' : 'All schools'}</option>
+                    {schools.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                    {schoolsLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 text-[#B0B8C8] animate-spin" />
+                    ) : (
+                      <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1">
               <label className="block text-xs font-semibold text-[#B0B8C8]">College</label>
-              <div className="relative">
-                <select
-                  value={collegeId}
-                  onChange={e => { setCollegeId(e.target.value); setCurrentPage(1); }}
-                  className={selectClass}
-                >
-                  <option value="">All colleges</option>
-                  {colleges.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
-                  <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+              {collegesFailed ? (
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-[rgba(15,24,41,0.85)] border border-red-500/30">
+                  <span className="text-xs text-red-400 flex-1">Failed to load</span>
+                  <button onClick={loadColleges} className="text-xs font-semibold text-[#00E0FF] hover:text-white transition-colors">Retry</button>
                 </div>
-              </div>
+              ) : (
+                <div className="relative">
+                  <select
+                    value={collegeId}
+                    onChange={e => { setCollegeId(e.target.value); setCurrentPage(1); }}
+                    disabled={collegesLoading}
+                    className={`${selectClass} ${collegesLoading ? 'opacity-50 cursor-wait' : ''}`}
+                  >
+                    <option value="">{collegesLoading ? 'Loading...' : colleges.length === 0 ? 'No colleges available' : 'All colleges'}</option>
+                    {colleges.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                    {collegesLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 text-[#B0B8C8] animate-spin" />
+                    ) : (
+                      <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1">
               <label className="block text-xs font-semibold text-[#B0B8C8]">University</label>
-              <div className="relative">
-                <select
-                  value={universityId}
-                  onChange={e => { setUniversityId(e.target.value); setCurrentPage(1); }}
-                  className={selectClass}
-                >
-                  <option value="">All universities</option>
-                  {universities.map(u => (
-                    <option key={u.id} value={u.id}>{u.name}</option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
-                  <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+              {universitiesFailed ? (
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-[rgba(15,24,41,0.85)] border border-red-500/30">
+                  <span className="text-xs text-red-400 flex-1">Failed to load</span>
+                  <button onClick={loadUniversities} className="text-xs font-semibold text-[#00E0FF] hover:text-white transition-colors">Retry</button>
                 </div>
-              </div>
+              ) : (
+                <div className="relative">
+                  <select
+                    value={universityId}
+                    onChange={e => { setUniversityId(e.target.value); setCurrentPage(1); }}
+                    disabled={universitiesLoading}
+                    className={`${selectClass} ${universitiesLoading ? 'opacity-50 cursor-wait' : ''}`}
+                  >
+                    <option value="">{universitiesLoading ? 'Loading...' : universities.length === 0 ? 'No universities available' : 'All universities'}</option>
+                    {universities.map(u => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                    {universitiesLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 text-[#B0B8C8] animate-spin" />
+                    ) : (
+                      <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
