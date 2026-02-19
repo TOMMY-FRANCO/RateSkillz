@@ -117,9 +117,7 @@ Each arena will have its own leaderboard, giving local players a chance to domin
 
 Coming Soon:
 • Card Skins: Customise the look of your player card with exclusive designs
-• Lifetime Subscription: 300 coins unlocks lifetime access to premium features
-• Heatmap: Visual overlay showing which attributes your card is strongest and weakest in
-• Username Search: Find any player on the platform by searching their username directly
+• Lifetime Subscription: 500 coins unlocks lifetime access to premium features
 
 These features are in development and will be rolling out as the platform grows. Early users who build up their coin balance now will be best placed to unlock premium features the moment they launch.`
   }
