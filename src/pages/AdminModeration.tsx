@@ -45,22 +45,17 @@ export default function AdminModeration() {
 
     if (adminCheckDoneRef.current) return;
 
-    async function verifyAdmin() {
-      const { data, error } = await supabase
-        .rpc('is_user_admin');
-      console.log('[AdminModeration] is_user_admin result:', { data, error });
+    const isAdmin = (profile as any)?.is_admin === true;
+    console.log('[AdminModeration] admin check:', { isAdmin, profileId: profile?.id });
 
-      if (error || !data) {
-        navigate('/dashboard', { replace: true });
-        return;
-      }
-
-      adminCheckDoneRef.current = true;
-      loadCases();
-      loadFilterStats();
+    if (!isAdmin) {
+      navigate('/dashboard', { replace: true });
+      return;
     }
 
-    verifyAdmin();
+    adminCheckDoneRef.current = true;
+    loadCases();
+    loadFilterStats();
   }, [profile?.id, navigate]);
 
   const loadCases = async () => {

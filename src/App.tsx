@@ -95,24 +95,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  const [adminVerified, setAdminVerified] = useState<boolean | null>(null);
+  const { user, profile, loading } = useAuth();
 
-  useEffect(() => {
-    if (!user || loading) return;
+  console.log('[AdminRoute] check:', { userId: user?.id, isAdmin: (profile as any)?.is_admin, loading, profileLoaded: !!profile });
 
-    let cancelled = false;
-    supabase.rpc('is_user_admin').then(({ data, error }) => {
-      if (!cancelled) {
-        console.log('[AdminRoute] is_user_admin result:', { data, error, userId: user?.id });
-        setAdminVerified(!error && data === true);
-      }
-    });
-
-    return () => { cancelled = true; };
-  }, [user, loading]);
-
-  if (loading || adminVerified === null) {
+  if (loading || (user && !profile)) {
     return <LoadingScreen />;
   }
 
@@ -120,7 +107,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!adminVerified) {
+  if (!(profile as any)?.is_admin) {
     return <Navigate to="/dashboard" replace />;
   }
 
