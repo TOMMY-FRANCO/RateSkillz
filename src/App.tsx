@@ -6,6 +6,18 @@ import { supabase } from './lib/supabase';
 import { measureWebVitals, perfMonitor } from './lib/performance';
 import ErrorBoundary from './components/ErrorBoundary';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
+import { LazyPageWrapper } from './components/ui/LazyPageWrapper';
+import {
+  FriendsSkeleton,
+  InboxSkeleton,
+  BattleModeSkeleton,
+  TradingDashboardSkeleton,
+  LeaderboardSkeleton,
+  AddFriendByQRSkeleton,
+  SettingsSkeleton,
+  TutorialSkeleton,
+  GenericPageSkeleton,
+} from './components/ui/PageSkeletons';
 
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -191,7 +203,9 @@ function App() {
             path="/edit-profile"
             element={
               <ProtectedRoute>
-                <EditProfile />
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <EditProfile />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -199,7 +213,9 @@ function App() {
             path="/friends"
             element={
               <ProtectedRoute>
-                <Friends />
+                <LazyPageWrapper skeleton={<FriendsSkeleton />}>
+                  <Friends />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -207,7 +223,9 @@ function App() {
             path="/search-friends"
             element={
               <ProtectedRoute>
-                <SearchFriends />
+                <LazyPageWrapper skeleton={<FriendsSkeleton />}>
+                  <SearchFriends />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -215,7 +233,9 @@ function App() {
             path="/viewed-me"
             element={
               <ProtectedRoute>
-                <ViewedMe />
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <ViewedMe />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -223,7 +243,9 @@ function App() {
             path="/settings"
             element={
               <ProtectedRoute>
-                <Settings />
+                <LazyPageWrapper skeleton={<SettingsSkeleton />}>
+                  <Settings />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -231,7 +253,9 @@ function App() {
             path="/profile/:username"
             element={
               <ProtectedRoute>
-                <ProfileView />
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <ProfileView />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -239,7 +263,9 @@ function App() {
             path="/leaderboard"
             element={
               <ProtectedRoute>
-                <Leaderboard />
+                <LazyPageWrapper skeleton={<LeaderboardSkeleton />}>
+                  <Leaderboard />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -247,7 +273,9 @@ function App() {
             path="/shop"
             element={
               <ProtectedRoute>
-                <Shop />
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <Shop />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -255,7 +283,9 @@ function App() {
             path="/store"
             element={
               <ProtectedRoute>
-                <Store />
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <Store />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -263,7 +293,9 @@ function App() {
             path="/transactions"
             element={
               <ProtectedRoute>
-                <TransactionHistory />
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <TransactionHistory />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -271,7 +303,9 @@ function App() {
             path="/watch-ad"
             element={
               <ProtectedRoute>
-                <WatchAd />
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <WatchAd />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -279,7 +313,9 @@ function App() {
             path="/trading"
             element={
               <ProtectedRoute>
-                <TradingDashboard />
+                <LazyPageWrapper skeleton={<TradingDashboardSkeleton />}>
+                  <TradingDashboard />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -287,7 +323,9 @@ function App() {
             path="/battle-mode"
             element={
               <ProtectedRoute>
-                <BattleMode />
+                <LazyPageWrapper skeleton={<BattleModeSkeleton />}>
+                  <BattleMode />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -295,7 +333,9 @@ function App() {
             path="/checkout/success"
             element={
               <ProtectedRoute>
-                <CheckoutSuccess />
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <CheckoutSuccess />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -303,7 +343,9 @@ function App() {
             path="/inbox"
             element={
               <ProtectedRoute>
-                <Inbox />
+                <LazyPageWrapper skeleton={<InboxSkeleton />}>
+                  <Inbox />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -311,7 +353,9 @@ function App() {
             path="/inbox/:conversationId"
             element={
               <ProtectedRoute>
-                <Chat />
+                <LazyPageWrapper skeleton={<InboxSkeleton />}>
+                  <Chat />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -319,7 +363,9 @@ function App() {
             path="/balance-recovery"
             element={
               <ProtectedRoute>
-                <BalanceRecovery />
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <BalanceRecovery />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
@@ -327,7 +373,9 @@ function App() {
             path="/admin/coin-pool"
             element={
               <AdminRoute>
-                <AdminCoinPool />
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <AdminCoinPool />
+                </LazyPageWrapper>
               </AdminRoute>
             }
           />
@@ -335,16 +383,18 @@ function App() {
             path="/admin-hq-london"
             element={
               <AdminRoute>
-                <AdminModeration />
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <AdminModeration />
+                </LazyPageWrapper>
               </AdminRoute>
             }
           />
-          <Route path="/card/:username" element={<PublicCard />} />
-          <Route path="/verify/:token" element={<VerifyProfile />} />
-          <Route path="/add-friend" element={<AddFriendByQR />} />
-          <Route path="/shimmer-demo" element={<ShimmerDemo />} />
-          <Route path="/terms" element={<TermsOfService />} />
-          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/card/:username" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><PublicCard /></LazyPageWrapper>} />
+          <Route path="/verify/:token" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><VerifyProfile /></LazyPageWrapper>} />
+          <Route path="/add-friend" element={<LazyPageWrapper skeleton={<AddFriendByQRSkeleton />}><AddFriendByQR /></LazyPageWrapper>} />
+          <Route path="/shimmer-demo" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><ShimmerDemo /></LazyPageWrapper>} />
+          <Route path="/terms" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><TermsOfService /></LazyPageWrapper>} />
+          <Route path="/terms-of-service" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><TermsOfService /></LazyPageWrapper>} />
           <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
