@@ -1,22 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Coins, Tv, CheckCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Coins, Tv, CheckCircle, Clock, Sparkles } from 'lucide-react';
 import { awardAdCoins, getCoinBalance, canWatchAdToday } from '../lib/coins';
 import { dismissAdBadge } from '../lib/notifications';
 
+type Phase =
+  | 'checking'
+  | 'ready'
+  | 'watching'
+  | 'earning'
+  | 'congrats'
+  | 'cooldown'
+  | 'error';
+
 export default function WatchAd() {
   const navigate = useNavigate();
-  const [watching, setWatching] = useState(false);
-  const [completed, setCompleted] = useState(false);
+  const [phase, setPhase] = useState<Phase>('checking');
   const [countdown, setCountdown] = useState(30);
-  const [error, setError] = useState<string | null>(null);
-  const [earning, setEarning] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [balance, setBalance] = useState<number>(0);
-  const [canWatch, setCanWatch] = useState<boolean | null>(null);
-  const [checkingAvailability, setCheckingAvailability] = useState(true);
+  const [earnedBalance, setEarnedBalance] = useState<number>(0);
   const [nextAvailable, setNextAvailable] = useState<string | null>(null);
   const [hoursRemaining, setHoursRemaining] = useState<number>(0);
   const [minutesRemaining, setMinutesRemaining] = useState<number>(0);
+  const [congratsProgress, setCongratsProgress] = useState(0);
+  const autoTransitionRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     dismissAdBadge();
@@ -25,86 +33,97 @@ export default function WatchAd() {
   }, []);
 
   useEffect(() => {
-    if (watching && countdown > 0) {
+    if (phase === 'watching' && countdown > 0) {
       const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       return () => clearTimeout(timer);
-    } else if (watching && countdown === 0) {
+    } else if (phase === 'watching' && countdown === 0) {
       handleAdComplete();
     }
-  }, [watching, countdown]);
+  }, [phase, countdown]);
+
+  useEffect(() => {
+    if (phase === 'congrats') {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 100 / 25;
+        setCongratsProgress(Math.min(progress, 100));
+        if (progress >= 100) {
+          clearInterval(interval);
+        }
+      }, 100);
+
+      autoTransitionRef.current = setTimeout(() => {
+        transitionToCooldown();
+      }, 2500);
+
+      return () => {
+        clearInterval(interval);
+        if (autoTransitionRef.current) clearTimeout(autoTransitionRef.current);
+      };
+    }
+  }, [phase]);
 
   async function loadBalance() {
     try {
       const bal = await getCoinBalance();
       setBalance(bal);
-    } catch (error) {
-      console.error('Failed to load balance:', error);
+    } catch {
+      console.error('Failed to load balance');
     }
   }
 
   async function checkAdAvailability() {
-    setCheckingAvailability(true);
-    console.log('[WatchAd] Checking ad availability...');
+    setPhase('checking');
     try {
       const result = await canWatchAdToday();
-      setCanWatch(result.can_watch);
       if (!result.can_watch) {
         const hours = result.hours_remaining || 0;
         const minutes = result.minutes_remaining || 0;
         setHoursRemaining(hours);
         setMinutesRemaining(minutes);
-        setError(result.message || `Next ad available in ${hours} hours ${minutes} minutes`);
         setNextAvailable(result.next_available_gmt || null);
+        setPhase('cooldown');
       } else {
-        setError(null);
-        setHoursRemaining(0);
-        setMinutesRemaining(0);
+        setPhase('ready');
       }
-    } catch (error) {
-      console.error('[WatchAd] Failed to check ad availability:', error);
-      setCanWatch(true);
-    } finally {
-      setCheckingAvailability(false);
+    } catch {
+      console.error('[WatchAd] Failed to check ad availability');
+      setPhase('ready');
     }
   }
 
-  async function startAd() {
-    if (!canWatch) {
-      const hours = hoursRemaining;
-      const minutes = minutesRemaining;
-      setError(`Next ad available in ${hours} hours ${minutes} minutes. Try again later!`);
-      return;
-    }
-
-    setWatching(true);
-    setError(null);
+  function startAd() {
+    setPhase('watching');
     setCountdown(30);
   }
 
   async function handleAdComplete() {
-    setWatching(false);
-    setEarning(true);
-    console.log('[WatchAd] Ad complete, awarding coins...');
-
+    setPhase('earning');
     try {
       const result = await awardAdCoins();
       if (result.earned) {
-        console.log('[WatchAd] Coins earned successfully');
-        setCompleted(true);
-        setCanWatch(false);
-        await loadBalance();
+        const newBal = await getCoinBalance();
+        setEarnedBalance(newBal);
+        setBalance(newBal);
+        setCongratsProgress(0);
+        setPhase('congrats');
       } else {
-        console.error('[WatchAd] Failed to earn coins:', result.message || result.error);
-        setError(result.message || result.error || 'Already watched advert recently. Please wait 24 hours between ad views.');
-        setCanWatch(false);
-        await checkAdAvailability();
+        const hours = result.hours_remaining || 0;
+        const minutes = result.minutes_remaining || 0;
+        setHoursRemaining(hours);
+        setMinutesRemaining(minutes);
+        setNextAvailable(result.next_available_gmt || null);
+        setPhase('cooldown');
       }
     } catch (err: any) {
-      console.error('[WatchAd] Error awarding coins:', err);
-      setError(err.message || 'Failed to award coins. Please try again.');
-    } finally {
-      setEarning(false);
+      setErrorMsg(err.message || 'Failed to award coins. Please try again.');
+      setPhase('error');
     }
+  }
+
+  function transitionToCooldown() {
+    if (autoTransitionRef.current) clearTimeout(autoTransitionRef.current);
+    checkAdAvailability();
   }
 
   return (
@@ -132,14 +151,14 @@ export default function WatchAd() {
           </div>
         </div>
 
-        {checkingAvailability && (
+        {phase === 'checking' && (
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 border border-white/20 text-center">
             <div className="animate-spin w-12 h-12 border-4 border-white/20 border-t-white rounded-full mx-auto mb-4"></div>
             <p className="text-white text-lg">Checking advert availability...</p>
           </div>
         )}
 
-        {!checkingAvailability && !watching && !completed && !error && canWatch && (
+        {phase === 'ready' && (
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 border border-white/20 text-center">
             <div className="mb-8">
               <div className="inline-flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl shadow-lg mb-4">
@@ -166,7 +185,7 @@ export default function WatchAd() {
           </div>
         )}
 
-        {watching && (
+        {phase === 'watching' && (
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 border border-white/20 text-center">
             <div className="mb-8">
               <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-2xl">
@@ -179,7 +198,7 @@ export default function WatchAd() {
             <div className="max-w-xl mx-auto aspect-video rounded-xl border-2 border-white/20 overflow-hidden mb-4">
               <iframe
                 className="w-full h-full"
-                src=""https://www.youtube.com/embed/fq3jfvf4KUo?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0"
+                src="https://www.youtube.com/embed/fq3jfvf4KUo?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0"
                 title="Ad Video"
                 allow="autoplay; encrypted-media"
                 allowFullScreen
@@ -195,50 +214,88 @@ export default function WatchAd() {
           </div>
         )}
 
-        {earning && (
+        {phase === 'earning' && (
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 border border-white/20 text-center">
             <div className="animate-spin w-12 h-12 border-4 border-white/20 border-t-white rounded-full mx-auto mb-4"></div>
             <p className="text-white text-lg">Processing your reward...</p>
           </div>
         )}
 
-        {completed && (
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 border border-white/20 text-center">
-            <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-2xl">
-              <CheckCircle className="w-12 h-12 text-white" />
+        {phase === 'congrats' && (
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-12 border border-white/20 text-center relative overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-2 h-2 rounded-full animate-bounce"
+                  style={{
+                    left: `${8 + i * 8}%`,
+                    top: `${10 + (i % 3) * 15}%`,
+                    backgroundColor: i % 3 === 0 ? '#00FF85' : i % 3 === 1 ? '#00E0FF' : '#FFD700',
+                    animationDelay: `${i * 0.1}s`,
+                    animationDuration: `${0.6 + (i % 4) * 0.2}s`,
+                  }}
+                />
+              ))}
             </div>
-            <h2 className="text-3xl font-bold text-white mb-2">Congratulations!</h2>
-            <p className="text-white/60 mb-8">You earned 5 coins</p>
 
-            <div className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl shadow-lg mb-8">
-              <Coins className="w-8 h-8 text-white" />
-              <span className="text-4xl font-bold text-white">+5</span>
-            </div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <Sparkles className="w-8 h-8 text-yellow-400 animate-pulse" />
+                <div className="w-28 h-28 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-full flex items-center justify-center shadow-2xl shadow-[#00FF85]/30 ring-4 ring-[#00FF85]/20">
+                  <CheckCircle className="w-14 h-14 text-white" />
+                </div>
+                <Sparkles className="w-8 h-8 text-[#00E0FF] animate-pulse" style={{ animationDelay: '0.3s' }} />
+              </div>
 
-            <div className="space-x-4">
+              <h2 className="text-4xl font-bold text-white mb-2 tracking-tight">Congratulations!</h2>
+              <p className="text-white/70 text-lg mb-8">You have earned your daily reward</p>
+
+              <div className="inline-flex items-center gap-4 px-10 py-5 bg-gradient-to-r from-[#00FF85]/20 to-[#00E0FF]/20 border border-[#00FF85]/40 rounded-2xl shadow-lg shadow-[#00FF85]/10 mb-4">
+                <Coins className="w-10 h-10 text-yellow-400" />
+                <div className="text-left">
+                  <p className="text-white/60 text-sm font-medium">You earned</p>
+                  <p className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00FF85] to-[#00E0FF]">+5 coins</p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-2 mb-8">
+                <Coins className="w-4 h-4 text-yellow-400" />
+                <span className="text-white/80 text-sm">New balance: </span>
+                <span className="text-white font-bold text-lg">{earnedBalance.toFixed(2)} coins</span>
+              </div>
+
+              <div className="mb-6">
+                <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#00FF85] to-[#00E0FF] transition-all duration-100 ease-linear"
+                    style={{ width: `${congratsProgress}%` }}
+                  />
+                </div>
+                <p className="text-white/40 text-xs mt-2">Continuing automatically...</p>
+              </div>
+
               <button
-                onClick={() => navigate('/dashboard')}
-                className="px-6 py-3 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition-all"
+                onClick={transitionToCooldown}
+                className="px-8 py-3 bg-gradient-to-r from-[#00FF85] to-[#00E0FF] text-black font-bold rounded-xl hover:opacity-90 transition-all shadow-lg shadow-[#00FF85]/20"
               >
-                Back to Dashboard
-              </button>
-              <button
-                onClick={() => navigate('/transactions')}
-                className="px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
-              >
-                View Transactions
+                Continue
               </button>
             </div>
           </div>
         )}
 
-        {error && (
+        {phase === 'cooldown' && (
           <div className="bg-red-500/10 backdrop-blur-sm rounded-2xl p-12 border border-red-500/20 text-center">
             <div className="w-24 h-24 mx-auto mb-6 bg-red-500/20 rounded-full flex items-center justify-center">
               <Clock className="w-12 h-12 text-red-400" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Ad Not Available Yet</h2>
-            <p className="text-white/60 mb-6">{error}</p>
+            <p className="text-white/60 mb-6">
+              {hoursRemaining > 0 || minutesRemaining > 0
+                ? `Next ad available in ${hoursRemaining} hours ${minutesRemaining} minutes`
+                : 'You have already watched your daily ad. Come back after midnight GMT.'}
+            </p>
 
             <div className="bg-white/5 rounded-xl p-6 mb-8 border border-white/10">
               <p className="text-white/80 text-sm mb-3">Time until next ad:</p>
@@ -274,13 +331,34 @@ export default function WatchAd() {
                 Back to Dashboard
               </button>
               <button
-                onClick={() => {
-                  setError(null);
-                  checkAdAvailability();
-                }}
+                onClick={checkAdAvailability}
                 className="px-6 py-3 bg-gradient-to-r from-blue-400 to-cyan-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
               >
                 Check Again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {phase === 'error' && (
+          <div className="bg-red-500/10 backdrop-blur-sm rounded-2xl p-12 border border-red-500/20 text-center">
+            <div className="w-24 h-24 mx-auto mb-6 bg-red-500/20 rounded-full flex items-center justify-center">
+              <Clock className="w-12 h-12 text-red-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Something went wrong</h2>
+            <p className="text-white/60 mb-8">{errorMsg}</p>
+            <div className="space-x-4">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="px-6 py-3 bg-white/20 text-white font-semibold rounded-xl hover:bg-white/30 transition-all"
+              >
+                Back to Dashboard
+              </button>
+              <button
+                onClick={() => { setPhase('ready'); setErrorMsg(null); }}
+                className="px-6 py-3 bg-gradient-to-r from-green-400 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+              >
+                Try Again
               </button>
             </div>
           </div>
