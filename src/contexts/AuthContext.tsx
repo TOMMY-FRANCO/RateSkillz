@@ -34,6 +34,15 @@ export interface Profile {
   secondary_school_id?: string;
   college_id?: string;
   university_id?: string;
+  coin_balance?: number;
+  friend_count?: number;
+  is_verified?: boolean;
+  is_manager?: boolean;
+  is_admin?: boolean;
+  is_banned?: boolean;
+  profile_views_count?: number;
+  has_social_badge?: boolean;
+  manager_wins?: number;
 }
 
 export function isUserOnline(lastActive?: string): boolean {

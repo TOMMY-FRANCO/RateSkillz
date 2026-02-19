@@ -96,10 +96,29 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, profile, loading } = useAuth();
+  const [adminChecked, setAdminChecked] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  console.log('[AdminRoute] check:', { userId: user?.id, isAdmin: (profile as any)?.is_admin, loading, profileLoaded: !!profile });
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      setAdminChecked(true);
+      return;
+    }
 
-  if (loading || (user && !profile)) {
+    supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        console.log('[AdminRoute] DB check:', { userId: user.id, is_admin: data?.is_admin, profileCtxAdmin: profile?.is_admin });
+        setIsAdmin(data?.is_admin === true);
+        setAdminChecked(true);
+      });
+  }, [user?.id, loading]);
+
+  if (loading || !adminChecked) {
     return <LoadingScreen />;
   }
 
@@ -107,7 +126,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!(profile as any)?.is_admin) {
+  if (!isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
 
