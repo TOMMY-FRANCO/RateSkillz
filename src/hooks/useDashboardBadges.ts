@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { updateAppBadge } from '../lib/appBadge';
-import { requestFCMToken, onForegroundMessage } from '../lib/firebase';
+import { requestFCMToken, setupForegroundMessageHandler } from '../lib/firebase';
 
 export interface DashboardBadgeCounts {
   messages: number;
@@ -185,15 +185,16 @@ export function useDashboardBadges(userId: string | undefined) {
 
     if (!fcmInitialisedRef.current) {
       fcmInitialisedRef.current = true;
-      saveFCMToken(userId);
-
-      onForegroundMessage((payload) => {
-        const badgeCount = parseInt(
-          (payload.data && payload.data.badge_count) || '0',
-          10
-        );
-        updateAppBadge(badgeCount);
-      });
+      setTimeout(() => {
+        saveFCMToken(userId);
+        setupForegroundMessageHandler((payload) => {
+          const badgeCount = parseInt(
+            (payload.data && payload.data.badge_count) || '0',
+            10
+          );
+          updateAppBadge(badgeCount);
+        });
+      }, 5000);
     }
 
     const fresh = await fetchDashboardBadges(userId);
