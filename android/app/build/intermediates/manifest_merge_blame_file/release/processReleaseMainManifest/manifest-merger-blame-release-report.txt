@@ -1,0 +1,361 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.ratingskill.app"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="24"
+9        android:targetSdkVersion="36" />
+10
+11    <!-- Permissions -->
+12    <uses-permission android:name="android.permission.INTERNET" />
+12-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:50:5-67
+12-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:50:22-64
+13    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+13-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:51:5-79
+13-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:51:22-76
+14    <uses-permission android:name="android.permission.CAMERA" />
+14-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:52:5-65
+14-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:52:22-62
+15    <uses-permission android:name="android.permission.VIBRATE" />
+15-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:53:5-66
+15-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:53:22-63
+16    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+16-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:54:5-81
+16-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:54:22-78
+17    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+17-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:55:5-77
+17-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:55:22-74
+18    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+18-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:56:5-76
+18-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:56:22-73
+19    <uses-permission
+19-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:57:5-58:38
+20        android:name="android.permission.READ_EXTERNAL_STORAGE"
+20-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:57:22-77
+21        android:maxSdkVersion="32" />
+21-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:58:9-35
+22
+23    <!-- Optional camera feature (not required — allows install on devices without camera) -->
+24    <uses-feature
+24-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:61:5-85
+25        android:name="android.hardware.camera"
+25-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:61:19-57
+26        android:required="false" />
+26-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:61:58-82
+27    <uses-feature
+27-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:62:5-95
+28        android:name="android.hardware.camera.autofocus"
+28-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:62:19-67
+29        android:required="false" />
+29-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:62:68-92
+30
+31    <uses-permission android:name="android.permission.WAKE_LOCK" /> <!-- Required by older versions of Google Play services to create IID tokens -->
+31-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:24:5-68
+31-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:24:22-65
+32    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+32-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:26:5-82
+32-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:26:22-79
+33
+34    <permission
+34-->[androidx.core:core:1.17.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\11094a199bb7945826b161d8a9c17beb\transformed\core-1.17.0\AndroidManifest.xml:22:5-24:47
+35        android:name="com.ratingskill.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+35-->[androidx.core:core:1.17.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\11094a199bb7945826b161d8a9c17beb\transformed\core-1.17.0\AndroidManifest.xml:23:9-81
+36        android:protectionLevel="signature" />
+36-->[androidx.core:core:1.17.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\11094a199bb7945826b161d8a9c17beb\transformed\core-1.17.0\AndroidManifest.xml:24:9-44
+37
+38    <uses-permission android:name="com.ratingskill.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+38-->[androidx.core:core:1.17.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\11094a199bb7945826b161d8a9c17beb\transformed\core-1.17.0\AndroidManifest.xml:26:5-97
+38-->[androidx.core:core:1.17.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\11094a199bb7945826b161d8a9c17beb\transformed\core-1.17.0\AndroidManifest.xml:26:22-94
+39
+40    <application
+40-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:4:5-47:19
+41        android:allowBackup="true"
+41-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:5:9-35
+42        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+42-->[androidx.core:core:1.17.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\11094a199bb7945826b161d8a9c17beb\transformed\core-1.17.0\AndroidManifest.xml:28:18-86
+43        android:extractNativeLibs="false"
+44        android:icon="@mipmap/ic_launcher"
+44-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:6:9-43
+45        android:label="@string/app_name"
+45-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:7:9-41
+46        android:roundIcon="@mipmap/ic_launcher_round"
+46-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:8:9-54
+47        android:supportsRtl="true"
+47-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:9:9-35
+48        android:theme="@style/AppTheme"
+48-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:10:9-40
+49        android:usesCleartextTraffic="false" >
+49-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:11:9-45
+50        <activity
+50-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:13:9-26:20
+51            android:name="com.ratingskill.app.MainActivity"
+51-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:15:13-41
+52            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+52-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:14:13-148
+53            android:exported="true"
+53-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:19:13-36
+54            android:label="@string/title_activity_main"
+54-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:16:13-56
+55            android:launchMode="singleTask"
+55-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:18:13-44
+56            android:theme="@style/AppTheme.NoActionBarLaunch" >
+56-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:17:13-62
+57            <intent-filter>
+57-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:21:13-24:29
+58                <action android:name="android.intent.action.MAIN" />
+58-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:22:17-69
+58-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:22:25-66
+59
+60                <category android:name="android.intent.category.LAUNCHER" />
+60-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:23:17-77
+60-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:23:27-74
+61            </intent-filter>
+62        </activity>
+63
+64        <!-- Push Notification receiver for Capacitor -->
+65        <receiver
+65-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:29:9-36:20
+66            android:name="com.google.firebase.iid.FirebaseInstanceIdReceiver"
+66-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:30:13-78
+67            android:exported="true"
+67-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:31:13-36
+68            android:permission="com.google.android.c2dm.permission.SEND" >
+68-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:32:13-73
+69            <intent-filter>
+69-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:33:13-35:29
+70                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+70-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:34:17-81
+70-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:34:25-78
+71            </intent-filter>
+72
+73            <meta-data
+73-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:37:13-39:40
+74                android:name="com.google.android.gms.cloudmessaging.FINISHED_AFTER_HANDLED"
+74-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:38:17-92
+75                android:value="true" />
+75-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:39:17-37
+76        </receiver>
+77
+78        <provider
+79            android:name="androidx.core.content.FileProvider"
+79-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:39:13-62
+80            android:authorities="com.ratingskill.app.fileprovider"
+80-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:40:13-64
+81            android:exported="false"
+81-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:41:13-37
+82            android:grantUriPermissions="true" >
+82-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:42:13-47
+83            <meta-data
+83-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:43:13-45:64
+84                android:name="android.support.FILE_PROVIDER_PATHS"
+84-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:44:17-67
+85                android:resource="@xml/file_paths" />
+85-->C:\Users\duwai\Documents\RateSkillz\android\app\src\main\AndroidManifest.xml:45:17-51
+86        </provider>
+87
+88        <service
+88-->[:capacitor-push-notifications] C:\Users\duwai\Documents\RateSkillz\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\release\processReleaseManifest\AndroidManifest.xml:8:9-14:19
+89            android:name="com.capacitorjs.plugins.pushnotifications.MessagingService"
+89-->[:capacitor-push-notifications] C:\Users\duwai\Documents\RateSkillz\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\release\processReleaseManifest\AndroidManifest.xml:9:13-86
+90            android:exported="false" >
+90-->[:capacitor-push-notifications] C:\Users\duwai\Documents\RateSkillz\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\release\processReleaseManifest\AndroidManifest.xml:10:13-37
+91            <intent-filter>
+91-->[:capacitor-push-notifications] C:\Users\duwai\Documents\RateSkillz\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\release\processReleaseManifest\AndroidManifest.xml:11:13-13:29
+92                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+92-->[:capacitor-push-notifications] C:\Users\duwai\Documents\RateSkillz\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\release\processReleaseManifest\AndroidManifest.xml:12:17-78
+92-->[:capacitor-push-notifications] C:\Users\duwai\Documents\RateSkillz\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\release\processReleaseManifest\AndroidManifest.xml:12:25-75
+93            </intent-filter>
+94        </service>
+95        <!--
+96             FirebaseMessagingService performs security checks at runtime,
+97             but set to not exported to explicitly avoid allowing another app to call it.
+98        -->
+99        <service
+99-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:46:9-53:19
+100            android:name="com.google.firebase.messaging.FirebaseMessagingService"
+100-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:47:13-82
+101            android:directBootAware="true"
+101-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:48:13-43
+102            android:exported="false" >
+102-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:49:13-37
+103            <intent-filter android:priority="-500" >
+103-->[:capacitor-push-notifications] C:\Users\duwai\Documents\RateSkillz\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\release\processReleaseManifest\AndroidManifest.xml:11:13-13:29
+104                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+104-->[:capacitor-push-notifications] C:\Users\duwai\Documents\RateSkillz\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\release\processReleaseManifest\AndroidManifest.xml:12:17-78
+104-->[:capacitor-push-notifications] C:\Users\duwai\Documents\RateSkillz\node_modules\@capacitor\push-notifications\android\build\intermediates\merged_manifest\release\processReleaseManifest\AndroidManifest.xml:12:25-75
+105            </intent-filter>
+106        </service>
+107        <service
+107-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:54:9-63:19
+108            android:name="com.google.firebase.components.ComponentDiscoveryService"
+108-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:55:13-84
+109            android:directBootAware="true"
+109-->[com.google.firebase:firebase-common:22.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\cb546919c09df4bb1e2d2127157bcaa2\transformed\firebase-common-22.0.1\AndroidManifest.xml:32:13-43
+110            android:exported="false" >
+110-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:56:13-37
+111            <meta-data
+111-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:57:13-59:85
+112                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingKtxRegistrar"
+112-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:58:17-122
+113                android:value="com.google.firebase.components.ComponentRegistrar" />
+113-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:59:17-82
+114            <meta-data
+114-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:60:13-62:85
+115                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingRegistrar"
+115-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:61:17-119
+116                android:value="com.google.firebase.components.ComponentRegistrar" />
+116-->[com.google.firebase:firebase-messaging:25.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\fee7827030cf30b9c64fc7d59fae02bb\transformed\firebase-messaging-25.0.1\AndroidManifest.xml:62:17-82
+117            <meta-data
+117-->[com.google.firebase:firebase-installations:18.0.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\df907beae055c1d2434697ac5cd0594d\transformed\firebase-installations-18.0.0\AndroidManifest.xml:15:13-17:85
+118                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsKtxRegistrar"
+118-->[com.google.firebase:firebase-installations:18.0.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\df907beae055c1d2434697ac5cd0594d\transformed\firebase-installations-18.0.0\AndroidManifest.xml:16:17-130
+119                android:value="com.google.firebase.components.ComponentRegistrar" />
+119-->[com.google.firebase:firebase-installations:18.0.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\df907beae055c1d2434697ac5cd0594d\transformed\firebase-installations-18.0.0\AndroidManifest.xml:17:17-82
+120            <meta-data
+120-->[com.google.firebase:firebase-installations:18.0.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\df907beae055c1d2434697ac5cd0594d\transformed\firebase-installations-18.0.0\AndroidManifest.xml:18:13-20:85
+121                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsRegistrar"
+121-->[com.google.firebase:firebase-installations:18.0.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\df907beae055c1d2434697ac5cd0594d\transformed\firebase-installations-18.0.0\AndroidManifest.xml:19:17-127
+122                android:value="com.google.firebase.components.ComponentRegistrar" />
+122-->[com.google.firebase:firebase-installations:18.0.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\df907beae055c1d2434697ac5cd0594d\transformed\firebase-installations-18.0.0\AndroidManifest.xml:20:17-82
+123            <meta-data
+123-->[com.google.firebase:firebase-common:22.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\cb546919c09df4bb1e2d2127157bcaa2\transformed\firebase-common-22.0.1\AndroidManifest.xml:35:13-37:85
+124                android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar"
+124-->[com.google.firebase:firebase-common:22.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\cb546919c09df4bb1e2d2127157bcaa2\transformed\firebase-common-22.0.1\AndroidManifest.xml:36:17-109
+125                android:value="com.google.firebase.components.ComponentRegistrar" />
+125-->[com.google.firebase:firebase-common:22.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\cb546919c09df4bb1e2d2127157bcaa2\transformed\firebase-common-22.0.1\AndroidManifest.xml:37:17-82
+126            <meta-data
+126-->[com.google.firebase:firebase-datatransport:18.2.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\37804962654ec3e9f031e2012e83e63f\transformed\firebase-datatransport-18.2.0\AndroidManifest.xml:25:13-27:85
+127                android:name="com.google.firebase.components:com.google.firebase.datatransport.TransportRegistrar"
+127-->[com.google.firebase:firebase-datatransport:18.2.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\37804962654ec3e9f031e2012e83e63f\transformed\firebase-datatransport-18.2.0\AndroidManifest.xml:26:17-115
+128                android:value="com.google.firebase.components.ComponentRegistrar" />
+128-->[com.google.firebase:firebase-datatransport:18.2.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\37804962654ec3e9f031e2012e83e63f\transformed\firebase-datatransport-18.2.0\AndroidManifest.xml:27:17-82
+129        </service>
+130
+131        <activity
+131-->[com.google.android.gms:play-services-base:18.1.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\4aef5d6dbfa2eab3e0cf75d9b9b7eb7a\transformed\play-services-base-18.1.0\AndroidManifest.xml:20:9-22:45
+132            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+132-->[com.google.android.gms:play-services-base:18.1.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\4aef5d6dbfa2eab3e0cf75d9b9b7eb7a\transformed\play-services-base-18.1.0\AndroidManifest.xml:20:19-85
+133            android:exported="false"
+133-->[com.google.android.gms:play-services-base:18.1.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\4aef5d6dbfa2eab3e0cf75d9b9b7eb7a\transformed\play-services-base-18.1.0\AndroidManifest.xml:22:19-43
+134            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+134-->[com.google.android.gms:play-services-base:18.1.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\4aef5d6dbfa2eab3e0cf75d9b9b7eb7a\transformed\play-services-base-18.1.0\AndroidManifest.xml:21:19-78
+135
+136        <provider
+136-->[com.google.firebase:firebase-common:22.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\cb546919c09df4bb1e2d2127157bcaa2\transformed\firebase-common-22.0.1\AndroidManifest.xml:23:9-28:39
+137            android:name="com.google.firebase.provider.FirebaseInitProvider"
+137-->[com.google.firebase:firebase-common:22.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\cb546919c09df4bb1e2d2127157bcaa2\transformed\firebase-common-22.0.1\AndroidManifest.xml:24:13-77
+138            android:authorities="com.ratingskill.app.firebaseinitprovider"
+138-->[com.google.firebase:firebase-common:22.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\cb546919c09df4bb1e2d2127157bcaa2\transformed\firebase-common-22.0.1\AndroidManifest.xml:25:13-72
+139            android:directBootAware="true"
+139-->[com.google.firebase:firebase-common:22.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\cb546919c09df4bb1e2d2127157bcaa2\transformed\firebase-common-22.0.1\AndroidManifest.xml:26:13-43
+140            android:exported="false"
+140-->[com.google.firebase:firebase-common:22.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\cb546919c09df4bb1e2d2127157bcaa2\transformed\firebase-common-22.0.1\AndroidManifest.xml:27:13-37
+141            android:initOrder="100" />
+141-->[com.google.firebase:firebase-common:22.0.1] C:\Users\duwai\.gradle\caches\8.14.3\transforms\cb546919c09df4bb1e2d2127157bcaa2\transformed\firebase-common-22.0.1\AndroidManifest.xml:28:13-36
+142        <provider
+142-->[androidx.emoji2:emoji2:1.3.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\353d69426d62513a7e19e841051a3a44\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+143            android:name="androidx.startup.InitializationProvider"
+143-->[androidx.emoji2:emoji2:1.3.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\353d69426d62513a7e19e841051a3a44\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+144            android:authorities="com.ratingskill.app.androidx-startup"
+144-->[androidx.emoji2:emoji2:1.3.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\353d69426d62513a7e19e841051a3a44\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+145            android:exported="false" >
+145-->[androidx.emoji2:emoji2:1.3.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\353d69426d62513a7e19e841051a3a44\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+146            <meta-data
+146-->[androidx.emoji2:emoji2:1.3.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\353d69426d62513a7e19e841051a3a44\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+147                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+147-->[androidx.emoji2:emoji2:1.3.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\353d69426d62513a7e19e841051a3a44\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+148                android:value="androidx.startup" />
+148-->[androidx.emoji2:emoji2:1.3.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\353d69426d62513a7e19e841051a3a44\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+149            <meta-data
+149-->[androidx.lifecycle:lifecycle-process:2.6.2] C:\Users\duwai\.gradle\caches\8.14.3\transforms\14a3b51da1167f75215e7e32d2231e74\transformed\lifecycle-process-2.6.2\AndroidManifest.xml:29:13-31:52
+150                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+150-->[androidx.lifecycle:lifecycle-process:2.6.2] C:\Users\duwai\.gradle\caches\8.14.3\transforms\14a3b51da1167f75215e7e32d2231e74\transformed\lifecycle-process-2.6.2\AndroidManifest.xml:30:17-78
+151                android:value="androidx.startup" />
+151-->[androidx.lifecycle:lifecycle-process:2.6.2] C:\Users\duwai\.gradle\caches\8.14.3\transforms\14a3b51da1167f75215e7e32d2231e74\transformed\lifecycle-process-2.6.2\AndroidManifest.xml:31:17-49
+152            <meta-data
+152-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:29:13-31:52
+153                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+153-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:30:17-85
+154                android:value="androidx.startup" />
+154-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:31:17-49
+155        </provider>
+156
+157        <meta-data
+157-->[com.google.android.gms:play-services-basement:18.3.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\114baedee36b8bdac268f5386a7e6897\transformed\play-services-basement-18.3.0\AndroidManifest.xml:21:9-23:69
+158            android:name="com.google.android.gms.version"
+158-->[com.google.android.gms:play-services-basement:18.3.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\114baedee36b8bdac268f5386a7e6897\transformed\play-services-basement-18.3.0\AndroidManifest.xml:22:13-58
+159            android:value="@integer/google_play_services_version" />
+159-->[com.google.android.gms:play-services-basement:18.3.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\114baedee36b8bdac268f5386a7e6897\transformed\play-services-basement-18.3.0\AndroidManifest.xml:23:13-66
+160
+161        <receiver
+161-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:34:9-52:20
+162            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+162-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:35:13-76
+163            android:directBootAware="false"
+163-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:36:13-44
+164            android:enabled="true"
+164-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:37:13-35
+165            android:exported="true"
+165-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:38:13-36
+166            android:permission="android.permission.DUMP" >
+166-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:39:13-57
+167            <intent-filter>
+167-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:40:13-42:29
+168                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+168-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:41:17-91
+168-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:41:25-88
+169            </intent-filter>
+170            <intent-filter>
+170-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:43:13-45:29
+171                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+171-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:44:17-85
+171-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:44:25-82
+172            </intent-filter>
+173            <intent-filter>
+173-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:46:13-48:29
+174                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+174-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:47:17-88
+174-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:47:25-85
+175            </intent-filter>
+176            <intent-filter>
+176-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:49:13-51:29
+177                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+177-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:50:17-95
+177-->[androidx.profileinstaller:profileinstaller:1.4.0] C:\Users\duwai\.gradle\caches\8.14.3\transforms\f95ab50c54d3211c648684c462933e30\transformed\profileinstaller-1.4.0\AndroidManifest.xml:50:25-92
+178            </intent-filter>
+179        </receiver>
+180
+181        <service
+181-->[com.google.android.datatransport:transport-backend-cct:3.1.9] C:\Users\duwai\.gradle\caches\8.14.3\transforms\ea620a6b5afc7c5e432bbec109041d91\transformed\transport-backend-cct-3.1.9\AndroidManifest.xml:28:9-34:19
+182            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+182-->[com.google.android.datatransport:transport-backend-cct:3.1.9] C:\Users\duwai\.gradle\caches\8.14.3\transforms\ea620a6b5afc7c5e432bbec109041d91\transformed\transport-backend-cct-3.1.9\AndroidManifest.xml:29:13-103
+183            android:exported="false" >
+183-->[com.google.android.datatransport:transport-backend-cct:3.1.9] C:\Users\duwai\.gradle\caches\8.14.3\transforms\ea620a6b5afc7c5e432bbec109041d91\transformed\transport-backend-cct-3.1.9\AndroidManifest.xml:30:13-37
+184            <meta-data
+184-->[com.google.android.datatransport:transport-backend-cct:3.1.9] C:\Users\duwai\.gradle\caches\8.14.3\transforms\ea620a6b5afc7c5e432bbec109041d91\transformed\transport-backend-cct-3.1.9\AndroidManifest.xml:31:13-33:39
+185                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
+185-->[com.google.android.datatransport:transport-backend-cct:3.1.9] C:\Users\duwai\.gradle\caches\8.14.3\transforms\ea620a6b5afc7c5e432bbec109041d91\transformed\transport-backend-cct-3.1.9\AndroidManifest.xml:32:17-94
+186                android:value="cct" />
+186-->[com.google.android.datatransport:transport-backend-cct:3.1.9] C:\Users\duwai\.gradle\caches\8.14.3\transforms\ea620a6b5afc7c5e432bbec109041d91\transformed\transport-backend-cct-3.1.9\AndroidManifest.xml:33:17-36
+187        </service>
+188        <service
+188-->[com.google.android.datatransport:transport-runtime:3.1.9] C:\Users\duwai\.gradle\caches\8.14.3\transforms\1491c73c5d15eb22051217da9a2fb39c\transformed\transport-runtime-3.1.9\AndroidManifest.xml:26:9-30:19
+189            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
+189-->[com.google.android.datatransport:transport-runtime:3.1.9] C:\Users\duwai\.gradle\caches\8.14.3\transforms\1491c73c5d15eb22051217da9a2fb39c\transformed\transport-runtime-3.1.9\AndroidManifest.xml:27:13-117
+190            android:exported="false"
+190-->[com.google.android.datatransport:transport-runtime:3.1.9] C:\Users\duwai\.gradle\caches\8.14.3\transforms\1491c73c5d15eb22051217da9a2fb39c\transformed\transport-runtime-3.1.9\AndroidManifest.xml:28:13-37
+191            android:permission="android.permission.BIND_JOB_SERVICE" >
+191-->[com.google.android.datatransport:transport-runtime:3.1.9] C:\Users\duwai\.gradle\caches\8.14.3\transforms\1491c73c5d15eb22051217da9a2fb39c\transformed\transport-runtime-3.1.9\AndroidManifest.xml:29:13-69
+192        </service>
+193
+194        <receiver
+194-->[com.google.android.datatransport:transport-runtime:3.1.9] C:\Users\duwai\.gradle\caches\8.14.3\transforms\1491c73c5d15eb22051217da9a2fb39c\transformed\transport-runtime-3.1.9\AndroidManifest.xml:32:9-34:40
+195            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
+195-->[com.google.android.datatransport:transport-runtime:3.1.9] C:\Users\duwai\.gradle\caches\8.14.3\transforms\1491c73c5d15eb22051217da9a2fb39c\transformed\transport-runtime-3.1.9\AndroidManifest.xml:33:13-132
+196            android:exported="false" />
+196-->[com.google.android.datatransport:transport-runtime:3.1.9] C:\Users\duwai\.gradle\caches\8.14.3\transforms\1491c73c5d15eb22051217da9a2fb39c\transformed\transport-runtime-3.1.9\AndroidManifest.xml:34:13-37
+197    </application>
+198
+199</manifest>
