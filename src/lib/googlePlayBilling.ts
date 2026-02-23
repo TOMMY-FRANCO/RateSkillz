@@ -1,4 +1,3 @@
-import { Capacitor, registerPlugin } from '@capacitor/core';
 import { supabase } from './supabase';
 
 interface BillingPlugin {
@@ -12,8 +11,6 @@ interface BillingPlugin {
   acknowledgePurchase(options: { purchaseToken: string }): Promise<{ success: boolean }>;
 }
 
-const Billing = registerPlugin<BillingPlugin>('Billing');
-
 export const GOOGLE_PLAY_PRODUCTS = {
   coins_100: { id: 'coins_100', coins: 100, price: 1.00, label: '£1.00' },
   coins_300: { id: 'coins_300', coins: 300, price: 2.00, label: '£2.00' },
@@ -21,11 +18,18 @@ export const GOOGLE_PLAY_PRODUCTS = {
 
 export type GooglePlayProductId = keyof typeof GOOGLE_PLAY_PRODUCTS;
 
+async function loadCapacitor() {
+  const { Capacitor, registerPlugin } = await import('@capacitor/core');
+  return { Capacitor, registerPlugin };
+}
+
 export async function isGooglePlayBillingAvailable(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') {
-    return false;
-  }
   try {
+    const { Capacitor, registerPlugin } = await loadCapacitor();
+    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') {
+      return false;
+    }
+    const Billing = registerPlugin<BillingPlugin>('Billing');
     const result = await Billing.isAvailable();
     return result.available;
   } catch {
@@ -36,6 +40,8 @@ export async function isGooglePlayBillingAvailable(): Promise<boolean> {
 export async function purchaseWithGooglePlay(
   productId: GooglePlayProductId
 ): Promise<{ success: boolean; coinsAdded: number; newBalance: number; message?: string }> {
+  const { registerPlugin } = await loadCapacitor();
+  const Billing = registerPlugin<BillingPlugin>('Billing');
   const purchaseResult = await Billing.purchase({ productId });
 
   if (!purchaseResult.purchaseToken) {
