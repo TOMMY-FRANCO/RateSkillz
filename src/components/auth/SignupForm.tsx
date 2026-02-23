@@ -1,8 +1,15 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { validatePassword, getPasswordRequirements } from '../../lib/passwordValidation';
 import { OAuthButtons } from './OAuthButtons';
+
+declare global {
+  interface Window {
+    grecaptcha: any;
+  }
+}
 
 interface SignupFormProps {
   onSuccess?: () => void;
@@ -11,18 +18,68 @@ interface SignupFormProps {
 
 export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
   const navigate = useNavigate();
+  const { signUp } = useAuth();
+  const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [age, setAge] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
+
+  useEffect(() => {
+    if (window.grecaptcha) {
+      setRecaptchaLoaded(true);
+      return;
+    }
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+    if (!siteKey) return;
+    const existing = document.querySelector(`script[src*="recaptcha"]`);
+    if (existing) {
+      setRecaptchaLoaded(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => setRecaptchaLoaded(true);
+    document.body.appendChild(script);
+  }, []);
+
+  const executeRecaptcha = async (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!window.grecaptcha || !recaptchaLoaded) {
+        reject(new Error('reCAPTCHA not loaded'));
+        return;
+      }
+      window.grecaptcha.ready(() => {
+        window.grecaptcha
+          .execute(import.meta.env.VITE_RECAPTCHA_SITE_KEY, { action: 'signup' })
+          .then((token: string) => resolve(token))
+          .catch((err: any) => reject(err));
+      });
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+    if (!fullName.trim()) {
+      setError('Full name is required');
+      return;
+    }
+
+    if (username.length < 3) {
+      setError('Username must be at least 3 characters');
+      return;
+    }
+
+    if (!/^[a-z0-9_]+$/.test(username)) {
+      setError('Username can only contain lowercase letters, numbers, and underscores');
       return;
     }
 
@@ -32,25 +89,40 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
       return;
     }
 
+    const ageNum = age ? parseInt(age) : null;
+    if (ageNum !== null && ageNum < 11) {
+      setError('You must be at least 11 years old to use this app.');
+      return;
+    }
+    if (ageNum !== null && ageNum > 150) {
+      setError('Please enter a valid age (maximum 150).');
+      return;
+    }
+
+    if (!termsAccepted) {
+      setError('You must accept the Terms of Service to create an account');
+      return;
+    }
+
     setLoading(true);
 
+    let recaptchaToken = '';
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      recaptchaToken = await executeRecaptcha();
+    } catch {
+      // reCAPTCHA unavailable — proceed without it
+    }
 
-      if (error) throw error;
+    const { error: signUpError } = await signUp(email, password, username, fullName, recaptchaToken, ageNum);
 
+    if (signUpError) {
+      setError(signUpError.message);
+      setLoading(false);
+    } else {
       if (onSuccess) {
         onSuccess();
-      } else {
-        navigate('/dashboard');
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign up');
-    } finally {
-      setLoading(false);
+      navigate(`/profile/${username.toLowerCase()}`);
     }
   };
 
@@ -75,11 +147,43 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
         )}
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-2">
+          <label htmlFor="signup-fullname" className="block text-sm font-medium text-white/80 mb-2">
+            Full Name
+          </label>
+          <input
+            id="signup-fullname"
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/40 focus:outline-none focus:border-[#00E0FF]/50 transition-colors"
+            placeholder="John Doe"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="signup-username" className="block text-sm font-medium text-white/80 mb-2">
+            Username
+          </label>
+          <input
+            id="signup-username"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+            required
+            minLength={3}
+            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/40 focus:outline-none focus:border-[#00E0FF]/50 transition-colors"
+            placeholder="johndoe"
+          />
+          <p className="text-xs text-white/50 mt-1">Lowercase letters, numbers, and underscores only. Min 3 characters.</p>
+        </div>
+
+        <div>
+          <label htmlFor="signup-email" className="block text-sm font-medium text-white/80 mb-2">
             Email
           </label>
           <input
-            id="email"
+            id="signup-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -90,11 +194,11 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-white/80 mb-2">
+          <label htmlFor="signup-password" className="block text-sm font-medium text-white/80 mb-2">
             Password
           </label>
           <input
-            id="password"
+            id="signup-password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -106,26 +210,57 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
         </div>
 
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/80 mb-2">
-            Confirm Password
+          <label htmlFor="signup-age" className="block text-sm font-medium text-white/80 mb-2">
+            Age (Optional)
           </label>
           <input
-            id="confirmPassword"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
+            id="signup-age"
+            type="number"
+            min="11"
+            max="150"
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
             className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/40 focus:outline-none focus:border-[#00E0FF]/50 transition-colors"
-            placeholder="Confirm your password"
+            placeholder="Enter your age (11-150)"
           />
+          <p className="text-xs text-white/50 mt-1">Minimum age: 11. Used for Safety & Privacy Settings</p>
+        </div>
+
+        <div>
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              className="w-4 h-4 mt-0.5 rounded border border-white/20 bg-white/5 checked:bg-[#00E0FF] checked:border-[#00E0FF] cursor-pointer flex-shrink-0"
+            />
+            <span className="text-xs text-white/60 group-hover:text-white/80 transition-colors leading-relaxed">
+              I agree to the{' '}
+              <Link
+                to="/terms"
+                target="_blank"
+                className="text-[#00E0FF] hover:text-[#00E0FF]/80 underline"
+              >
+                Terms of Service
+              </Link>
+              {' '}and understand that virtual coins have no real-world value and cannot be withdrawn or exchanged for money.
+            </span>
+          </label>
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-gradient-to-r from-[#00E0FF] to-[#7B2FF7] hover:opacity-90 text-white font-medium py-2.5 px-4 rounded-md transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-gradient-to-r from-[#00E0FF] to-[#7B2FF7] hover:opacity-90 text-white font-medium py-2.5 px-4 rounded-md transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          {loading ? 'Creating account...' : 'Sign Up'}
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Creating account...
+            </>
+          ) : (
+            'Create Account'
+          )}
         </button>
       </form>
 
