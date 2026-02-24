@@ -15,7 +15,7 @@ const tutorialSteps = [
     subtitle: "Intro to Skill-Based Gaming Platform",
     content: `Welcome to RatingSkill®—where your real-world football skills become digital. This isn't a fantasy game with fictional players. You're the player. Your friends rate your actual abilities, your stats update based on real votes and you can build a team of real players, battle other managers and compete through skill-based competition.
 
-RatingSkill® is a community-driven platform where everyone has equal opportunity. No pay-to-win mechanics. No fake players. Just you, your skills, and your grind. The early players who dominate now will become "Legendary" status as the platform grows. Ready to start?
+RatingSkill® is a community-driven platform where everyone has equal opportunity. No pay-to-win mechanics. No fake players. Just you, your skills and your grind. The early players who dominate now will become "Legendary" status as the platform grows. Ready to start?
 
 Note: All coins are in-app currency only and have no real-world monetary value.`
   },
@@ -94,19 +94,20 @@ Your team's performance reflects your management skill. The better your players 
     subtitle: "Battle Strategy & Skill",
     content: `Manager Battles are the competitive heart of RatingSkill®. You challenge another manager whose team has similar overall strength to yours. The battle outcome is based on player stats matchups—your Pace vs their Pace, your Shooting vs their Shooting, etc.
 
-Before you battle, analyse the matchup. Can your team handle their formation? Do your defenders outmatch their forwards? Which battles can you win? Smart managers pick opponents strategically, build winning streaks, and climb the leaderboard. Consistent wins build your reputation and your coin balance.`
+Before you battle, analyse the matchup. Can your team handle their formation? Do your defenders outmatch their forwards? Which battles can you win? Smart managers pick opponents strategically, build winning streaks and climb the leaderboard. Consistent wins build your reputation and your coin balance.`
   },
   {
-    title: "The London Arena - Leaderboard & Regional Expansion",
+    title: "The London Arena® - Leaderboard & Regional Expansion",
     subtitle: "Compete Locally, Grow Globally",
     content: `The London Arena is the first competitive leaderboard on RatingSkill®. Players and managers compete for the top spots in the London region — rankings are based on your overall rating, manager wins and card value.
 
-More arenas are coming soon. Once London reaches 50,000 users, new city arenas will launch:
+More arenas are coming soon. Once The London Arena® reaches 50,000 users, new city arenas will launch:
 
-• Birmingham Arena
-• Cardiff Arena
-• Leeds Arena
-• Manchester Arena
+• The Birmingham Arena®
+• The Manchester Arena®
+• The Liverpool Arena®
+• The Leeds Arena®
+• The Bristol Arena®
 
 Each arena will have its own leaderboard, giving local players a chance to dominate their city before competing nationally. Get established in London now while the competition is smaller.`
   },
