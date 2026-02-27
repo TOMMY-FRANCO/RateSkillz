@@ -1,37 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Coins, CreditCard, ArrowLeft, Sparkles, Loader2, ShoppingCart } from 'lucide-react';
+import { Coins, CreditCard, ArrowLeft, Sparkles, Loader2 } from 'lucide-react';
 import { COIN_PACKAGES } from '../lib/coins';
 import { useCoinBalance } from '../hooks/useCoinBalance';
 import { CoinPoolDisplay } from '../components/CoinPoolDisplay';
 import { createCoinPurchaseCheckout } from '../lib/stripe';
-import { isAndroidApp } from '../lib/platform';
-import {
-  isGooglePlayBillingAvailable,
-  purchaseWithGooglePlay,
-  type GooglePlayProductId,
-} from '../lib/googlePlayBilling';
-
-const PRODUCT_ID_MAP: Record<string, GooglePlayProductId> = {
-  starter: 'coins_100',
-  value: 'coins_300',
-};
 
 export default function Shop() {
   const navigate = useNavigate();
-  const { balance, loading, refetch } = useCoinBalance();
+  const { balance, loading } = useCoinBalance();
   const [purchasingPackage, setPurchasingPackage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [useGooglePlay, setUseGooglePlay] = useState(false);
-
-  useEffect(() => {
-    if (isAndroidApp()) {
-      isGooglePlayBillingAvailable().then(available => {
-        setUseGooglePlay(available);
-      });
-    }
-  }, []);
 
   async function handlePurchase(packageId: string) {
     const pkg = COIN_PACKAGES.find(p => p.id === packageId);
@@ -39,46 +18,9 @@ export default function Shop() {
 
     setPurchasingPackage(packageId);
     setError(null);
-    setSuccessMessage(null);
-
-    if (useGooglePlay) {
-      await handleGooglePlayPurchase(packageId, pkg.coins);
-    } else {
-      await handleStripePurchase(pkg.coins, pkg.price);
-    }
-  }
-
-  async function handleGooglePlayPurchase(packageId: string, coins: number) {
-    const productId = PRODUCT_ID_MAP[packageId];
-    if (!productId) {
-      setError('Product not available.');
-      setPurchasingPackage(null);
-      return;
-    }
 
     try {
-      const result = await purchaseWithGooglePlay(productId);
-      setSuccessMessage(`${result.coinsAdded} coins added to your account!`);
-      if (refetch) refetch();
-    } catch (err: any) {
-      const msg = err.message || '';
-      if (msg.toLowerCase().includes('cancel')) {
-        setError('Purchase cancelled.');
-      } else if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('fetch')) {
-        setError('Network error. Please check your connection and try again.');
-      } else if (msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('product')) {
-        setError('This product is not available in Google Play yet. Please try again later.');
-      } else {
-        setError(msg || 'Purchase failed. Please try again.');
-      }
-    } finally {
-      setPurchasingPackage(null);
-    }
-  }
-
-  async function handleStripePurchase(coins: number, price: number) {
-    try {
-      const { url } = await createCoinPurchaseCheckout(coins, price);
+      const { url } = await createCoinPurchaseCheckout(pkg.coins, pkg.price);
       if (url) {
         window.location.href = url;
       } else {
@@ -135,12 +77,6 @@ export default function Shop() {
           </div>
         )}
 
-        {successMessage && (
-          <div className="max-w-2xl mx-auto mb-6 glass-container bg-green-500/10 border-green-500/50 p-4 rounded-xl">
-            <p className="text-[#00FF85] text-center font-semibold">{successMessage}</p>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
           {COIN_PACKAGES.map((pkg) => (
             <div
@@ -186,24 +122,16 @@ export default function Shop() {
                   {purchasingPackage === pkg.id ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      {useGooglePlay ? 'Opening Google Play...' : 'Setting up payment...'}
+                      Setting up payment...
                     </>
                   ) : (
                     <>
-                      {useGooglePlay ? (
-                        <ShoppingCart className="w-5 h-5" />
-                      ) : (
-                        <CreditCard className="w-5 h-5" />
-                      )}
+                      <CreditCard className="w-5 h-5" />
                       Buy Now
                     </>
                   )}
                 </div>
               </button>
-
-              {useGooglePlay && (
-                <p className="text-center text-[#6B7280] text-xs mt-2">via Google Play</p>
-              )}
             </div>
           ))}
         </div>
