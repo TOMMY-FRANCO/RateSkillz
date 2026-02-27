@@ -83,38 +83,101 @@ export default function ViewedMe() {
 
     setLoading(true);
     try {
-      const { data: cacheData, error: cacheError } = await supabase
-        .from('profile_view_cache')
-        .select('user_id, last_viewer_id, last_viewer_username, last_viewed_at, recent_viewers_count, overall_rating, position, team, last_seen, updated_at, is_verified')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      const { count, error: countError } = await supabase
+        .from('profile_views')
+        .select('id', { count: 'exact', head: true })
+        .eq('profile_id', user.id)
+        .not('viewer_id', 'is', null);
 
-      if (cacheError) throw cacheError;
+      if (countError) throw countError;
 
-      const totalCount = cacheData?.recent_viewers_count || 0;
-      setTotalViewers(totalCount);
+      const total = count || 0;
+      setTotalViewers(total);
 
-      if (cacheData && cacheData.last_viewer_id) {
-        const viewer: ViewerData = {
-          viewer_id: cacheData.last_viewer_id,
-          username: cacheData.last_viewer_username || 'Unknown',
-          avatar_url: null,
-          overall_rating: cacheData.overall_rating || 50,
-          position: cacheData.position,
-          team: cacheData.team,
-          coin_balance: 0,
-          is_manager: false,
-          manager_wins: 0,
-          last_active: cacheData.last_seen || cacheData.updated_at,
-          is_verified: cacheData.is_verified || false,
-          has_social_badge: false,
-          viewed_at: cacheData.last_viewed_at,
-        };
-        setViewers([viewer]);
-        loadFriendStatuses([cacheData.last_viewer_id]);
-      } else {
+      if (total === 0) {
         setViewers([]);
+        return;
       }
+
+      const offset = (currentPage - 1) * VIEWERS_PER_PAGE;
+
+      const { data: viewRecords, error: viewError } = await supabase
+        .from('profile_views')
+        .select('viewer_id, viewed_at')
+        .eq('profile_id', user.id)
+        .not('viewer_id', 'is', null)
+        .order('viewed_at', { ascending: false })
+        .range(offset, offset + VIEWERS_PER_PAGE - 1);
+
+      if (viewError) throw viewError;
+
+      if (!viewRecords || viewRecords.length === 0) {
+        setViewers([]);
+        return;
+      }
+
+      const viewerIds = [...new Set(viewRecords.map(r => r.viewer_id as string))];
+
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url, last_active, overall_rating, position, team, coin_balance, is_manager, manager_wins, is_verified')
+        .in('id', viewerIds);
+
+      if (profilesError) throw profilesError;
+
+      const profileMap = new Map<string, typeof profilesData[0]>();
+      if (profilesData) {
+        for (const p of profilesData) {
+          profileMap.set(p.id, p);
+        }
+      }
+
+      const { data: socialData } = await supabase
+        .from('social_links')
+        .select('user_id')
+        .in('user_id', viewerIds);
+
+      const socialSet = new Set<string>();
+      if (socialData) {
+        for (const s of socialData) {
+          socialSet.add(s.user_id);
+        }
+      }
+
+      const { data: leaderboardData } = await supabase
+        .from('leaderboard_cache')
+        .select('user_id, rank')
+        .in('user_id', viewerIds);
+
+      const rankMap = new Map<string, number>();
+      if (leaderboardData) {
+        for (const l of leaderboardData) {
+          rankMap.set(l.user_id, l.rank);
+        }
+      }
+
+      const viewerList: ViewerData[] = viewRecords.map(record => {
+        const profile = profileMap.get(record.viewer_id as string);
+        return {
+          viewer_id: record.viewer_id as string,
+          username: profile?.username || 'Unknown',
+          avatar_url: profile?.avatar_url || null,
+          overall_rating: profile?.overall_rating || 50,
+          position: profile?.position || null,
+          team: profile?.team || null,
+          coin_balance: profile?.coin_balance || 0,
+          is_manager: profile?.is_manager || false,
+          manager_wins: profile?.manager_wins || 0,
+          last_active: profile?.last_active || record.viewed_at,
+          is_verified: profile?.is_verified || false,
+          has_social_badge: socialSet.has(record.viewer_id as string),
+          viewed_at: record.viewed_at,
+          rank: rankMap.get(record.viewer_id as string),
+        };
+      });
+
+      setViewers(viewerList);
+      loadFriendStatuses(viewerIds);
     } catch (error) {
       console.error('Error fetching viewers:', error);
       setViewers([]);
@@ -238,9 +301,12 @@ export default function ViewedMe() {
   };
 
   const getTimeAgo = (dateString: string) => {
+    if (!dateString) return 'Unknown';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Unknown';
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) return 'Just now';
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
@@ -255,9 +321,18 @@ export default function ViewedMe() {
   };
 
   const getOnlineStatus = (lastActive: string) => {
+    if (!lastActive) {
+      return { text: 'Last online: Unknown', color: 'text-slate-400', dotColor: 'bg-slate-400' };
+    }
     const date = new Date(lastActive);
+    if (isNaN(date.getTime())) {
+      return { text: 'Last online: Unknown', color: 'text-slate-400', dotColor: 'bg-slate-400' };
+    }
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) {
+      return { text: 'Online now', color: 'text-green-400', dotColor: 'bg-green-400' };
+    }
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
