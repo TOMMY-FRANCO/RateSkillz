@@ -85,42 +85,42 @@ export default function ProfileActionButtons({
   if (isOwner) return null;
 
   return (
-    <div className="bg-gray-900/50 backdrop-blur-sm rounded-xl p-4 mb-6 border border-cyan-500/20">
+    <div className="bg-gradient-to-br from-slate-900 to-slate-800 backdrop-blur-sm rounded-3xl p-5 sm:p-6 mb-6 border border-cyan-500/20">
       <div className="flex flex-wrap gap-3">
         <button
           onClick={() => onVote(true)}
           disabled={!canVote}
-          className={`flex-1 min-w-[120px] py-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+          className={`flex-1 min-w-[120px] py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 font-semibold ${
             canVote
               ? userVote === true
-                ? 'bg-green-600/20 text-green-400 border-2 border-green-500/40'
-                : 'bg-gray-800/50 text-gray-300 hover:bg-green-600/10 hover:text-green-400 border border-gray-700'
-              : 'bg-gray-800/30 text-gray-600 cursor-not-allowed border border-gray-800'
+                ? 'bg-green-500/15 text-green-400 border-2 border-green-500/40 shadow-lg shadow-green-500/10'
+                : 'bg-slate-800/60 text-slate-300 hover:bg-green-500/10 hover:text-green-400 border border-slate-700/50 hover:border-green-500/30'
+              : 'bg-slate-800/30 text-slate-600 cursor-not-allowed border border-slate-800/50'
           }`}
         >
           <ThumbsUp className="w-5 h-5" />
-          <span className="font-semibold">{likes}</span>
+          <span>{likes}</span>
         </button>
 
         <button
           onClick={() => onVote(false)}
           disabled={!canVote}
-          className={`flex-1 min-w-[120px] py-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+          className={`flex-1 min-w-[120px] py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 font-semibold ${
             canVote
               ? userVote === false
-                ? 'bg-red-600/20 text-red-400 border-2 border-red-500/40'
-                : 'bg-gray-800/50 text-gray-300 hover:bg-red-600/10 hover:text-red-400 border border-gray-700'
-              : 'bg-gray-800/30 text-gray-600 cursor-not-allowed border border-gray-800'
+                ? 'bg-red-500/15 text-red-400 border-2 border-red-500/40 shadow-lg shadow-red-500/10'
+                : 'bg-slate-800/60 text-slate-300 hover:bg-red-500/10 hover:text-red-400 border border-slate-700/50 hover:border-red-500/30'
+              : 'bg-slate-800/30 text-slate-600 cursor-not-allowed border border-slate-800/50'
           }`}
         >
           <ThumbsDown className="w-5 h-5" />
-          <span className="font-semibold">{dislikes}</span>
+          <span>{dislikes}</span>
         </button>
 
         {friendStatus === 'accepted' && (
           <button
             onClick={handleMessage}
-            className="flex-1 min-w-[120px] py-3 rounded-xl bg-blue-600/10 text-blue-400 border border-blue-600/30 hover:bg-blue-600/20 transition-all flex items-center justify-center gap-2"
+            className="flex-1 min-w-[120px] py-3.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 hover:border-blue-500/40 transition-all flex items-center justify-center gap-2 font-semibold"
           >
             <MessageCircle className="w-5 h-5" />
             <span>Message</span>
@@ -129,7 +129,7 @@ export default function ProfileActionButtons({
 
         <button
           onClick={onFriendRequest}
-          className={`flex-1 min-w-[120px] py-3 rounded-xl transition-all flex items-center justify-center gap-2 ${getFriendButtonClass()}`}
+          className={`flex-1 min-w-[120px] py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 font-semibold ${getFriendButtonClass()}`}
         >
           {getFriendButtonIcon()}
           <span>{getFriendButtonText()}</span>
@@ -137,7 +137,7 @@ export default function ProfileActionButtons({
 
         <button
           onClick={onReport}
-          className="py-3 px-4 rounded-xl bg-red-600/10 text-red-400 border border-red-600/30 hover:bg-red-600/20 transition-all flex items-center justify-center gap-2"
+          className="py-3.5 px-5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 hover:border-red-500/40 transition-all flex items-center justify-center gap-2 font-semibold"
         >
           <Flag className="w-5 h-5" />
           <span>Report</span>
@@ -145,7 +145,7 @@ export default function ProfileActionButtons({
       </div>
 
       {!canVote && (
-        <p className="text-yellow-400 text-sm mt-3 text-center">
+        <p className="text-yellow-400/80 text-sm mt-4 text-center">
           You must be friends to like/dislike this profile
         </p>
       )}

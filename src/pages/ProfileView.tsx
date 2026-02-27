@@ -189,12 +189,12 @@ export default function ProfileView() {
         backState={backState as Record<string, unknown> | undefined}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="text-center mb-2">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center mb-3">
           {userStats === null ? (
             <p className="text-gray-500 text-sm animate-pulse">Loading ratings...</p>
           ) : (
-            <p className="text-[#B0B8C8] text-sm sm:text-base">
+            <p className="text-slate-400 text-sm sm:text-base tracking-wide">
               {(userStats?.rating_count || 0) === 0
                 ? 'Card has not been rated yet'
                 : `Card has been rated by ${userStats.rating_count} ${userStats.rating_count === 1 ? 'friend' : 'friends'}`}
@@ -202,7 +202,7 @@ export default function ProfileView() {
           )}
         </div>
 
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-6">
           <PlayerCard
             profile={profile}
             userStats={userStats}
@@ -213,10 +213,10 @@ export default function ProfileView() {
           />
         </div>
 
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-6">
           <button
             onClick={() => setShowShareModal(true)}
-            className="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-bold rounded-lg hover:from-green-400 hover:to-cyan-400 transition-all shadow-lg hover:shadow-xl hover:scale-105 text-sm sm:text-base"
+            className="flex items-center gap-2.5 px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-bold rounded-xl hover:from-green-400 hover:to-cyan-400 transition-all shadow-lg shadow-cyan-500/20 hover:shadow-xl hover:shadow-cyan-500/30 hover:scale-105 text-sm sm:text-base"
           >
             <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
             <span>Share Card</span>
@@ -229,21 +229,21 @@ export default function ProfileView() {
           onEdit={() => setShowEditSocialLinks(true)}
         />
 
-        <div className="max-w-3xl mx-auto mb-4">
-          <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-4">
-            <h3 className="text-base sm:text-lg font-bold text-white mb-4 text-center">Profile Stats</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-              <div className="flex flex-col items-center space-y-1.5">
-                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                  <Coins className="w-6 h-6 text-white" />
+        <div className="max-w-3xl mx-auto mb-6">
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-cyan-500/20 rounded-3xl p-5 sm:p-6 backdrop-blur-sm">
+            <h3 className="text-base sm:text-lg font-bold text-white mb-5 text-center tracking-wide">Profile Stats</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
+              <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-4 flex flex-col items-center space-y-2 hover:border-yellow-500/30 transition-all">
+                <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-yellow-500/20">
+                  <Coins className="w-7 h-7 text-white" />
                 </div>
                 {balanceLoading ? (
-                  <div className="flex flex-col items-center space-y-0.5">
-                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                    <span className="text-[10px] text-gray-400">Loading...</span>
+                  <div className="flex flex-col items-center space-y-1">
+                    <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                    <span className="text-[10px] text-slate-400">Loading...</span>
                   </div>
                 ) : balanceError ? (
-                  <div className="flex flex-col items-center space-y-0.5">
+                  <div className="flex flex-col items-center space-y-1">
                     <span className="text-xs text-red-400">{balanceError}</span>
                     <button
                       onClick={refreshBalance}
@@ -257,37 +257,37 @@ export default function ProfileView() {
                     <span className="text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
                       {formatCoinBalance(coinBalance)}
                     </span>
-                    <span className="text-xs text-gray-400">{isOwner ? 'Your Balance' : 'Balance'}</span>
-                    <span className="text-[10px] text-gray-500">{formatCoinBalanceFull(coinBalance)} coins</span>
+                    <span className="text-xs text-slate-400 font-medium">{isOwner ? 'Your Balance' : 'Balance'}</span>
+                    <span className="text-[10px] text-slate-500">{formatCoinBalanceFull(coinBalance)} coins</span>
                   </>
                 )}
               </div>
-              <div className="flex flex-col items-center space-y-1.5">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg">
-                  <Users className="w-6 h-6 text-white" />
+              <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-4 flex flex-col items-center space-y-2 hover:border-cyan-500/30 transition-all">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                  <Users className="w-7 h-7 text-white" />
                 </div>
                 <span className="text-xl font-bold text-white">{friendsCount}</span>
-                <span className="text-xs text-gray-400">Friends</span>
+                <span className="text-xs text-slate-400 font-medium">Friends</span>
               </div>
-              <div className="flex flex-col items-center space-y-1.5">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
-                  <Eye className="w-6 h-6 text-white" />
+              <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-4 flex flex-col items-center space-y-2 hover:border-blue-500/30 transition-all">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-400 to-sky-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                  <Eye className="w-7 h-7 text-white" />
                 </div>
                 <span className="text-xl font-bold text-white">{viewsCount}</span>
-                <span className="text-xs text-gray-400">Views</span>
+                <span className="text-xs text-slate-400 font-medium">Views</span>
               </div>
-              <div className="flex flex-col items-center space-y-1.5">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-                  <ThumbsUp className="w-6 h-6 text-white" />
+              <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-4 flex flex-col items-center space-y-2 hover:border-green-500/30 transition-all">
+                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg shadow-green-500/20">
+                  <ThumbsUp className="w-7 h-7 text-white" />
                 </div>
                 <span className="text-xl font-bold text-white">{likes}</span>
-                <span className="text-xs text-gray-400">Likes</span>
+                <span className="text-xs text-slate-400 font-medium">Likes</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="max-w-2xl mx-auto mb-4">
+        <div className="max-w-2xl mx-auto mb-6">
           <CardOwnershipStatus
             cardOwnership={cardOwnership}
             currentUserId={currentUser?.id || null}
@@ -296,7 +296,7 @@ export default function ProfileView() {
           />
         </div>
 
-        <div className="max-w-2xl mx-auto space-y-4">
+        <div className="max-w-2xl mx-auto space-y-5">
           <ProfileActionButtons
             isOwner={isOwner}
             isEditingEnabled={isEditingEnabled}
