@@ -16,7 +16,6 @@ import { getAppUrl } from '../lib/appConfig';
 import { useUnreadMessages } from '../hooks/useUnreadMessages';
 import { useNotifications } from '../hooks/useNotifications';
 import NotificationBadge from '../components/NotificationBadge';
-import { getFriendsBadgeSeenCount } from '../lib/notifications';
 import { SocialSharingReward } from '../components/SocialSharingReward';
 import { FriendMilestoneReward } from '../components/FriendMilestoneReward';
 import { WhatsAppDashboardShare } from '../components/WhatsAppDashboardShare';
@@ -32,7 +31,6 @@ export default function Dashboard() {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [rank, setRank] = useState<{ position: number; total: number } | undefined>();
-  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [showUsernamePrompt, setShowUsernamePrompt] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -69,18 +67,13 @@ export default function Dashboard() {
     if (!profile) return;
 
     try {
-      const [stats, profileData, pendingData, rankData] = await Promise.all([
+      const [stats, profileData, rankData] = await Promise.all([
         getUserStats(profile.id),
         supabase
           .from('profiles')
           .select('is_verified, has_social_badge, unread_profile_views, tutorial_completed')
           .eq('id', profile.id)
           .maybeSingle(),
-        supabase
-          .from('friends')
-          .select('id', { count: 'exact', head: true })
-          .eq('friend_id', profile.id)
-          .eq('status', 'pending'),
         Promise.all([
           supabase
             .from('profiles')
@@ -104,8 +97,6 @@ export default function Dashboard() {
           setTimeout(() => setShowTutorialPrompt(true), 2000);
         }
       }
-
-      setPendingRequestsCount(pendingData.count || 0);
 
       const [aboveMe, totalProfiles] = rankData;
       setRank({
@@ -449,7 +440,7 @@ export default function Dashboard() {
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge
-              count={badgeCounts.acceptedFriendRequests}
+              count={badgeCounts.pendingFriendRequests}
               userId={profile?.id}
               notificationType="coin_request"
               capAt9

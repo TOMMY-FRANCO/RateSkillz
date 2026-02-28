@@ -7,6 +7,7 @@ export interface DashboardBadgeCounts {
   profileViews: number;
   transactions: number;
   acceptedFriendRequests: number;
+  pendingFriendRequests: number;
   battleRequests: number;
   notifications: number;
   adAvailable: number;
@@ -17,6 +18,7 @@ const ZERO: DashboardBadgeCounts = {
   profileViews: 0,
   transactions: 0,
   acceptedFriendRequests: 0,
+  pendingFriendRequests: 0,
   battleRequests: 0,
   notifications: 0,
   adAvailable: 0,
@@ -32,6 +34,7 @@ function totalCount(counts: DashboardBadgeCounts): number {
     (counts.profileViews ?? 0) +
     (counts.transactions ?? 0) +
     (counts.acceptedFriendRequests ?? 0) +
+    (counts.pendingFriendRequests ?? 0) +
     (counts.battleRequests ?? 0) +
     (counts.notifications ?? 0) +
     (counts.adAvailable ?? 0)
@@ -55,6 +58,7 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
       messagesResult,
       profileResult,
       acceptedFriendsResult,
+      pendingFriendsResult,
       battleResult,
       notificationsResult,
       adViewResult,
@@ -77,6 +81,12 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
         .eq('user_id', userId)
         .eq('status', 'accepted')
         .eq('seen_by_sender', false),
+
+      supabase
+        .from('friends')
+        .select('id', { count: 'exact', head: true })
+        .eq('friend_id', userId)
+        .eq('status', 'pending'),
 
       supabase
         .from('battles')
@@ -124,6 +134,7 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
       profileViews: cap(profileResult.data?.unread_profile_views ?? 0),
       transactions: transactionsCount,
       acceptedFriendRequests: cap(acceptedFriendsResult.count ?? 0),
+      pendingFriendRequests: cap(pendingFriendsResult.count ?? 0),
       battleRequests: cap(battleResult.count ?? 0),
       notifications: cap(notificationsResult.count ?? 0),
       adAvailable,
