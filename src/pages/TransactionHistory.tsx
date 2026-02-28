@@ -8,8 +8,6 @@ import { markNotificationsRead } from '../lib/notifications';
 import { supabase } from '../lib/supabase';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
 import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
-import BalanceDiscrepancyWarning from '../components/BalanceDiscrepancyWarning';
-import { checkBalanceIntegrity } from '../lib/balanceReconciliation';
 
 interface Transaction {
   id: string;
@@ -45,13 +43,6 @@ export default function TransactionHistory() {
   });
   const [refreshingBalance, setRefreshingBalance] = useState(false);
   const { balance: currentBalance, loading: balanceLoading, refetch: refetchBalance } = useCoinBalance();
-  const [balanceValidation, setBalanceValidation] = useState<{ isValid: boolean; message: string } | null>(null);
-  const [balanceDiscrepancy, setBalanceDiscrepancy] = useState<{
-    hasDiscrepancy: boolean;
-    profileBalance: number;
-    calculatedBalance: number;
-    discrepancy: number;
-  } | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const touchStartY = useRef(0);
@@ -68,12 +59,6 @@ export default function TransactionHistory() {
         .then(() => {});
     }
   }, [user]);
-
-  useEffect(() => {
-    if (transactions.length > 0 && !balanceLoading) {
-      validateBalance();
-    }
-  }, [currentBalance, transactions, balanceLoading]);
 
   async function loadTransactions(page: number = 1, append = false) {
     try {
@@ -118,29 +103,17 @@ export default function TransactionHistory() {
     setIsRefreshing(true);
 
     try {
-      const [balanceCheck] = await Promise.all([
-        checkBalanceIntegrity(),
+      await Promise.all([
         loadTransactions(1, false),
         refetchBalance(),
       ]);
-
-      if (balanceCheck.success && balanceCheck.hasDiscrepancy) {
-        setBalanceDiscrepancy({
-          hasDiscrepancy: true,
-          profileBalance: balanceCheck.profileBalance,
-          calculatedBalance: balanceCheck.calculatedBalance,
-          discrepancy: balanceCheck.discrepancy,
-        });
-      } else {
-        setBalanceDiscrepancy(null);
-      }
     } catch (error) {
       console.error('Refresh error:', error);
     } finally {
       setIsRefreshing(false);
       setPullDistance(0);
     }
-  }, [isRefreshing, pagination.page]);
+  }, [isRefreshing]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (containerRef.current && containerRef.current.scrollTop === 0) {
@@ -167,65 +140,6 @@ export default function TransactionHistory() {
     }
     touchStartY.current = 0;
   };
-
-  function validateBalance() {
-    console.log('[TransactionHistory] Running validation...');
-    console.log('[TransactionHistory] Current balance:', currentBalance);
-    console.log('[TransactionHistory] Balance loading:', balanceLoading);
-
-    if (transactions.length === 0) {
-      console.log('[TransactionHistory] No transactions to validate');
-      return;
-    }
-
-    if (balanceLoading) {
-      console.log('[TransactionHistory] Balance still loading, skipping validation');
-      return;
-    }
-
-    if (pagination.page !== 1) {
-      setBalanceValidation(null);
-      return;
-    }
-
-    const mostRecentTx = transactions[0];
-    if (!mostRecentTx.balance_after) {
-      console.log('[TransactionHistory] Most recent transaction missing balance_after, skipping validation');
-      setBalanceValidation(null);
-      return;
-    }
-
-    const expectedBalance = typeof mostRecentTx.balance_after === 'string'
-      ? parseFloat(mostRecentTx.balance_after)
-      : mostRecentTx.balance_after;
-
-    const discrepancy = Math.abs(currentBalance - expectedBalance);
-
-    console.log('[TransactionHistory] Validation:', {
-      currentBalance,
-      expectedBalance,
-      mostRecentTxDate: mostRecentTx.created_at,
-      discrepancy,
-    });
-
-    const isBalanceVerified = discrepancy < 0.01;
-
-    if (isBalanceVerified) {
-      console.log('[TransactionHistory] Balance VERIFIED ✓');
-      setBalanceValidation({ isValid: true, message: 'Balance verified' });
-    } else {
-      console.error('[TransactionHistory] DISCREPANCY DETECTED ✗', {
-        currentBalance,
-        expectedBalance,
-        discrepancy,
-        mostRecentTx,
-      });
-      setBalanceValidation({
-        isValid: false,
-        message: `Transaction Balance discrepancy detected: ${discrepancy.toFixed(2)} coins difference`
-      });
-    }
-  }
 
   function getTransactionIcon(type: string) {
     switch (type) {
@@ -301,20 +215,6 @@ export default function TransactionHistory() {
           </button>
         </div>
 
-        {balanceDiscrepancy && balanceDiscrepancy.hasDiscrepancy && (
-          <BalanceDiscrepancyWarning
-            profileBalance={balanceDiscrepancy.profileBalance}
-            calculatedBalance={balanceDiscrepancy.calculatedBalance}
-            discrepancy={balanceDiscrepancy.discrepancy}
-            onDismiss={() => setBalanceDiscrepancy(null)}
-            onReconciled={() => {
-              setBalanceDiscrepancy(null);
-              loadTransactions(pagination.page);
-              refetchBalance();
-            }}
-          />
-        )}
-
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full mb-4 shadow-lg">
             <TrendingUp className="w-8 h-8 text-white" />
@@ -342,12 +242,6 @@ export default function TransactionHistory() {
             <div className="mt-6 inline-flex items-center gap-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-6 py-4">
               <Loader2 className="w-6 h-6 text-yellow-400 animate-spin" />
               <p className="text-white/60">Loading balance...</p>
-            </div>
-          )}
-
-          {balanceValidation && (
-            <div className={`mt-4 px-4 py-2 rounded-lg ${balanceValidation.isValid ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-              <p className="text-sm font-medium">{balanceValidation.message}</p>
             </div>
           )}
 

@@ -23,8 +23,6 @@ import { WhatsAppDashboardShare } from '../components/WhatsAppDashboardShare';
 import InviteQRModal from '../components/InviteQRModal';
 import AddFriendQRModal from '../components/AddFriendQRModal';
 import ModerationCaseAlert from '../components/ModerationCaseAlert';
-import BalanceDiscrepancyWarning from '../components/BalanceDiscrepancyWarning';
-import { checkBalanceIntegrity } from '../lib/balanceReconciliation';
 import { checkAndNotifyNewMessages } from '../lib/messageNotifications';
 import { useDashboardBadges } from '../hooks/useDashboardBadges';
 
@@ -49,12 +47,6 @@ export default function Dashboard() {
   const { counts: notificationCounts, getCount, loading: notificationsLoading } = useNotifications(profile?.id);
   const { counts: badgeCounts, refetch: refetchBadges } = useDashboardBadges(profile?.id);
 
-  const [balanceDiscrepancy, setBalanceDiscrepancy] = useState<{
-    hasDiscrepancy: boolean;
-    profileBalance: number;
-    calculatedBalance: number;
-    discrepancy: number;
-  } | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const touchStartY = useRef(0);
@@ -137,23 +129,11 @@ export default function Dashboard() {
     setIsRefreshing(true);
 
     try {
-      const [balanceCheck] = await Promise.all([
-        checkBalanceIntegrity(),
+      await Promise.all([
         loadDashboardData(),
         profile ? checkAndNotifyNewMessages(profile.id) : Promise.resolve(0),
         refetchBadges(),
       ]);
-
-      if (balanceCheck.success && balanceCheck.hasDiscrepancy) {
-        setBalanceDiscrepancy({
-          hasDiscrepancy: true,
-          profileBalance: balanceCheck.profileBalance,
-          calculatedBalance: balanceCheck.calculatedBalance,
-          discrepancy: balanceCheck.discrepancy,
-        });
-      } else {
-        setBalanceDiscrepancy(null);
-      }
     } catch (error) {
       console.error('Refresh error:', error);
     } finally {
@@ -243,18 +223,6 @@ export default function Dashboard() {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {balanceDiscrepancy && balanceDiscrepancy.hasDiscrepancy && (
-          <BalanceDiscrepancyWarning
-            profileBalance={balanceDiscrepancy.profileBalance}
-            calculatedBalance={balanceDiscrepancy.calculatedBalance}
-            discrepancy={balanceDiscrepancy.discrepancy}
-            onDismiss={() => setBalanceDiscrepancy(null)}
-            onReconciled={() => {
-              setBalanceDiscrepancy(null);
-              loadDashboardData();
-            }}
-          />
-        )}
         <div className="text-center mb-4 animate-fade-in">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 heading-glow">
             Welcome, {displayUsername(profile.username)}!
