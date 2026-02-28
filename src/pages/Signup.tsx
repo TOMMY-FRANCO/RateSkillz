@@ -219,6 +219,14 @@ export default function Signup() {
                   >
                     Terms of Service
                   </Link>
+                  {' '}and{' '}
+                  <Link
+                    to="/privacy-policy"
+                    target="_blank"
+                    className="text-[#00E0FF] hover:text-[#00FF85] underline"
+                  >
+                    Privacy Policy
+                  </Link>
                   {' '}and understand that virtual coins have no real-world value and cannot be withdrawn or exchanged for money.
                 </span>
               </label>
@@ -254,6 +262,16 @@ export default function Signup() {
                 Sign in
               </button>
             </p>
+
+            <div className="flex items-center justify-center gap-2 text-xs text-[#6B7280]">
+              <Link to="/privacy-policy" className="text-[#6B7280] hover:text-[#00E0FF] transition-colors">
+                Privacy Policy
+              </Link>
+              <span>|</span>
+              <Link to="/terms" className="text-[#6B7280] hover:text-[#00E0FF] transition-colors">
+                Terms of Service
+              </Link>
+            </div>
           </form>
         </div>
       </div>

@@ -39,6 +39,7 @@ const BattleMode = lazy(() => import('./pages/BattleMode'));
 const Inbox = lazy(() => import('./pages/Inbox'));
 const Chat = lazy(() => import('./pages/Chat'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const VerifyProfile = lazy(() => import('./pages/VerifyProfile').then(m => ({ default: m.VerifyProfile })));
 const SearchFriends = lazy(() => import('./pages/SearchFriends'));
 const ViewedMe = lazy(() => import('./pages/ViewedMe'));
@@ -386,6 +387,7 @@ function App() {
           <Route path="/shimmer-demo" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><ShimmerDemo /></LazyPageWrapper>} />
           <Route path="/terms" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><TermsOfService /></LazyPageWrapper>} />
           <Route path="/terms-of-service" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><TermsOfService /></LazyPageWrapper>} />
+          <Route path="/privacy-policy" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><PrivacyPolicy /></LazyPageWrapper>} />
           <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
