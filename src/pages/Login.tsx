@@ -111,15 +111,16 @@ export default function Login() {
               </button>
             </p>
 
-            <div className="flex items-center justify-center gap-2 text-xs text-[#6B7280]">
-              <Link to="/privacy-policy" className="text-[#6B7280] hover:text-[#00E0FF] transition-colors">
-                Privacy Policy
-              </Link>
-              <span>|</span>
-              <Link to="/terms" className="text-[#6B7280] hover:text-[#00E0FF] transition-colors">
+            <p className="text-center text-xs text-[#6B7280]">
+              By signing up you agree to our{' '}
+              <Link to="/terms" className="text-[#00E0FF] hover:text-[#00FF85] underline transition-colors">
                 Terms of Service
               </Link>
-            </div>
+              {' '}and{' '}
+              <Link to="/privacy-policy" className="text-[#00E0FF] hover:text-[#00FF85] underline transition-colors">
+                Privacy Policy
+              </Link>
+            </p>
           </form>
         </div>
       </div>
