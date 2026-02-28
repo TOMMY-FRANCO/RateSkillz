@@ -232,6 +232,13 @@ export default function TermsOfService() {
           </section>
 
           <section>
+            <h3 className="text-xl font-bold text-white mb-3">13a. In-App Video Content</h3>
+            <p className="leading-relaxed">
+              Rating Skill features an optional video within the app that users can choose to watch in exchange for earning coins. This video is a promotional music video created by the developer specifically for Rating Skill and is hosted on YouTube. This video is not a paid advertisement, is not produced by or on behalf of any third party advertiser and generates no advertising revenue. It is entirely the developer's own original content created to promote the Rating Skill platform. Watching this video is completely optional and is offered purely as a way for users to earn coins without making a purchase.
+            </p>
+          </section>
+
+          <section>
             <h3 className="text-xl font-bold text-white mb-3">14. Reporting and Moderation</h3>
             <p className="leading-relaxed mb-2">
               Rating Skill has a report button on all user profiles. Reports are reviewed by our admin team. Reported users may be shadow banned pending investigation.
