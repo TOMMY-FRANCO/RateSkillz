@@ -290,7 +290,7 @@ export default function Friends() {
       setFriendsOffset(0);
       await loadFriendData(false, 0);
     } catch (error: any) {
-      showNotification('error', 'Failed to accept request. Please try again.');
+      showNotification('error', error?.message || 'Failed to accept request. Please try again.');
     } finally {
       setActionLoading(null);
     }
@@ -304,8 +304,8 @@ export default function Friends() {
       showNotification('info', 'Friend request declined.');
       setFriendsOffset(0);
       await loadFriendData(false, 0);
-    } catch {
-      showNotification('error', 'Failed to decline request. Please try again.');
+    } catch (error: any) {
+      showNotification('error', error?.message || 'Failed to decline request. Please try again.');
     } finally {
       setActionLoading(null);
     }
@@ -319,8 +319,8 @@ export default function Friends() {
       showNotification('info', 'Friend request cancelled.');
       setFriendsOffset(0);
       await loadFriendData(false, 0);
-    } catch {
-      showNotification('error', 'Failed to cancel request. Please try again.');
+    } catch (error: any) {
+      showNotification('error', error?.message || 'Failed to cancel request. Please try again.');
     } finally {
       setActionLoading(null);
     }
@@ -335,8 +335,8 @@ export default function Friends() {
       showNotification('info', 'Friend removed.');
       setFriendsOffset(0);
       await loadFriendData(false, 0);
-    } catch {
-      showNotification('error', 'Failed to remove friend. Please try again.');
+    } catch (error: any) {
+      showNotification('error', error?.message || 'Failed to remove friend. Please try again.');
     } finally {
       setActionLoading(null);
     }
