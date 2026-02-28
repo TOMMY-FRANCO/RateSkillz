@@ -2,9 +2,25 @@ import { supabase } from './supabase';
 
 const COIN_OPERATIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/coin-operations`;
 
-async function getAuthHeaders() {
-  const session = await supabase.auth.getSession();
-  const token = session.data.session?.access_token;
+async function getAuthHeaders(forceRefresh = false) {
+  if (forceRefresh) {
+    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError || !refreshData.session) {
+      throw new Error('Session expired. Please log in again.');
+    }
+    return {
+      'Authorization': `Bearer ${refreshData.session.access_token}`,
+      'Content-Type': 'application/json',
+    };
+  }
+
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    throw new Error('Not authenticated');
+  }
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
 
   if (!token) {
     throw new Error('Not authenticated');
@@ -123,6 +139,11 @@ export async function getTransactions(page: number = 1, limit: number = 20): Pro
     hasMore: boolean;
   };
 }> {
+  const emptyResult = {
+    transactions: [],
+    pagination: { page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false }
+  };
+
   try {
     const headers = await getAuthHeaders();
     const response = await fetch(`${COIN_OPERATIONS_URL}/transactions?page=${page}&limit=${limit}`, {
@@ -130,21 +151,34 @@ export async function getTransactions(page: number = 1, limit: number = 20): Pro
       headers,
     });
 
+    if (response.status === 401) {
+      const retryHeaders = await getAuthHeaders(true);
+      const retryResponse = await fetch(`${COIN_OPERATIONS_URL}/transactions?page=${page}&limit=${limit}`, {
+        method: 'GET',
+        headers: retryHeaders,
+      });
+
+      if (!retryResponse.ok) {
+        const error = await retryResponse.json().catch(() => ({}));
+        throw new Error(error.error || 'Authentication failed. Please log in again.');
+      }
+
+      const data = await retryResponse.json();
+      return {
+        transactions: data.transactions || [],
+        pagination: data.pagination || emptyResult.pagination
+      };
+    }
+
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({}));
       throw new Error(error.error || 'Failed to fetch transactions');
     }
 
     const data = await response.json();
     return {
       transactions: data.transactions || [],
-      pagination: data.pagination || {
-        page: 1,
-        limit: 20,
-        total: 0,
-        totalPages: 0,
-        hasMore: false
-      }
+      pagination: data.pagination || emptyResult.pagination
     };
   } catch (error) {
     console.error('Error fetching transactions:', error);
