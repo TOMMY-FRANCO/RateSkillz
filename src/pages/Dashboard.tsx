@@ -8,7 +8,7 @@ import TermsAcceptanceModal from '../components/TermsAcceptanceModal';
 import { CoinBalance } from '../components/CoinBalance';
 import Tutorial from '../components/Tutorial';
 import TutorialPrompt from '../components/TutorialPrompt';
-import { Settings, Users, LogOut, Edit, Trophy, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search, BookOpen, QrCode, UserPlus, RefreshCw, Activity } from 'lucide-react';
+import { Settings, Users, LogOut, CreditCard as Edit, Trophy, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search, BookOpen, QrCode, UserPlus, RefreshCw, Activity } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { displayUsername } from '../lib/username';
 import { getUserStats } from '../lib/ratings';
