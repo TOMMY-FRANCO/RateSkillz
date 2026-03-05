@@ -8,7 +8,7 @@ import TermsAcceptanceModal from '../components/TermsAcceptanceModal';
 import { CoinBalance } from '../components/CoinBalance';
 import Tutorial from '../components/Tutorial';
 import TutorialPrompt from '../components/TutorialPrompt';
-import { Settings, Users, LogOut, Edit, Trophy, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search, BookOpen, QrCode, UserPlus, RefreshCw } from 'lucide-react';
+import { Settings, Users, LogOut, Edit, Trophy, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search, BookOpen, QrCode, UserPlus, RefreshCw, Activity } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { displayUsername } from '../lib/username';
 import { getUserStats } from '../lib/ratings';
@@ -411,6 +411,21 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-white font-bold text-sm sm:text-base">Transactions</h3>
                 <p className="text-[#B0B8C8] text-xs sm:text-sm">View history</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/activity-feed')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
+                <Activity className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Activity Feed</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Recent activity</p>
               </div>
             </div>
           </button>

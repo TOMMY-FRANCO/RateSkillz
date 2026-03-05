@@ -51,6 +51,7 @@ const AddFriendByQR = lazy(() => import('./pages/AddFriendByQR'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
+const ActivityFeed = lazy(() => import('./pages/ActivityFeed'));
 
 function LoadingScreen() {
   return (
@@ -287,6 +288,16 @@ function App() {
               <ProtectedRoute>
                 <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
                   <TransactionHistory />
+                </LazyPageWrapper>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/activity-feed"
+            element={
+              <ProtectedRoute>
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <ActivityFeed />
                 </LazyPageWrapper>
               </ProtectedRoute>
             }
