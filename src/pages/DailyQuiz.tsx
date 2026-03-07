@@ -6,9 +6,10 @@ import { supabase } from '../lib/supabase';
 import QuizShareModal from '../components/QuizShareModal';
 
 interface Question {
+  id: number;
   question: string;
   options: string[];
-  correct: number;
+  answer: string;
 }
 
 interface TodayResult {
@@ -362,7 +363,7 @@ export default function DailyQuiz() {
 
     const questions = questionsRef.current;
     const currentQuestion = questions[currentIndex];
-    const isCorrect = answerIndex !== null && answerIndex === currentQuestion.correct;
+    const isCorrect = answerIndex !== null && currentQuestion.options[answerIndex] === currentQuestion.answer;
     const newScore = isCorrect ? scoreRef.current + 1 : scoreRef.current;
 
     setSelectedAnswer(answerIndex);
