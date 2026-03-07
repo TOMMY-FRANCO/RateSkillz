@@ -345,9 +345,10 @@ export default function DailyQuiz() {
         if (!result.success) throw new Error(result.error || 'Failed to save quiz');
 
         setCoinsEarned(result.coins_earned ?? newScore);
-      } catch {
-        setCoinsEarned(newScore);
-      } finally {
+      } catch (err) {
+  console.error('Quiz RPC error:', err);
+  setCoinsEarned(newScore);
+} finally {
         setSubmitting(false);
         setQuizComplete(true);
         localStorage.setItem(`quiz_completed_${user!.id}_${new Date().toDateString()}`, 'true');
