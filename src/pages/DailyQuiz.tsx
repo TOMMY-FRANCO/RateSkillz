@@ -290,6 +290,9 @@ if (localStorage.getItem(localKey)) {
   setLoading(false);
   return;
 }
+  setLoading(false);
+  return;
+}
     const existing = await checkTodayCompletion();
     if (cancelled) return;
     if (existing) {
