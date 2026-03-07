@@ -279,7 +279,7 @@ export default function DailyQuiz() {
   setLoading(true);
   setError(null);
   try {
-    const localKey = `quiz_completed_${user!.id}_${new Date().toDateString()}`;
+const localKey = `quiz_completed_${user!.id}_${new Date().toDateString()}`;
 if (localStorage.getItem(localKey)) {
   const existing = await checkTodayCompletion();
   if (existing) {
@@ -287,9 +287,6 @@ if (localStorage.getItem(localKey)) {
   } else {
     setTodayResult({ score: 0, coins_earned: 0, completed_at: new Date().toISOString() });
   }
-  setLoading(false);
-  return;
-}
   setLoading(false);
   return;
 }
