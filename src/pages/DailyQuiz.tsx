@@ -276,18 +276,22 @@ export default function DailyQuiz() {
     let cancelled = false;
 
     async function init() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const existing = await checkTodayCompletion();
-        if (cancelled) return;
-
-        if (existing) {
-          setTodayResult(existing);
-          setLoading(false);
-          return;
-        }
+  setLoading(true);
+  setError(null);
+  try {
+    const localKey = `quiz_completed_${user!.id}_${new Date().toDateString()}`;
+    if (localStorage.getItem(localKey)) {
+      setTodayResult({ score: 0, coins_earned: 0, completed_at: new Date().toISOString() });
+      setLoading(false);
+      return;
+    }
+    const existing = await checkTodayCompletion();
+    if (cancelled) return;
+    if (existing) {
+      setTodayResult(existing);
+      setLoading(false);
+      return;
+    }
 
         const resp = await fetch(
           'https://raw.githubusercontent.com/TOMMY-FRANCO/RateSkillz/main/public/quiz-questions.json'
@@ -346,6 +350,7 @@ export default function DailyQuiz() {
       } finally {
         setSubmitting(false);
         setQuizComplete(true);
+        localStorage.setItem(`quiz_completed_${user!.id}_${new Date().toDateString()}`, 'true');
       }
     } else {
       setCurrentIndex(prev => prev + 1);
