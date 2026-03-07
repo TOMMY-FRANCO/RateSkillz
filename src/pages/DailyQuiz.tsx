@@ -280,11 +280,16 @@ export default function DailyQuiz() {
   setError(null);
   try {
     const localKey = `quiz_completed_${user!.id}_${new Date().toDateString()}`;
-    if (localStorage.getItem(localKey)) {
-      setTodayResult({ score: 0, coins_earned: 0, completed_at: new Date().toISOString() });
-      setLoading(false);
-      return;
-    }
+if (localStorage.getItem(localKey)) {
+  const existing = await checkTodayCompletion();
+  if (existing) {
+    setTodayResult(existing);
+  } else {
+    setTodayResult({ score: 0, coins_earned: 0, completed_at: new Date().toISOString() });
+  }
+  setLoading(false);
+  return;
+}
     const existing = await checkTodayCompletion();
     if (cancelled) return;
     if (existing) {
