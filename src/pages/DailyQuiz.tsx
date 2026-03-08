@@ -285,7 +285,7 @@ export default function DailyQuiz() {
   setLoading(true);
   setError(null);
   try {
-const localKey = `quiz_completed_${user!.id}_${new Date().toDateString()}`;
+const localKey = `quiz_completed_${user!.id}_${getQuizPeriodKey()}`;
 if (localStorage.getItem(localKey)) {
   const existing = await checkTodayCompletion();
   if (existing) {
