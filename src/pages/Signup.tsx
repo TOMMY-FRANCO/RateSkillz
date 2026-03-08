@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, Loader2 } from 'lucide-react';
 import { validatePassword, getPasswordRequirements } from '../lib/passwordValidation';
+import { supabase } from '../lib/supabase';
 
 declare global {
   interface Window {
