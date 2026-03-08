@@ -108,7 +108,7 @@ export default function ProfileView() {
   const isEditingEnabled = !isPreviewMode && !isOwner;
 
   const exitPreviewMode = () => {
-  navigate('/dashboard', { replace: true });
+  navigate(`/profile/${username}`);
 };
 
   const handleRatingChange = (stat: string, value: number) => {
