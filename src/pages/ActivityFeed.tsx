@@ -6,18 +6,16 @@ import {
   AlertCircle,
   Award,
   Heart,
-  MessageSquare,
   Shield,
   Star,
-  Users,
-  Bell,
   RefreshCw,
   Activity,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
-type FeedCategory = 'gold' | 'blue' | 'red';
+type FeedCategory = 'gold' | 'blue' | 'red' | 'purple';
 
 interface FeedItem {
   id: string;
@@ -31,13 +29,13 @@ const CATEGORY_STYLES: Record<FeedCategory, { border: string; bg: string; text: 
   gold: { border: 'border-l-amber-400', bg: 'bg-amber-400/10', text: 'text-amber-400' },
   blue: { border: 'border-l-sky-400', bg: 'bg-sky-400/10', text: 'text-sky-400' },
   red: { border: 'border-l-red-400', bg: 'bg-red-400/10', text: 'text-red-400' },
+  purple: { border: 'border-l-purple-400', bg: 'bg-purple-400/10', text: 'text-purple-400' },
 };
 
 function getNotificationIcon(type: string, category: FeedCategory): React.ReactNode {
   if (category === 'red') return <Shield className="w-4 h-4" />;
-  if (type === 'social') {
-    return <Heart className="w-4 h-4" />;
-  }
+  if (category === 'purple') return <Sparkles className="w-4 h-4" />;
+  if (category === 'blue') return <Heart className="w-4 h-4" />;
   return <Award className="w-4 h-4" />;
 }
 
@@ -89,7 +87,7 @@ export default function ActivityFeed() {
       }
 
       const feedItems: FeedItem[] = (data || []).map(row => {
-        const category = (['gold', 'blue', 'red'].includes(row.activity_feed_type)
+        const category = (['gold', 'blue', 'red', 'purple'].includes(row.activity_feed_type)
           ? row.activity_feed_type
           : 'gold') as FeedCategory;
         return {
@@ -195,11 +193,12 @@ export default function ActivityFeed() {
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <div className="flex items-center gap-4 flex-wrap">
-          {(['gold', 'blue', 'red'] as FeedCategory[]).map(cat => {
+          {(['gold', 'blue', 'red', 'purple'] as FeedCategory[]).map(cat => {
             const labels: Record<FeedCategory, string> = {
               gold: 'Achievements',
               blue: 'Social',
               red: 'Security',
+              purple: 'Discovery',
             };
             return (
               <div key={cat} className="flex items-center gap-1.5 text-xs">
@@ -221,10 +220,7 @@ export default function ActivityFeed() {
           <div className="glass-card p-6 text-center space-y-3">
             <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
             <p className="text-red-400 font-medium">{error}</p>
-            <button
-              onClick={handleRefresh}
-              className="btn-secondary px-4 py-2 text-sm"
-            >
+            <button onClick={handleRefresh} className="btn-secondary px-4 py-2 text-sm">
               Try Again
             </button>
           </div>
