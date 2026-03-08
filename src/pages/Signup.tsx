@@ -123,13 +123,27 @@ export default function Signup() {
     }
 
     let recaptchaToken = '';
-    try {
-      recaptchaToken = await executeRecaptcha();
-    } catch {
-      // reCAPTCHA unavailable — proceed without it
-    }
+try {
+  recaptchaToken = await executeRecaptcha();
+} catch {
+  // reCAPTCHA unavailable — proceed without it
+}
 
-    const { error } = await signUp(email, password, username, fullName, recaptchaToken, ageNum);
+let deviceFingerprint = '';
+try {
+  deviceFingerprint = await generateDeviceFingerprint();
+  const { data: fingerprintExists } = await supabase
+    .rpc('check_device_fingerprint', { p_fingerprint: deviceFingerprint });
+  if (fingerprintExists) {
+    setError('An account already exists on this device. If this is you, please sign in instead. If you are a different person, please use a different browser. Creating multiple accounts is not permitted.');
+    setLoading(false);
+    return;
+  }
+} catch {
+  // Fingerprint check failed — proceed without it
+}
+
+const { error } = await signUp(email, password, username, fullName, recaptchaToken, ageNum, deviceFingerprint);
 
     if (error) {
       setError(error.message);
