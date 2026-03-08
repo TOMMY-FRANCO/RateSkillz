@@ -250,7 +250,7 @@ export default function TradingDashboard() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => navigate('/settings')}
+                onClick={() => navigate('/dashboard')}
                 className="text-slate-400 hover:text-[#00E0FF] transition-colors bg-none border-none cursor-pointer"
               >
                 <ArrowLeft className="w-5 h-5" />
