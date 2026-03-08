@@ -31,7 +31,7 @@ export default function ProfileHeader({
     } else if (backPath) {
       navigate(backPath, { state: backState });
     } else {
-      navigate('/settings');
+      navigate('/dashboard');
     }
   };
 
