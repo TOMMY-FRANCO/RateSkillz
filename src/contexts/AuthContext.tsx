@@ -267,7 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [profile?.id]);
 
-  const signUp = async (email: string, password: string, username: string, fullName: string, recaptchaToken: string, age?: number | null) => {
+  const signUp = async (email: string, password: string, username: string, fullName: string, recaptchaToken: string, age?: number | null, deviceFingerprint?: string) => {
     if (!supabase) {
       return { error: new Error('Supabase not configured') };
     }
