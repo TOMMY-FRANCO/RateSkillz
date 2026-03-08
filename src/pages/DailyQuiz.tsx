@@ -305,19 +305,32 @@ if (localStorage.getItem(localKey)) {
     }
 
         const resp = await fetch(
-          'https://raw.githubusercontent.com/TOMMY-FRANCO/RateSkillz/main/public/quiz-questions.json'
-        );
-        if (!resp.ok) throw new Error('Failed to load questions');
+  'https://raw.githubusercontent.com/TOMMY-FRANCO/RateSkillz/main/public/quiz-questions.json'
+);
+if (!resp.ok) throw new Error('Failed to load questions');
 
-        const allQuestions: Question[] = await resp.json();
-        if (cancelled) return;
+const quizData = await resp.json();
+if (cancelled) return;
 
-        if (!Array.isArray(allQuestions) || allQuestions.length === 0) {
-          throw new Error('No questions available');
-        }
+const londonDate = new Date().toLocaleDateString('en-GB', {
+  timeZone: 'Europe/London',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+}).split('/').reverse().join('-');
 
-        const shuffled = [...allQuestions].sort(() => Math.random() - 0.5);
-        questionsRef.current = shuffled.slice(0, 10);
+let selectedQuestions: Question[];
+
+if (quizData.schedule?.[londonDate] && quizData.schedule[londonDate].length >= 10) {
+  selectedQuestions = quizData.schedule[londonDate].slice(0, 10);
+} else if (quizData.fallback && quizData.fallback.length > 0) {
+  const shuffled = [...quizData.fallback].sort(() => Math.random() - 0.5);
+  selectedQuestions = shuffled.slice(0, 10);
+} else {
+  throw new Error('No questions available');
+}
+
+questionsRef.current = selectedQuestions;
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Something went wrong');
