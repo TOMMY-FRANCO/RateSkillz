@@ -367,6 +367,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           profile_views_count: 0,
           hide_from_leaderboard: isMinor,
           findable_by_school: !isMinor,
+          device_fingerprint: deviceFingerprint || null,
         })
         .select()
         .maybeSingle();
