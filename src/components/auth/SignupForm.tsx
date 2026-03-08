@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { validatePassword, getPasswordRequirements } from '../../lib/passwordValidation';
 import { OAuthButtons } from './OAuthButtons';
+import { supabase } from '../../lib/supabase';
 
 declare global {
   interface Window {
