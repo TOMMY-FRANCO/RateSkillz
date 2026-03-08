@@ -40,6 +40,12 @@ function getQuizResetTime(): Date {
   return today7am;
 }
 
+function getQuizPeriodKey(): string {
+  const resetTime = getQuizResetTime();
+  // Use the reset time's date as the key — this is stable for the full 7am-7am period
+  return `${resetTime.getUTCFullYear()}-${resetTime.getUTCMonth()}-${resetTime.getUTCDate()}`;
+}
+
 function getNextResetTime(): Date {
   const resetTime = getQuizResetTime();
   resetTime.setUTCDate(resetTime.getUTCDate() + 1);
