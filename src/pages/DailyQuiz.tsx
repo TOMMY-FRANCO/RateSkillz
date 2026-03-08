@@ -362,7 +362,7 @@ if (localStorage.getItem(localKey)) {
 } finally {
         setSubmitting(false);
         setQuizComplete(true);
-        localStorage.setItem(`quiz_completed_${user!.id}_${new Date().toDateString()}`, 'true');
+        localStorage.setItem(`quiz_completed_${user!.id}_${getQuizPeriodKey()}`, 'true');
       }
     } else {
       setCurrentIndex(prev => prev + 1);
