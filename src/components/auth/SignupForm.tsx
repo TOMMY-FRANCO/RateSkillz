@@ -17,6 +17,43 @@ interface SignupFormProps {
   onSwitchToLogin?: () => void;
 }
 
+async function generateDeviceFingerprint(): Promise<string> {
+  const components = [
+    navigator.userAgent,
+    navigator.language,
+    screen.width + 'x' + screen.height,
+    screen.colorDepth,
+    new Date().getTimezoneOffset(),
+    navigator.hardwareConcurrency ?? '',
+    navigator.platform ?? '',
+  ];
+
+  try {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.textBaseline = 'top';
+      ctx.font = '14px Arial';
+      ctx.fillStyle = '#f60';
+      ctx.fillRect(125, 1, 62, 20);
+      ctx.fillStyle = '#069';
+      ctx.fillText('RatingSkill™', 2, 15);
+      ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+      ctx.fillText('RatingSkill™', 4, 17);
+      components.push(canvas.toDataURL());
+    }
+  } catch {
+    // Canvas blocked — skip
+  }
+
+  const raw = components.join('|');
+  const encoder = new TextEncoder();
+  const data = encoder.encode(raw);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
   const navigate = useNavigate();
   const { signUp } = useAuth();
@@ -108,13 +145,27 @@ export function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormProps) {
     setLoading(true);
 
     let recaptchaToken = '';
-    try {
-      recaptchaToken = await executeRecaptcha();
-    } catch {
-      // reCAPTCHA unavailable — proceed without it
-    }
+try {
+  recaptchaToken = await executeRecaptcha();
+} catch {
+  // reCAPTCHA unavailable — proceed without it
+}
 
-    const { error: signUpError } = await signUp(email, password, username, fullName, recaptchaToken, ageNum);
+let deviceFingerprint = '';
+try {
+  deviceFingerprint = await generateDeviceFingerprint();
+  const { data: fingerprintExists } = await supabase
+    .rpc('check_device_fingerprint', { p_fingerprint: deviceFingerprint });
+  if (fingerprintExists) {
+    setError('An account already exists on this device. If this is you, please sign in instead. If you are a different person, please use a different browser. Creating multiple accounts is not permitted.');
+    setLoading(false);
+    return;
+  }
+} catch {
+  // Fingerprint check failed — proceed without it
+}
+
+const { error: signUpError } = await signUp(email, password, username, fullName, recaptchaToken, ageNum, deviceFingerprint);
 
     if (signUpError) {
       setError(signUpError.message);
