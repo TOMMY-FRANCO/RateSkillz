@@ -331,7 +331,24 @@ if (quizData.schedule?.[londonDate] && quizData.schedule[londonDate].length >= 1
 }
 
 questionsRef.current = selectedQuestions;
+
+const session = await supabase.rpc('start_quiz_session', {
+  p_user_id: user!.id,
+  p_quiz_period_key: getQuizPeriodKey(),
+  p_questions: selectedQuestions
+});
+
+if (session.data && !session.data.success) {
+  if (session.data.reason === 'abandoned') {
+    setError('You exited today\'s quiz early. Come back tomorrow!');
+    return;
+  }
+}
+
       } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Something went wrong');
+        }
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Something went wrong');
         }
