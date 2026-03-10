@@ -133,6 +133,20 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AppContent() {
+  const { user } = useAuth();
+  const { requestPermission, permission } = usePushNotifications(user?.id ?? null);
+  useEffect(() => {
+    if (user && permission === 'default') {
+      const timer = setTimeout(() => {
+        requestPermission();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [user, permission, requestPermission]);
+  return null;
+}
+
 function App() {
   console.log('🚀 App component rendering');
 
@@ -157,6 +171,7 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
+        <AppContent />
         <Suspense fallback={<LoadingScreen />}>
           <Routes>
           <Route
