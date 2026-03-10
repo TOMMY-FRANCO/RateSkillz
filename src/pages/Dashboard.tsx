@@ -45,13 +45,11 @@ export default function Dashboard() {
   const { unreadCount: unreadMessagesCount } = useUnreadMessages();
   const { counts: notificationCounts, getCount, loading: notificationsLoading } = useNotifications(profile?.id);
   const { counts: badgeCounts, refetch: refetchBadges } = useDashboardBadges(profile?.id);
-  const { counts: badgeCounts, refetch: refetchBadges } = useDashboardBadges(profile?.id);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const touchStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
-
   const { requestPermission, permission } = usePushNotifications(profile?.id ?? null);
 
 useEffect(() => {
