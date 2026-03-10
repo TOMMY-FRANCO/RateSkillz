@@ -6,6 +6,7 @@ import { measureWebVitals, perfMonitor } from './lib/performance';
 import ErrorBoundary from './components/ErrorBoundary';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { LazyPageWrapper } from './components/ui/LazyPageWrapper';
+import { usePushNotifications } from './hooks/usePushNotifications';
 import {
   FriendsSkeleton,
   InboxSkeleton,
@@ -132,6 +133,283 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Inner component that has access to auth context
+function AppContent() {
+  const { user } = useAuth();
+  const { requestPermission, permission } = usePushNotifications(user?.id ?? null);
+
+  // Auto-request push permission once user is logged in
+  useEffect(() => {
+    if (user && permission === 'default') {
+      // Small delay so it doesn't pop up immediately on login
+      const timer = setTimeout(() => {
+        requestPermission();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [user, permission, requestPermission]);
+
+  return (
+    <Suspense fallback={<LoadingScreen />}>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <PublicRoute>
+              <Landing />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <PublicRoute>
+              <Signup />
+            </PublicRoute>
+          }
+        />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/delete-account" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><DeleteAccount /></LazyPageWrapper>} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/edit-profile"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                <EditProfile />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/friends"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<FriendsSkeleton />}>
+                <Friends />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/search-friends"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<FriendsSkeleton />}>
+                <SearchFriends />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/viewed-me"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                <ViewedMe />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<SettingsSkeleton />}>
+                <Settings />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/:username"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                <ProfileView />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leaderboard"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<LeaderboardSkeleton />}>
+                <Leaderboard />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shop"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                <Shop />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/store"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                <Store />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/transactions"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                <TransactionHistory />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/activity-feed"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                <ActivityFeed />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/daily-quiz"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                <DailyQuiz />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/watch-ad"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                <WatchAd />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/trading"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<TradingDashboardSkeleton />}>
+                <TradingDashboard />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/battle-mode"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<BattleModeSkeleton />}>
+                <BattleMode />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/checkout/success"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                <CheckoutSuccess />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inbox"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<InboxSkeleton />}>
+                <Inbox />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inbox/:conversationId"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<InboxSkeleton />}>
+                <Chat />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/balance-recovery"
+          element={
+            <ProtectedRoute>
+              <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                <BalanceRecovery />
+              </LazyPageWrapper>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/coin-pool"
+          element={
+            <AdminRoute>
+              <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                <AdminCoinPool />
+              </LazyPageWrapper>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin-hq-london"
+          element={
+            <AdminRoute>
+              <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                <AdminModeration />
+              </LazyPageWrapper>
+            </AdminRoute>
+          }
+        />
+        <Route path="/card/:username" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><PublicCard /></LazyPageWrapper>} />
+        <Route path="/verify/:token" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><VerifyProfile /></LazyPageWrapper>} />
+        <Route path="/add-friend" element={<LazyPageWrapper skeleton={<AddFriendByQRSkeleton />}><AddFriendByQR /></LazyPageWrapper>} />
+        <Route path="/shimmer-demo" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><ShimmerDemo /></LazyPageWrapper>} />
+        <Route path="/terms" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><TermsOfService /></LazyPageWrapper>} />
+        <Route path="/terms-of-service" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><TermsOfService /></LazyPageWrapper>} />
+        <Route path="/privacy-policy" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><PrivacyPolicy /></LazyPageWrapper>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
+  );
+}
+
 function App() {
   console.log('🚀 App component rendering');
 
@@ -156,263 +434,7 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <Suspense fallback={<LoadingScreen />}>
-          <Routes>
-          <Route
-            path="/"
-            element={
-              <PublicRoute>
-                <Landing />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/signup"
-            element={
-              <PublicRoute>
-                <Signup />
-              </PublicRoute>
-            }
-          />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/delete-account" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><DeleteAccount /></LazyPageWrapper>} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/edit-profile"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
-                  <EditProfile />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/friends"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<FriendsSkeleton />}>
-                  <Friends />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/search-friends"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<FriendsSkeleton />}>
-                  <SearchFriends />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/viewed-me"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
-                  <ViewedMe />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<SettingsSkeleton />}>
-                  <Settings />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile/:username"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
-                  <ProfileView />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/leaderboard"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<LeaderboardSkeleton />}>
-                  <Leaderboard />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/shop"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
-                  <Shop />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/store"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
-                  <Store />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/transactions"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
-                  <TransactionHistory />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/activity-feed"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
-                  <ActivityFeed />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/daily-quiz"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
-                  <DailyQuiz />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/watch-ad"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
-                  <WatchAd />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/trading"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<TradingDashboardSkeleton />}>
-                  <TradingDashboard />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/battle-mode"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<BattleModeSkeleton />}>
-                  <BattleMode />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/checkout/success"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
-                  <CheckoutSuccess />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/inbox"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<InboxSkeleton />}>
-                  <Inbox />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/inbox/:conversationId"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<InboxSkeleton />}>
-                  <Chat />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/balance-recovery"
-            element={
-              <ProtectedRoute>
-                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
-                  <BalanceRecovery />
-                </LazyPageWrapper>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/coin-pool"
-            element={
-              <AdminRoute>
-                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
-                  <AdminCoinPool />
-                </LazyPageWrapper>
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin-hq-london"
-            element={
-              <AdminRoute>
-                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
-                  <AdminModeration />
-                </LazyPageWrapper>
-              </AdminRoute>
-            }
-          />
-          <Route path="/card/:username" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><PublicCard /></LazyPageWrapper>} />
-          <Route path="/verify/:token" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><VerifyProfile /></LazyPageWrapper>} />
-          <Route path="/add-friend" element={<LazyPageWrapper skeleton={<AddFriendByQRSkeleton />}><AddFriendByQR /></LazyPageWrapper>} />
-          <Route path="/shimmer-demo" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><ShimmerDemo /></LazyPageWrapper>} />
-          <Route path="/terms" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><TermsOfService /></LazyPageWrapper>} />
-          <Route path="/terms-of-service" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><TermsOfService /></LazyPageWrapper>} />
-          <Route path="/privacy-policy" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><PrivacyPolicy /></LazyPageWrapper>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Suspense>
+        <AppContent />
         <PWAInstallPrompt />
       </Router>
     </ErrorBoundary>
