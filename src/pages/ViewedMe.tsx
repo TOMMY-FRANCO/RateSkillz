@@ -83,38 +83,101 @@ export default function ViewedMe() {
 
     setLoading(true);
     try {
-      const { data: cacheData, error: cacheError } = await supabase
-        .from('profile_view_cache')
-        .select('user_id, last_viewer_id, last_viewer_username, last_viewed_at, recent_viewers_count, overall_rating, position, team, last_seen, updated_at, is_verified')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      const { count, error: countError } = await supabase
+        .from('profile_views')
+        .select('id', { count: 'exact', head: true })
+        .eq('profile_id', user.id)
+        .not('viewer_id', 'is', null);
 
-      if (cacheError) throw cacheError;
+      if (countError) throw countError;
 
-      const totalCount = cacheData?.recent_viewers_count || 0;
-      setTotalViewers(totalCount);
+      const total = count || 0;
+      setTotalViewers(total);
 
-      if (cacheData && cacheData.last_viewer_id) {
-        const viewer: ViewerData = {
-          viewer_id: cacheData.last_viewer_id,
-          username: cacheData.last_viewer_username || 'Unknown',
-          avatar_url: null,
-          overall_rating: cacheData.overall_rating || 50,
-          position: cacheData.position,
-          team: cacheData.team,
-          coin_balance: 0,
-          is_manager: false,
-          manager_wins: 0,
-          last_active: cacheData.last_seen || cacheData.updated_at,
-          is_verified: cacheData.is_verified || false,
-          has_social_badge: false,
-          viewed_at: cacheData.last_viewed_at,
-        };
-        setViewers([viewer]);
-        loadFriendStatuses([cacheData.last_viewer_id]);
-      } else {
+      if (total === 0) {
         setViewers([]);
+        return;
       }
+
+      const offset = (currentPage - 1) * VIEWERS_PER_PAGE;
+
+      const { data: viewRecords, error: viewError } = await supabase
+        .from('profile_views')
+        .select('viewer_id, viewed_at')
+        .eq('profile_id', user.id)
+        .not('viewer_id', 'is', null)
+        .order('viewed_at', { ascending: false })
+        .range(offset, offset + VIEWERS_PER_PAGE - 1);
+
+      if (viewError) throw viewError;
+
+      if (!viewRecords || viewRecords.length === 0) {
+        setViewers([]);
+        return;
+      }
+
+      const viewerIds = [...new Set(viewRecords.map(r => r.viewer_id as string))];
+
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url, last_active, overall_rating, position, team, coin_balance, is_manager, manager_wins, is_verified')
+        .in('id', viewerIds);
+
+      if (profilesError) throw profilesError;
+
+      const profileMap = new Map<string, typeof profilesData[0]>();
+      if (profilesData) {
+        for (const p of profilesData) {
+          profileMap.set(p.id, p);
+        }
+      }
+
+      const { data: socialData } = await supabase
+        .from('social_links')
+        .select('user_id')
+        .in('user_id', viewerIds);
+
+      const socialSet = new Set<string>();
+      if (socialData) {
+        for (const s of socialData) {
+          socialSet.add(s.user_id);
+        }
+      }
+
+      const { data: leaderboardData } = await supabase
+        .from('leaderboard_cache')
+        .select('user_id, rank')
+        .in('user_id', viewerIds);
+
+      const rankMap = new Map<string, number>();
+      if (leaderboardData) {
+        for (const l of leaderboardData) {
+          rankMap.set(l.user_id, l.rank);
+        }
+      }
+
+      const viewerList: ViewerData[] = viewRecords.map(record => {
+        const profile = profileMap.get(record.viewer_id as string);
+        return {
+          viewer_id: record.viewer_id as string,
+          username: profile?.username || 'Unknown',
+          avatar_url: profile?.avatar_url || null,
+          overall_rating: profile?.overall_rating || 50,
+          position: profile?.position || null,
+          team: profile?.team || null,
+          coin_balance: profile?.coin_balance || 0,
+          is_manager: profile?.is_manager || false,
+          manager_wins: profile?.manager_wins || 0,
+          last_active: profile?.last_active || record.viewed_at,
+          is_verified: profile?.is_verified || false,
+          has_social_badge: socialSet.has(record.viewer_id as string),
+          viewed_at: record.viewed_at,
+          rank: rankMap.get(record.viewer_id as string),
+        };
+      });
+
+      setViewers(viewerList);
+      loadFriendStatuses(viewerIds);
     } catch (error) {
       console.error('Error fetching viewers:', error);
       setViewers([]);
@@ -238,9 +301,12 @@ export default function ViewedMe() {
   };
 
   const getTimeAgo = (dateString: string) => {
+    if (!dateString) return 'Unknown';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Unknown';
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) return 'Just now';
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
@@ -255,9 +321,18 @@ export default function ViewedMe() {
   };
 
   const getOnlineStatus = (lastActive: string) => {
+    if (!lastActive) {
+      return { text: 'Last online: Unknown', color: 'text-slate-400', dotColor: 'bg-slate-400' };
+    }
     const date = new Date(lastActive);
+    if (isNaN(date.getTime())) {
+      return { text: 'Last online: Unknown', color: 'text-slate-400', dotColor: 'bg-slate-400' };
+    }
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
+    if (diffMs < 0) {
+      return { text: 'Online now', color: 'text-green-400', dotColor: 'bg-green-400' };
+    }
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
@@ -271,7 +346,7 @@ export default function ViewedMe() {
     } else if (diffDays === 1) {
       return { text: 'Last online: Yesterday', color: 'text-orange-400', dotColor: 'bg-orange-400' };
     } else {
-      return { text: `Last online: ${diffDays} days ago`, color: 'text-gray-400', dotColor: 'bg-gray-400' };
+      return { text: `Last online: ${diffDays} days ago`, color: 'text-slate-400', dotColor: 'bg-slate-400' };
     }
   };
 
@@ -282,18 +357,20 @@ export default function ViewedMe() {
       <div className="max-w-6xl mx-auto">
         <button
           onClick={() => navigate('/dashboard')}
-          className="mb-6 flex items-center gap-2 text-white/60 hover:text-white transition-colors"
+          className="mb-6 flex items-center gap-2 text-slate-400 hover:text-cyan-400 transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
           Back to Dashboard
         </button>
 
-        <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6 md:p-8 mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Eye className="w-8 h-8 text-blue-400" />
-            <h1 className="text-3xl md:text-4xl font-black text-white">Viewed Me</h1>
+        <div className="bg-gradient-to-br from-slate-900 to-slate-800 backdrop-blur-sm rounded-3xl border border-cyan-500/20 p-6 md:p-8 mb-6">
+          <div className="flex items-center gap-4 mb-3">
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
+              <Eye className="w-7 h-7 text-white" />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">Viewed Me</h1>
           </div>
-          <p className="text-white/60">
+          <p className="text-slate-400">
             {totalViewers === 0
               ? 'No one has viewed your profile yet'
               : `${totalViewers} ${totalViewers === 1 ? 'person has' : 'people have'} viewed your profile`}
@@ -304,7 +381,7 @@ export default function ViewedMe() {
           <div className="space-y-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <StaggerItem key={i} index={i}>
-                <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/20 rounded-2xl p-6">
+                <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6">
                   <div className="flex items-start gap-4">
                     <SkeletonAvatar size="lg" />
                     <div className="flex-1 space-y-3">
@@ -323,10 +400,12 @@ export default function ViewedMe() {
             <SlowLoadMessage loading={true} message="Loading profile viewers..." />
           </div>
         ) : viewers.length === 0 ? (
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-12 text-center">
-            <Eye className="w-16 h-16 text-white/20 mx-auto mb-4" />
-            <p className="text-white/60 text-lg mb-2">No profile views yet</p>
-            <p className="text-white/40">Share your profile to get more views!</p>
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 backdrop-blur-sm rounded-3xl border border-slate-700/50 p-12 text-center">
+            <div className="w-20 h-20 bg-slate-800/60 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-slate-700/50">
+              <Eye className="w-10 h-10 text-slate-600" />
+            </div>
+            <p className="text-slate-400 text-lg mb-2">No profile views yet</p>
+            <p className="text-slate-500">Share your profile to get more views!</p>
           </div>
         ) : (
           <>
@@ -338,11 +417,11 @@ export default function ViewedMe() {
                 return (
                   <div
                     key={viewer.viewer_id}
-                    className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/20 rounded-2xl p-6 hover:border-white/40 transition-all"
+                    className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 hover:border-cyan-500/30 transition-all"
                   >
                     <div className="flex flex-col md:flex-row gap-6">
                       <div className="flex items-start gap-4 flex-1">
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-black text-2xl overflow-hidden flex-shrink-0">
+                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-black text-2xl overflow-hidden flex-shrink-0 shadow-lg shadow-cyan-500/20">
                           {viewer.avatar_url ? (
                             <img
                               src={viewer.avatar_url}
@@ -375,9 +454,9 @@ export default function ViewedMe() {
                               </span>
                             )}
                           </div>
-                          <p className="text-white/60 text-sm mb-2">Viewed by {viewer.username}</p>
+                          <p className="text-slate-500 text-sm mb-2">Viewed by {viewer.username}</p>
                           <div className="flex flex-wrap gap-2 text-sm mb-2">
-                            <span className="text-white/40">{getTimeAgo(viewer.viewed_at)}</span>
+                            <span className="text-slate-500">{getTimeAgo(viewer.viewed_at)}</span>
                           </div>
                           <div className={`flex items-center gap-2 ${onlineStatus.color}`}>
                             <div className={`w-2 h-2 rounded-full ${onlineStatus.dotColor} animate-pulse`}></div>
@@ -387,39 +466,39 @@ export default function ViewedMe() {
                       </div>
 
                       <div className="flex-1">
-                        <div className="bg-black/30 rounded-xl p-4 mb-4">
+                        <div className="bg-slate-900/60 rounded-2xl p-4 mb-4 border border-slate-700/30">
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                             <div>
-                              <div className="text-white/60 text-xs mb-1">Overall</div>
+                              <div className="text-slate-500 text-xs mb-1">Overall</div>
                               <div className="text-white font-black text-2xl">{viewer.overall_rating}</div>
                             </div>
                             {viewer.position && (
                               <div>
-                                <div className="text-white/60 text-xs mb-1">Position</div>
+                                <div className="text-slate-500 text-xs mb-1">Position</div>
                                 <div className="text-white font-bold">{viewer.position}</div>
                               </div>
                             )}
                             {viewer.team && (
                               <div>
-                                <div className="text-white/60 text-xs mb-1">Team</div>
+                                <div className="text-slate-500 text-xs mb-1">Team</div>
                                 <div className="text-white font-semibold truncate">{viewer.team}</div>
                               </div>
                             )}
                             {viewer.card_worth !== undefined && (
                               <div>
-                                <div className="text-white/60 text-xs mb-1">Card Worth</div>
+                                <div className="text-slate-500 text-xs mb-1">Card Worth</div>
                                 <div className="text-yellow-400 font-bold">{viewer.card_worth.toFixed(0)} coins</div>
                               </div>
                             )}
                             {viewer.rank && (
                               <div>
-                                <div className="text-white/60 text-xs mb-1">Rank</div>
+                                <div className="text-slate-500 text-xs mb-1">Rank</div>
                                 <div className="text-white font-bold">#{viewer.rank}</div>
                               </div>
                             )}
                             {tier && (
                               <div>
-                                <div className="text-white/60 text-xs mb-1">Tier</div>
+                                <div className="text-slate-500 text-xs mb-1">Tier</div>
                                 <div
                                   className="font-bold text-sm"
                                   style={{
@@ -436,7 +515,7 @@ export default function ViewedMe() {
                           </div>
 
                           {viewer.pac !== undefined && (
-                            <div className="grid grid-cols-6 gap-2 mt-4">
+                            <div className="grid grid-cols-6 gap-2 mt-4 pt-4 border-t border-slate-700/30">
                               {[
                                 { label: 'PAC', value: viewer.pac },
                                 { label: 'SHO', value: viewer.sho },
@@ -446,8 +525,8 @@ export default function ViewedMe() {
                                 { label: 'PHY', value: viewer.phy },
                               ].map((stat) => (
                                 <div key={stat.label} className="text-center">
-                                  <div className="text-white/60 text-xs mb-1">{stat.label}</div>
-                                  <div className="text-white font-bold text-sm">{stat.value}</div>
+                                  <div className="text-slate-500 text-xs mb-1">{stat.label}</div>
+                                  <div className="text-cyan-400 font-bold text-sm">{stat.value}</div>
                                 </div>
                               ))}
                             </div>
@@ -457,7 +536,7 @@ export default function ViewedMe() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => navigate(`/profile/${viewer.username}`)}
-                            className="flex-1 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                            className="flex-1 bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 hover:text-white px-4 py-2.5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border border-slate-700/50 hover:border-slate-600/50"
                           >
                             <Eye className="w-4 h-4" />
                             View Profile
@@ -471,7 +550,7 @@ export default function ViewedMe() {
                                 <button
                                   onClick={() => handleRemoveFriend(viewer.viewer_id, fs.id!)}
                                   disabled={isProcessing}
-                                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-600/50 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                                  className="flex-1 bg-red-600/10 hover:bg-red-600/20 disabled:opacity-50 text-red-400 px-4 py-2.5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border border-red-600/30 hover:border-red-600/40"
                                 >
                                   {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
                                   Remove Friend
@@ -483,7 +562,7 @@ export default function ViewedMe() {
                                 <button
                                   onClick={() => handleCancelRequest(viewer.viewer_id, fs.id!)}
                                   disabled={isProcessing}
-                                  className="flex-1 bg-gray-600 hover:bg-gray-500 disabled:bg-gray-600/50 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                                  className="flex-1 bg-yellow-600/10 hover:bg-yellow-600/20 disabled:opacity-50 text-yellow-400 px-4 py-2.5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border border-yellow-600/30 hover:border-yellow-600/40"
                                 >
                                   {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
                                   Request Pending
@@ -495,7 +574,7 @@ export default function ViewedMe() {
                                 <button
                                   onClick={() => handleAcceptRequest(viewer.viewer_id, fs.id!)}
                                   disabled={isProcessing}
-                                  className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-600/50 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                                  className="flex-1 bg-green-600/10 hover:bg-green-600/20 disabled:opacity-50 text-green-400 px-4 py-2.5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border border-green-600/30 hover:border-green-600/40"
                                 >
                                   {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
                                   Accept Request
@@ -506,7 +585,7 @@ export default function ViewedMe() {
                               <button
                                 onClick={() => handleSendFriendRequest(viewer.viewer_id)}
                                 disabled={isProcessing}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                                className="flex-1 bg-cyan-600/10 hover:bg-cyan-600/20 disabled:opacity-50 text-cyan-400 px-4 py-2.5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border border-cyan-600/30 hover:border-cyan-600/40"
                               >
                                 {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
                                 Add Friend
@@ -522,12 +601,12 @@ export default function ViewedMe() {
             </div>
 
             {totalPages > 1 && (
-              <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-4">
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 backdrop-blur-sm rounded-3xl border border-slate-700/50 p-5">
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className="bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:text-white/30 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                    className="bg-slate-800/60 hover:bg-slate-700/60 disabled:bg-slate-800/30 disabled:text-slate-600 text-slate-300 hover:text-white px-5 py-2.5 rounded-xl font-semibold transition-all flex items-center gap-2 border border-slate-700/50 hover:border-slate-600/50 disabled:border-slate-800/50"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     Previous
@@ -538,7 +617,7 @@ export default function ViewedMe() {
                   <button
                     onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
-                    className="bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:text-white/30 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                    className="bg-slate-800/60 hover:bg-slate-700/60 disabled:bg-slate-800/30 disabled:text-slate-600 text-slate-300 hover:text-white px-5 py-2.5 rounded-xl font-semibold transition-all flex items-center gap-2 border border-slate-700/50 hover:border-slate-600/50 disabled:border-slate-800/50"
                   >
                     Next
                     <ChevronRight className="w-4 h-4" />

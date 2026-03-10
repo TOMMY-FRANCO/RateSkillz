@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Coins, RefreshCw, AlertCircle, CheckCircle, TrendingUp, Users, Database, Activity, Lock, Shield, Trash2 } from 'lucide-react';
+import { ArrowLeft, Coins, RefreshCw, AlertCircle, CheckCircle, TrendingUp, Users, Database, Activity, Lock, Shield, Trash2, Loader2, UserX } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { reconcileUserBalance } from '../lib/balanceReconciliation';
 import SystemLedgerManagement from '../components/SystemLedgerManagement';
 
 interface ResourcePool {
@@ -26,6 +27,15 @@ interface CoinPoolStats {
   is_synced: boolean;
   total_users_with_coins: number;
   last_updated: string;
+}
+
+interface UserDiscrepancy {
+  user_id: string;
+  username: string | null;
+  profile_balance: number;
+  latest_transaction_balance: number;
+  discrepancy: number;
+  status: string;
 }
 
 interface DiscrepancyLog {
@@ -56,6 +66,9 @@ export default function AdminCoinPool() {
   const [clearingWarnings, setClearingWarnings] = useState(false);
   const [clearResult, setClearResult] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [userDiscrepancies, setUserDiscrepancies] = useState<UserDiscrepancy[]>([]);
+  const [discrepanciesLoading, setDiscrepanciesLoading] = useState(false);
+  const [resolvingUser, setResolvingUser] = useState<string | null>(null);
 
   useEffect(() => {
     loadAllData();
@@ -69,7 +82,8 @@ export default function AdminCoinPool() {
     await Promise.all([
       loadCoinPoolStats(),
       loadResourcePools(),
-      loadDiscrepancyLogs()
+      loadDiscrepancyLogs(),
+      loadUserDiscrepancies()
     ]);
   }
 
@@ -125,6 +139,75 @@ export default function AdminCoinPool() {
       console.error('Error loading discrepancy logs:', error);
     } finally {
       setLogsLoading(false);
+    }
+  }
+
+  async function loadUserDiscrepancies() {
+    try {
+      setDiscrepanciesLoading(true);
+      const { data, error } = await supabase
+        .from('balance_verification')
+        .select('user_id, status, discrepancy, profile_balance, latest_transaction_balance')
+        .eq('status', 'DISCREPANCY');
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        setUserDiscrepancies([]);
+        return;
+      }
+
+      const userIds = data.map((d: any) => d.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      const usernameMap = new Map((profiles || []).map((p: any) => [p.id, p.username]));
+
+      const discrepancies: UserDiscrepancy[] = data.map((d: any) => ({
+        user_id: d.user_id,
+        username: usernameMap.get(d.user_id) || null,
+        profile_balance: typeof d.profile_balance === 'string' ? parseFloat(d.profile_balance) : (d.profile_balance || 0),
+        latest_transaction_balance: typeof d.latest_transaction_balance === 'string' ? parseFloat(d.latest_transaction_balance) : (d.latest_transaction_balance || 0),
+        discrepancy: typeof d.discrepancy === 'string' ? parseFloat(d.discrepancy) : (d.discrepancy || 0),
+        status: d.status,
+      }));
+
+      setUserDiscrepancies(discrepancies);
+    } catch (error) {
+      console.error('Error loading user discrepancies:', error);
+    } finally {
+      setDiscrepanciesLoading(false);
+    }
+  }
+
+  async function handleResolveDiscrepancy(userId: string) {
+    if (!confirm('Resolve this user\'s balance discrepancy? Their balance will be corrected to match their transaction history.')) {
+      return;
+    }
+
+    try {
+      setResolvingUser(userId);
+      const result = await reconcileUserBalance(userId);
+
+      if (result.success) {
+        await Promise.all([
+          loadUserDiscrepancies(),
+          loadCoinPoolStats(),
+          loadDiscrepancyLogs()
+        ]);
+      } else {
+        console.error('Reconciliation failed:', result.error);
+        alert(`Failed to resolve: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error: any) {
+      console.error('Error resolving discrepancy:', error);
+      alert(`Error: ${error.message || 'Unknown error'}`);
+    } finally {
+      setResolvingUser(null);
     }
   }
 
@@ -393,6 +476,101 @@ export default function AdminCoinPool() {
             </div>
 
             <SystemLedgerManagement />
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 mb-6 border border-white/20">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <UserX className="w-6 h-6 text-red-400" />
+                  <div>
+                    <h2 className="text-xl font-bold text-white">User Balance Discrepancies</h2>
+                    <p className="text-white/60 text-sm mt-1">Users whose profile balance does not match their transaction history</p>
+                  </div>
+                </div>
+                <button
+                  onClick={loadUserDiscrepancies}
+                  disabled={discrepanciesLoading}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                  title="Refresh discrepancies"
+                >
+                  <RefreshCw className={`w-4 h-4 text-white/70 ${discrepanciesLoading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+
+              {discrepanciesLoading ? (
+                <div className="text-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-white/60 mx-auto mb-3" />
+                  <p className="text-white/60 text-sm">Scanning for discrepancies...</p>
+                </div>
+              ) : userDiscrepancies.length === 0 ? (
+                <div className="text-center py-8">
+                  <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
+                  <p className="text-white/60">No balance discrepancies detected</p>
+                  <p className="text-white/40 text-sm mt-1">All user balances match their transaction history</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 mb-4">
+                    <p className="text-red-300 text-sm font-medium">
+                      {userDiscrepancies.length} user{userDiscrepancies.length !== 1 ? 's' : ''} with balance mismatches detected
+                    </p>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-white/10">
+                          <th className="text-left py-3 px-3 text-white/60 font-medium">User</th>
+                          <th className="text-right py-3 px-3 text-white/60 font-medium">Profile Balance</th>
+                          <th className="text-right py-3 px-3 text-white/60 font-medium">Expected Balance</th>
+                          <th className="text-right py-3 px-3 text-white/60 font-medium">Difference</th>
+                          <th className="text-right py-3 px-3 text-white/60 font-medium">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {userDiscrepancies.map((d) => (
+                          <tr key={d.user_id} className="border-b border-white/5 hover:bg-white/5">
+                            <td className="py-3 px-3">
+                              <span className="text-white font-medium">{d.username || 'Unknown'}</span>
+                              <p className="text-white/40 text-xs font-mono mt-0.5">{d.user_id.slice(0, 8)}...</p>
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono text-white">
+                              {d.profile_balance.toFixed(2)}
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono text-white">
+                              {d.latest_transaction_balance.toFixed(2)}
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <span className={`font-mono font-bold ${d.discrepancy > 0 ? 'text-red-400' : 'text-yellow-400'}`}>
+                                {d.discrepancy > 0 ? '+' : ''}{d.discrepancy.toFixed(2)}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <button
+                                onClick={() => handleResolveDiscrepancy(d.user_id)}
+                                disabled={resolvingUser === d.user_id}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {resolvingUser === d.user_id ? (
+                                  <>
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    Resolving...
+                                  </>
+                                ) : (
+                                  <>
+                                    <RefreshCw className="w-3 h-3" />
+                                    Resolve
+                                  </>
+                                )}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
               <div className="flex items-center justify-between mb-6">

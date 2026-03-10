@@ -267,7 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [profile?.id]);
 
-  const signUp = async (email: string, password: string, username: string, fullName: string, recaptchaToken: string, age?: number | null) => {
+  const signUp = async (email: string, password: string, username: string, fullName: string, recaptchaToken: string, age?: number | null, deviceFingerprint?: string) => {
     if (!supabase) {
       return { error: new Error('Supabase not configured') };
     }
@@ -367,6 +367,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           profile_views_count: 0,
           hide_from_leaderboard: isMinor,
           findable_by_school: !isMinor,
+          device_fingerprint: deviceFingerprint || null,
         })
         .select()
         .maybeSingle();

@@ -6,7 +6,6 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const missing: string[] = [];
 if (!supabaseUrl) missing.push('VITE_SUPABASE_URL');
 if (!supabaseAnonKey) missing.push('VITE_SUPABASE_ANON_KEY');
-
 if (missing.length > 0) {
   throw new Error(
     `Missing required environment variables: ${missing.join(', ')}. ` +
@@ -14,7 +13,13 @@ if (missing.length > 0) {
   );
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,      // Saves session to localStorage — survives app updates
+    autoRefreshToken: true,    // Silently renews token before it expires
+    detectSessionInUrl: false, // Required for Capacitor — avoids URL hash conflicts
+  },
+});
 
 export type Profile = {
   id: string;

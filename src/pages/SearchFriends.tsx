@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { sendFriendRequest, removeFriend } from '../lib/friendRequests';
 import { displayUsername } from '../lib/username';
+import { useToast } from '../contexts/ToastContext';
 
 interface SearchResult {
   id: string;
@@ -95,6 +96,7 @@ const selectClass = `w-full px-3 py-2.5 rounded-lg text-sm font-semibold
 export default function SearchFriends() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -334,8 +336,9 @@ export default function SearchFriends() {
         next.set(recipientId, { status: 'pending_sent', id: (data as any)?.id || null });
         return next;
       });
-    } catch (err) {
-      console.error(err);
+      toast.success('Friend request sent!');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to send friend request.');
     } finally {
       setActionLoading(null);
     }
@@ -351,8 +354,9 @@ export default function SearchFriends() {
         next.set(recipientId, { status: 'none', id: null });
         return next;
       });
-    } catch (err) {
-      console.error(err);
+      toast.info('Friend request cancelled.');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to cancel request.');
     } finally {
       setActionLoading(null);
     }
@@ -368,8 +372,9 @@ export default function SearchFriends() {
         next.set(recipientId, { status: 'accepted', id: friendshipId });
         return next;
       });
-    } catch (err) {
-      console.error(err);
+      toast.success('Friend request accepted!');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to accept request.');
     } finally {
       setActionLoading(null);
     }
@@ -386,8 +391,9 @@ export default function SearchFriends() {
         next.set(recipientId, { status: 'none', id: null });
         return next;
       });
-    } catch (err) {
-      console.error(err);
+      toast.info('Friend removed.');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to remove friend.');
     } finally {
       setActionLoading(null);
     }

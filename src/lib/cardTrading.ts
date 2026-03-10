@@ -326,13 +326,12 @@ export async function getListedCardsForSale(): Promise<CardOwnership[]> {
     .from('card_market_cache')
     .select(CARD_CACHE_COLUMNS)
     .eq('is_listed_for_sale', true)
-    .order('current_price', { ascending: true });
-
+    .order('current_price', { ascending: true })
+    .order('card_user_id', { ascending: true });
   if (error) {
     console.error('Error fetching listed cards:', error);
     return [];
   }
-
   return (data || []).map(mapCacheToCardOwnership);
 }
 

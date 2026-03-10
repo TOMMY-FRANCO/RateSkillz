@@ -8,7 +8,7 @@ import TermsAcceptanceModal from '../components/TermsAcceptanceModal';
 import { CoinBalance } from '../components/CoinBalance';
 import Tutorial from '../components/Tutorial';
 import TutorialPrompt from '../components/TutorialPrompt';
-import { Settings, Users, LogOut, Edit, Trophy, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search, BookOpen, QrCode, UserPlus, RefreshCw } from 'lucide-react';
+import { Settings, Users, LogOut, CreditCard as Edit, Trophy, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search, BookOpen, QrCode, UserPlus, RefreshCw, Activity, HelpCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { displayUsername } from '../lib/username';
 import { getUserStats } from '../lib/ratings';
@@ -16,15 +16,12 @@ import { getAppUrl } from '../lib/appConfig';
 import { useUnreadMessages } from '../hooks/useUnreadMessages';
 import { useNotifications } from '../hooks/useNotifications';
 import NotificationBadge from '../components/NotificationBadge';
-import { getFriendsBadgeSeenCount } from '../lib/notifications';
 import { SocialSharingReward } from '../components/SocialSharingReward';
 import { FriendMilestoneReward } from '../components/FriendMilestoneReward';
 import { WhatsAppDashboardShare } from '../components/WhatsAppDashboardShare';
 import InviteQRModal from '../components/InviteQRModal';
 import AddFriendQRModal from '../components/AddFriendQRModal';
 import ModerationCaseAlert from '../components/ModerationCaseAlert';
-import BalanceDiscrepancyWarning from '../components/BalanceDiscrepancyWarning';
-import { checkBalanceIntegrity } from '../lib/balanceReconciliation';
 import { checkAndNotifyNewMessages } from '../lib/messageNotifications';
 import { useDashboardBadges } from '../hooks/useDashboardBadges';
 
@@ -34,7 +31,6 @@ export default function Dashboard() {
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [rank, setRank] = useState<{ position: number; total: number } | undefined>();
-  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [showUsernamePrompt, setShowUsernamePrompt] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -49,12 +45,6 @@ export default function Dashboard() {
   const { counts: notificationCounts, getCount, loading: notificationsLoading } = useNotifications(profile?.id);
   const { counts: badgeCounts, refetch: refetchBadges } = useDashboardBadges(profile?.id);
 
-  const [balanceDiscrepancy, setBalanceDiscrepancy] = useState<{
-    hasDiscrepancy: boolean;
-    profileBalance: number;
-    calculatedBalance: number;
-    discrepancy: number;
-  } | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const touchStartY = useRef(0);
@@ -77,18 +67,13 @@ export default function Dashboard() {
     if (!profile) return;
 
     try {
-      const [stats, profileData, pendingData, rankData] = await Promise.all([
+      const [stats, profileData, rankData] = await Promise.all([
         getUserStats(profile.id),
         supabase
           .from('profiles')
           .select('is_verified, has_social_badge, unread_profile_views, tutorial_completed')
           .eq('id', profile.id)
           .maybeSingle(),
-        supabase
-          .from('friends')
-          .select('id', { count: 'exact', head: true })
-          .eq('friend_id', profile.id)
-          .eq('status', 'pending'),
         Promise.all([
           supabase
             .from('profiles')
@@ -113,8 +98,6 @@ export default function Dashboard() {
         }
       }
 
-      setPendingRequestsCount(pendingData.count || 0);
-
       const [aboveMe, totalProfiles] = rankData;
       setRank({
         position: (aboveMe.count || 0) + 1,
@@ -137,23 +120,11 @@ export default function Dashboard() {
     setIsRefreshing(true);
 
     try {
-      const [balanceCheck] = await Promise.all([
-        checkBalanceIntegrity(),
+      await Promise.all([
         loadDashboardData(),
         profile ? checkAndNotifyNewMessages(profile.id) : Promise.resolve(0),
         refetchBadges(),
       ]);
-
-      if (balanceCheck.success && balanceCheck.hasDiscrepancy) {
-        setBalanceDiscrepancy({
-          hasDiscrepancy: true,
-          profileBalance: balanceCheck.profileBalance,
-          calculatedBalance: balanceCheck.calculatedBalance,
-          discrepancy: balanceCheck.discrepancy,
-        });
-      } else {
-        setBalanceDiscrepancy(null);
-      }
     } catch (error) {
       console.error('Refresh error:', error);
     } finally {
@@ -243,18 +214,6 @@ export default function Dashboard() {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {balanceDiscrepancy && balanceDiscrepancy.hasDiscrepancy && (
-          <BalanceDiscrepancyWarning
-            profileBalance={balanceDiscrepancy.profileBalance}
-            calculatedBalance={balanceDiscrepancy.calculatedBalance}
-            discrepancy={balanceDiscrepancy.discrepancy}
-            onDismiss={() => setBalanceDiscrepancy(null)}
-            onReconciled={() => {
-              setBalanceDiscrepancy(null);
-              loadDashboardData();
-            }}
-          />
-        )}
         <div className="text-center mb-4 animate-fade-in">
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 heading-glow">
             Welcome, {displayUsername(profile.username)}!
@@ -401,6 +360,21 @@ export default function Dashboard() {
           </button>
 
           <button
+            onClick={() => navigate('/daily-quiz')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <HelpCircle className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Daily Quiz</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Earn coins daily</p>
+              </div>
+            </div>
+          </button>
+
+          <button
             onClick={() => navigate('/shop')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
           >
@@ -457,6 +431,21 @@ export default function Dashboard() {
           </button>
 
           <button
+            onClick={() => navigate('/activity-feed')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
+                <Activity className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Activity Feed</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Recent activity</p>
+              </div>
+            </div>
+          </button>
+
+          <button
             onClick={() => navigate('/leaderboard')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
@@ -481,7 +470,7 @@ export default function Dashboard() {
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge
-              count={badgeCounts.acceptedFriendRequests}
+              count={badgeCounts.pendingFriendRequests}
               userId={profile?.id}
               notificationType="coin_request"
               capAt9

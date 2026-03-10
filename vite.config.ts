@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['WWW.RATINGSKILL.COM.png'],
+      includeAssets: ['RATINGSKILL.COM.II.png'],
       manifest: {
         name: 'RatingSkill',
         short_name: 'RatingSkill',
@@ -21,13 +21,13 @@ export default defineConfig({
         orientation: 'portrait-primary',
         icons: [
           {
-            src: '/WWW.RATINGSKILL.COM.png',
+            src: '/RATINGSKILL.COM.II.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: '/WWW.RATINGSKILL.COM.png',
+            src: '/RATINGSKILL.COM.II.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'

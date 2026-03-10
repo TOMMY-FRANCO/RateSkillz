@@ -226,8 +226,21 @@ export default function Settings() {
           </div>
 
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6">
-            <h2 className="text-xl font-bold text-white mb-4">Legal & About</h2>
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center space-x-2">
+              <FileText className="w-6 h-6" />
+              <span>Legal</span>
+            </h2>
             <div className="space-y-3 mb-4">
+              <button
+                onClick={() => navigate('/privacy-policy')}
+                className="w-full flex items-center gap-3 p-4 bg-gray-800 hover:bg-gray-750 border border-gray-700 hover:border-cyan-500/50 rounded-lg transition-all cursor-pointer text-left"
+              >
+                <Shield className="w-5 h-5 text-cyan-400" />
+                <div>
+                  <p className="text-white font-semibold">Privacy Policy</p>
+                  <p className="text-gray-400 text-sm">How we collect and use your data</p>
+                </div>
+              </button>
               <button
                 onClick={() => navigate('/terms')}
                 className="w-full flex items-center gap-3 p-4 bg-gray-800 hover:bg-gray-750 border border-gray-700 hover:border-cyan-500/50 rounded-lg transition-all cursor-pointer text-left"
@@ -235,7 +248,7 @@ export default function Settings() {
                 <FileText className="w-5 h-5 text-cyan-400" />
                 <div>
                   <p className="text-white font-semibold">Terms of Service</p>
-                  <p className="text-gray-400 text-sm">Review our terms and policies</p>
+                  <p className="text-gray-400 text-sm">Review our terms and conditions</p>
                 </div>
               </button>
             </div>

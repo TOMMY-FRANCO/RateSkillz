@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
 
 export default function Login() {
@@ -109,6 +109,17 @@ export default function Login() {
               >
                 Sign up
               </button>
+            </p>
+
+            <p className="text-center text-xs text-[#6B7280]">
+              By signing up you agree to our{' '}
+              <Link to="/terms" className="text-[#00E0FF] hover:text-[#00FF85] underline transition-colors">
+                Terms of Service
+              </Link>
+              {' '}and{' '}
+              <Link to="/privacy-policy" className="text-[#00E0FF] hover:text-[#00FF85] underline transition-colors">
+                Privacy Policy
+              </Link>
             </p>
           </form>
         </div>

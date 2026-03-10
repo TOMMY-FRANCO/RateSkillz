@@ -3,11 +3,49 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, Loader2 } from 'lucide-react';
 import { validatePassword, getPasswordRequirements } from '../lib/passwordValidation';
+import { supabase } from '../lib/supabase';
 
 declare global {
   interface Window {
     grecaptcha: any;
   }
+}
+
+async function generateDeviceFingerprint(): Promise<string> {
+  const components = [
+    navigator.userAgent,
+    navigator.language,
+    screen.width + 'x' + screen.height,
+    screen.colorDepth,
+    new Date().getTimezoneOffset(),
+    navigator.hardwareConcurrency ?? '',
+    navigator.platform ?? '',
+  ];
+
+  try {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.textBaseline = 'top';
+      ctx.font = '14px Arial';
+      ctx.fillStyle = '#f60';
+      ctx.fillRect(125, 1, 62, 20);
+      ctx.fillStyle = '#069';
+      ctx.fillText('RatingSkill™', 2, 15);
+      ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+      ctx.fillText('RatingSkill™', 4, 17);
+      components.push(canvas.toDataURL());
+    }
+  } catch {
+    // Canvas blocked — skip
+  }
+
+  const raw = components.join('|');
+  const encoder = new TextEncoder();
+  const data = encoder.encode(raw);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 export default function Signup() {
@@ -85,13 +123,27 @@ export default function Signup() {
     }
 
     let recaptchaToken = '';
-    try {
-      recaptchaToken = await executeRecaptcha();
-    } catch {
-      // reCAPTCHA unavailable — proceed without it
-    }
+try {
+  recaptchaToken = await executeRecaptcha();
+} catch {
+  // reCAPTCHA unavailable — proceed without it
+}
 
-    const { error } = await signUp(email, password, username, fullName, recaptchaToken, ageNum);
+let deviceFingerprint = '';
+try {
+  deviceFingerprint = await generateDeviceFingerprint();
+  const { data: fingerprintExists } = await supabase
+    .rpc('check_device_fingerprint', { p_fingerprint: deviceFingerprint });
+  if (fingerprintExists) {
+    setError('An account already exists on this device. If this is you, please sign in instead. If you are a different person, please use a different browser. Creating multiple accounts is not permitted.');
+    setLoading(false);
+    return;
+  }
+} catch {
+  // Fingerprint check failed — proceed without it
+}
+
+const { error } = await signUp(email, password, username, fullName, recaptchaToken, ageNum, deviceFingerprint);
 
     if (error) {
       setError(error.message);
@@ -219,6 +271,14 @@ export default function Signup() {
                   >
                     Terms of Service
                   </Link>
+                  {' '}and{' '}
+                  <Link
+                    to="/privacy-policy"
+                    target="_blank"
+                    className="text-[#00E0FF] hover:text-[#00FF85] underline"
+                  >
+                    Privacy Policy
+                  </Link>
                   {' '}and understand that virtual coins have no real-world value and cannot be withdrawn or exchanged for money.
                 </span>
               </label>
@@ -253,6 +313,17 @@ export default function Signup() {
               >
                 Sign in
               </button>
+            </p>
+
+            <p className="text-center text-xs text-[#6B7280]">
+              By signing up you agree to our{' '}
+              <Link to="/terms" className="text-[#00E0FF] hover:text-[#00FF85] underline transition-colors">
+                Terms of Service
+              </Link>
+              {' '}and{' '}
+              <Link to="/privacy-policy" className="text-[#00E0FF] hover:text-[#00FF85] underline transition-colors">
+                Privacy Policy
+              </Link>
             </p>
           </form>
         </div>
