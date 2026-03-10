@@ -1,7 +1,7 @@
 {
     "logs": [
         {
-            "outputFile": "com.ratingskill.app-mergeReleaseResources-35:/values-fi/values-fi.xml",
+            "outputFile": "com.ratingskill.app-mergeReleaseResources-36:/values-fi/values-fi.xml",
             "map": [
                 {
                     "source": "C:\\Users\\duwai\\.gradle\\caches\\8.14.3\\transforms\\11094a199bb7945826b161d8a9c17beb\\transformed\\core-1.17.0\\res\\values-fi\\values-fi.xml",
@@ -21,7 +21,24 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\duwai\\.gradle\\caches\\8.14.3\\transforms\\4aef5d6dbfa2eab3e0cf75d9b9b7eb7a\\transformed\\play-services-base-18.1.0\\res\\values-fi\\values.xml",
+                    "source": "C:\\Users\\duwai\\.gradle\\caches\\8.14.3\\transforms\\535e9dd0a65eaa85bd344836d560144e\\transformed\\play-services-basement-18.4.0\\res\\values-fi\\values.xml",
+                    "from": {
+                        "startLines": "4",
+                        "startColumns": "0",
+                        "startOffsets": "195",
+                        "endColumns": "145",
+                        "endOffsets": "340"
+                    },
+                    "to": {
+                        "startLines": "44",
+                        "startColumns": "4",
+                        "startOffsets": "4502",
+                        "endColumns": "149",
+                        "endOffsets": "4647"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\duwai\\.gradle\\caches\\8.14.3\\transforms\\c1b0052ae712299163f2612d6db27779\\transformed\\play-services-base-18.5.0\\res\\values-fi\\values.xml",
                     "from": {
                         "startLines": "4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20",
                         "startColumns": "0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0",
@@ -52,23 +69,6 @@
                         "startOffsets": "105,213,313,422,508,613,731,817,896,987,1080,1175,1269,1363,1456,1552,1651,1742,1836,1916,2023,2124,2221,2327,2427,2525,2675,5680",
                         "endColumns": "107,99,108,85,104,117,85,78,90,92,94,93,93,92,95,98,90,93,79,106,100,96,105,99,97,149,99,80",
                         "endOffsets": "208,308,417,503,608,726,812,891,982,1075,1170,1264,1358,1451,1547,1646,1737,1831,1911,2018,2119,2216,2322,2422,2520,2670,2770,5756"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\duwai\\.gradle\\caches\\8.14.3\\transforms\\114baedee36b8bdac268f5386a7e6897\\transformed\\play-services-basement-18.3.0\\res\\values-fi\\values.xml",
-                    "from": {
-                        "startLines": "4",
-                        "startColumns": "0",
-                        "startOffsets": "195",
-                        "endColumns": "145",
-                        "endOffsets": "340"
-                    },
-                    "to": {
-                        "startLines": "44",
-                        "startColumns": "4",
-                        "startOffsets": "4502",
-                        "endColumns": "149",
-                        "endOffsets": "4647"
                     }
                 }
             ]

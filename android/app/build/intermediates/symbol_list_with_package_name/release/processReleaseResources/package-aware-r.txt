@@ -977,6 +977,8 @@ layout support_simple_spinner_dropdown_item
 mipmap ic_launcher
 mipmap ic_launcher_foreground
 mipmap ic_launcher_round
+raw com_android_billingclient_heterodyne_info
+raw com_android_billingclient_registration_info
 raw firebase_common_keep
 string abc_action_bar_home_description
 string abc_action_bar_up_description
@@ -1464,5 +1466,6 @@ styleable Toolbar android_gravity android_minHeight buttonGravity collapseConten
 styleable View android_theme android_focusable paddingEnd paddingStart theme
 styleable ViewBackgroundHelper android_background backgroundTint backgroundTintMode
 styleable ViewStubCompat android_id android_layout android_inflatedId
+xml com_android_billingclient_phenotype
 xml config
 xml file_paths
