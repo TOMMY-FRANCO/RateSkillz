@@ -1,0 +1,105 @@
+{
+  "schedule": {
+    "2026-03-09": [
+      {"id":1,"question":"Which club did Manchester City beat to win the 2018-19 Premier League title on the final day?","options":["Liverpool","Chelsea","Arsenal","Tottenham"],"answer":"Liverpool"},
+      {"id":2,"question":"Who scored the winning goal for Manchester United in the 2016 FA Cup Final?","options":["Wayne Rooney","Jesse Lingard","Juan Mata","Marcus Rashford"],"answer":"Jesse Lingard"},
+      {"id":3,"question":"Which Arsenal player won the Premier League Golden Boot in the 2022-23 season?","options":["Bukayo Saka","Gabriel Martinelli","Eddie Nketiah","Leandro Trossard"],"answer":"Gabriel Martinelli"},
+      {"id":4,"question":"Who was the Tottenham manager when they reached the Champions League Final in 2019?","options":["Jose Mourinho","Nuno Espirito Santo","Mauricio Pochettino","Antonio Conte"],"answer":"Mauricio Pochettino"},
+      {"id":5,"question":"Which club did Liverpool sign Virgil van Dijk from in January 2018?","options":["Celtic","Southampton","Newcastle","Burnley"],"answer":"Southampton"},
+      {"id":6,"question":"How many Premier League titles did Manchester City win between 2018 and 2023?","options":["3","4","5","6"],"answer":"5"},
+      {"id":7,"question":"Which goalkeeper won the Premier League Golden Glove in 2018-19?","options":["David De Gea","Ederson","Alisson","Hugo Lloris"],"answer":"Ederson"},
+      {"id":8,"question":"Who did Chelsea sign as manager in 2021 to help them win the Champions League?","options":["Frank Lampard","Thomas Tuchel","Graham Potter","Maurizio Sarri"],"answer":"Thomas Tuchel"},
+      {"id":9,"question":"Which Premier League club did Raheem Sterling leave Manchester City to join in 2022?","options":["Arsenal","Tottenham","Chelsea","Aston Villa"],"answer":"Chelsea"},
+      {"id":10,"question":"Who scored a hat-trick for Arsenal against Tottenham in the 2022-23 season?","options":["Bukayo Saka","Martin Odegaard","Gabriel Jesus","Eddie Nketiah"],"answer":"Eddie Nketiah"}
+    ],
+    "2026-03-10": [
+      {"id":1,"question":"Which club won the first Premier League title after it rebranded in 1992?","options":["Arsenal","Manchester United","Blackburn Rovers","Leeds United"],"answer":"Manchester United"},
+      {"id":2,"question":"Who was Liverpool's top scorer in their 2019-20 title-winning season?","options":["Sadio Mane","Roberto Firmino","Mohamed Salah","Divock Origi"],"answer":"Mohamed Salah"},
+      {"id":3,"question":"Which stadium do Tottenham Hotspur play their home games at?","options":["Emirates Stadium","Stamford Bridge","Tottenham Hotspur Stadium","London Stadium"],"answer":"Tottenham Hotspur Stadium"},
+      {"id":4,"question":"Which club did Arsenal sign Mesut Ozil from in 2013?","options":["Barcelona","Real Madrid","Juventus","Bayern Munich"],"answer":"Real Madrid"},
+      {"id":5,"question":"Who won the Premier League title in 2016-17?","options":["Manchester City","Liverpool","Chelsea","Arsenal"],"answer":"Chelsea"},
+      {"id":6,"question":"Which player scored 23 Premier League goals for Tottenham in the 2017-18 season?","options":["Son Heung-min","Dele Alli","Christian Eriksen","Harry Kane"],"answer":"Harry Kane"},
+      {"id":7,"question":"What colour is Manchester City's home kit?","options":["Red","Blue","White","Yellow"],"answer":"Blue"},
+      {"id":8,"question":"Which club did Bruno Fernandes join Manchester United from in January 2020?","options":["Benfica","Porto","Sporting CP","Braga"],"answer":"Sporting CP"},
+      {"id":9,"question":"Who was Arsenal's manager from 2019 to 2023?","options":["Arsene Wenger","Unai Emery","Mikel Arteta","Patrick Vieira"],"answer":"Mikel Arteta"},
+      {"id":10,"question":"Which Premier League club plays at Goodison Park?","options":["Everton","Leeds United","Leicester City","Southampton"],"answer":"Everton"}
+    ],
+    "2026-03-11": [
+      {"id":1,"question":"Who scored the only goal when Liverpool beat Tottenham in the 2019 Champions League Final?","options":["Sadio Mane","Mohamed Salah","Roberto Firmino","Divock Origi"],"answer":"Mohamed Salah"},
+      {"id":2,"question":"Which club did Kevin De Bruyne join Manchester City from in 2015?","options":["Chelsea","Wolfsburg","Genk","Borussia Dortmund"],"answer":"Wolfsburg"},
+      {"id":3,"question":"Who was Manchester United's captain for most of the 2018-19 season?","options":["Paul Pogba","Wayne Rooney","Ashley Young","Antonio Valencia"],"answer":"Ashley Young"},
+      {"id":4,"question":"Which Premier League club has the nickname The Gunners?","options":["Arsenal","Chelsea","Tottenham","West Ham"],"answer":"Arsenal"},
+      {"id":5,"question":"Who scored a famous last-minute winner for Manchester City against QPR to win the 2011-12 title?","options":["Mario Balotelli","Carlos Tevez","Edin Dzeko","Sergio Aguero"],"answer":"Sergio Aguero"},
+      {"id":6,"question":"Which club did Alexis Sanchez leave Arsenal to join in January 2018?","options":["Chelsea","Manchester City","Manchester United","Juventus"],"answer":"Manchester United"},
+      {"id":7,"question":"Which team finished second in the Premier League in 2018-19 behind Manchester City?","options":["Chelsea","Tottenham","Arsenal","Liverpool"],"answer":"Liverpool"},
+      {"id":8,"question":"Who was Chelsea's top scorer in the 2016-17 Premier League season?","options":["Eden Hazard","Pedro","Willian","Diego Costa"],"answer":"Diego Costa"},
+      {"id":9,"question":"Which country does Manchester City star Erling Haaland represent?","options":["Sweden","Denmark","Norway","Germany"],"answer":"Norway"},
+      {"id":10,"question":"Which Premier League club plays at the London Stadium?","options":["Chelsea","Arsenal","West Ham","Crystal Palace"],"answer":"West Ham"}
+    ],
+    "2026-03-12": [
+      {"id":1,"question":"Who did Leicester City beat on the final day of the 2015-16 season to confirm their title?","options":["Chelsea","Everton","Manchester United","Tottenham"],"answer":"Everton"},
+      {"id":2,"question":"Which club did Sadio Mane leave to join Liverpool in 2016?","options":["RB Leipzig","Southampton","Marseille","Senegal"],"answer":"Southampton"},
+      {"id":3,"question":"Who scored the winner for Chelsea in the 2021 Champions League Final against Manchester City?","options":["Timo Werner","Kai Havertz","Mason Mount","Christian Pulisic"],"answer":"Kai Havertz"},
+      {"id":4,"question":"Which Premier League club has the nickname The Red Devils?","options":["Liverpool","Arsenal","Manchester United","Sheffield United"],"answer":"Manchester United"},
+      {"id":5,"question":"Who was the top scorer in the 2020-21 Premier League season?","options":["Harry Kane","Mohamed Salah","Bruno Fernandes","Patrick Bamford"],"answer":"Harry Kane"},
+      {"id":6,"question":"Which club did Jack Grealish leave to join Manchester City in 2021?","options":["Everton","West Ham","Aston Villa","Leicester City"],"answer":"Aston Villa"},
+      {"id":7,"question":"Which Premier League club plays at Anfield?","options":["Everton","Manchester United","Liverpool","Leeds United"],"answer":"Liverpool"},
+      {"id":8,"question":"Who was the first player to score 100 Premier League goals for a single club?","options":["Wayne Rooney","Andrew Cole","Alan Shearer","Thierry Henry"],"answer":"Alan Shearer"},
+      {"id":9,"question":"Which club did Pep Guardiola manage before joining Manchester City in 2016?","options":["Real Madrid","PSG","Bayern Munich","Barcelona"],"answer":"Bayern Munich"},
+      {"id":10,"question":"Which Arsenal player is known by the nickname The Invincible from the 2003-04 unbeaten season?","options":["Robert Pires","Thierry Henry","Patrick Vieira","Ashley Cole"],"answer":"Thierry Henry"}
+    ],
+    "2026-03-13": [
+      {"id":1,"question":"Which club won the Premier League in 2021-22?","options":["Liverpool","Chelsea","Manchester City","Tottenham"],"answer":"Manchester City"},
+      {"id":2,"question":"Who did Manchester United sign from Juventus for a then British record fee in 2016?","options":["Romelu Lukaku","Henrikh Mkhitaryan","Paul Pogba","Zlatan Ibrahimovic"],"answer":"Paul Pogba"},
+      {"id":3,"question":"Which country does Arsenal midfielder Thomas Partey represent?","options":["Nigeria","Ivory Coast","Ghana","Cameroon"],"answer":"Ghana"},
+      {"id":4,"question":"Who was Tottenham's top scorer in the 2020-21 Premier League season?","options":["Son Heung-min","Gareth Bale","Carlos Vinicius","Harry Kane"],"answer":"Harry Kane"},
+      {"id":5,"question":"Which club did Mohamed Salah join Liverpool from in 2017?","options":["Chelsea","AS Roma","Fiorentina","Basel"],"answer":"AS Roma"},
+      {"id":6,"question":"What is the name of Manchester City's home stadium?","options":["Old Trafford","Etihad Stadium","Emirates Stadium","Stamford Bridge"],"answer":"Etihad Stadium"},
+      {"id":7,"question":"Which Premier League club did Jurgen Klopp manage before Liverpool?","options":["Schalke","Mainz","Borussia Dortmund","Bayer Leverkusen"],"answer":"Borussia Dortmund"},
+      {"id":8,"question":"Who scored in every round of the FA Cup for Arsenal in the 2019-20 season?","options":["Pierre-Emerick Aubameyang","Alexandre Lacazette","Nicolas Pepe","Eddie Nketiah"],"answer":"Pierre-Emerick Aubameyang"},
+      {"id":9,"question":"Which club did Dele Alli join after leaving Tottenham in 2022?","options":["Newcastle","Everton","West Ham","Fulham"],"answer":"Everton"},
+      {"id":10,"question":"Which Premier League club plays at Selhurst Park?","options":["Brighton","Brentford","Crystal Palace","Charlton Athletic"],"answer":"Crystal Palace"}
+    ],
+    "2026-03-14": [
+      {"id":1,"question":"Who did Manchester City sign from Borussia Dortmund in 2022?","options":["Jadon Sancho","Julian Brandt","Erling Haaland","Jude Bellingham"],"answer":"Erling Haaland"},
+      {"id":2,"question":"Which club won the FA Cup in 2020 beating Chelsea in the final?","options":["Tottenham","Manchester United","Arsenal","Leicester City"],"answer":"Arsenal"},
+      {"id":3,"question":"Who was Liverpool's number one goalkeeper during their 2019-20 title win?","options":["Simon Mignolet","Adrian","Loris Karius","Alisson"],"answer":"Alisson"},
+      {"id":4,"question":"Which Premier League club has the nickname The Blues and plays in West London?","options":["Everton","Manchester City","Chelsea","Birmingham City"],"answer":"Chelsea"},
+      {"id":5,"question":"Who scored a famous overhead kick for Juventus against Real Madrid in the Champions League in 2018?","options":["Paul Pogba","Gonzalo Higuain","Mario Mandzukic","Cristiano Ronaldo"],"answer":"Cristiano Ronaldo"},
+      {"id":6,"question":"Which club did Declan Rice leave to join Arsenal in 2023?","options":["Chelsea","West Ham","Brentford","Fulham"],"answer":"West Ham"},
+      {"id":7,"question":"Who was the Premier League's top scorer in the 2022-23 season?","options":["Marcus Rashford","Ivan Toney","Harry Kane","Erling Haaland"],"answer":"Erling Haaland"},
+      {"id":8,"question":"Which country does Bukayo Saka represent internationally?","options":["Ghana","Nigeria","England","Jamaica"],"answer":"England"},
+      {"id":9,"question":"Which club did Jose Mourinho manage in the Premier League between 2019 and 2021?","options":["Manchester United","Chelsea","Arsenal","Tottenham"],"answer":"Tottenham"},
+      {"id":10,"question":"What is the name of Arsenal's home stadium?","options":["Wembley Stadium","Tottenham Hotspur Stadium","Emirates Stadium","London Stadium"],"answer":"Emirates Stadium"}
+    ],
+    "2026-03-15": [
+      {"id":1,"question":"Which club won the Premier League in 2019-20?","options":["Manchester City","Chelsea","Liverpool","Arsenal"],"answer":"Liverpool"},
+      {"id":2,"question":"Who did Arsenal sign from Manchester City in 2023 for a club record fee?","options":["Jack Grealish","Kalvin Phillips","Declan Rice","Josko Gvardiol"],"answer":"Declan Rice"},
+      {"id":3,"question":"Which Premier League club plays at Old Trafford?","options":["Manchester City","Manchester United","Salford City","Bolton Wanderers"],"answer":"Manchester United"},
+      {"id":4,"question":"Who was named Premier League Player of the Season in 2021-22?","options":["Kevin De Bruyne","Mohamed Salah","Son Heung-min","Cristiano Ronaldo"],"answer":"Kevin De Bruyne"},
+      {"id":5,"question":"Which club did Son Heung-min join Tottenham from in 2015?","options":["Ajax","Bayer Leverkusen","Hamburg","PSV"],"answer":"Bayer Leverkusen"},
+      {"id":6,"question":"Who scored the most Premier League goals in the 2018-19 season?","options":["Harry Kane","Raheem Sterling","Mohamed Salah","Pierre-Emerick Aubameyang"],"answer":"Pierre-Emerick Aubameyang"},
+      {"id":7,"question":"Which club did Virgil van Dijk captain to win the Champions League in 2019?","options":["Southampton","Celtic","Liverpool","Manchester City"],"answer":"Liverpool"},
+      {"id":8,"question":"Which Premier League club has won the most league titles in total?","options":["Liverpool","Arsenal","Chelsea","Manchester United"],"answer":"Manchester United"},
+      {"id":9,"question":"Who scored a hat-trick for Manchester City on the opening day of the 2020-21 season?","options":["Raheem Sterling","Gabriel Jesus","Riyad Mahrez","Ilkay Gundogan"],"answer":"Raheem Sterling"},
+      {"id":10,"question":"Which club did Mikel Arteta play for before becoming Arsenal manager?","options":["Barcelona","Real Madrid","Manchester City","Everton"],"answer":"Manchester City"}
+    ]
+  },
+  "fallback": [
+    {"id":1,"question":"Which club won the Premier League title in the 2015-16 season as massive underdogs?","options":["Manchester City","Leicester City","Tottenham Hotspur","Everton"],"answer":"Leicester City"},
+    {"id":2,"question":"Who won the Premier League Golden Boot in the 2017-18 season with 32 goals?","options":["Harry Kane","Sergio Aguero","Mohamed Salah","Raheem Sterling"],"answer":"Mohamed Salah"},
+    {"id":3,"question":"Which manager led Liverpool to their first Premier League title in 2019-20?","options":["Jose Mourinho","Pep Guardiola","Jurgen Klopp","Brendan Rodgers"],"answer":"Jurgen Klopp"},
+    {"id":4,"question":"Which club has won the most Premier League titles?","options":["Liverpool","Arsenal","Chelsea","Manchester United"],"answer":"Manchester United"},
+    {"id":5,"question":"Who was the first player to score 200 Premier League goals?","options":["Andrew Cole","Thierry Henry","Wayne Rooney","Alan Shearer"],"answer":"Alan Shearer"},
+    {"id":6,"question":"Which stadium do Arsenal play their home games at?","options":["Stamford Bridge","Anfield","Emirates Stadium","Old Trafford"],"answer":"Emirates Stadium"},
+    {"id":7,"question":"Who did Chelsea beat in the 2021 Champions League Final?","options":["Liverpool","Manchester United","Manchester City","PSG"],"answer":"Manchester City"},
+    {"id":8,"question":"Which country does Liverpool star Mohamed Salah represent?","options":["Morocco","Tunisia","Algeria","Egypt"],"answer":"Egypt"},
+    {"id":9,"question":"Who scored the most Premier League goals in a single season with 34 goals in 2017-18?","options":["Harry Kane","Sergio Aguero","Mohamed Salah","Jamie Vardy"],"answer":"Mohamed Salah"},
+    {"id":10,"question":"Which club did Pep Guardiola take over as manager in 2016?","options":["Liverpool","Manchester United","Manchester City","Chelsea"],"answer":"Manchester City"},
+    {"id":11,"question":"What colour are Liverpool's home shirts?","options":["Blue","White","Red","Yellow"],"answer":"Red"},
+    {"id":12,"question":"Which Premier League club plays at the Tottenham Hotspur Stadium?","options":["Arsenal","Chelsea","West Ham","Tottenham"],"answer":"Tottenham"},
+    {"id":13,"question":"Who scored the winner in the 2016 FA Cup Final for Manchester United?","options":["Wayne Rooney","Juan Mata","Jesse Lingard","Marcus Rashford"],"answer":"Jesse Lingard"},
+    {"id":14,"question":"Which club finished second in the Premier League in 2021-22 behind Manchester City?","options":["Chelsea","Tottenham","Arsenal","Liverpool"],"answer":"Liverpool"},
+    {"id":15,"question":"Who was Arsenal manager before Mikel Arteta?","options":["Arsene Wenger","Unai Emery","Frank Lampard","Ole Gunnar Solskjaer"],"answer":"Unai Emery"}
+  ]
+}
