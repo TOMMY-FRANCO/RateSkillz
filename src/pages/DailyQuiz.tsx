@@ -361,6 +361,17 @@ if (session.data && !session.data.success) {
     return () => { cancelled = true; };
   }, [checkTodayCompletion]);
 
+  useEffect(() => {
+  return () => {
+    if (!quizComplete && questionsRef.current.length > 0) {
+      supabase.rpc('abandon_quiz_session', {
+        p_user_id: user!.id,
+        p_quiz_period_key: getQuizPeriodKey()
+      });
+    }
+  };
+}, [quizComplete]);
+
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
