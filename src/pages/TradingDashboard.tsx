@@ -9,11 +9,8 @@ import {
   getListedCardsForSale,
   purchaseCardAtFixedPrice,
   checkPurchaseRestrictionsBatch,
-  getPendingPurchaseRequests,
-  approvePurchaseRequest,
-  declinePurchaseRequest,
+  buyMyselfOut,
   type CardOwnership,
-  type PurchaseRequest
 } from '../lib/cardTrading';
 import { useCoinBalance } from '../hooks/useCoinBalance';
 import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Bell, Trophy, Check, X, Store, User, Repeat, Trash2, Star, Users, RefreshCw, AlertTriangle } from 'lucide-react';
@@ -30,14 +27,13 @@ import NotBoughtCardsTab from '../components/NotBoughtCardsTab';
 import NoManagerCardsTab from '../components/NoManagerCardsTab';
 import { markNotificationsReadBatch } from '../lib/notifications';
 
-type TabKey = 'marketplace' | 'portfolio' | 'requests' | 'swap' | 'discard' | 'leaderboards' | 'not-bought' | 'no-manager';
+type TabKey = 'marketplace' | 'portfolio' | 'swap' | 'discard' | 'leaderboards' | 'not-bought' | 'no-manager';
 
 const TABS: { key: TabKey; label: string; icon?: typeof Star }[] = [
   { key: 'marketplace', label: 'Marketplace' },
   { key: 'not-bought', label: 'Not Bought', icon: Star },
   { key: 'no-manager', label: 'No Manager', icon: Users },
   { key: 'portfolio', label: 'My Portfolio' },
-  { key: 'requests', label: 'Requests' },
   { key: 'swap', label: 'Swap', icon: Repeat },
   { key: 'discard', label: 'Discard', icon: Trash2 },
   { key: 'leaderboards', label: 'Leaderboards' },
@@ -138,6 +134,36 @@ export default function TradingDashboard() {
   const handleRefresh = () => {
     if (refreshing) return;
     loadData(true);
+  };
+
+  const handleBuyMyselfOut = async (card: CardOwnership) => {
+    if (!profile) return;
+
+    const totalCost = card.current_price + 100;
+
+    if (balance < totalCost) {
+      alert(`Insufficient coins! You need ${totalCost.toFixed(2)} coins (card price ${card.current_price.toFixed(2)} + 100 compensation).`);
+      return;
+    }
+
+    if (!confirm(`Buy back your card?\n\nCard price: ${card.current_price.toFixed(2)} coins\nCompensation to holder: 100 coins\nTotal cost: ${totalCost.toFixed(2)} coins`)) return;
+
+    setPurchasing(card.id);
+    try {
+      const result = await buyMyselfOut(card.card_user_id, profile.id);
+      if (result.success) {
+        alert(`Card bought back successfully!\n\nTotal paid: ${result.total_cost?.toFixed(2)} coins`);
+        refetchBalance();
+        loadData(true);
+      } else {
+        alert(`Buyout failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Error buying out card:', error);
+      alert('Buyout failed. Please try again.');
+    } finally {
+      setPurchasing(null);
+    }
   };
 
   const handlePurchaseCard = async (card: CardOwnership) => {
@@ -308,16 +334,14 @@ export default function TradingDashboard() {
             </div>
 
             <div className="p-4 bg-[rgba(251,191,36,0.06)] border border-[rgba(251,191,36,0.2)] rounded-xl">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-[rgba(251,191,36,0.15)] border border-[rgba(251,191,36,0.3)] rounded-lg flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-amber-400" />
-                </div>
-                <span className="text-sm text-slate-400">Pending Requests</span>
-              </div>
-              <p className="text-3xl font-bold text-white">{pendingPurchaseRequests.length}</p>
-            </div>
-          </div>
-        </GlassCard>
+  <div className="flex items-center gap-3 mb-2">
+    <div className="w-10 h-10 bg-[rgba(251,191,36,0.15)] border border-[rgba(251,191,36,0.3)] rounded-lg flex items-center justify-center">
+      <TrendingUp className="w-5 h-5 text-amber-400" />
+    </div>
+    <span className="text-sm text-slate-400">Total Trades</span>
+  </div>
+  <p className="text-3xl font-bold text-amber-400">{ownedCards.reduce((t, c) => t + c.times_traded, 0)}</p>
+</div>
 
         <div className="mb-6 flex gap-1 border-b border-[rgba(0,224,255,0.1)] overflow-x-auto scrollbar-hide pb-px">
           {TABS.map((tab) => {
