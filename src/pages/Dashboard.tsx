@@ -24,7 +24,6 @@ import AddFriendQRModal from '../components/AddFriendQRModal';
 import ModerationCaseAlert from '../components/ModerationCaseAlert';
 import { checkAndNotifyNewMessages } from '../lib/messageNotifications';
 import { useDashboardBadges } from '../hooks/useDashboardBadges';
-import { usePushNotifications } from '../hooks/usePushNotifications';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -50,16 +49,6 @@ export default function Dashboard() {
   const [pullDistance, setPullDistance] = useState(0);
   const touchStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { requestPermission, permission } = usePushNotifications(profile?.id ?? null);
-
-useEffect(() => {
-  if (permission === 'default') {
-    const timer = setTimeout(() => {
-      requestPermission();
-    }, 3000);
-    return () => clearTimeout(timer);
-  }
-}, [permission, requestPermission]);
 
   useEffect(() => {
     if (profile) {
