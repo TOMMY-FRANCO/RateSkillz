@@ -1,1 +1,0 @@
-import{Haptics as a,ImpactStyle as i}from"@capacitor/haptics";import{Capacitor as o}from"@capacitor/core";async function f(t=30){try{o.isNativePlatform()?await a.impact({style:i.Light}):typeof navigator<"u"&&typeof navigator.vibrate=="function"&&navigator.vibrate(t)}catch{}}export{f as vibrate};
