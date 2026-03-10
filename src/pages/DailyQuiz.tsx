@@ -387,9 +387,11 @@ if (session.data && !session.data.success) {
       setSubmitting(true);
       try {
         const { data, error: rpcError } = await supabase.rpc('complete_quiz', {
-          p_user_id: user!.id,
-          p_score: newScore,
-        });
+  p_user_id: user!.id,
+  p_score: newScore,
+  p_total_questions: questionsRef.current.length,
+  p_quiz_period_key: getQuizPeriodKey()
+});
 
         if (rpcError) throw rpcError;
 
