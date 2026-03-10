@@ -263,7 +263,15 @@ export default function DailyQuiz() {
   const answeredRef = useRef(false);
   const scoreRef = useRef(0);
 
-  const goBack = useCallback(() => navigate('/dashboard'), [navigate]);
+  const goBack = useCallback(async () => {
+  if (!quizComplete && questionsRef.current.length > 0) {
+    await supabase.rpc('abandon_quiz_session', {
+      p_user_id: user!.id,
+      p_quiz_period_key: getQuizPeriodKey()
+    });
+  }
+  navigate('/dashboard');
+}, [navigate, quizComplete]);
 
   const checkTodayCompletion = useCallback(async () => {
     if (!user) return null;
