@@ -24,6 +24,7 @@ import AddFriendQRModal from '../components/AddFriendQRModal';
 import ModerationCaseAlert from '../components/ModerationCaseAlert';
 import { checkAndNotifyNewMessages } from '../lib/messageNotifications';
 import { useDashboardBadges } from '../hooks/useDashboardBadges';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -44,6 +45,7 @@ export default function Dashboard() {
   const { unreadCount: unreadMessagesCount } = useUnreadMessages();
   const { counts: notificationCounts, getCount, loading: notificationsLoading } = useNotifications(profile?.id);
   const { counts: badgeCounts, refetch: refetchBadges } = useDashboardBadges(profile?.id);
+  usePushNotifications(profile?.id ?? null);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
