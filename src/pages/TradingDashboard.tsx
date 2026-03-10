@@ -44,7 +44,6 @@ export default function TradingDashboard() {
   const navigate = useNavigate();
   const { balance, refetch: refetchBalance } = useCoinBalance();
   const [ownedCards, setOwnedCards] = useState<CardOwnership[]>([]);
-  const [pendingPurchaseRequests, setPendingPurchaseRequests] = useState<PurchaseRequest[]>([]);
   const [listedCards, setListedCards] = useState<CardOwnership[]>([]);
   const [portfolioValue, setPortfolioValue] = useState(0);
   const [mostValuable, setMostValuable] = useState<CardOwnership[]>([]);
@@ -75,16 +74,14 @@ export default function TradingDashboard() {
     setLoadError(null);
 
     try {
-      const [cards, purchaseReqs, valuable, traded, listed] = await Promise.all([
+      const [cards, valuable, traded, listed] = await Promise.all([
         getCardsOwnedByUser(profile.id),
-        getPendingPurchaseRequests(profile.id),
         getMostValuableCards(10),
         getMostTradedCards(10),
         getListedCardsForSale()
       ]);
 
       setOwnedCards(cards);
-      setPendingPurchaseRequests(purchaseReqs);
       setPortfolioValue(calculatePortfolioValue(cards));
       setMostValuable(valuable);
       setMostTraded(traded);
@@ -194,39 +191,6 @@ export default function TradingDashboard() {
       alert('Purchase failed. Please try again.');
     } finally {
       setPurchasing(null);
-    }
-  };
-
-  const handleApprovePurchaseRequest = async (requestId: string) => {
-    if (!confirm('Approve this purchase request? The card will be transferred to the buyer.')) return;
-
-    try {
-      const result = await approvePurchaseRequest(requestId);
-      if (result.success) {
-        alert('Purchase request approved! Card transferred successfully.');
-        refetchBalance();
-        loadData(true);
-      } else {
-        alert(`Error: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Error approving request:', error);
-      alert('Failed to approve request. Please try again.');
-    }
-  };
-
-  const handleDeclinePurchaseRequest = async (requestId: string) => {
-    try {
-      const result = await declinePurchaseRequest(requestId);
-      if (result.success) {
-        alert('Purchase request declined.');
-        loadData(true);
-      } else {
-        alert(`Error: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Error declining request:', error);
-      alert('Failed to decline request. Please try again.');
     }
   };
 
@@ -639,73 +603,6 @@ export default function TradingDashboard() {
             refetchBalance();
             loadData(true);
           }} />
-        )}
-
-        {selectedTab === 'requests' && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white mb-4">Purchase Requests</h2>
-
-            {pendingPurchaseRequests.length > 0 && (
-              <div className="space-y-4">
-                {pendingPurchaseRequests.map((request) => (
-                  <div key={request.id} className="bg-[rgba(255,255,255,0.04)] backdrop-blur-[15px] border border-[rgba(0,224,255,0.2)] rounded-2xl p-6 transition-all hover:border-[rgba(0,224,255,0.35)]">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-10 h-10 bg-[rgba(0,224,255,0.12)] border border-[rgba(0,224,255,0.3)] rounded-full flex items-center justify-center">
-                            <Star className="w-5 h-5 text-[#00E0FF]" />
-                          </div>
-                          <div>
-                            <p className="text-white font-semibold">
-                              {request.buyer?.username || 'Unknown'} wants to buy {request.card_user?.username || 'Unknown'}'s card
-                            </p>
-                            <p className="text-sm text-slate-500">
-                              {new Date(request.created_at).toLocaleDateString()} at {new Date(request.created_at).toLocaleTimeString()}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 p-4 bg-[rgba(255,255,255,0.03)] rounded-lg border border-[rgba(0,224,255,0.1)]">
-                          <p className="text-sm text-slate-400 mb-1">Fixed Price</p>
-                          <p className="text-2xl font-bold text-[#00E0FF]" style={{ textShadow: '0 0 12px rgba(0,224,255,0.3)' }}>
-                            {request.requested_price.toFixed(2)} coins
-                          </p>
-                          <p className="text-xs text-slate-500 mt-1">
-                            {request.request_type === 'not_bought' ? 'First sale (Fixed price)' : 'Current fixed card price'}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex md:flex-col gap-3">
-                        <button
-                          onClick={() => handleApprovePurchaseRequest(request.id)}
-                          className="flex-1 md:w-32 flex items-center justify-center gap-2 px-4 py-3 bg-[rgba(0,255,133,0.12)] hover:bg-[rgba(0,255,133,0.2)] text-[#00FF85] font-semibold rounded-lg transition-all border border-[rgba(0,255,133,0.3)] hover:border-[rgba(0,255,133,0.5)] hover:shadow-[0_0_15px_rgba(0,255,133,0.15)]"
-                        >
-                          <Check className="w-5 h-5" />
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleDeclinePurchaseRequest(request.id)}
-                          className="flex-1 md:w-32 flex items-center justify-center gap-2 px-4 py-3 bg-[rgba(239,68,68,0.12)] hover:bg-[rgba(239,68,68,0.2)] text-red-400 font-semibold rounded-lg transition-all border border-[rgba(239,68,68,0.3)] hover:border-[rgba(239,68,68,0.5)]"
-                        >
-                          <X className="w-5 h-5" />
-                          Decline
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {pendingPurchaseRequests.length === 0 && (
-              <GlassCard className="!p-12 text-center">
-                <Bell className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400 text-lg">No pending requests</p>
-                <p className="text-slate-500 text-sm mt-2">When someone wants to buy your cards, you'll see their requests here</p>
-              </GlassCard>
-            )}
-          </div>
         )}
 
         {selectedTab === 'swap' && (
