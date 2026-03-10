@@ -6,6 +6,7 @@ import { measureWebVitals, perfMonitor } from './lib/performance';
 import ErrorBoundary from './components/ErrorBoundary';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { LazyPageWrapper } from './components/ui/LazyPageWrapper';
+import { usePushNotifications } from './hooks/usePushNotifications';
 import {
   FriendsSkeleton,
   InboxSkeleton,
