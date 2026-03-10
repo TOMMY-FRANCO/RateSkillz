@@ -171,7 +171,6 @@ function App() {
   return (
     <ErrorBoundary>
       <Router>
-        <AppContent />
         <Suspense fallback={<LoadingScreen />}>
           <Routes>
           <Route
