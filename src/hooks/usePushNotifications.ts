@@ -1,75 +1,56 @@
-import { useEffect, useState } from 'react';
-import { messaging, getToken, onMessage } from '../lib/firebase';
+import { useEffect } from 'react';
+import { PushNotifications } from '@capacitor/push-notifications';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from '../lib/supabase';
 
-const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-
 export function usePushNotifications(userId: string | null) {
-  const [token, setToken] = useState<string | null>(null);
-  const [permission, setPermission] = useState<NotificationPermission>('default');
-
   useEffect(() => {
     if (!userId) return;
-    setPermission(Notification.permission);
-  }, [userId]);
+    if (!Capacitor.isNativePlatform()) return; // Only run on Android/iOS
 
-  // Request permission and get FCM token
-  const requestPermission = async () => {
-    if (!userId) return;
+    const registerPush = async () => {
+      try {
+        // Request permission
+        const permission = await PushNotifications.requestPermissions();
+        if (permission.receive !== 'granted') return;
 
-    try {
-      const permission = await Notification.requestPermission();
-      setPermission(permission);
+        // Register with FCM
+        await PushNotifications.register();
 
-      if (permission !== 'granted') {
-        console.log('Notification permission denied');
-        return;
-      }
-
-      // Register service worker
-      const registration = await navigator.serviceWorker.register(
-        '/firebase-messaging-sw.js'
-      );
-
-      // Get FCM token
-      const fcmToken = await getToken(messaging, {
-        vapidKey: VAPID_KEY,
-        serviceWorkerRegistration: registration,
-      });
-
-      if (fcmToken) {
-        setToken(fcmToken);
-        // Save token to Supabase profiles table
-        await supabase
-          .from('profiles')
-          .update({ fcm_token: fcmToken })
-          .eq('id', userId);
-
-        console.log('FCM token saved:', fcmToken);
-      }
-    } catch (error) {
-      console.error('Error getting push notification token:', error);
-    }
-  };
-
-  // Handle foreground messages (app is open)
-  useEffect(() => {
-    if (!userId) return;
-
-    const unsubscribe = onMessage(messaging, (payload) => {
-      console.log('Foreground message received:', payload);
-
-      // Show notification even when app is open
-      if (Notification.permission === 'granted' && payload.notification) {
-        new Notification(payload.notification.title || 'RatingSkill', {
-          body: payload.notification.body,
-          icon: '/icons/icon-192x192.png',
+        // Get FCM token and save to Supabase
+        await PushNotifications.addListener('registration', async (token) => {
+          console.log('FCM Token:', token.value);
+          await supabase
+            .from('profiles')
+            .update({ fcm_token: token.value })
+            .eq('id', userId);
         });
+
+        // Handle registration errors
+        await PushNotifications.addListener('registrationError', (error) => {
+          console.error('Push registration error:', error);
+        });
+
+        // Handle foreground notifications
+        await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+          console.log('Push received:', notification);
+        });
+
+        // Handle notification tap
+        await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+          console.log('Push action:', action);
+        });
+
+      } catch (error) {
+        console.error('Push notification setup error:', error);
       }
-    });
+    };
 
-    return () => unsubscribe();
+    registerPush();
+
+    // Cleanup listeners on unmount
+    return () => {
+      PushNotifications.removeAllListeners();
+    };
   }, [userId]);
-
-  return { token, permission, requestPermission };
 }
