@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '../lib/supabase';
 
@@ -9,10 +8,11 @@ export function usePushNotifications(userId: string | null) {
     if (!Capacitor.isNativePlatform()) return; // Only run on Android/iOS
 
     const registerPush = async () => {
-      try {
-        // Request permission
-        const permission = await PushNotifications.requestPermissions();
-        if (permission.receive !== 'granted') return;
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    
+    const permission = await PushNotifications.requestPermissions();
+    if (permission.receive !== 'granted') return;
 
         // Register with FCM
         await PushNotifications.register();
