@@ -578,6 +578,20 @@ export default function TradingDashboard() {
                           </div>
                         )}
 
+                        {card.card_user_id === profile?.id && card.owner_id !== profile?.id && (
+                          <button
+                            onClick={() => handleBuyMyselfOut(card)}
+                            disabled={purchasing === card.id || balance < card.current_price + 100}
+                            className={`w-full px-4 py-3 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-sm mt-2 ${
+                              balance < card.current_price + 100
+                                ? 'bg-[rgba(239,68,68,0.1)] text-red-300/70 cursor-not-allowed border border-[rgba(239,68,68,0.15)]'
+                                : 'bg-[rgba(251,191,36,0.12)] hover:bg-[rgba(251,191,36,0.2)] text-amber-400 border border-[rgba(251,191,36,0.3)] hover:border-[rgba(251,191,36,0.5)]'
+                            }`}
+                          >
+                            <User className="w-4 h-4" />
+                            Buy Back ({(card.current_price + 100).toFixed(2)} coins)
+                          </button>
+                        )}
                         {card.is_listed_for_sale ? (
                           <div className="p-3 bg-[rgba(0,255,133,0.06)] rounded-lg border border-[rgba(0,255,133,0.2)] text-center">
                             <div className="flex items-center justify-center gap-2 text-[#00FF85] mb-1">
@@ -597,6 +611,7 @@ export default function TradingDashboard() {
                             List for Sale at {card.current_price.toFixed(2)} coins
                           </GlassButton>
                         )}
+                        
                       </div>
 
                       {card.times_traded > 0 && (
