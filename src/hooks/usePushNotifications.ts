@@ -1,23 +1,27 @@
 import { useEffect } from 'react';
-import { Capacitor } from '@capacitor/core';
 import { supabase } from '../lib/supabase';
 
 export function usePushNotifications(userId: string | null) {
   useEffect(() => {
     if (!userId) return;
-    if (!Capacitor.isNativePlatform()) return; // Only run on Android/iOS
+
+    // Only run on native Android/iOS - check without importing Capacitor
+    const isNative = window.hasOwnProperty('Capacitor') && 
+      (window as any).Capacitor?.isNativePlatform?.();
+    
+    if (!isNative) return;
 
     const registerPush = async () => {
-  try {
-    const { PushNotifications } = await import('@capacitor/push-notifications');
-    
-    const permission = await PushNotifications.requestPermissions();
-    if (permission.receive !== 'granted') return;
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        if (!Capacitor.isNativePlatform()) return;
+        
+        const { PushNotifications } = await import('@capacitor/push-notifications');
+        const permission = await PushNotifications.requestPermissions();
+        if (permission.receive !== 'granted') return;
 
-        // Register with FCM
         await PushNotifications.register();
 
-        // Get FCM token and save to Supabase
         await PushNotifications.addListener('registration', async (token) => {
           console.log('FCM Token:', token.value);
           await supabase
@@ -26,17 +30,14 @@ export function usePushNotifications(userId: string | null) {
             .eq('id', userId);
         });
 
-        // Handle registration errors
         await PushNotifications.addListener('registrationError', (error) => {
           console.error('Push registration error:', error);
         });
 
-        // Handle foreground notifications
         await PushNotifications.addListener('pushNotificationReceived', (notification) => {
           console.log('Push received:', notification);
         });
 
-        // Handle notification tap
         await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
           console.log('Push action:', action);
         });
@@ -48,9 +49,10 @@ export function usePushNotifications(userId: string | null) {
 
     registerPush();
 
-    // Cleanup listeners on unmount
     return () => {
-      PushNotifications.removeAllListeners();
+      import('@capacitor/push-notifications').then(({ PushNotifications }) => {
+        PushNotifications.removeAllListeners();
+      });
     };
   }, [userId]);
 }
