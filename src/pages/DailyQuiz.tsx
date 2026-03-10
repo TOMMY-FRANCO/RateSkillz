@@ -42,8 +42,9 @@ function getQuizResetTime(): Date {
 
 function getQuizPeriodKey(): string {
   const resetTime = getQuizResetTime();
-  // Use the reset time's date as the key — this is stable for the full 7am-7am period
-  return `${resetTime.getUTCFullYear()}-${resetTime.getUTCMonth()}-${resetTime.getUTCDate()}`;
+  const month = String(resetTime.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(resetTime.getUTCDate()).padStart(2, '0');
+  return `${resetTime.getUTCFullYear()}-${month}-${day}`;
 }
 
 function getNextResetTime(): Date {
