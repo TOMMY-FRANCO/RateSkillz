@@ -305,8 +305,9 @@ export default function TradingDashboard() {
     <span className="text-sm text-slate-400">Total Trades</span>
   </div>
   <p className="text-3xl font-bold text-amber-400">{ownedCards.reduce((t, c) => t + c.times_traded, 0)}</p>
-</div>
-
+          </div>
+            
+        </GlassCard>
         <div className="mb-6 flex gap-1 border-b border-[rgba(0,224,255,0.1)] overflow-x-auto scrollbar-hide pb-px">
           {TABS.map((tab) => {
             const Icon = tab.icon;
