@@ -349,7 +349,7 @@ const session = await supabase.rpc('start_quiz_session', {
 
 if (session.data && !session.data.success) {
   if (session.data.reason === 'abandoned') {
-    setError('You exited today\'s quiz early. Come back tomorrow!');
+    setError('You exited today\'s quiz early. Come back at 7am tomorrow!');
     return;
   }
 }
