@@ -13,7 +13,7 @@ import {
   type CardOwnership,
 } from '../lib/cardTrading';
 import { useCoinBalance } from '../hooks/useCoinBalance';
-import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Trophy, Store, User, Repeat, Trash2, Star, Users, RefreshCw, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Trophy, Store, User, X, Repeat, Trash2, Star, Users, RefreshCw, AlertTriangle } from 'lucide-react';
 import { getMultipleUserBalances } from '../lib/balances';
 import { formatCoinBalance } from '../lib/formatBalance';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
@@ -305,8 +305,8 @@ export default function TradingDashboard() {
     <span className="text-sm text-slate-400">Total Trades</span>
   </div>
   <p className="text-3xl font-bold text-amber-400">{ownedCards.reduce((t, c) => t + c.times_traded, 0)}</p>
+            </div>
           </div>
-            
         </GlassCard>
         <div className="mb-6 flex gap-1 border-b border-[rgba(0,224,255,0.1)] overflow-x-auto scrollbar-hide pb-px">
           {TABS.map((tab) => {
@@ -323,11 +323,7 @@ export default function TradingDashboard() {
               >
                 {Icon && <Icon className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />}
                 {tab.label}
-                {tab.key === 'requests' && pendingPurchaseRequests.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-[0_0_8px_rgba(239,68,68,0.5)]">
-                    {pendingPurchaseRequests.length}
-                  </span>
-                )}
+                
               </button>
             );
           })}
