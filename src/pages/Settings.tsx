@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+om 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft, LogOut, User, Bell, FileText, Shield, UserCheck, Smartphone } from 'lucide-react';
 import { supabase } from '../lib/supabase';
