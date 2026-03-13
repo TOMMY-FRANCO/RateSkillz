@@ -489,18 +489,18 @@ export default function EditProfile() {
                   onChange={(e) => setPosition(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                 >
-                  <option value="">Select a position</option>
-<option value="GK">GK – Goalkeeper</option>
-<option value="AM">AM – Attacking Midfielder</option>
-<option value="WB">WB – Wing-Back</option>
-<option value="RW">RW – Winger</option>
-<option value="LW">LW – Winger</option>
-<option value="CM">CM – Central Midfielder</option>
-<option value="CB">CB – Centre-Back</option>
-<option value="LB">LB – Left Back</option>
-<option value="RB">RB – Right Back</option>
-<option value="DM">DM – Defensive Midfielder</option>
-                </select>
+                <option value="">Select a position</option>
+                <option value="GK">GK – Goalkeeper</option>
+                <option value="AM">AM – Attacking Midfielder</option>
+                <option value="WB">WB – Wing-Back</option>
+                <option value="RW">RW – Winger</option>
+                <option value="LW">LW – Winger</option>
+                <option value="CM">CM – Central Midfielder</option>
+                <option value="CB">CB – Centre-Back</option>
+                <option value="LB">LB – Left Back</option>
+                <option value="RB">RB – Right Back</option>
+                <option value="DM">DM – Defensive Midfielder</option>
+              </select>
               </div>
 
               <div>
