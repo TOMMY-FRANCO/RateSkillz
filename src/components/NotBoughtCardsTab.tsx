@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCoinBalance } from '../hooks/useCoinBalance';
-import { getNotBoughtCards, createPurchaseRequest, type CardWithRatings } from '../lib/cardTrading';
-import { Coins, Send, User, Shield, TrendingUp, Trophy, Star } from 'lucide-react';
+import { getNotBoughtCards, purchaseCardAtFixedPrice, type CardWithRatings } from '../lib/cardTrading';
+import { Coins, ShoppingCart, User, TrendingUp, Trophy, Star } from 'lucide-react';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from './ui/Shimmer';
 import { SkeletonAvatar } from './ui/SkeletonPresets';
 
@@ -17,7 +17,7 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
   const { balance } = useCoinBalance();
   const [cards, setCards] = useState<CardWithRatings[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sendingRequest, setSendingRequest] = useState<string | null>(null);
+  const [purchasing, setPurchasing] = useState<string | null>(null);
 
   useEffect(() => {
     loadCards();
@@ -35,39 +35,35 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
     }
   };
 
-  const handleSendPurchaseRequest = async (card: CardWithRatings) => {
+  const handlePurchaseCard = async (card: CardWithRatings) => {
     if (!profile) return;
 
     if (balance < 20) {
-      alert('Insufficient coins! You need 20 coins to purchase this card.');
+      alert('Insufficient coins');
       return;
     }
 
     if (card.card_user_id === profile.id) {
-      alert('Cannot purchase your own card!');
+      alert('Cannot purchase your own card');
       return;
     }
 
-    if (!confirm(`Send purchase request for @${card.card_user?.username || 'unknown'}'s card?\n\nPrice: 20 coins (fixed)\n\nOriginal owner will receive notification to approve or decline.`)) {
-      return;
-    }
-
-    setSendingRequest(card.id);
+    setPurchasing(card.id);
     try {
-      const result = await createPurchaseRequest(card.card_user_id, profile.id, 20, 'not_bought');
+      const result = await purchaseCardAtFixedPrice(card.card_user_id, profile.id);
 
       if (result.success) {
-        alert('Purchase request sent successfully! The original owner will be notified.');
+        alert('Card purchased successfully');
         if (onRequestSent) onRequestSent();
         loadCards();
       } else {
-        alert(`Failed to send request: ${result.error}`);
+        alert(result.error);
       }
-    } catch (error) {
-      console.error('Error sending purchase request:', error);
-      alert('Failed to send purchase request. Please try again.');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to purchase card. Please try again.';
+      alert(message);
     } finally {
-      setSendingRequest(null);
+      setPurchasing(null);
     }
   };
 
@@ -131,7 +127,7 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {cards.map((card) => {
-            const isSendingRequest = sendingRequest === card.id;
+            const isPurchasing = purchasing === card.id;
             const canAfford = balance >= 20;
             const isOwnCard = card.card_user_id === profile?.id;
 
@@ -226,28 +222,28 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
                 </div>
 
                 <button
-                  onClick={() => handleSendPurchaseRequest(card)}
-                  disabled={isSendingRequest || !canAfford || isOwnCard}
-                  className={`w-full px-4 py-3 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                  onClick={() => handlePurchaseCard(card)}
+                  disabled={isPurchasing || !canAfford || isOwnCard}
+                  className={`w-full px-4 py-3 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 text-sm ${
                     isOwnCard
-                      ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                      ? 'bg-[rgba(255,255,255,0.05)] text-slate-500 cursor-not-allowed border border-[rgba(255,255,255,0.08)]'
                       : !canAfford
-                      ? 'bg-red-600/50 text-red-200 cursor-not-allowed'
-                      : isSendingRequest
-                      ? 'bg-gray-700 text-gray-300 cursor-wait'
-                      : 'bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-black'
+                      ? 'bg-[rgba(239,68,68,0.1)] text-red-300/70 cursor-not-allowed border border-[rgba(239,68,68,0.15)]'
+                      : isPurchasing
+                      ? 'bg-gray-700 text-gray-300 cursor-wait border border-gray-600'
+                      : 'bg-[rgba(0,255,133,0.12)] hover:bg-[rgba(0,255,133,0.2)] text-[#00FF85] border border-[rgba(0,255,133,0.3)] hover:border-[rgba(0,255,133,0.5)] hover:shadow-[0_0_20px_rgba(0,255,133,0.15)]'
                   }`}
                 >
-                  {isSendingRequest ? (
-                    <>Sending Request...</>
+                  {isPurchasing ? (
+                    <>Purchasing...</>
                   ) : isOwnCard ? (
                     <>Your Card</>
                   ) : !canAfford ? (
                     <>Insufficient Coins</>
                   ) : (
                     <>
-                      <Send className="w-5 h-5" />
-                      Send Purchase Request
+                      <ShoppingCart className="w-5 h-5" />
+                      Buy for 20 coins
                     </>
                   )}
                 </button>
