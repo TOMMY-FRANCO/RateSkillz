@@ -379,6 +379,20 @@ export default function TradingDashboard() {
                           <h3 className="text-lg font-bold text-white mb-1">
                             {card.card_user?.username || 'Unknown'}
                           </h3>
+                          {card.owner?.username && card.owner_id !== card.card_user_id && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <User className="w-3 h-3 text-cyan-400/70" />
+                              <span className="text-xs text-cyan-400/70">
+                                Managed by{' '}
+                                <button
+                                  onClick={() => navigate(`/profile/${card.owner!.username}`)}
+                                  className="hover:text-cyan-300 transition-colors"
+                                >
+                                  @{card.owner.username}
+                                </button>
+                              </span>
+                            </div>
+                          )}
                           {card.card_user_id && userBalances.has(card.card_user_id) && (
                             <div className="flex items-center gap-1 mt-1">
                               <Coins className="w-3 h-3 text-[#00FF85]/60" />
@@ -505,6 +519,20 @@ export default function TradingDashboard() {
                           <h3 className="text-lg font-bold text-white mb-1">
                             {card.card_user?.username || 'Unknown'}
                           </h3>
+                          {card.owner?.username && card.owner_id !== card.card_user_id && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <User className="w-3 h-3 text-cyan-400/70" />
+                              <span className="text-xs text-cyan-400/70">
+                                Managed by{' '}
+                                <button
+                                  onClick={() => navigate(`/profile/${card.owner!.username}`)}
+                                  className="hover:text-cyan-300 transition-colors"
+                                >
+                                  @{card.owner.username}
+                                </button>
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <button
                           onClick={() => navigate(`/profile/${card.card_user?.username}`)}
