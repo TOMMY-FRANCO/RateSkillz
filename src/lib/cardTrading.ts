@@ -7,6 +7,7 @@ export interface CardOwnership {
   current_price: number;
   base_price: number;
   is_listed_for_sale: boolean;
+  is_locked_in_battle?: boolean;
   times_traded: number;
   last_sale_price: number | null;
   last_purchase_price?: number | null;
@@ -74,6 +75,7 @@ export interface CardSaleResult {
 
 
 const CARD_CACHE_COLUMNS = 'card_user_id, owner_id, current_price, base_price, is_listed_for_sale, times_traded, last_sale_price, acquired_at, card_user_username, original_owner_username, card_user_avatar, owner_username, owner_avatar';
+const CARD_OWNERSHIP_COLUMNS = 'id, card_user_id, owner_id, current_price, base_price, is_listed_for_sale, is_locked_in_battle, times_traded, last_sale_price, last_purchase_price, acquired_at';
 
 export async function getCardOwnership(cardUserId: string): Promise<CardOwnership | null> {
   const { data, error } = await supabase
@@ -332,7 +334,49 @@ export async function getListedCardsForSale(): Promise<CardOwnership[]> {
     console.error('Error fetching listed cards:', error);
     return [];
   }
-  return (data || []).map(mapCacheToCardOwnership);
+  const mapped = (data || []).map(mapCacheToCardOwnership);
+  if (mapped.length === 0) return mapped;
+  const cardUserIds = mapped.map(c => c.card_user_id);
+  const { data: ownershipRows } = await supabase
+    .from('card_ownership')
+    .select('card_user_id, is_locked_in_battle')
+    .in('card_user_id', cardUserIds);
+  const lockMap = new Map<string, boolean>();
+  (ownershipRows || []).forEach((r: any) => lockMap.set(r.card_user_id, r.is_locked_in_battle ?? false));
+  return mapped.map(c => ({ ...c, is_locked_in_battle: lockMap.get(c.card_user_id) ?? false }));
+}
+
+export async function getPurchasedCards(): Promise<CardOwnership[]> {
+  const { data, error } = await supabase
+    .from('card_ownership')
+    .select(`
+      ${CARD_OWNERSHIP_COLUMNS},
+      card_user:profiles!card_user_id(username, full_name, avatar_url),
+      owner:profiles!owner_id(username, full_name)
+    `)
+    .gt('times_traded', 0)
+    .order('current_price', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching purchased cards:', error);
+    return [];
+  }
+
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    card_user_id: row.card_user_id,
+    owner_id: row.owner_id,
+    current_price: row.current_price || row.base_price || 20,
+    base_price: row.base_price || 20,
+    is_listed_for_sale: row.is_listed_for_sale,
+    is_locked_in_battle: row.is_locked_in_battle ?? false,
+    times_traded: row.times_traded || 0,
+    last_sale_price: row.last_sale_price || null,
+    last_purchase_price: row.last_purchase_price || null,
+    acquired_at: row.acquired_at,
+    card_user: row.card_user || undefined,
+    owner: row.owner || undefined,
+  }));
 }
 
 export interface CardWithRatings extends CardOwnership {

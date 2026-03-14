@@ -11,6 +11,7 @@ import {
   acceptCardSwap,
   declineCardSwap,
   cancelSwapListing,
+  getIncomingSwapRequests,
   type SwapListing,
   type CardSwap,
 } from '../lib/cardSwaps';
@@ -31,6 +32,7 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
   const [swapListings, setSwapListings] = useState<SwapListing[]>([]);
   const [myListings, setMyListings] = useState<SwapListing[]>([]);
   const [pendingOffers, setPendingOffers] = useState<CardSwap[]>([]);
+  const [incomingRequests, setIncomingRequests] = useState<CardSwap[]>([]);
   const [swapHistory, setSwapHistory] = useState<CardSwap[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCard, setSelectedCard] = useState<CardOwnership | null>(null);
@@ -66,8 +68,12 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
         setMyListings(listings);
         setManagedCards(managed);
       } else if (view === 'offers') {
-        const offers = await getPendingSwapOffers(profile.id);
+        const [offers, incoming] = await Promise.all([
+          getPendingSwapOffers(profile.id),
+          getIncomingSwapRequests(profile.id),
+        ]);
         setPendingOffers(offers);
+        setIncomingRequests(incoming);
       } else if (view === 'history') {
         const history = await getSwapHistory(profile.id);
         setSwapHistory(history);
@@ -377,13 +383,114 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
           )}
 
           {view === 'offers' && (
-            <div className="space-y-4">
-              {pendingOffers.length === 0 ? (
+            <div className="space-y-6">
+              {incomingRequests.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Repeat className="w-5 h-5 text-[#00E0FF]" />
+                    Incoming Swap Requests
+                    <span className="ml-1 px-2 py-0.5 bg-[rgba(0,224,255,0.15)] text-[#00E0FF] text-xs font-bold rounded-full border border-[rgba(0,224,255,0.3)]">
+                      {incomingRequests.length}
+                    </span>
+                  </h3>
+                  {incomingRequests.map((req) => {
+                    const offeredCard = req.card_a;
+                    const myCard = req.card_b;
+                    const requester = req.manager_a;
+
+                    return (
+                      <div
+                        key={req.id}
+                        className="bg-[rgba(0,224,255,0.04)] rounded-xl p-5 border border-[rgba(0,224,255,0.2)]"
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <p className="text-sm text-[#00E0FF]/70 font-semibold">Swap request from</p>
+                            <p className="text-white font-bold">@{requester?.username || 'unknown'}</p>
+                          </div>
+                          <span className="text-xs text-slate-400">
+                            {new Date(req.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3 items-center mb-4">
+                          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                            <p className="text-xs text-slate-400 mb-1">Their offer</p>
+                            <p className="font-bold text-white text-sm">
+                              @{offeredCard?.profile?.username || 'unknown'}
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              OVR {offeredCard?.profile?.overall_rating ?? '—'}
+                            </p>
+                            <p className="text-yellow-400 font-bold text-sm mt-1">
+                              {(offeredCard?.current_price ?? 0).toFixed(2)} coins
+                            </p>
+                          </div>
+
+                          <div className="text-center">
+                            <Repeat className="w-6 h-6 text-[#00E0FF] mx-auto" />
+                          </div>
+
+                          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                            <p className="text-xs text-slate-400 mb-1">Your card</p>
+                            <p className="font-bold text-white text-sm">
+                              @{myCard?.profile?.username || 'unknown'}
+                            </p>
+                            <p className="text-xs text-slate-400">
+                              OVR {myCard?.profile?.overall_rating ?? '—'}
+                            </p>
+                            <p className="text-yellow-400 font-bold text-sm mt-1">
+                              {(myCard?.current_price ?? 0).toFixed(2)} coins
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mb-4 p-2.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                          <p className="text-xs text-yellow-300">
+                            Accepting costs a 10 coin opt-out fee. Both cards increase by 10 coins.
+                          </p>
+                        </div>
+
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => handleAcceptSwap(req.id)}
+                            disabled={processing === req.id}
+                            className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2.5 rounded-xl font-bold hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                          >
+                            {processing === req.id ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                            ) : (
+                              <>
+                                <Check className="w-4 h-4" />
+                                Accept
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleDeclineSwap(req.id)}
+                            disabled={processing === req.id}
+                            className="flex-1 bg-red-500/20 text-red-300 py-2.5 rounded-xl font-bold hover:bg-red-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                          >
+                            <X className="w-4 h-4" />
+                            Decline
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                {incomingRequests.length > 0 && pendingOffers.length > 0 && (
+                  <h3 className="text-lg font-bold text-white">Other Pending Offers</h3>
+                )}
+              {pendingOffers.length === 0 && incomingRequests.length === 0 ? (
                 <div className="text-center py-12">
                   <Repeat className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-400">No pending swap offers</p>
                 </div>
-              ) : (
+              ) : pendingOffers.length === 0 ? null : (
                 pendingOffers.map((offer) => {
                   const isReceiver = offer.initiated_by !== profile?.id;
                   const myCard = offer.manager_a_id === profile?.id ? offer.card_a : offer.card_b;
@@ -475,6 +582,7 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
                   );
                 })
               )}
+              </div>
             </div>
           )}
 

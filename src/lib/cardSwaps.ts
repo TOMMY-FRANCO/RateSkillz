@@ -408,6 +408,86 @@ export async function getSwapHistory(userId: string): Promise<CardSwap[]> {
   }
 }
 
+export async function getIncomingSwapRequests(userId: string): Promise<CardSwap[]> {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  try {
+    const { data: swaps, error } = await supabase
+      .from('card_swaps')
+      .select('id, manager_a_id, manager_b_id, card_a_user_id, card_b_user_id, status, initiated_by, created_at, completed_at')
+      .eq('manager_b_id', userId)
+      .eq('status', 'pending')
+      .gte('created_at', cutoff)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    if (!swaps || swaps.length === 0) return [];
+
+    const enrichedSwaps = await Promise.all(
+      swaps.map(async (swap) => {
+        const [cardA, cardB, managerA] = await Promise.all([
+          supabase
+            .from('card_ownership')
+            .select(`
+              *,
+              profile:profiles!card_user_id(id, username, full_name, avatar_url, position, overall_rating, team)
+            `)
+            .eq('card_user_id', swap.card_a_user_id)
+            .maybeSingle(),
+          supabase
+            .from('card_ownership')
+            .select(`
+              *,
+              profile:profiles!card_user_id(id, username, full_name, avatar_url, position, overall_rating, team)
+            `)
+            .eq('card_user_id', swap.card_b_user_id)
+            .maybeSingle(),
+          supabase
+            .from('profiles')
+            .select('username, full_name, avatar_url')
+            .eq('id', swap.manager_a_id)
+            .maybeSingle(),
+        ]);
+
+        return {
+          ...swap,
+          card_a: cardA.data || undefined,
+          card_b: cardB.data || undefined,
+          manager_a: managerA.data || undefined,
+        };
+      })
+    );
+
+    return enrichedSwaps;
+  } catch (err) {
+    console.error('Error getting incoming swap requests:', err);
+    return [];
+  }
+}
+
+export async function checkActiveSwapCooldown(userId: string): Promise<{ blocked: boolean; unlocksAt?: Date }> {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  try {
+    const { data, error } = await supabase
+      .from('card_swaps')
+      .select('created_at')
+      .eq('initiated_by', userId)
+      .eq('status', 'pending')
+      .gte('created_at', cutoff)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return { blocked: false };
+
+    const unlocksAt = new Date(new Date(data.created_at).getTime() + 24 * 60 * 60 * 1000);
+    return { blocked: true, unlocksAt };
+  } catch (err) {
+    console.error('Error checking swap cooldown:', err);
+    return { blocked: false };
+  }
+}
+
 export async function getManagedCards(userId: string): Promise<CardOwnership[]> {
   try {
     const { data, error } = await supabase

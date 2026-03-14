@@ -13,7 +13,7 @@ import {
   type CardOwnership,
 } from '../lib/cardTrading';
 import { useCoinBalance } from '../hooks/useCoinBalance';
-import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Trophy, Store, User, X, Repeat, Trash2, Star, RefreshCw, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Trophy, Store, User, X, Repeat, Trash2, Star, RefreshCw, AlertTriangle, Lock } from 'lucide-react';
 import { getMultipleUserBalances } from '../lib/balances';
 import { formatCoinBalance } from '../lib/formatBalance';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
@@ -24,14 +24,16 @@ import { GlassButton } from '../components/ui/GlassButton';
 import CardSwapTab from '../components/CardSwapTab';
 import CardDiscardTab from '../components/CardDiscardTab';
 import NotBoughtCardsTab from '../components/NotBoughtCardsTab';
+import PurchasedCardsTab from '../components/PurchasedCardsTab';
 import { markNotificationsReadBatch } from '../lib/notifications';
 
-type TabKey = 'marketplace' | 'portfolio' | 'swap' | 'discard' | 'leaderboards' | 'not-bought';
+type TabKey = 'marketplace' | 'portfolio' | 'swap' | 'discard' | 'leaderboards' | 'not-bought' | 'purchased';
 
 const TABS: { key: TabKey; label: string; icon?: typeof Star }[] = [
   { key: 'marketplace', label: 'Marketplace' },
   { key: 'not-bought', label: 'Not Bought', icon: Star },
-{ key: 'portfolio', label: 'My Portfolio' },
+  { key: 'purchased', label: 'Purchased Cards', icon: Repeat },
+  { key: 'portfolio', label: 'My Portfolio' },
   { key: 'swap', label: 'Swap', icon: Repeat },
   { key: 'discard', label: 'Discard', icon: Trash2 },
   { key: 'leaderboards', label: 'Leaderboards' },
@@ -443,6 +445,13 @@ export default function TradingDashboard() {
                           </div>
                         )}
 
+                        {card.is_locked_in_battle && (
+                          <div className="flex items-center gap-1.5 p-2 bg-[rgba(251,191,36,0.08)] rounded-lg border border-[rgba(251,191,36,0.3)]">
+                            <Lock className="w-3.5 h-3.5 text-amber-400" />
+                            <span className="text-xs font-semibold text-amber-400">Locked in Battle</span>
+                          </div>
+                        )}
+
                         {isRestricted && (
                           <div className="p-3 bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.25)] rounded-lg">
                             <div className="flex items-start gap-2">
@@ -616,6 +625,13 @@ export default function TradingDashboard() {
 
         {selectedTab === 'not-bought' && (
           <NotBoughtCardsTab onRequestSent={() => {
+            refetchBalance();
+            loadData(true);
+          }} />
+        )}
+
+        {selectedTab === 'purchased' && (
+          <PurchasedCardsTab onSwapRequested={() => {
             refetchBalance();
             loadData(true);
           }} />
