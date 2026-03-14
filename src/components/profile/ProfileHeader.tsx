@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Eye, X } from 'lucide-react';
 import OnlineStatus from '../OnlineStatus';
+import { VerificationBadge } from '../VerificationBadge';
 
 interface ProfileHeaderProps {
   username: string;
@@ -11,6 +12,8 @@ interface ProfileHeaderProps {
   onExitPreview: () => void;
   backPath?: string;
   backState?: Record<string, unknown>;
+  isVerified?: boolean;
+  hasSocialBadge?: boolean;
 }
 
 export default function ProfileHeader({
@@ -22,6 +25,8 @@ export default function ProfileHeader({
   onExitPreview,
   backPath,
   backState,
+  isVerified = false,
+  hasSocialBadge = false,
 }: ProfileHeaderProps) {
   const navigate = useNavigate();
 
@@ -49,6 +54,7 @@ export default function ProfileHeader({
               </button>
               <div className="flex items-center gap-3">
                 <h1 className="text-xl font-bold text-white tracking-tight">{username}'s Profile</h1>
+                <VerificationBadge isVerified={isVerified} hasSocialBadge={hasSocialBadge} size="sm" />
                 <OnlineStatus lastActive={userPresenceData || lastActive} size="medium" />
               </div>
             </div>

@@ -53,7 +53,7 @@ export function VerificationBadge({
     <div className={`relative inline-flex items-center justify-center ${className}`}>
       <div className="relative">
         <div
-          className={`absolute inset-0 rounded-full border-[3px] border-yellow-400 animate-pulse`}
+          className={`absolute inset-0 rounded-full border-[3px] border-yellow-400`}
           style={{
             transform: 'scale(1.3)',
             boxShadow: '0 0 12px rgba(250, 204, 21, 0.6)'
