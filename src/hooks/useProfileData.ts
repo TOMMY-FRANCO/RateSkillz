@@ -49,7 +49,7 @@ export function useProfileData(username: string | undefined, currentUserId: stri
     try {
       const { data: summaryData, error: summaryError } = await supabase
         .from('profile_summary')
-        .select('user_id, username, full_name, avatar_url, bio, position, team, age, overall_rating, is_verified, is_manager, is_admin, is_banned, friend_count, last_seen, created_at, manager_wins, pac_rating, sho_rating, pas_rating, dri_rating, def_rating, phy_rating')
+        .select('user_id, username, full_name, avatar_url, bio, position, team, age, overall_rating, is_verified, is_manager, is_admin, is_banned, friend_count, last_seen, created_at, manager_wins, pac_rating, sho_rating, pas_rating, dri_rating, def_rating, phy_rating, has_social_badge')
         .eq('username', username)
         .maybeSingle();
 
@@ -73,7 +73,7 @@ export function useProfileData(username: string | undefined, currentUserId: stri
         friend_count: summaryData.friend_count,
         profile_views_count: 0,
         comments_count: 0,
-        has_social_badge: false,
+        has_social_badge: summaryData.has_social_badge || false,
         coin_balance: 0,
         last_active: summaryData.last_seen,
         created_at: summaryData.created_at,
@@ -82,7 +82,7 @@ export function useProfileData(username: string | undefined, currentUserId: stri
 
       setProfile(profileData as any);
       setIsVerified(profileData.is_verified || false);
-      setHasSocialBadge(false);
+      setHasSocialBadge(summaryData.has_social_badge || false);
       setCoinBalance(0);
       setBalanceLoading(false);
       setBalanceError(null);
