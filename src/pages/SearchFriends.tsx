@@ -33,7 +33,7 @@ interface DropdownOption {
   name: string;
 }
 
-const POSITIONS = ['AM', 'SW', 'CB', 'CF', 'LB', 'RB'];
+const POSITIONS = ['GK', 'AM', 'WB', 'RW', 'LW', 'CM', 'CB', 'LB', 'RB', 'DM'];
 
 const RATING_TIERS = [
   { label: '0-10', min: 0, max: 10 },
