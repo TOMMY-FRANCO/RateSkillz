@@ -315,7 +315,7 @@ export default function PurchasedCardsTab({ onSwapRequested }: PurchasedCardsTab
                               : 'bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.08)] text-slate-300 hover:border-[rgba(0,224,255,0.2)]'
                           }`}
                         >
-                          <span className="font-semibold text-sm">@{c.card_user?.username || 'unknown'}</span>
+                          <span className="font-semibold text-sm">@{c.profile?.username || 'unknown'}</span>
                           <div className="flex items-center gap-1">
                             <Coins className="w-3.5 h-3.5" />
                             <span className="text-sm">{c.current_price.toFixed(2)}</span>
