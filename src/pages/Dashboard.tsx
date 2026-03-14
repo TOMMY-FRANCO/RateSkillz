@@ -10,6 +10,7 @@ import Tutorial from '../components/Tutorial';
 import TutorialPrompt from '../components/TutorialPrompt';
 import { Settings, Users, LogOut, CreditCard as Edit, Trophy, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search, BookOpen, QrCode, UserPlus, RefreshCw, Activity, HelpCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { withCache, CacheKeys, CACHE_TTL } from '../lib/cache';
 import { displayUsername } from '../lib/username';
 import { getUserStats } from '../lib/ratings';
 import { getAppUrl } from '../lib/appConfig';
@@ -69,42 +70,57 @@ export default function Dashboard() {
     if (!profile) return;
 
     try {
-      const [stats, profileData, rankData] = await Promise.all([
+      const [stats, profileData, summaryData, rankData] = await Promise.all([
         getUserStats(profile.id),
+        withCache(
+          CacheKeys.profile(profile.id),
+          CACHE_TTL.SHORT,
+          () => supabase
+            .from('profiles')
+            .select('has_social_badge, unread_profile_views, tutorial_completed')
+            .eq('id', profile.id)
+            .maybeSingle()
+            .then(r => r.data)
+        ),
         supabase
-          .from('profiles')
-          .select('is_verified, has_social_badge, unread_profile_views, tutorial_completed')
-          .eq('id', profile.id)
+          .from('profile_summary')
+          .select('is_verified')
+          .eq('user_id', profile.id)
           .maybeSingle(),
         Promise.all([
           supabase
-            .from('profiles')
-            .select('id', { count: 'exact', head: true })
-            .gt('overall_rating', profile.overall_rating || 0),
+            .from('leaderboard_cache')
+            .select('rank')
+            .eq('user_id', profile.id)
+            .maybeSingle(),
           supabase
-            .from('profiles')
-            .select('id', { count: 'exact', head: true }),
+            .from('leaderboard_cache')
+            .select('rank', { count: 'exact', head: true }),
         ]),
       ]);
 
       setUserStats(stats);
 
-      if (profileData.data) {
-        setIsVerified(profileData.data.is_verified || false);
-        setHasSocialBadge(profileData.data.has_social_badge || false);
-        setUnreadProfileViews(profileData.data.unread_profile_views || 0);
-        const completed = profileData.data.tutorial_completed || false;
+      const isVerifiedVal = summaryData.data?.is_verified || false;
+      setIsVerified(isVerifiedVal);
+
+      if (profileData) {
+        setHasSocialBadge(profileData.has_social_badge || false);
+        setUnreadProfileViews(profileData.unread_profile_views || 0);
+        const completed = profileData.tutorial_completed || false;
         setTutorialCompleted(completed);
         if (!completed && profile.terms_accepted_at && profile.username_customized) {
           setTimeout(() => setShowTutorialPrompt(true), 2000);
         }
       }
 
-      const [aboveMe, totalProfiles] = rankData;
-      setRank({
-        position: (aboveMe.count || 0) + 1,
-        total: totalProfiles.count || 0,
-      });
+      const [rankEntry, totalRanked] = rankData;
+      if (rankEntry.data) {
+        setRank({
+          position: rankEntry.data.rank,
+          total: totalRanked.count || 0,
+        });
+      }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {

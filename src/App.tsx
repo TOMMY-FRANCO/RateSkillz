@@ -18,10 +18,10 @@ import {
   GenericPageSkeleton,
 } from './components/ui/PageSkeletons';
 
-import Landing from './pages/Landing';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Dashboard from './pages/Dashboard';
+const Landing = lazy(() => import('./pages/Landing'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 
 const EditProfile = lazy(() => import('./pages/EditProfile'));
 const Friends = lazy(() => import('./pages/Friends'));
@@ -162,7 +162,9 @@ function App() {
             path="/"
             element={
               <PublicRoute>
-                <Landing />
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <Landing />
+                </LazyPageWrapper>
               </PublicRoute>
             }
           />
@@ -170,7 +172,9 @@ function App() {
             path="/login"
             element={
               <PublicRoute>
-                <Login />
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <Login />
+                </LazyPageWrapper>
               </PublicRoute>
             }
           />
@@ -178,7 +182,9 @@ function App() {
             path="/signup"
             element={
               <PublicRoute>
-                <Signup />
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <Signup />
+                </LazyPageWrapper>
               </PublicRoute>
             }
           />
@@ -189,7 +195,9 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <Dashboard />
+                </LazyPageWrapper>
               </ProtectedRoute>
             }
           />
