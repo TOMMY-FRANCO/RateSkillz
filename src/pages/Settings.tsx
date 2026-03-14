@@ -46,8 +46,19 @@ export default function Settings() {
 
       if (data) {
         setIsVerified(data.is_verified || false);
-        setHasSocialBadge(data.has_social_badge || false);
         setFriendCount(data.friend_count || 0);
+
+        let socialBadge = data.has_social_badge || false;
+
+        if (!socialBadge && (data.friend_count || 0) >= 5 && (data.is_verified || false)) {
+          await supabase
+            .from('profiles')
+            .update({ has_social_badge: true })
+            .eq('id', profile.id);
+          socialBadge = true;
+        }
+
+        setHasSocialBadge(socialBadge);
       }
     } catch (error) {
       console.error('Error fetching verification status:', error);
@@ -171,7 +182,8 @@ export default function Settings() {
                     </p>
                     <p className="text-gray-400 text-sm">
                       {!isVerified && 'Share your profile to get verified'}
-                      {isVerified && !hasSocialBadge && `${friendCount}/5 friends for social badge`}
+                      {isVerified && !hasSocialBadge && friendCount >= 5 && '5/5 friends — badge pending'}
+                      {isVerified && !hasSocialBadge && friendCount < 5 && `${Math.min(friendCount, 5)}/5 friends for social badge`}
                       {isVerified && hasSocialBadge && `${friendCount} friends connected`}
                     </p>
                   </div>
@@ -187,7 +199,7 @@ export default function Settings() {
                         Get the Social Badge
                       </p>
                       <p className="text-yellow-300/80 text-xs">
-                        Connect with {5 - friendCount} more friend{5 - friendCount !== 1 ? 's' : ''} to unlock the yellow circle around your blue checkmark!
+                        Connect with {Math.max(0, 5 - friendCount)} more friend{Math.max(0, 5 - friendCount) !== 1 ? 's' : ''} to unlock the yellow circle around your blue checkmark!
                       </p>
                     </div>
                   </div>
