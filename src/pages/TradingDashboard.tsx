@@ -13,7 +13,7 @@ import {
   type CardOwnership,
 } from '../lib/cardTrading';
 import { useCoinBalance } from '../hooks/useCoinBalance';
-import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Trophy, Store, User, X, Repeat, Trash2, Star, Users, RefreshCw, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Trophy, Store, User, X, Repeat, Trash2, Star, RefreshCw, AlertTriangle } from 'lucide-react';
 import { getMultipleUserBalances } from '../lib/balances';
 import { formatCoinBalance } from '../lib/formatBalance';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
@@ -24,16 +24,14 @@ import { GlassButton } from '../components/ui/GlassButton';
 import CardSwapTab from '../components/CardSwapTab';
 import CardDiscardTab from '../components/CardDiscardTab';
 import NotBoughtCardsTab from '../components/NotBoughtCardsTab';
-import NoManagerCardsTab from '../components/NoManagerCardsTab';
 import { markNotificationsReadBatch } from '../lib/notifications';
 
-type TabKey = 'marketplace' | 'portfolio' | 'swap' | 'discard' | 'leaderboards' | 'not-bought' | 'no-manager';
+type TabKey = 'marketplace' | 'portfolio' | 'swap' | 'discard' | 'leaderboards' | 'not-bought';
 
 const TABS: { key: TabKey; label: string; icon?: typeof Star }[] = [
   { key: 'marketplace', label: 'Marketplace' },
   { key: 'not-bought', label: 'Not Bought', icon: Star },
-  { key: 'no-manager', label: 'No Manager', icon: Users },
-  { key: 'portfolio', label: 'My Portfolio' },
+{ key: 'portfolio', label: 'My Portfolio' },
   { key: 'swap', label: 'Swap', icon: Repeat },
   { key: 'discard', label: 'Discard', icon: Trash2 },
   { key: 'leaderboards', label: 'Leaderboards' },
@@ -618,13 +616,6 @@ export default function TradingDashboard() {
 
         {selectedTab === 'not-bought' && (
           <NotBoughtCardsTab onRequestSent={() => {
-            refetchBalance();
-            loadData(true);
-          }} />
-        )}
-
-        {selectedTab === 'no-manager' && (
-          <NoManagerCardsTab onRequestSent={() => {
             refetchBalance();
             loadData(true);
           }} />
