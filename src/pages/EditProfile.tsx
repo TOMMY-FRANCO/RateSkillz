@@ -507,14 +507,18 @@ export default function EditProfile() {
                 <label htmlFor="number" className="block text-sm font-medium text-gray-300 mb-2">
                   Jersey Number
                 </label>
-                <input
+                <select
                   id="number"
-                  type="text"
+                  name="number"
                   value={number}
                   onChange={(e) => setNumber(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                  placeholder="10"
-                />
+                >
+                  <option value="">Select a number</option>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
+                    <option key={n} value={String(n)}>{n}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
