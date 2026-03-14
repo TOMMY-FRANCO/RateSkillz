@@ -27,7 +27,7 @@ interface CardSwapTabProps {
 
 export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
   const { profile } = useAuth();
-  const [view, setView] = useState<'browse' | 'my-listings' | 'offers' | 'history'>('browse');
+  const [view, setView] = useState<'offers' | 'history'>('offers');
   const [managedCards, setManagedCards] = useState<CardOwnership[]>([]);
   const [swapListings, setSwapListings] = useState<SwapListing[]>([]);
   const [myListings, setMyListings] = useState<SwapListing[]>([]);
@@ -53,21 +53,7 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
     setLoading(true);
     setError(null);
     try {
-      if (view === 'browse') {
-        const [listings, managed] = await Promise.all([
-          getActiveSwapListings(),
-          getManagedCards(profile.id),
-        ]);
-        setSwapListings(listings.filter(l => l.user_id !== profile.id));
-        setManagedCards(managed);
-      } else if (view === 'my-listings') {
-        const [listings, managed] = await Promise.all([
-          getMySwapListings(profile.id),
-          getManagedCards(profile.id),
-        ]);
-        setMyListings(listings);
-        setManagedCards(managed);
-      } else if (view === 'offers') {
+      if (view === 'offers') {
         const [offers, incoming] = await Promise.all([
           getPendingSwapOffers(profile.id),
           getIncomingSwapRequests(profile.id),
@@ -194,439 +180,411 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
     return ovr >= parseInt(filterOVR);
   });
 
+  const sentRequests = pendingOffers.filter(o => o.initiated_by === profile?.id);
+  const receivedFromOffers = pendingOffers.filter(o => o.initiated_by !== profile?.id);
+  const totalReceived = incomingRequests.length + receivedFromOffers.length;
+  const totalBadge = sentRequests.length + totalReceived;
+
   return (
     <div className="space-y-6">
       <div className="flex gap-2 flex-wrap">
         <button
-          onClick={() => setView('browse')}
-          className={`px-4 py-2 rounded-lg font-bold transition-all ${
-            view === 'browse'
-              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-              : 'bg-white/10 text-white hover:bg-white/20'
-          }`}
-        >
-          <Filter className="w-4 h-4 inline mr-2" />
-          Browse Swaps
-        </button>
-        <button
-          onClick={() => setView('my-listings')}
-          className={`px-4 py-2 rounded-lg font-bold transition-all ${
-            view === 'my-listings'
-              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-              : 'bg-white/10 text-white hover:bg-white/20'
-          }`}
-        >
-          <Plus className="w-4 h-4 inline mr-2" />
-          My Listings
-        </button>
-        <button
           onClick={() => setView('offers')}
-          className={`px-4 py-2 rounded-lg font-bold transition-all ${
+          className={`px-5 py-2.5 rounded-xl font-semibold transition-all text-sm flex items-center gap-2 ${
             view === 'offers'
-              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-              : 'bg-white/10 text-white hover:bg-white/20'
+              ? 'bg-[rgba(0,224,255,0.15)] text-[#00E0FF] border border-[rgba(0,224,255,0.4)]'
+              : 'bg-[rgba(255,255,255,0.05)] text-slate-400 border border-[rgba(255,255,255,0.08)] hover:text-slate-200 hover:border-[rgba(255,255,255,0.15)]'
           }`}
         >
-          <Repeat className="w-4 h-4 inline mr-2" />
-          Offers {pendingOffers.length > 0 && `(${pendingOffers.length})`}
+          <Repeat className="w-4 h-4" />
+          Swap Requests
+          {totalBadge > 0 && (
+            <span className="px-1.5 py-0.5 bg-[rgba(0,224,255,0.2)] text-[#00E0FF] text-xs font-bold rounded-full border border-[rgba(0,224,255,0.35)]">
+              {totalBadge}
+            </span>
+          )}
         </button>
         <button
           onClick={() => setView('history')}
-          className={`px-4 py-2 rounded-lg font-bold transition-all ${
+          className={`px-5 py-2.5 rounded-xl font-semibold transition-all text-sm flex items-center gap-2 ${
             view === 'history'
-              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-              : 'bg-white/10 text-white hover:bg-white/20'
+              ? 'bg-[rgba(0,224,255,0.15)] text-[#00E0FF] border border-[rgba(0,224,255,0.4)]'
+              : 'bg-[rgba(255,255,255,0.05)] text-slate-400 border border-[rgba(255,255,255,0.08)] hover:text-slate-200 hover:border-[rgba(255,255,255,0.15)]'
           }`}
         >
-          <History className="w-4 h-4 inline mr-2" />
+          <History className="w-4 h-4" />
           History
         </button>
       </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4 flex items-start gap-2">
+        <div className="bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] rounded-xl p-4 flex items-start gap-2">
           <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
           <p className="text-red-300 text-sm">{error}</p>
         </div>
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+        <div className="flex justify-center py-16">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#00E0FF]" />
         </div>
       ) : (
         <>
-          {view === 'browse' && (
-            <div className="space-y-6">
-              <div className="flex gap-4">
-                <input
-                  type="number"
-                  placeholder="Min OVR"
-                  value={filterOVR}
-                  onChange={(e) => setFilterOVR(e.target.value)}
-                  className="bg-white/10 text-white placeholder-gray-400 rounded-lg px-4 py-2 border border-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-              </div>
-
-              {filteredListings.length === 0 ? (
-                <div className="text-center py-12">
-                  <Repeat className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400">No cards available for swap</p>
-                </div>
-              ) : (
-                <div className="grid gap-4">
-                  {filteredListings.map((listing) => (
-                    <div
-                      key={listing.id}
-                      className="bg-white/5 rounded-xl p-4 border border-white/10"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <h3 className="font-bold text-white text-lg">
-                            @{listing.card?.profile?.username || 'unknown'}
-                          </h3>
-                          <p className="text-sm text-gray-400">
-                            {listing.card?.profile?.position} | OVR {listing.card?.profile?.overall_rating}
-                          </p>
-                          <p className="text-sm text-gray-400">
-                            Team: {listing.card?.profile?.team || 'N/A'}
-                          </p>
-                          <p className="text-yellow-400 font-bold mt-2">
-                            {formatCoinBalance(listing.card?.current_price || 0)} coins
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            Managed by: @{listing.manager?.username || 'unknown'}
-                          </p>
-                        </div>
-                        <div>
-                          {managedCards.length > 0 ? (
-                            <select
-                              onChange={(e) => {
-                                if (e.target.value) {
-                                  handleProposeSwap(e.target.value, listing.card_user_id);
-                                  e.target.value = '';
-                                }
-                              }}
-                              disabled={processing === listing.card_user_id}
-                              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg font-bold hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50"
-                            >
-                              <option value="">Propose Swap</option>
-                              {managedCards.map((card) => (
-                                <option key={card.id} value={card.card_user_id}>
-                                  @{card.profile?.username || 'unknown'} (
-                                  {formatCoinBalance(card.current_price)})
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <p className="text-sm text-gray-400">No managed cards to swap</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {view === 'my-listings' && (
-            <div className="space-y-6">
-              <button
-                onClick={() => setShowListModal(true)}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 transition-all flex items-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                List Card for Swap
-              </button>
-
-              {myListings.length === 0 ? (
-                <div className="text-center py-12">
-                  <Repeat className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400">You haven't listed any cards for swap</p>
-                </div>
-              ) : (
-                <div className="grid gap-4">
-                  {myListings.map((listing) => (
-                    <div
-                      key={listing.id}
-                      className="bg-white/5 rounded-xl p-4 border border-white/10"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <h3 className="font-bold text-white text-lg">
-                            @{listing.card?.profile?.username || 'unknown'}
-                          </h3>
-                          <p className="text-sm text-gray-400">
-                            {listing.card?.profile?.position} | OVR {listing.card?.profile?.overall_rating}
-                          </p>
-                          <p className="text-yellow-400 font-bold mt-2">
-                            {formatCoinBalance(listing.card?.current_price || 0)} coins
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            Listed {new Date(listing.listed_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleCancelListing(listing.id)}
-                          disabled={processing === listing.id}
-                          className="bg-red-500/20 text-red-300 px-4 py-2 rounded-lg font-bold hover:bg-red-500/30 transition-all disabled:opacity-50"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
           {view === 'offers' && (
-            <div className="space-y-6">
-              {incomingRequests.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <Repeat className="w-5 h-5 text-[#00E0FF]" />
-                    Incoming Swap Requests
-                    <span className="ml-1 px-2 py-0.5 bg-[rgba(0,224,255,0.15)] text-[#00E0FF] text-xs font-bold rounded-full border border-[rgba(0,224,255,0.3)]">
-                      {incomingRequests.length}
-                    </span>
-                  </h3>
-                  {incomingRequests.map((req) => {
-                    const offeredCard = req.card_a;
-                    const myCard = req.card_b;
-                    const requester = req.manager_a;
-
-                    return (
-                      <div
-                        key={req.id}
-                        className="bg-[rgba(0,224,255,0.04)] rounded-xl p-5 border border-[rgba(0,224,255,0.2)]"
-                      >
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <p className="text-sm text-[#00E0FF]/70 font-semibold">Swap request from</p>
-                            <p className="text-white font-bold">@{requester?.username || 'unknown'}</p>
-                          </div>
-                          <span className="text-xs text-slate-400">
-                            {new Date(req.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-3 items-center mb-4">
-                          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                            <p className="text-xs text-slate-400 mb-1">Their offer</p>
-                            <p className="font-bold text-white text-sm">
-                              @{offeredCard?.profile?.username || 'unknown'}
-                            </p>
-                            <p className="text-xs text-slate-400">
-                              OVR {offeredCard?.profile?.overall_rating ?? '—'}
-                            </p>
-                            <p className="text-yellow-400 font-bold text-sm mt-1">
-                              {(offeredCard?.current_price ?? 0).toFixed(2)} coins
-                            </p>
-                          </div>
-
-                          <div className="text-center">
-                            <Repeat className="w-6 h-6 text-[#00E0FF] mx-auto" />
-                          </div>
-
-                          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                            <p className="text-xs text-slate-400 mb-1">Your card</p>
-                            <p className="font-bold text-white text-sm">
-                              @{myCard?.profile?.username || 'unknown'}
-                            </p>
-                            <p className="text-xs text-slate-400">
-                              OVR {myCard?.profile?.overall_rating ?? '—'}
-                            </p>
-                            <p className="text-yellow-400 font-bold text-sm mt-1">
-                              {(myCard?.current_price ?? 0).toFixed(2)} coins
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="mb-4 p-2.5 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                          <p className="text-xs text-yellow-300">
-                            Accepting costs a 10 coin opt-out fee. Both cards increase by 10 coins.
-                          </p>
-                        </div>
-
-                        <div className="flex gap-3">
-                          <button
-                            onClick={() => handleAcceptSwap(req.id)}
-                            disabled={processing === req.id}
-                            className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2.5 rounded-xl font-bold hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                          >
-                            {processing === req.id ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                            ) : (
-                              <>
-                                <Check className="w-4 h-4" />
-                                Accept
-                              </>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleDeclineSwap(req.id)}
-                            disabled={processing === req.id}
-                            className="flex-1 bg-red-500/20 text-red-300 py-2.5 rounded-xl font-bold hover:bg-red-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                          >
-                            <X className="w-4 h-4" />
-                            Decline
-                          </button>
-                        </div>
+            <div className="space-y-8">
+              {sentRequests.length === 0 && totalReceived === 0 ? (
+                <div className="text-center py-16">
+                  <div className="w-16 h-16 bg-[rgba(0,224,255,0.06)] border border-[rgba(0,224,255,0.15)] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Repeat className="w-8 h-8 text-slate-500" />
+                  </div>
+                  <p className="text-slate-400 text-lg font-semibold">No active swap requests</p>
+                  <p className="text-slate-500 text-sm mt-1">
+                    Request swaps from the Purchased Cards tab
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {sentRequests.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-white">Requests Sent</h3>
+                        <span className="px-2 py-0.5 bg-[rgba(251,191,36,0.12)] text-amber-400 text-xs font-bold rounded-full border border-[rgba(251,191,36,0.25)]">
+                          {sentRequests.length}
+                        </span>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                      {sentRequests.map((offer) => {
+                        const myCard = offer.manager_a_id === profile?.id ? offer.card_a : offer.card_b;
+                        const targetCard = offer.manager_a_id === profile?.id ? offer.card_b : offer.card_a;
+                        const targetManager = offer.manager_a_id === profile?.id ? offer.manager_b : offer.manager_a;
 
-              <div className="space-y-4">
-                {incomingRequests.length > 0 && pendingOffers.length > 0 && (
-                  <h3 className="text-lg font-bold text-white">Other Pending Offers</h3>
-                )}
-              {pendingOffers.length === 0 && incomingRequests.length === 0 ? (
-                <div className="text-center py-12">
-                  <Repeat className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400">No pending swap offers</p>
-                </div>
-              ) : pendingOffers.length === 0 ? null : (
-                pendingOffers.map((offer) => {
-                  const isReceiver = offer.initiated_by !== profile?.id;
-                  const myCard = offer.manager_a_id === profile?.id ? offer.card_a : offer.card_b;
-                  const theirCard = offer.manager_a_id === profile?.id ? offer.card_b : offer.card_a;
-                  const otherManager = offer.manager_a_id === profile?.id ? offer.manager_b : offer.manager_a;
+                        return (
+                          <div
+                            key={offer.id}
+                            className="bg-[rgba(255,255,255,0.03)] backdrop-blur-[15px] border border-[rgba(0,224,255,0.1)] rounded-2xl p-5"
+                          >
+                            <div className="flex items-center justify-between mb-4">
+                              <div>
+                                <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Sent to</p>
+                                <p className="text-white font-bold mt-0.5">
+                                  @{targetManager?.username || 'unknown'}
+                                </p>
+                              </div>
+                              <span className="text-xs text-slate-500">
+                                {new Date(offer.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
 
-                  return (
-                    <div
-                      key={offer.id}
-                      className="bg-white/5 rounded-xl p-6 border border-white/10"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-bold text-white text-lg">
-                          {isReceiver ? 'Swap Request from' : 'Swap Proposed to'}{' '}
-                          @{otherManager?.username || 'unknown'}
-                        </h3>
-                        <span className="text-xs text-gray-400">
-                          {new Date(offer.created_at).toLocaleDateString()}
+                            <div className="grid grid-cols-3 gap-3 items-center mb-5">
+                              <div className="bg-[rgba(0,224,255,0.06)] rounded-xl p-3 border border-[rgba(0,224,255,0.15)]">
+                                <p className="text-xs text-[#00E0FF]/60 mb-1.5 font-semibold">Your offer</p>
+                                <p className="font-bold text-white text-sm">
+                                  @{myCard?.profile?.username || 'unknown'}
+                                </p>
+                                {myCard?.profile?.overall_rating && (
+                                  <p className="text-xs text-slate-400 mt-0.5">
+                                    OVR {myCard.profile.overall_rating}
+                                  </p>
+                                )}
+                                <p className="text-[#00FF85] font-bold text-sm mt-1.5">
+                                  {(myCard?.current_price ?? 0).toFixed(2)} coins
+                                </p>
+                              </div>
+
+                              <div className="flex flex-col items-center gap-1">
+                                <Repeat className="w-5 h-5 text-[#00E0FF]/50" />
+                                <span className="text-xs text-slate-600">for</span>
+                              </div>
+
+                              <div className="bg-[rgba(255,255,255,0.04)] rounded-xl p-3 border border-[rgba(255,255,255,0.08)]">
+                                <p className="text-xs text-slate-400 mb-1.5 font-semibold">Target card</p>
+                                <p className="font-bold text-white text-sm">
+                                  @{targetCard?.profile?.username || 'unknown'}
+                                </p>
+                                {targetCard?.profile?.overall_rating && (
+                                  <p className="text-xs text-slate-400 mt-0.5">
+                                    OVR {targetCard.profile.overall_rating}
+                                  </p>
+                                )}
+                                <p className="text-[#00FF85] font-bold text-sm mt-1.5">
+                                  {(targetCard?.current_price ?? 0).toFixed(2)} coins
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 p-2.5 bg-[rgba(251,191,36,0.06)] border border-[rgba(251,191,36,0.15)] rounded-lg mb-4">
+                              <span className="text-xs text-amber-400/80">
+                                Pending — awaiting response from @{targetManager?.username || 'unknown'}
+                              </span>
+                            </div>
+
+                            <button
+                              onClick={() => handleDeclineSwap(offer.id)}
+                              disabled={processing === offer.id}
+                              className="w-full px-4 py-2.5 bg-[rgba(239,68,68,0.08)] hover:bg-[rgba(239,68,68,0.14)] text-red-300 rounded-xl border border-[rgba(239,68,68,0.2)] hover:border-[rgba(239,68,68,0.35)] transition-all font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                              {processing === offer.id ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-300" />
+                              ) : (
+                                <>
+                                  <X className="w-4 h-4" />
+                                  Cancel Request
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {totalReceived > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-white">Requests Received</h3>
+                        <span className="px-2 py-0.5 bg-[rgba(0,255,133,0.12)] text-[#00FF85] text-xs font-bold rounded-full border border-[rgba(0,255,133,0.25)]">
+                          {totalReceived}
                         </span>
                       </div>
 
-                      <div className="grid md:grid-cols-3 gap-4 items-center">
-                        <div className="bg-purple-500/10 rounded-lg p-4 border border-purple-500/30">
-                          <p className="text-xs text-purple-300 mb-2">Your Card</p>
-                          <h4 className="font-bold text-white">
-                            @{myCard?.profile?.username || 'unknown'}
-                          </h4>
-                          <p className="text-sm text-gray-400">
-                            {myCard?.profile?.position} | OVR {myCard?.profile?.overall_rating}
-                          </p>
-                          <p className="text-yellow-400 font-bold mt-2">
-                            {formatCoinBalance(myCard?.current_price || 0)}
-                          </p>
-                        </div>
+                      {incomingRequests.map((req) => {
+                        const offeredCard = req.card_a;
+                        const myCard = req.card_b;
+                        const requester = req.manager_a;
 
-                        <div className="text-center">
-                          <Repeat className="w-8 h-8 text-gray-400 mx-auto" />
-                        </div>
-
-                        <div className="bg-pink-500/10 rounded-lg p-4 border border-pink-500/30">
-                          <p className="text-xs text-pink-300 mb-2">Their Card</p>
-                          <h4 className="font-bold text-white">
-                            @{theirCard?.profile?.username || 'unknown'}
-                          </h4>
-                          <p className="text-sm text-gray-400">
-                            {theirCard?.profile?.position} | OVR {theirCard?.profile?.overall_rating}
-                          </p>
-                          <p className="text-yellow-400 font-bold mt-2">
-                            {formatCoinBalance(theirCard?.current_price || 0)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
-                        <p className="text-xs text-yellow-300">
-                          <Coins className="w-4 h-4 inline mr-1" />
-                          You will pay 10 coins opt-out fee to the original owner of your card.
-                          Both cards will increase by 10 coins.
-                        </p>
-                      </div>
-
-                      {isReceiver && (
-                        <div className="flex gap-3 mt-4">
-                          <button
-                            onClick={() => handleAcceptSwap(offer.id)}
-                            disabled={processing === offer.id}
-                            className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-xl font-bold hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        return (
+                          <div
+                            key={req.id}
+                            className="bg-[rgba(0,255,133,0.03)] backdrop-blur-[15px] border border-[rgba(0,255,133,0.15)] rounded-2xl p-5"
                           >
-                            {processing === offer.id ? (
-                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                            ) : (
-                              <>
-                                <Check className="w-5 h-5" />
-                                Accept Swap
-                              </>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleDeclineSwap(offer.id)}
-                            disabled={processing === offer.id}
-                            className="flex-1 bg-red-500/20 text-red-300 py-3 rounded-xl font-bold hover:bg-red-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            <div className="flex items-center justify-between mb-4">
+                              <div>
+                                <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Request from</p>
+                                <p className="text-white font-bold mt-0.5">@{requester?.username || 'unknown'}</p>
+                              </div>
+                              <span className="text-xs text-slate-500">
+                                {new Date(req.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3 items-center mb-4">
+                              <div className="bg-[rgba(255,255,255,0.04)] rounded-xl p-3 border border-[rgba(255,255,255,0.08)]">
+                                <p className="text-xs text-slate-400 mb-1.5 font-semibold">Their offer</p>
+                                <p className="font-bold text-white text-sm">
+                                  @{offeredCard?.profile?.username || 'unknown'}
+                                </p>
+                                {offeredCard?.profile?.overall_rating && (
+                                  <p className="text-xs text-slate-400 mt-0.5">
+                                    OVR {offeredCard.profile.overall_rating}
+                                  </p>
+                                )}
+                                <p className="text-[#00FF85] font-bold text-sm mt-1.5">
+                                  {(offeredCard?.current_price ?? 0).toFixed(2)} coins
+                                </p>
+                              </div>
+
+                              <div className="flex flex-col items-center gap-1">
+                                <Repeat className="w-5 h-5 text-[#00FF85]/50" />
+                                <span className="text-xs text-slate-600">for</span>
+                              </div>
+
+                              <div className="bg-[rgba(0,255,133,0.06)] rounded-xl p-3 border border-[rgba(0,255,133,0.15)]">
+                                <p className="text-xs text-[#00FF85]/60 mb-1.5 font-semibold">Your card</p>
+                                <p className="font-bold text-white text-sm">
+                                  @{myCard?.profile?.username || 'unknown'}
+                                </p>
+                                {myCard?.profile?.overall_rating && (
+                                  <p className="text-xs text-slate-400 mt-0.5">
+                                    OVR {myCard.profile.overall_rating}
+                                  </p>
+                                )}
+                                <p className="text-[#00FF85] font-bold text-sm mt-1.5">
+                                  {(myCard?.current_price ?? 0).toFixed(2)} coins
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="p-2.5 bg-[rgba(251,191,36,0.06)] border border-[rgba(251,191,36,0.15)] rounded-lg mb-4">
+                              <p className="text-xs text-amber-400/80">
+                                Accepting costs a 10 coin opt-out fee. Both cards increase by 10 coins.
+                              </p>
+                            </div>
+
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => handleAcceptSwap(req.id)}
+                                disabled={processing === req.id}
+                                className="flex-1 px-4 py-2.5 bg-[rgba(0,255,133,0.12)] hover:bg-[rgba(0,255,133,0.2)] text-[#00FF85] rounded-xl border border-[rgba(0,255,133,0.3)] hover:border-[rgba(0,255,133,0.5)] transition-all font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                              >
+                                {processing === req.id ? (
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00FF85]" />
+                                ) : (
+                                  <>
+                                    <Check className="w-4 h-4" />
+                                    Accept
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleDeclineSwap(req.id)}
+                                disabled={processing === req.id}
+                                className="flex-1 px-4 py-2.5 bg-[rgba(239,68,68,0.08)] hover:bg-[rgba(239,68,68,0.14)] text-red-300 rounded-xl border border-[rgba(239,68,68,0.2)] hover:border-[rgba(239,68,68,0.35)] transition-all font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                              >
+                                <X className="w-4 h-4" />
+                                Decline
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {receivedFromOffers.map((offer) => {
+                        const myCard = offer.manager_a_id === profile?.id ? offer.card_a : offer.card_b;
+                        const theirCard = offer.manager_a_id === profile?.id ? offer.card_b : offer.card_a;
+                        const otherManager = offer.manager_a_id === profile?.id ? offer.manager_b : offer.manager_a;
+
+                        return (
+                          <div
+                            key={offer.id}
+                            className="bg-[rgba(0,255,133,0.03)] backdrop-blur-[15px] border border-[rgba(0,255,133,0.15)] rounded-2xl p-5"
                           >
-                            <X className="w-5 h-5" />
-                            Decline
-                          </button>
-                        </div>
-                      )}
+                            <div className="flex items-center justify-between mb-4">
+                              <div>
+                                <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Request from</p>
+                                <p className="text-white font-bold mt-0.5">@{otherManager?.username || 'unknown'}</p>
+                              </div>
+                              <span className="text-xs text-slate-500">
+                                {new Date(offer.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3 items-center mb-4">
+                              <div className="bg-[rgba(255,255,255,0.04)] rounded-xl p-3 border border-[rgba(255,255,255,0.08)]">
+                                <p className="text-xs text-slate-400 mb-1.5 font-semibold">Their offer</p>
+                                <p className="font-bold text-white text-sm">
+                                  @{theirCard?.profile?.username || 'unknown'}
+                                </p>
+                                {theirCard?.profile?.overall_rating && (
+                                  <p className="text-xs text-slate-400 mt-0.5">
+                                    OVR {theirCard.profile.overall_rating}
+                                  </p>
+                                )}
+                                <p className="text-[#00FF85] font-bold text-sm mt-1.5">
+                                  {formatCoinBalance(theirCard?.current_price || 0)}
+                                </p>
+                              </div>
+
+                              <div className="flex flex-col items-center gap-1">
+                                <Repeat className="w-5 h-5 text-[#00FF85]/50" />
+                                <span className="text-xs text-slate-600">for</span>
+                              </div>
+
+                              <div className="bg-[rgba(0,255,133,0.06)] rounded-xl p-3 border border-[rgba(0,255,133,0.15)]">
+                                <p className="text-xs text-[#00FF85]/60 mb-1.5 font-semibold">Your card</p>
+                                <p className="font-bold text-white text-sm">
+                                  @{myCard?.profile?.username || 'unknown'}
+                                </p>
+                                {myCard?.profile?.overall_rating && (
+                                  <p className="text-xs text-slate-400 mt-0.5">
+                                    OVR {myCard.profile.overall_rating}
+                                  </p>
+                                )}
+                                <p className="text-[#00FF85] font-bold text-sm mt-1.5">
+                                  {formatCoinBalance(myCard?.current_price || 0)}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="p-2.5 bg-[rgba(251,191,36,0.06)] border border-[rgba(251,191,36,0.15)] rounded-lg mb-4">
+                              <p className="text-xs text-amber-400/80">
+                                Accepting costs a 10 coin opt-out fee. Both cards increase by 10 coins.
+                              </p>
+                            </div>
+
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => handleAcceptSwap(offer.id)}
+                                disabled={processing === offer.id}
+                                className="flex-1 px-4 py-2.5 bg-[rgba(0,255,133,0.12)] hover:bg-[rgba(0,255,133,0.2)] text-[#00FF85] rounded-xl border border-[rgba(0,255,133,0.3)] hover:border-[rgba(0,255,133,0.5)] transition-all font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                              >
+                                {processing === offer.id ? (
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00FF85]" />
+                                ) : (
+                                  <>
+                                    <Check className="w-4 h-4" />
+                                    Accept Swap
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleDeclineSwap(offer.id)}
+                                disabled={processing === offer.id}
+                                className="flex-1 px-4 py-2.5 bg-[rgba(239,68,68,0.08)] hover:bg-[rgba(239,68,68,0.14)] text-red-300 rounded-xl border border-[rgba(239,68,68,0.2)] hover:border-[rgba(239,68,68,0.35)] transition-all font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                              >
+                                <X className="w-4 h-4" />
+                                Decline
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })
+                  )}
+                </>
               )}
-              </div>
             </div>
           )}
 
           {view === 'history' && (
             <div className="space-y-4">
               {swapHistory.length === 0 ? (
-                <div className="text-center py-12">
-                  <History className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400">No swap history</p>
+                <div className="text-center py-16">
+                  <div className="w-16 h-16 bg-[rgba(0,224,255,0.06)] border border-[rgba(0,224,255,0.15)] rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <History className="w-8 h-8 text-slate-500" />
+                  </div>
+                  <p className="text-slate-400 text-lg font-semibold">No swap history</p>
+                  <p className="text-slate-500 text-sm mt-1">Completed swaps will appear here</p>
                 </div>
               ) : (
                 swapHistory.map((swap) => (
                   <div
                     key={swap.id}
-                    className="bg-white/5 rounded-xl p-6 border border-white/10"
+                    className="bg-[rgba(255,255,255,0.03)] backdrop-blur-[15px] border border-[rgba(0,224,255,0.1)] rounded-2xl p-5"
                   >
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-bold text-white text-lg">Completed Swap</h3>
-                      <span className="text-xs text-gray-400">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 bg-[rgba(0,255,133,0.15)] border border-[rgba(0,255,133,0.3)] rounded-full flex items-center justify-center">
+                          <Check className="w-3.5 h-3.5 text-[#00FF85]" />
+                        </div>
+                        <span className="font-bold text-white">Completed Swap</span>
+                      </div>
+                      <span className="text-xs text-slate-500">
                         {swap.completed_at && new Date(swap.completed_at).toLocaleDateString()}
                       </span>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-4 items-center">
-                      <div className="bg-white/5 rounded-lg p-4">
-                        <h4 className="font-bold text-white">
+                    <div className="grid grid-cols-3 gap-3 items-center">
+                      <div className="bg-[rgba(255,255,255,0.04)] rounded-xl p-3 border border-[rgba(255,255,255,0.08)]">
+                        <p className="text-xs text-slate-500 mb-1">Card A</p>
+                        <p className="font-bold text-white text-sm">
                           @{swap.card_a?.profile?.username || 'unknown'}
-                        </h4>
-                        <p className="text-sm text-gray-400">
-                          OVR {swap.card_a?.profile?.overall_rating}
                         </p>
+                        {swap.card_a?.profile?.overall_rating && (
+                          <p className="text-xs text-slate-400 mt-0.5">OVR {swap.card_a.profile.overall_rating}</p>
+                        )}
                       </div>
 
-                      <div className="text-center">
-                        <Repeat className="w-8 h-8 text-green-400 mx-auto" />
+                      <div className="flex flex-col items-center gap-1">
+                        <Repeat className="w-5 h-5 text-[#00FF85]/60" />
                       </div>
 
-                      <div className="bg-white/5 rounded-lg p-4">
-                        <h4 className="font-bold text-white">
+                      <div className="bg-[rgba(255,255,255,0.04)] rounded-xl p-3 border border-[rgba(255,255,255,0.08)]">
+                        <p className="text-xs text-slate-500 mb-1">Card B</p>
+                        <p className="font-bold text-white text-sm">
                           @{swap.card_b?.profile?.username || 'unknown'}
-                        </h4>
-                        <p className="text-sm text-gray-400">
-                          OVR {swap.card_b?.profile?.overall_rating}
                         </p>
+                        {swap.card_b?.profile?.overall_rating && (
+                          <p className="text-xs text-slate-400 mt-0.5">OVR {swap.card_b.profile.overall_rating}</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -635,57 +593,6 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
             </div>
           )}
         </>
-      )}
-
-      {showListModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 rounded-2xl border border-white/20 max-w-2xl w-full p-6 max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-white">List Card for Swap</h2>
-              <button
-                onClick={() => setShowListModal(false)}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            {managedCards.length === 0 ? (
-              <div className="text-center py-12">
-                <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400">You don't have any managed cards to list</p>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {managedCards.map((card) => (
-                  <div
-                    key={card.id}
-                    className="bg-white/5 rounded-xl p-4 border border-white/10 flex items-center justify-between"
-                  >
-                    <div>
-                      <h3 className="font-bold text-white">
-                        @{card.profile?.username || 'unknown'}
-                      </h3>
-                      <p className="text-sm text-gray-400">
-                        {card.profile?.position} | OVR {card.profile?.overall_rating}
-                      </p>
-                      <p className="text-yellow-400 font-bold mt-1">
-                        {formatCoinBalance(card.current_price)} coins
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleListCard(card)}
-                      disabled={processing === card.id}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-lg font-bold hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50"
-                    >
-                      {processing === card.id ? 'Listing...' : 'List'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
       )}
     </div>
   );
