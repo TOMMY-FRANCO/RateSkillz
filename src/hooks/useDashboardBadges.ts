@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { updateAppBadge } from '../lib/appBadge';
+import { withCache, CACHE_TTL, cache } from '../lib/cache';
 
 export interface DashboardBadgeCounts {
   messages: number;
@@ -46,102 +47,106 @@ function utcDateString(date: Date): string {
 }
 
 export async function fetchDashboardBadges(userId: string): Promise<DashboardBadgeCounts> {
-  try {
-    const todayStart = `${utcDateString(new Date())}T00:00:00.000Z`;
-    const tomorrowStart = (() => {
-      const d = new Date();
-      d.setUTCDate(d.getUTCDate() + 1);
-      return `${utcDateString(d)}T00:00:00.000Z`;
-    })();
+  return withCache(`dashboard-badges-${userId}`, CACHE_TTL.SHORT, async () => {
+    try {
+      const todayStart = `${utcDateString(new Date())}T00:00:00.000Z`;
+      const tomorrowStart = (() => {
+        const d = new Date();
+        d.setUTCDate(d.getUTCDate() + 1);
+        return `${utcDateString(d)}T00:00:00.000Z`;
+      })();
 
-    const [
-      messagesResult,
-      profileResult,
-      acceptedFriendsResult,
-      pendingFriendsResult,
-      battleResult,
-      notificationsResult,
-      adViewResult,
-    ] = await Promise.all([
-      supabase
-        .from('messages')
-        .select('id', { count: 'exact', head: true })
-        .eq('recipient_id', userId)
-        .eq('is_read', false),
-
-      supabase
+      const profileTxResult = await supabase
         .from('profiles')
-        .select('unread_profile_views, last_visited_transactions')
+        .select('last_visited_transactions')
         .eq('id', userId)
-        .maybeSingle(),
+        .maybeSingle();
 
-      supabase
-        .from('friends')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('status', 'accepted')
-        .eq('seen_by_sender', false),
+      const lastVisitedTransactions: string | null =
+        profileTxResult.data?.last_visited_transactions ?? null;
 
-      supabase
-        .from('friends')
-        .select('id', { count: 'exact', head: true })
-        .eq('friend_id', userId)
-        .eq('status', 'pending'),
+      const [
+        messagesResult,
+        profileViewResult,
+        acceptedFriendsResult,
+        pendingFriendsResult,
+        battleResult,
+        notificationsResult,
+        adViewResult,
+        txResult,
+      ] = await Promise.all([
+        supabase
+          .from('messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('recipient_id', userId)
+          .eq('is_read', false),
 
-      supabase
-        .from('battles')
-        .select('id', { count: 'exact', head: true })
-        .eq('manager2_id', userId)
-        .eq('status', 'waiting'),
+        supabase
+          .from('profile_view_cache')
+          .select('unread_profile_views')
+          .eq('user_id', userId)
+          .maybeSingle(),
 
-      supabase
-        .from('user_notifications')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('is_read', false),
+        supabase
+          .from('friends')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('status', 'accepted')
+          .eq('seen_by_sender', false),
 
-      supabase
-        .from('ad_views')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .gte('created_at', todayStart)
-        .lt('created_at', tomorrowStart),
-    ]);
+        supabase
+          .from('friends')
+          .select('id', { count: 'exact', head: true })
+          .eq('friend_id', userId)
+          .eq('status', 'pending'),
 
-    const lastVisitedTransactions: string | null =
-      profileResult.data?.last_visited_transactions ?? null;
+        supabase
+          .from('battles')
+          .select('id', { count: 'exact', head: true })
+          .eq('manager2_id', userId)
+          .eq('status', 'waiting'),
 
-    let transactionsCount = 0;
-    if (lastVisitedTransactions) {
-      const txResult = await supabase
-        .from('coin_transactions')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .gt('created_at', lastVisitedTransactions);
-      transactionsCount = cap(txResult.count ?? 0);
-    } else {
-      const txResult = await supabase
-        .from('coin_transactions')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', userId);
-      transactionsCount = cap(txResult.count ?? 0);
+        supabase
+          .from('user_notifications')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('is_read', false),
+
+        supabase
+          .from('ad_views')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .gte('created_at', todayStart)
+          .lt('created_at', tomorrowStart),
+
+        lastVisitedTransactions
+          ? supabase
+              .from('coin_transactions')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', userId)
+              .gt('created_at', lastVisitedTransactions)
+          : supabase
+              .from('coin_transactions')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', userId),
+      ]);
+
+      const adAvailable = (adViewResult.count ?? 0) === 0 ? 1 : 0;
+
+      return {
+        messages: cap(messagesResult.count ?? 0),
+        profileViews: cap(profileViewResult.data?.unread_profile_views ?? 0),
+        transactions: cap(txResult.count ?? 0),
+        acceptedFriendRequests: cap(acceptedFriendsResult.count ?? 0),
+        pendingFriendRequests: cap(pendingFriendsResult.count ?? 0),
+        battleRequests: cap(battleResult.count ?? 0),
+        notifications: cap(notificationsResult.count ?? 0),
+        adAvailable,
+      };
+    } catch {
+      return { ...ZERO };
     }
-
-    const adAvailable = (adViewResult.count ?? 0) === 0 ? 1 : 0;
-
-    return {
-      messages: cap(messagesResult.count ?? 0),
-      profileViews: cap(profileResult.data?.unread_profile_views ?? 0),
-      transactions: transactionsCount,
-      acceptedFriendRequests: cap(acceptedFriendsResult.count ?? 0),
-      pendingFriendRequests: cap(pendingFriendsResult.count ?? 0),
-      battleRequests: cap(battleResult.count ?? 0),
-      notifications: cap(notificationsResult.count ?? 0),
-      adAvailable,
-    };
-  } catch {
-    return { ...ZERO };
-  }
+  });
 }
 
 export function useDashboardBadges(userId: string | undefined) {
@@ -155,6 +160,7 @@ export function useDashboardBadges(userId: string | undefined) {
       return;
     }
 
+    cache.delete(`dashboard-badges-${userId}`);
     const fresh = await fetchDashboardBadges(userId);
     if (isMountedRef.current) {
       setCounts(fresh);
