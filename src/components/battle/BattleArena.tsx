@@ -7,12 +7,14 @@ import { BattleResultSkeleton, BattleResultReveal } from '../ui/HighValueSkeleto
 import { ShimmerBar, StaggerItem } from '../ui/Shimmer';
 import {
   Battle,
+  BattleRoyalty,
   BattleSelection,
   PlayerCard,
   getPlayerCards,
   submitBattleMove,
   forfeitBattle,
   getBattle,
+  getBattleRoyalties,
 } from '../../lib/battleMode';
 
 interface RoundSummary {
@@ -40,6 +42,8 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   const [roundResult, setRoundResult] = useState<{ attacker_wins: boolean } | null>(null);
   const [lobbyCountdown, setLobbyCountdown] = useState(8);
   const [lastRoundSummary, setLastRoundSummary] = useState<RoundSummary | null>(null);
+  const [royalties, setRoyalties] = useState<BattleRoyalty[]>([]);
+  const [royaltiesLoading, setRoyaltiesLoading] = useState(false);
   const prevSelectionsLenRef = useRef<number>(initialBattle.card_selections?.length ?? 0);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -95,6 +99,14 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
       };
     }
   }, [isCompleted, onComplete]);
+
+  useEffect(() => {
+    if (!isCompleted) return;
+    setRoyaltiesLoading(true);
+    getBattleRoyalties(battle.id)
+      .then(setRoyalties)
+      .finally(() => setRoyaltiesLoading(false));
+  }, [isCompleted, battle.id]);
 
   useEffect(() => {
     if (!battle.turn_started_at || battle.status !== 'active') return;
@@ -324,6 +336,30 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
               {isWinner && (
                 <div className="mt-1 rounded-lg bg-[rgba(0,255,133,0.08)] border border-[rgba(0,255,133,0.2)] px-3 py-2 text-center">
                   <span className="text-[#00FF85] text-xs font-bold">+{winnerPayout} coins added to your balance</span>
+                </div>
+              )}
+              {(royaltiesLoading || royalties.length > 0) && (
+                <div className="mt-2 pt-3 border-t border-white/10">
+                  <p className="text-[10px] font-bold text-[#B0B8C8] uppercase tracking-widest mb-2">Royalties Paid</p>
+                  {royaltiesLoading ? (
+                    <div className="space-y-1.5">
+                      <div className="h-3 rounded bg-white/[0.05] animate-pulse w-3/4" />
+                      <div className="h-3 rounded bg-white/[0.05] animate-pulse w-1/2" />
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {royalties.map((r) => (
+                        <div key={r.owner_id} className="flex items-center justify-between">
+                          <span className="text-[#B0B8C8] text-xs">@{r.username}</span>
+                          <span className="text-[#00FF85] text-xs font-bold">{r.amount} coins</span>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
+                        <span className="text-[#B0B8C8] text-xs font-semibold">Total royalties</span>
+                        <span className="text-orange-400 text-xs font-bold">{royalties.reduce((s, r) => s + r.amount, 0)} coins</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

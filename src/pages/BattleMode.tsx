@@ -6,12 +6,14 @@ import { BattleArena } from '../components/battle/BattleArena';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Battle,
+  BattleRoyalty,
   BattleSelection,
   getUserBattles,
   checkManagerStatus,
   createBattleChallenge,
   acceptBattleChallenge,
   getBattle,
+  getBattleRoyalties,
 } from '../lib/battleMode';
 import { supabase } from '../lib/supabase';
 import { markNotificationsRead } from '../lib/notifications';
@@ -37,6 +39,7 @@ export default function BattleMode() {
   const [expandedBreakdowns, setExpandedBreakdowns] = useState<Record<string, boolean>>({});
   const [breakdownData, setBreakdownData] = useState<Record<string, Battle>>({});
   const [breakdownLoading, setBreakdownLoading] = useState<Record<string, boolean>>({});
+  const [breakdownRoyalties, setBreakdownRoyalties] = useState<Record<string, BattleRoyalty[]>>({});
 
   const handleToggleBreakdown = async (battleId: string) => {
     const nowOpen = !expandedBreakdowns[battleId];
@@ -44,8 +47,12 @@ export default function BattleMode() {
     if (nowOpen && !breakdownData[battleId]) {
       setBreakdownLoading(prev => ({ ...prev, [battleId]: true }));
       try {
-        const full = await getBattle(battleId);
+        const [full, royals] = await Promise.all([
+          getBattle(battleId),
+          getBattleRoyalties(battleId),
+        ]);
         setBreakdownData(prev => ({ ...prev, [battleId]: full }));
+        setBreakdownRoyalties(prev => ({ ...prev, [battleId]: royals }));
       } catch {
         // silently fail
       } finally {
@@ -372,6 +379,7 @@ export default function BattleMode() {
                     const isOpen = expandedBreakdowns[battle.id] ?? false;
                     const isLoadingBreakdown = breakdownLoading[battle.id] ?? false;
                     const detail = breakdownData[battle.id] ?? battle;
+                    const royaltyRows: BattleRoyalty[] = breakdownRoyalties[battle.id] ?? [];
                     const pot = detail.wager_amount * 2;
                     const royalties = Math.floor(pot * 0.05);
                     const winnerPayout = pot - royalties;
@@ -456,6 +464,21 @@ export default function BattleMode() {
                                       <span className="text-white font-bold">Winner receives</span>
                                       <span className="text-[#00FF85] font-black">{winnerPayout} coins</span>
                                     </div>
+                                    {!isLoadingBreakdown && royaltyRows.length > 0 && (
+                                      <div className="mt-2 pt-2 border-t border-white/[0.06] space-y-1">
+                                        <p className="text-[9px] font-bold text-[#B0B8C8] uppercase tracking-widest mb-1.5">Royalties Paid</p>
+                                        {royaltyRows.map((r) => (
+                                          <div key={r.owner_id} className="flex justify-between text-xs">
+                                            <span className="text-[#B0B8C8]">@{r.username}</span>
+                                            <span className="text-[#00FF85] font-bold">{r.amount} coins</span>
+                                          </div>
+                                        ))}
+                                        <div className="flex justify-between text-xs pt-1 border-t border-white/[0.04]">
+                                          <span className="text-[#B0B8C8] font-semibold">Total royalties</span>
+                                          <span className="text-orange-400 font-bold">{royaltyRows.reduce((s, r) => s + r.amount, 0)} coins</span>
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
 

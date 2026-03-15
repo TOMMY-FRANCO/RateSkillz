@@ -141,6 +141,28 @@ export async function getUserBattles(userId: string): Promise<Battle[]> {
   return (data || []) as Battle[];
 }
 
+export interface BattleRoyalty {
+  owner_id: string;
+  username: string;
+  amount: number;
+}
+
+export async function getBattleRoyalties(battleId: string): Promise<BattleRoyalty[]> {
+  const { data, error } = await supabase
+    .from('battle_royalties')
+    .select('amount, owner_id, profiles!battle_royalties_owner_id_fkey(username)')
+    .eq('battle_id', battleId);
+
+  if (error) return [];
+  if (!data) return [];
+
+  return data.map((row: any) => ({
+    owner_id: row.owner_id,
+    username: row.profiles?.username || 'Unknown',
+    amount: row.amount,
+  }));
+}
+
 export async function getBattle(battleId: string): Promise<Battle> {
   const { data, error } = await supabase
     .from('battles')
