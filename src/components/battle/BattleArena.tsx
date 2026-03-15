@@ -179,30 +179,16 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
       );
       if (!result.success) {
         alert(result.error || 'Failed to submit move');
-      } else if (result.no_skills_left && result.battle_over) {
-        const isWinner = result.winner_id === user?.id;
-        playSound(isWinner ? 'battle-win' : 'battle-loss');
-        const updated = await getBattle(battle.id);
-        setBattle(updated);
-        return;
-      } else if (result.no_skills_left && result.tiebreaker) {
-        const updated = await getBattle(battle.id);
-        setBattle(updated);
-        return;
-      } else if (result.battle_over) {
-        const updated = await getBattle(battle.id);
-        setBattle(updated);
-        return;
-      } else if (result.tiebreaker) {
-        const updated = await getBattle(battle.id);
-        setBattle(updated);
-        return;
-      } else if (!result.is_attacker) {
-        setRoundResult({ attacker_wins: result.attacker_wins });
-        setTimeout(() => setRoundResult(null), 2000);
-        const updated = await getBattle(battle.id);
-        setBattle(updated);
       } else {
+        if (result.battle_over || result.tiebreaker) {
+          const updated = await getBattle(battle.id);
+          setBattle(updated);
+          return;
+        }
+        if (!result.is_attacker) {
+          setRoundResult({ attacker_wins: result.attacker_wins });
+          setTimeout(() => setRoundResult(null), 2000);
+        }
         const updated = await getBattle(battle.id);
         setBattle(updated);
       }
