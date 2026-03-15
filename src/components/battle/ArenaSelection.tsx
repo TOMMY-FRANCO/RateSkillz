@@ -62,18 +62,20 @@ export default function ArenaSelection({ onSelectArena }: ArenaSelectionProps) {
   const { isUnlocked, getProgress, loading: countLoading, error: countError } = useArenaUnlocks();
 
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500/20 to-orange-500/20 border border-red-500/30 mb-4">
-          <Shield className="w-8 h-8 text-red-400" />
+    <div className="space-y-5">
+      <div className="glass-container p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-xl flex items-center justify-center flex-shrink-0 border border-red-500/30">
+            <Shield className="w-5 h-5 text-red-400" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-white">Select Your Arena</h2>
+            <p className="text-xs text-[#B0B8C8]">Choose a battle arena to compete against other Managers</p>
+          </div>
         </div>
-        <h2 className="text-3xl font-bold text-white mb-2">Select Your Arena</h2>
-        <p className="text-white/50 max-w-md mx-auto">
-          Choose a battle arena to compete against other Managers
-        </p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {ARENAS.map((arena) => {
           const unlocked = isUnlocked(arena.slug);
           const progress = getProgress(arena.slug);
@@ -83,10 +85,10 @@ export default function ArenaSelection({ onSelectArena }: ArenaSelectionProps) {
               key={arena.slug}
               onClick={() => unlocked && onSelectArena(arena.slug)}
               className={`
-                relative overflow-hidden rounded-2xl border transition-all duration-300
+                glass-card p-0 overflow-hidden transition-all duration-300
                 ${unlocked
-                  ? 'border-cyan-500/40 bg-gradient-to-r from-slate-800/95 to-slate-700/95 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/20 cursor-pointer group hover:-translate-y-0.5'
-                  : 'border-gray-700/40 bg-gradient-to-r from-gray-900/95 to-gray-800/95'}
+                  ? 'border border-[rgba(0,224,255,0.2)] hover:border-[#00E0FF] cursor-pointer group hover:-translate-y-0.5 hover:shadow-[0_0_16px_rgba(0,224,255,0.15)]'
+                  : 'border border-white/5 opacity-60'}
               `}
             >
               <div className="flex items-stretch min-h-[130px]">
@@ -103,10 +105,10 @@ export default function ArenaSelection({ onSelectArena }: ArenaSelectionProps) {
                       target.style.display = 'none';
                     }}
                   />
-                  <div className={`absolute inset-0 ${unlocked ? 'bg-gradient-to-r from-transparent to-slate-800/50' : 'bg-black/60'}`} />
+                  <div className={`absolute inset-0 ${unlocked ? 'bg-gradient-to-r from-transparent to-[rgba(10,18,32,0.6)]' : 'bg-black/60'}`} />
                   {!unlocked && (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Lock className="w-8 h-8 text-gray-400" />
+                      <Lock className="w-8 h-8 text-[#B0B8C8]/40" />
                     </div>
                   )}
                   {unlocked && (
@@ -121,56 +123,56 @@ export default function ArenaSelection({ onSelectArena }: ArenaSelectionProps) {
                 <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-1.5">
-                      <MapPin className={`w-3.5 h-3.5 ${unlocked ? 'text-cyan-400' : 'text-gray-600'}`} />
-                      <span className={`text-xs font-semibold uppercase tracking-wider ${unlocked ? 'text-cyan-400' : 'text-gray-600'}`}>
+                      <MapPin className={`w-3.5 h-3.5 ${unlocked ? 'text-[#00E0FF]' : 'text-[#B0B8C8]/40'}`} />
+                      <span className={`text-xs font-semibold uppercase tracking-wider ${unlocked ? 'text-[#00E0FF]' : 'text-[#B0B8C8]/40'}`}>
                         {arena.city}
                       </span>
                     </div>
-                    <h3 className={`text-lg sm:text-xl font-bold mb-1 ${unlocked ? 'text-white' : 'text-gray-500'}`}>
+                    <h3 className={`text-lg sm:text-xl font-bold mb-1 ${unlocked ? 'text-white' : 'text-[#B0B8C8]/40'}`}>
                       {arena.name}
                     </h3>
-                    <p className={`text-sm ${unlocked ? 'text-white/60' : 'text-gray-600'}`}>
+                    <p className={`text-sm ${unlocked ? 'text-[#B0B8C8]' : 'text-[#B0B8C8]/30'}`}>
                       {unlocked ? arena.description : `Unlocks at ${progress.target.toLocaleString()} users`}
                     </p>
                   </div>
 
                   <div className="mt-3">
                     {unlocked ? (
-                      <button className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold rounded-lg text-sm hover:from-cyan-400 hover:to-blue-500 transition-all group-hover:shadow-lg group-hover:shadow-cyan-500/30 active:scale-95">
+                      <button className="bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-2 hover:opacity-90 transition-all group-hover:shadow-[0_0_12px_rgba(0,224,255,0.35)] active:scale-95">
                         <Play className="w-4 h-4" />
                         Enter Arena
                       </button>
                     ) : countLoading ? (
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-gray-500 text-xs">
+                        <div className="flex items-center gap-2 text-[#B0B8C8]/40 text-xs">
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           Loading progress...
                         </div>
                       </div>
                     ) : countError ? (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-gray-800/60 rounded-lg border border-gray-700/50">
-                        <Lock className="w-3.5 h-3.5 text-gray-500" />
-                        <span className="text-gray-500 text-sm font-semibold">Locked</span>
+                      <div className="flex items-center gap-2 px-4 py-2 bg-[rgba(15,24,41,0.85)] rounded-lg border border-white/10">
+                        <Lock className="w-3.5 h-3.5 text-[#B0B8C8]/40" />
+                        <span className="text-[#B0B8C8]/40 text-sm font-semibold">Locked</span>
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <div className="relative h-3 bg-gray-800 rounded-full overflow-hidden border border-gray-700/50">
+                        <div className="relative h-3 bg-[rgba(15,24,41,0.85)] rounded-full overflow-hidden border border-white/10">
                           <div
-                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-600/80 to-blue-600/80 rounded-full transition-all duration-700"
+                            className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#00E0FF]/60 to-[#38BDF8]/60 rounded-full transition-all duration-700"
                             style={{ width: `${Math.max(progress.percent, 1)}%` }}
                           />
                         </div>
                         <div className="flex items-center gap-1.5 text-xs">
-                          <Users className="w-3.5 h-3.5 text-gray-500" />
-                          <span className="text-gray-400 font-semibold">
+                          <Users className="w-3.5 h-3.5 text-[#B0B8C8]/40" />
+                          <span className="text-[#B0B8C8]/60 font-semibold">
                             {progress.current.toLocaleString()}
                           </span>
-                          <span className="text-gray-600">of</span>
-                          <span className="text-gray-400 font-semibold">
+                          <span className="text-[#B0B8C8]/30">of</span>
+                          <span className="text-[#B0B8C8]/60 font-semibold">
                             {progress.target.toLocaleString()}
                           </span>
-                          <span className="text-gray-600">users</span>
-                          <span className="text-gray-600 ml-auto">{progress.percent.toFixed(1)}%</span>
+                          <span className="text-[#B0B8C8]/30">users</span>
+                          <span className="text-[#B0B8C8]/30 ml-auto">{progress.percent.toFixed(1)}%</span>
                         </div>
                       </div>
                     )}
@@ -179,8 +181,8 @@ export default function ArenaSelection({ onSelectArena }: ArenaSelectionProps) {
 
                 {unlocked && (
                   <div className="hidden sm:flex items-center pr-5">
-                    <div className="w-12 h-12 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center group-hover:bg-cyan-500/20 group-hover:border-cyan-400/50 transition-all">
-                      <Swords className="w-5 h-5 text-cyan-400" />
+                    <div className="w-12 h-12 rounded-full bg-[rgba(0,224,255,0.08)] border border-[rgba(0,224,255,0.2)] flex items-center justify-center group-hover:bg-[rgba(0,224,255,0.15)] group-hover:border-[rgba(0,224,255,0.4)] transition-all">
+                      <Swords className="w-5 h-5 text-[#00E0FF]" />
                     </div>
                   </div>
                 )}

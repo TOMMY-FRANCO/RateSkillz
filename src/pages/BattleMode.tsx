@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Swords, Trophy, Coins, Clock, ArrowLeft } from 'lucide-react';
-import { GlassCard } from '../components/ui/GlassCard';
-import { GlassButton } from '../components/ui/GlassButton';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
 import { BattleArena } from '../components/battle/BattleArena';
 import { useAuth } from '../contexts/AuthContext';
@@ -15,6 +13,12 @@ import {
 } from '../lib/battleMode';
 import { supabase } from '../lib/supabase';
 import { markNotificationsRead } from '../lib/notifications';
+
+const selectClass = `w-full px-3 py-2.5 rounded-lg text-sm font-semibold
+  bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)]
+  text-white focus:outline-none focus:border-[#00E0FF]
+  appearance-none cursor-pointer transition-colors
+  hover:border-[rgba(0,224,255,0.5)]`;
 
 export default function BattleMode() {
   const { user } = useAuth();
@@ -123,8 +127,8 @@ export default function BattleMode() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
+      <div className="min-h-screen">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 space-y-5">
           <StaggerItem index={0}>
             <ShimmerBar className="h-8 w-48 rounded-lg" />
           </StaggerItem>
@@ -155,65 +159,88 @@ export default function BattleMode() {
 
   if (!isManager) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-        <div className="max-w-2xl mx-auto">
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="mb-6 flex items-center gap-2 text-white/60 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </button>
+      <div className="min-h-screen">
+        <nav className="glass-container rounded-none border-l-0 border-r-0 border-t-0 sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-3 h-16">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="text-[#B0B8C8] hover:text-[#00E0FF] transition-colors"
+                aria-label="Back"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <h1 className="text-xl font-bold text-white flex items-center gap-2">
+                <Swords className="w-5 h-5 text-red-400" />
+                Battle Mode
+              </h1>
+            </div>
+          </div>
+        </nav>
 
-          <GlassCard className="p-8 text-center">
-            <Swords className="w-16 h-16 text-red-500 mx-auto mb-4" />
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28">
+          <div className="glass-container p-8 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500/20 to-orange-500/20 border border-red-500/30 mb-4 mx-auto">
+              <Swords className="w-8 h-8 text-red-400" />
+            </div>
             <h2 className="text-2xl font-bold text-white mb-4">Manager Status Required</h2>
-            <p className="text-white/70 mb-6">
+            <p className="text-[#B0B8C8] mb-6">
               You must be a manager (own 5 or more cards) to participate in Battle Mode.
             </p>
-            <GlassButton onClick={() => navigate('/shop')} className="mx-auto">
+            <button
+              onClick={() => navigate('/shop')}
+              className="bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black font-bold px-6 py-2.5 rounded-lg text-sm hover:opacity-90 transition-all shadow-[0_0_12px_rgba(0,224,255,0.35)]"
+            >
               Go to Shop
-            </GlassButton>
-          </GlassCard>
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="mb-6 flex items-center gap-2 text-white/60 hover:text-white transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </button>
-
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
-              <Swords className="w-10 h-10 text-red-500" />
-              Battle Mode
-            </h1>
-            <p className="text-white/60">Skill-based card battles</p>
+    <div className="min-h-screen">
+      <nav className="glass-container rounded-none border-l-0 border-r-0 border-t-0 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="text-[#B0B8C8] hover:text-[#00E0FF] transition-colors"
+                aria-label="Back"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <h1 className="text-xl font-bold text-white flex items-center gap-2">
+                <Swords className="w-5 h-5 text-red-400" />
+                Battle Mode
+              </h1>
+            </div>
+            <button
+              onClick={() => setShowCreateChallenge(true)}
+              className="bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black font-bold px-4 py-2 rounded-lg text-sm hover:opacity-90 transition-all shadow-[0_0_12px_rgba(0,224,255,0.35)] flex items-center gap-2"
+            >
+              <Swords className="w-4 h-4" />
+              Create Challenge
+            </button>
           </div>
-          <GlassButton onClick={() => setShowCreateChallenge(true)}>
-            Create Challenge
-          </GlassButton>
         </div>
+      </nav>
+
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 space-y-5">
 
         {showCreateChallenge && (
-          <GlassCard className="p-6 mb-6">
-            <h3 className="text-xl font-bold text-white mb-4">Create Battle Challenge</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-white/70 mb-2">Select Opponent</label>
+          <div className="glass-container p-4 space-y-4">
+            <h3 className="text-base font-bold text-white">Create Battle Challenge</h3>
+
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-[#B0B8C8]">Select Opponent</label>
+              <div className="relative">
                 <select
                   value={opponentId}
                   onChange={(e) => setOpponentId(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
+                  className={selectClass}
                 >
                   <option value="">Choose a manager...</option>
                   {managers.map((m) => (
@@ -222,85 +249,99 @@ export default function BattleMode() {
                     </option>
                   ))}
                 </select>
-              </div>
-              <div>
-                <label className="block text-white/70 mb-2">Wager Amount (10–150 coins)</label>
-                <div className="flex flex-wrap gap-2">
-                  {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150].map((amount) => (
-                    <button
-                      key={amount}
-                      onClick={() => setWagerAmount(amount)}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all ${
-                        wagerAmount === amount
-                          ? 'bg-yellow-500 border-yellow-400 text-black shadow-lg shadow-yellow-500/30'
-                          : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
-                      }`}
-                    >
-                      {amount}
-                    </button>
-                  ))}
+                <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                  <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
               </div>
-              <div className="flex gap-3">
-                <GlassButton onClick={handleCreateChallenge} disabled={!opponentId || checkingBalance}>
-                  {checkingBalance ? 'Checking...' : 'Create Challenge'}
-                </GlassButton>
-                <GlassButton onClick={() => setShowCreateChallenge(false)} variant="outline">
-                  Cancel
-                </GlassButton>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-[#B0B8C8]">Wager Amount (10–150 coins)</label>
+              <div className="flex flex-wrap gap-2">
+                {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150].map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => setWagerAmount(amount)}
+                    className={`px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                      wagerAmount === amount
+                        ? 'bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black shadow-[0_0_12px_rgba(0,224,255,0.35)]'
+                        : 'bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-[#B0B8C8] hover:border-[#00E0FF] hover:text-white'
+                    }`}
+                  >
+                    {amount}
+                  </button>
+                ))}
               </div>
             </div>
-          </GlassCard>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleCreateChallenge}
+                disabled={!opponentId || checkingBalance}
+                className="bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black font-bold px-5 py-2.5 rounded-lg text-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_12px_rgba(0,224,255,0.35)]"
+              >
+                {checkingBalance ? 'Checking...' : 'Create Challenge'}
+              </button>
+              <button
+                onClick={() => setShowCreateChallenge(false)}
+                className="px-5 py-2.5 rounded-lg text-sm font-bold bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-[#B0B8C8] hover:border-[#00E0FF] hover:text-white transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <GlassCard className="p-6">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-yellow-500" />
+        <div className="grid md:grid-cols-2 gap-5">
+          <div className="glass-card p-4">
+            <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-yellow-400" />
               Pending Challenges
             </h3>
             <div className="space-y-3">
               {battles.filter((b) => b.status === 'waiting').length === 0 ? (
-                <p className="text-white/50 text-center py-4">No pending challenges</p>
+                <p className="text-[#B0B8C8]/50 text-center py-4 text-sm">No pending challenges</p>
               ) : (
                 battles
                   .filter((b) => b.status === 'waiting')
                   .map((battle) => (
                     <div
                       key={battle.id}
-                      className="bg-white/5 border border-white/10 rounded-lg p-4"
+                      className="bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.12)] rounded-lg p-3"
                     >
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-2">
-                          <Coins className="w-4 h-4 text-yellow-500" />
-                          <span className="text-white font-semibold">{battle.wager_amount} coins</span>
+                          <Coins className="w-4 h-4 text-yellow-400" />
+                          <span className="text-white font-bold text-sm">{battle.wager_amount} coins</span>
                         </div>
                         {battle.manager2_id === user?.id && (
-                          <GlassButton
+                          <button
                             onClick={() => handleAcceptChallenge(battle.id)}
-                            size="sm"
+                            className="bg-gradient-to-r from-[#00FF85] to-[#00E0FF] text-black font-bold px-3 py-1.5 rounded-lg text-xs hover:opacity-90 transition-all"
                           >
                             Accept
-                          </GlassButton>
+                          </button>
                         )}
                       </div>
-                      <p className="text-white/60 text-sm">
+                      <p className="text-[#B0B8C8] text-xs">
                         {battle.manager1_id === user?.id ? 'Challenge sent' : 'Challenge received'}
                       </p>
                     </div>
                   ))
               )}
             </div>
-          </GlassCard>
+          </div>
 
-          <GlassCard className="p-6">
-            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-yellow-500" />
+          <div className="glass-card p-4">
+            <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-yellow-400" />
               Battle History
             </h3>
             <div className="space-y-3">
               {battles.filter((b) => b.status === 'completed' || b.status === 'forfeited').length === 0 ? (
-                <p className="text-white/50 text-center py-4">No battle history</p>
+                <p className="text-[#B0B8C8]/50 text-center py-4 text-sm">No battle history</p>
               ) : (
                 battles
                   .filter((b) => b.status === 'completed' || b.status === 'forfeited')
@@ -310,23 +351,23 @@ export default function BattleMode() {
                     return (
                       <div
                         key={battle.id}
-                        className="bg-white/5 border border-white/10 rounded-lg p-4"
+                        className="bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.12)] rounded-lg p-3"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <Trophy
-                              className={`w-4 h-4 ${isWinner ? 'text-yellow-500' : 'text-red-500'}`}
+                              className={`w-4 h-4 ${isWinner ? 'text-yellow-400' : 'text-red-400'}`}
                             />
-                            <span className={`font-semibold ${isWinner ? 'text-green-500' : 'text-red-500'}`}>
+                            <span className={`font-bold text-sm ${isWinner ? 'text-[#00FF85]' : 'text-red-400'}`}>
                               {isWinner ? 'Victory' : 'Defeat'}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Coins className="w-4 h-4 text-yellow-500" />
-                            <span className="text-white">{battle.wager_amount} coins</span>
+                          <div className="flex items-center gap-1.5">
+                            <Coins className="w-3.5 h-3.5 text-yellow-400" />
+                            <span className="text-white text-sm">{battle.wager_amount} coins</span>
                           </div>
                         </div>
-                        <p className="text-white/60 text-sm mt-2">
+                        <p className="text-[#B0B8C8]/60 text-xs mt-1.5">
                           {new Date(battle.completed_at || '').toLocaleDateString()}
                         </p>
                       </div>
@@ -334,9 +375,9 @@ export default function BattleMode() {
                   })
               )}
             </div>
-          </GlassCard>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
