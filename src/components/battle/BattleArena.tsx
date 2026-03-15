@@ -37,7 +37,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   const [myCards, setMyCards] = useState<PlayerCard[]>([]);
   const [opponentCards, setOpponentCards] = useState<PlayerCard[]>([]);
   const [loading, setLoading] = useState(true);
-  const [timeRemaining, setTimeRemaining] = useState(60);
+  const [timeRemaining, setTimeRemaining] = useState(75);
   const [submitting, setSubmitting] = useState(false);
   const [roundResult, setRoundResult] = useState<{ attacker_wins: boolean } | null>(null);
   const [lobbyCountdown, setLobbyCountdown] = useState(8);
