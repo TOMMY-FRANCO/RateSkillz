@@ -7,8 +7,6 @@ import { getManagedCards, proposeCardSwap, checkActiveSwapCooldown } from '../li
 import { Coins, Repeat, User, TrendingUp, X, Lock, Clock, RefreshCw } from 'lucide-react';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from './ui/Shimmer';
 import { SkeletonAvatar } from './ui/SkeletonPresets';
-import { GlassCard } from './ui/GlassCard';
-
 const PAGE_LIMIT = 20;
 
 interface PurchasedCardsTabProps {
@@ -195,11 +193,11 @@ export default function PurchasedCardsTab({ onSwapRequested }: PurchasedCardsTab
       )}
 
       {cards.length === 0 ? (
-        <GlassCard className="!p-12 text-center">
+        <div className="glass-card p-12 text-center">
           <Repeat className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-          <p className="text-slate-400 text-lg">No purchased cards yet</p>
+          <p className="text-[#B0B8C8] text-lg">No purchased cards yet</p>
           <p className="text-slate-500 text-sm mt-2">Cards appear here once they have been traded at least once</p>
-        </GlassCard>
+        </div>
       ) : (
         <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -210,11 +208,7 @@ export default function PurchasedCardsTab({ onSwapRequested }: PurchasedCardsTab
             return (
               <div
                 key={card.id}
-                className={`bg-[rgba(255,255,255,0.04)] backdrop-blur-[15px] border rounded-2xl p-6 transition-all hover:-translate-y-0.5 ${
-                  isLocked
-                    ? 'border-[rgba(251,191,36,0.3)]'
-                    : 'border-[rgba(0,224,255,0.12)] hover:border-[rgba(0,224,255,0.35)] hover:shadow-[0_0_30px_rgba(0,224,255,0.08)]'
-                }`}
+                className={`glass-card p-6 ${isLocked ? '!border-[rgba(251,191,36,0.3)]' : ''}`}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">

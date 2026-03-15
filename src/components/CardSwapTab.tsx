@@ -192,14 +192,14 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
           onClick={() => setView('offers')}
           className={`px-5 py-2.5 rounded-xl font-semibold transition-all text-sm flex items-center gap-2 ${
             view === 'offers'
-              ? 'bg-[rgba(0,224,255,0.15)] text-[#00E0FF] border border-[rgba(0,224,255,0.4)]'
-              : 'bg-[rgba(255,255,255,0.05)] text-slate-400 border border-[rgba(255,255,255,0.08)] hover:text-slate-200 hover:border-[rgba(255,255,255,0.15)]'
+              ? 'bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black shadow-[0_0_12px_rgba(0,224,255,0.35)]'
+              : 'bg-[rgba(15,24,41,0.85)] text-[#B0B8C8] border border-[rgba(0,224,255,0.2)] hover:border-[rgba(0,224,255,0.4)] hover:text-white'
           }`}
         >
           <Repeat className="w-4 h-4" />
           Swap Requests
           {totalBadge > 0 && (
-            <span className="px-1.5 py-0.5 bg-[rgba(0,224,255,0.2)] text-[#00E0FF] text-xs font-bold rounded-full border border-[rgba(0,224,255,0.35)]">
+            <span className={`px-1.5 py-0.5 text-xs font-bold rounded-full ${view === 'offers' ? 'bg-black/20 text-black' : 'bg-[rgba(0,224,255,0.2)] text-[#00E0FF] border border-[rgba(0,224,255,0.35)]'}`}>
               {totalBadge}
             </span>
           )}
@@ -208,8 +208,8 @@ export default function CardSwapTab({ onSwapComplete }: CardSwapTabProps) {
           onClick={() => setView('history')}
           className={`px-5 py-2.5 rounded-xl font-semibold transition-all text-sm flex items-center gap-2 ${
             view === 'history'
-              ? 'bg-[rgba(0,224,255,0.15)] text-[#00E0FF] border border-[rgba(0,224,255,0.4)]'
-              : 'bg-[rgba(255,255,255,0.05)] text-slate-400 border border-[rgba(255,255,255,0.08)] hover:text-slate-200 hover:border-[rgba(255,255,255,0.15)]'
+              ? 'bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black shadow-[0_0_12px_rgba(0,224,255,0.35)]'
+              : 'bg-[rgba(15,24,41,0.85)] text-[#B0B8C8] border border-[rgba(0,224,255,0.2)] hover:border-[rgba(0,224,255,0.4)] hover:text-white'
           }`}
         >
           <History className="w-4 h-4" />

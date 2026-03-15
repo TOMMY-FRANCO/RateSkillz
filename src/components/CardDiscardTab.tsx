@@ -9,7 +9,7 @@ import {
   type DiscardHistory
 } from '../lib/cardDiscard';
 import { useCoinBalance } from '../hooks/useCoinBalance';
-import { Trash2, TrendingUp, Clock, AlertCircle, CheckCircle, User, Coins } from 'lucide-react';
+import { Trash2, Clock, AlertCircle, User, Coins, History } from 'lucide-react';
 import { formatCoinBalance } from '../lib/formatBalance';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from './ui/Shimmer';
 import { SkeletonAvatar } from './ui/SkeletonPresets';
@@ -89,7 +89,7 @@ export default function CardDiscardTab() {
       <div className="space-y-3 py-4">
         {Array.from({ length: 3 }).map((_, i) => (
           <StaggerItem key={i} index={i}>
-            <div className="bg-gray-900/60 border border-gray-700 rounded-xl p-4">
+            <div className="glass-card p-4">
               <div className="flex items-center gap-4">
                 <SkeletonAvatar size="lg" shape="rounded" />
                 <div className="flex-1 space-y-2">
@@ -108,49 +108,43 @@ export default function CardDiscardTab() {
 
   return (
     <div className="space-y-6">
-      {/* Header with Tabs */}
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
           <button
             onClick={() => setView('cards')}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-5 py-2.5 rounded-xl font-semibold transition-all text-sm flex items-center gap-2 ${
               view === 'cards'
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black shadow-[0_0_12px_rgba(0,224,255,0.35)]'
+                : 'bg-[rgba(15,24,41,0.85)] text-[#B0B8C8] border border-[rgba(0,224,255,0.2)] hover:border-[rgba(0,224,255,0.4)] hover:text-white'
             }`}
           >
-            <div className="flex items-center gap-2">
-              <Trash2 className="w-4 h-4" />
-              Discard Cards
-            </div>
+            <Trash2 className="w-4 h-4" />
+            Discard Cards
           </button>
           <button
             onClick={() => setView('history')}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-5 py-2.5 rounded-xl font-semibold transition-all text-sm flex items-center gap-2 ${
               view === 'history'
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black shadow-[0_0_12px_rgba(0,224,255,0.35)]'
+                : 'bg-[rgba(15,24,41,0.85)] text-[#B0B8C8] border border-[rgba(0,224,255,0.2)] hover:border-[rgba(0,224,255,0.4)] hover:text-white'
             }`}
           >
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              History
-            </div>
+            <History className="w-4 h-4" />
+            History
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-sm">
-          <Coins className="w-5 h-5 text-yellow-500" />
-          <span className="font-semibold">{formatCoinBalance(balance)}</span>
+        <div className="flex items-center gap-2 px-4 py-2 bg-[rgba(0,224,255,0.08)] rounded-full border border-[rgba(0,224,255,0.25)]">
+          <Coins className="w-5 h-5 text-[#00E0FF]" />
+          <span className="font-semibold text-[#00E0FF]">{formatCoinBalance(balance)}</span>
         </div>
       </div>
 
-      {/* Info Banner */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] rounded-xl p-4">
         <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-blue-900">
-            <p className="font-semibold mb-1">How Card Discard Works:</p>
+          <AlertCircle className="w-5 h-5 text-[#00E0FF] mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-[#B0B8C8]">
+            <p className="font-semibold mb-1 text-white">How Card Discard Works:</p>
             <ul className="space-y-1 list-disc list-inside">
               <li>You pay the card's current price + 10 coins bonus to the original owner</li>
               <li>The card value increases by 10 coins</li>
@@ -161,14 +155,13 @@ export default function CardDiscardTab() {
         </div>
       </div>
 
-      {/* Cards View */}
       {view === 'cards' && (
         <div>
           {cards.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg">
-              <Trash2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600 font-medium">No cards available to discard</p>
-              <p className="text-sm text-gray-500 mt-2">
+            <div className="glass-card p-12 text-center">
+              <Trash2 className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+              <p className="text-[#B0B8C8] font-medium">No cards available to discard</p>
+              <p className="text-sm text-slate-500 mt-2">
                 Purchase cards from the marketplace to get started
               </p>
             </div>
@@ -177,9 +170,8 @@ export default function CardDiscardTab() {
               {cards.map((card) => (
                 <div
                   key={card.id}
-                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
+                  className="glass-card p-5"
                 >
-                  {/* Card Header */}
                   <div className="flex items-center gap-3 mb-4">
                     {card.player_avatar_url ? (
                       <img
@@ -187,62 +179,60 @@ export default function CardDiscardTab() {
                         alt={card.player_username}
                         width="48"
                         height="48"
-                        className="w-12 h-12 rounded-full object-cover"
+                        className="w-12 h-12 rounded-full object-cover border border-[rgba(0,224,255,0.2)]"
                         loading="lazy"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                        <User className="w-6 h-6 text-gray-400" />
+                      <div className="w-12 h-12 rounded-full bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] flex items-center justify-center">
+                        <User className="w-6 h-6 text-[#B0B8C8]" />
                       </div>
                     )}
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">
+                      <h3 className="font-semibold text-white">
                         @{card.player_username}
                       </h3>
                     </div>
                   </div>
 
-                  {/* Card Details */}
                   <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Current Price:</span>
-                      <span className="font-semibold">{formatCoinBalance(card.current_price)}</span>
+                    <div className="flex justify-between text-sm p-2.5 bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.15)] rounded-lg">
+                      <span className="text-[#B0B8C8]">Current Price:</span>
+                      <span className="font-semibold text-[#00E0FF]">{formatCoinBalance(card.current_price)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Discard Bonus:</span>
-                      <span className="font-semibold text-green-600">+{formatCoinBalance(10)}</span>
+                    <div className="flex justify-between text-sm p-2.5 bg-[rgba(15,24,41,0.85)] border border-[rgba(0,255,133,0.15)] rounded-lg">
+                      <span className="text-[#B0B8C8]">Discard Bonus:</span>
+                      <span className="font-semibold text-[#00FF85]">+{formatCoinBalance(10)}</span>
                     </div>
-                    <div className="flex justify-between text-sm border-t pt-2">
-                      <span className="text-gray-900 font-medium">Total Cost:</span>
-                      <span className="font-bold text-lg">{formatCoinBalance(card.discard_cost)}</span>
+                    <div className="flex justify-between text-sm p-2.5 bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] rounded-lg">
+                      <span className="text-white font-medium">Total Cost:</span>
+                      <span className="font-bold text-lg text-[#00E0FF]">{formatCoinBalance(card.discard_cost)}</span>
                     </div>
                     {card.original_owner_username && (
-                      <div className="flex justify-between text-sm text-gray-600">
+                      <div className="flex justify-between text-sm text-[#B0B8C8]">
                         <span>Original Owner:</span>
-                        <span className="font-medium">@{card.original_owner_username}</span>
+                        <span className="font-medium text-white">@{card.original_owner_username}</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-sm text-gray-600">
+                    <div className="flex justify-between text-sm text-[#B0B8C8]">
                       <span>Times Traded:</span>
-                      <span>{card.times_traded}</span>
+                      <span className="text-white">{card.times_traded}</span>
                     </div>
                   </div>
 
-                  {/* Discard Button */}
                   <button
                     onClick={() => handleDiscardClick(card)}
                     disabled={discarding === card.id || balance < card.discard_cost}
-                    className={`w-full py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                    className={`w-full py-2.5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm ${
                       discarding === card.id
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        ? 'bg-[rgba(255,255,255,0.05)] text-slate-500 cursor-not-allowed border border-[rgba(255,255,255,0.08)]'
                         : balance < card.discard_cost
-                        ? 'bg-red-100 text-red-400 cursor-not-allowed'
-                        : 'bg-red-500 text-white hover:bg-red-600'
+                        ? 'bg-[rgba(239,68,68,0.1)] text-red-300/70 cursor-not-allowed border border-[rgba(239,68,68,0.2)]'
+                        : 'bg-[rgba(239,68,68,0.12)] hover:bg-[rgba(239,68,68,0.2)] text-red-300 border border-[rgba(239,68,68,0.3)] hover:border-[rgba(239,68,68,0.5)] transition-all'
                     }`}
                   >
                     {discarding === card.id ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-400"></div>
                         Discarding...
                       </>
                     ) : balance < card.discard_cost ? (
@@ -264,14 +254,13 @@ export default function CardDiscardTab() {
         </div>
       )}
 
-      {/* History View */}
       {view === 'history' && (
         <div>
           {history.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg">
-              <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-600 font-medium">No discard history</p>
-              <p className="text-sm text-gray-500 mt-2">
+            <div className="glass-card p-12 text-center">
+              <Clock className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+              <p className="text-[#B0B8C8] font-medium">No discard history</p>
+              <p className="text-sm text-slate-500 mt-2">
                 Cards you discard will appear here
               </p>
             </div>
@@ -280,7 +269,7 @@ export default function CardDiscardTab() {
               {history.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                  className="glass-card p-5"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1">
@@ -290,51 +279,51 @@ export default function CardDiscardTab() {
                           alt={item.player_username}
                           width="40"
                           height="40"
-                          className="w-10 h-10 rounded-full object-cover"
+                          className="w-10 h-10 rounded-full object-cover border border-[rgba(0,224,255,0.2)]"
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <User className="w-5 h-5 text-gray-400" />
+                        <div className="w-10 h-10 rounded-full bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] flex items-center justify-center">
+                          <User className="w-5 h-5 text-[#B0B8C8]" />
                         </div>
                       )}
                       <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900">
+                        <h4 className="font-semibold text-white">
                           @{item.player_username}
                         </h4>
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <div className="flex items-center gap-1 text-red-600 font-semibold">
+                      <div className="flex items-center gap-1 text-red-400 font-semibold">
                         <Coins className="w-4 h-4" />
                         -{formatCoinBalance(item.total_paid)}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-[#B0B8C8] mt-1">
                         {formatDiscardDate(item.created_at)}
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-600">Card Price:</p>
-                      <p className="font-semibold">{formatCoinBalance(item.card_price_at_discard)}</p>
+                  <div className="mt-3 pt-3 border-t border-[rgba(0,224,255,0.1)] grid grid-cols-2 gap-3 text-sm">
+                    <div className="p-2.5 bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.15)] rounded-lg">
+                      <p className="text-[#B0B8C8] text-xs">Card Price:</p>
+                      <p className="font-semibold text-[#00E0FF]">{formatCoinBalance(item.card_price_at_discard)}</p>
                     </div>
-                    <div>
-                      <p className="text-gray-600">Bonus Paid:</p>
-                      <p className="font-semibold text-green-600">+{formatCoinBalance(item.bonus_amount)}</p>
+                    <div className="p-2.5 bg-[rgba(15,24,41,0.85)] border border-[rgba(0,255,133,0.15)] rounded-lg">
+                      <p className="text-[#B0B8C8] text-xs">Bonus Paid:</p>
+                      <p className="font-semibold text-[#00FF85]">+{formatCoinBalance(item.bonus_amount)}</p>
                     </div>
-                    <div>
-                      <p className="text-gray-600">Value Change:</p>
-                      <p className="font-semibold text-blue-600">
+                    <div className="p-2.5 bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.15)] rounded-lg">
+                      <p className="text-[#B0B8C8] text-xs">Value Change:</p>
+                      <p className="font-semibold text-[#00E0FF] text-xs">
                         {formatCoinBalance(item.card_value_before)} → {formatCoinBalance(item.card_value_after)}
                       </p>
                     </div>
                     {item.original_owner_username && (
-                      <div>
-                        <p className="text-gray-600">Paid To:</p>
-                        <p className="font-semibold">@{item.original_owner_username}</p>
+                      <div className="p-2.5 bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.15)] rounded-lg">
+                        <p className="text-[#B0B8C8] text-xs">Paid To:</p>
+                        <p className="font-semibold text-white">@{item.original_owner_username}</p>
                       </div>
                     )}
                   </div>
@@ -345,15 +334,14 @@ export default function CardDiscardTab() {
         </div>
       )}
 
-      {/* Confirmation Modal */}
       {showConfirmation && selectedCard && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[rgba(10,17,40,0.97)] border border-[rgba(0,224,255,0.2)] rounded-2xl max-w-md w-full p-6 shadow-[0_0_60px_rgba(0,224,255,0.1)]">
+            <h3 className="text-xl font-bold text-white mb-4">
               Confirm Card Discard
             </h3>
 
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+            <div className="bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] rounded-xl p-4 mb-4">
               <div className="flex items-center gap-3 mb-3">
                 {selectedCard.player_avatar_url ? (
                   <img
@@ -361,45 +349,45 @@ export default function CardDiscardTab() {
                     alt={selectedCard.player_username}
                     width="48"
                     height="48"
-                    className="w-12 h-12 rounded-full object-cover"
+                    className="w-12 h-12 rounded-full object-cover border border-[rgba(0,224,255,0.2)]"
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                    <User className="w-6 h-6 text-gray-400" />
+                  <div className="w-12 h-12 rounded-full bg-[rgba(0,224,255,0.06)] border border-[rgba(0,224,255,0.2)] flex items-center justify-center">
+                    <User className="w-6 h-6 text-[#B0B8C8]" />
                   </div>
                 )}
                 <div>
-                  <p className="font-semibold text-gray-900">@{selectedCard.player_username}</p>
+                  <p className="font-semibold text-white">@{selectedCard.player_username}</p>
                 </div>
               </div>
 
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Card Price:</span>
-                  <span className="font-semibold">{formatCoinBalance(selectedCard.current_price)}</span>
+                <div className="flex justify-between p-2 bg-[rgba(0,224,255,0.04)] rounded-lg">
+                  <span className="text-[#B0B8C8]">Card Price:</span>
+                  <span className="font-semibold text-[#00E0FF]">{formatCoinBalance(selectedCard.current_price)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Discard Bonus:</span>
-                  <span className="font-semibold text-green-600">+{formatCoinBalance(10)}</span>
+                <div className="flex justify-between p-2 bg-[rgba(0,255,133,0.04)] rounded-lg">
+                  <span className="text-[#B0B8C8]">Discard Bonus:</span>
+                  <span className="font-semibold text-[#00FF85]">+{formatCoinBalance(10)}</span>
                 </div>
-                <div className="flex justify-between border-t pt-2">
-                  <span className="font-medium text-gray-900">Total Payment:</span>
-                  <span className="font-bold text-lg">{formatCoinBalance(selectedCard.discard_cost)}</span>
+                <div className="flex justify-between p-2 bg-[rgba(0,224,255,0.08)] border border-[rgba(0,224,255,0.2)] rounded-lg">
+                  <span className="font-medium text-white">Total Payment:</span>
+                  <span className="font-bold text-lg text-[#00E0FF]">{formatCoinBalance(selectedCard.discard_cost)}</span>
                 </div>
                 {selectedCard.original_owner_username && (
-                  <div className="flex justify-between text-gray-600">
+                  <div className="flex justify-between text-[#B0B8C8]">
                     <span>Payment goes to:</span>
-                    <span className="font-medium">@{selectedCard.original_owner_username}</span>
+                    <span className="font-medium text-white">@{selectedCard.original_owner_username}</span>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+            <div className="bg-[rgba(251,191,36,0.08)] border border-[rgba(251,191,36,0.25)] rounded-xl p-3 mb-4">
               <div className="flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-yellow-800">
+                <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-amber-300/80">
                   This action cannot be undone. The card will be removed from your inventory.
                 </p>
               </div>
@@ -408,13 +396,13 @@ export default function CardDiscardTab() {
             <div className="flex gap-3">
               <button
                 onClick={handleCancelDiscard}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                className="flex-1 px-4 py-2.5 bg-[rgba(255,255,255,0.05)] text-slate-300 rounded-xl border border-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.08)] font-semibold transition-all text-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmDiscard}
-                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium transition-colors flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2.5 bg-[rgba(239,68,68,0.12)] hover:bg-[rgba(239,68,68,0.2)] text-red-300 rounded-xl border border-[rgba(239,68,68,0.3)] hover:border-[rgba(239,68,68,0.5)] font-semibold transition-all flex items-center justify-center gap-2 text-sm"
               >
                 <Trash2 className="w-4 h-4" />
                 Discard Card

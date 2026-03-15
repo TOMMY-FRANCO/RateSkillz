@@ -95,12 +95,12 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
 
   const getTierColor = (tier: string | null) => {
     switch (tier) {
-      case 'bronze': return 'text-orange-700 bg-orange-100 border-orange-400';
-      case 'silver': return 'text-gray-600 bg-gray-200 border-gray-400';
-      case 'gold': return 'text-yellow-600 bg-yellow-100 border-yellow-400';
-      case 'platinum': return 'text-cyan-600 bg-cyan-100 border-cyan-400';
-      case 'diamond': return 'text-blue-600 bg-blue-100 border-blue-400';
-      default: return 'text-gray-500 bg-gray-100 border-gray-300';
+      case 'bronze': return 'text-orange-400 bg-[rgba(251,146,60,0.1)] border-[rgba(251,146,60,0.3)]';
+      case 'silver': return 'text-slate-300 bg-[rgba(255,255,255,0.08)] border-[rgba(255,255,255,0.2)]';
+      case 'gold': return 'text-yellow-400 bg-[rgba(234,179,8,0.1)] border-[rgba(234,179,8,0.3)]';
+      case 'platinum': return 'text-[#00E0FF] bg-[rgba(0,224,255,0.08)] border-[rgba(0,224,255,0.25)]';
+      case 'diamond': return 'text-blue-300 bg-[rgba(59,130,246,0.1)] border-[rgba(59,130,246,0.3)]';
+      default: return 'text-[#B0B8C8] bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.1)]';
     }
   };
 
@@ -134,13 +134,13 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
             <Star className="w-6 h-6 text-yellow-400" />
             Not Bought Cards
           </h2>
-          <p className="text-gray-400 text-sm mt-1">
+          <p className="text-[#B0B8C8] text-sm mt-1">
             Newly released cards that have never been purchased. Fixed price: 20 coins.
           </p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 rounded-full border border-yellow-500/20">
-          <Coins className="w-5 h-5 text-yellow-500" />
-          <span className="text-lg font-bold text-yellow-500">{balance.toFixed(2)}</span>
+        <div className="flex items-center gap-2 px-4 py-2 bg-[rgba(0,224,255,0.08)] rounded-full border border-[rgba(0,224,255,0.25)]">
+          <Coins className="w-5 h-5 text-[#00E0FF]" />
+          <span className="text-lg font-bold text-[#00E0FF]">{balance.toFixed(2)}</span>
         </div>
       </div>
 
@@ -164,10 +164,10 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
       </div>
 
       {cards.length === 0 ? (
-        <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-12 text-center">
-          <Star className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400 text-lg">No cards available</p>
-          <p className="text-gray-500 text-sm mt-2">All cards have been purchased at least once</p>
+        <div className="glass-card p-12 text-center">
+          <Star className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+          <p className="text-[#B0B8C8] text-lg">No cards available</p>
+          <p className="text-slate-500 text-sm mt-2">All cards have been purchased at least once</p>
         </div>
       ) : (
         <>
@@ -180,7 +180,7 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
             return (
               <div
                 key={card.id}
-                className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 hover:border-yellow-500/50 rounded-2xl p-6 transition-all"
+                className="glass-card p-6"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
@@ -188,7 +188,7 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
                       @{card.card_user?.username || 'unknown'}
                     </h3>
                     <div className="flex items-center gap-2 mt-2">
-                      <div className="flex items-center gap-1 text-yellow-500">
+                      <div className="flex items-center gap-1 text-[#00E0FF]">
                         <Trophy className="w-4 h-4" />
                         <span className="font-bold text-lg">{card.overall_rating}</span>
                       </div>
@@ -201,7 +201,7 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
                   </div>
                   <button
                     onClick={() => navigate(`/profile/${card.card_user?.username}`)}
-                    className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-all flex items-center gap-1"
+                    className="px-3 py-1.5 bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(0,224,255,0.1)] text-slate-300 hover:text-[#00E0FF] text-sm rounded-lg transition-all border border-[rgba(0,224,255,0.15)] hover:border-[rgba(0,224,255,0.3)] flex items-center gap-1"
                   >
                     <User className="w-4 h-4" />
                     View
@@ -210,58 +210,58 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
 
                 <div className="space-y-3 mb-4">
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="p-2 bg-gray-800/50 rounded-lg">
-                      <span className="text-xs text-gray-400">Position</span>
+                    <div className="p-2 bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] rounded-lg">
+                      <span className="text-xs text-[#B0B8C8]">Position</span>
                       <p className="text-sm font-semibold text-white">{card.position}</p>
                     </div>
-                    <div className="p-2 bg-gray-800/50 rounded-lg">
-                      <span className="text-xs text-gray-400">Team</span>
+                    <div className="p-2 bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] rounded-lg">
+                      <span className="text-xs text-[#B0B8C8]">Team</span>
                       <p className="text-sm font-semibold text-white truncate">{card.team}</p>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-gradient-to-br from-green-900/30 to-emerald-900/30 border border-green-600/50 rounded-xl">
+                  <div className="p-3 bg-[rgba(15,24,41,0.85)] border border-[rgba(0,255,133,0.2)] rounded-xl">
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div>
-                        <div className="text-xs text-green-300">PAC</div>
-                        <div className="text-lg font-bold text-green-400">{card.pac || 50}</div>
+                        <div className="text-xs text-[#00FF85]/70">PAC</div>
+                        <div className="text-lg font-bold text-[#00FF85]">{card.pac || 50}</div>
                       </div>
                       <div>
-                        <div className="text-xs text-green-300">SHO</div>
-                        <div className="text-lg font-bold text-green-400">{card.sho || 50}</div>
+                        <div className="text-xs text-[#00FF85]/70">SHO</div>
+                        <div className="text-lg font-bold text-[#00FF85]">{card.sho || 50}</div>
                       </div>
                       <div>
-                        <div className="text-xs text-green-300">PAS</div>
-                        <div className="text-lg font-bold text-green-400">{card.pas || 50}</div>
+                        <div className="text-xs text-[#00FF85]/70">PAS</div>
+                        <div className="text-lg font-bold text-[#00FF85]">{card.pas || 50}</div>
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center mt-2">
                       <div>
-                        <div className="text-xs text-green-300">DRI</div>
-                        <div className="text-lg font-bold text-green-400">{card.dri || 50}</div>
+                        <div className="text-xs text-[#00FF85]/70">DRI</div>
+                        <div className="text-lg font-bold text-[#00FF85]">{card.dri || 50}</div>
                       </div>
                       <div>
-                        <div className="text-xs text-green-300">DEF</div>
-                        <div className="text-lg font-bold text-green-400">{card.def || 50}</div>
+                        <div className="text-xs text-[#00FF85]/70">DEF</div>
+                        <div className="text-lg font-bold text-[#00FF85]">{card.def || 50}</div>
                       </div>
                       <div>
-                        <div className="text-xs text-green-300">PHY</div>
-                        <div className="text-lg font-bold text-green-400">{card.phy || 50}</div>
+                        <div className="text-xs text-[#00FF85]/70">PHY</div>
+                        <div className="text-lg font-bold text-[#00FF85]">{card.phy || 50}</div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center p-3 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 rounded-lg border border-yellow-500/30">
-                    <span className="text-sm text-yellow-300 font-semibold">Fixed Price</span>
+                  <div className="flex justify-between items-center p-3 bg-[rgba(15,24,41,0.85)] rounded-lg border border-[rgba(0,224,255,0.2)]">
+                    <span className="text-sm text-[#B0B8C8] font-semibold">Fixed Price</span>
                     <div className="flex items-center gap-1">
-                      <Coins className="w-5 h-5 text-yellow-400" />
-                      <span className="font-bold text-yellow-400 text-xl">20.00</span>
+                      <Coins className="w-5 h-5 text-[#00E0FF]" />
+                      <span className="font-bold text-[#00E0FF] text-xl">20.00</span>
                     </div>
                   </div>
 
-                  <div className="p-2 bg-blue-900/20 border border-blue-600/30 rounded-lg text-center">
-                    <div className="flex items-center justify-center gap-1 text-xs text-blue-300">
-                      <TrendingUp className="w-3 h-3" />
+                  <div className="p-2 bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.15)] rounded-lg text-center">
+                    <div className="flex items-center justify-center gap-1 text-xs text-[#B0B8C8]">
+                      <TrendingUp className="w-3 h-3 text-[#00E0FF]" />
                       <span>After purchase: 30 coins (+10)</span>
                     </div>
                   </div>
