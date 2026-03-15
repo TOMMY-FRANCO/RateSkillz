@@ -489,7 +489,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
         {/* ── PITCH CONTAINER ── */}
         <div
           className="relative flex-1 rounded-2xl overflow-hidden flex flex-col bg-[#1a4a2e]"
-          style={{ minHeight: 340 }}
+          style={{ minHeight: 480 }}
         >
           {/* Pitch line markings */}
           <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
@@ -544,13 +544,13 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
             <p className="text-[rgba(255,255,255,0.4)] text-[10px] font-bold uppercase tracking-widest mb-2">
               Opponent &mdash; {oppRemainingCards} card{oppRemainingCards !== 1 ? 's' : ''} left
             </p>
-            <div className="flex gap-2 flex-wrap justify-center">
+            <div className="flex gap-2 overflow-x-auto pb-1 justify-start w-full scrollbar-hide">
               {opponentCards.map((card) => {
                 const eliminated = eliminatedCardIds.includes(card.id);
                 return (
                   <div
                     key={card.id}
-                    className="relative rotate-180"
+                    className="relative flex-shrink-0"
                     style={{ opacity: eliminated ? 0.3 : 1 }}
                   >
                     <div className="w-16 rounded-xl border border-white/10 bg-black/30 backdrop-blur-sm flex flex-col items-center py-2 px-1 gap-1">
@@ -714,13 +714,13 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
 
           {/* ── ROW 3: My cards zone ── */}
           <div className="relative z-10 flex-1 flex flex-col items-center justify-end pb-3 px-3">
-            <div className="flex gap-2 flex-wrap justify-center mb-2">
+            <div className="flex gap-2 overflow-x-auto pb-1 justify-start w-full scrollbar-hide mb-2">
               {myCards.map((card) => {
                 const eliminated = eliminatedCardIds.includes(card.id);
                 return (
                   <div
                     key={card.id}
-                    className="relative"
+                    className="relative flex-shrink-0"
                     style={{ opacity: eliminated ? 0.3 : 1 }}
                   >
                     <div className="w-16 rounded-xl border border-white/10 bg-black/30 backdrop-blur-sm flex flex-col items-center py-2 px-1 gap-1">
