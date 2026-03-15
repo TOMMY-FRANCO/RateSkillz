@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Swords, Trophy, Coins, Clock, ArrowLeft } from 'lucide-react';
+import { Swords, Trophy, Coins, Clock, ArrowLeft, ChevronDown, ChevronUp, Shield, Zap } from 'lucide-react';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
 import { BattleArena } from '../components/battle/BattleArena';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Battle,
+  BattleSelection,
   getUserBattles,
   checkManagerStatus,
   createBattleChallenge,
   acceptBattleChallenge,
+  getBattle,
 } from '../lib/battleMode';
 import { supabase } from '../lib/supabase';
 import { markNotificationsRead } from '../lib/notifications';
@@ -32,6 +34,25 @@ export default function BattleMode() {
   const [wagerAmount, setWagerAmount] = useState(50);
   const [checkingBalance, setCheckingBalance] = useState(false);
   const [managers, setManagers] = useState<any[]>([]);
+  const [expandedBreakdowns, setExpandedBreakdowns] = useState<Record<string, boolean>>({});
+  const [breakdownData, setBreakdownData] = useState<Record<string, Battle>>({});
+  const [breakdownLoading, setBreakdownLoading] = useState<Record<string, boolean>>({});
+
+  const handleToggleBreakdown = async (battleId: string) => {
+    const nowOpen = !expandedBreakdowns[battleId];
+    setExpandedBreakdowns(prev => ({ ...prev, [battleId]: nowOpen }));
+    if (nowOpen && !breakdownData[battleId]) {
+      setBreakdownLoading(prev => ({ ...prev, [battleId]: true }));
+      try {
+        const full = await getBattle(battleId);
+        setBreakdownData(prev => ({ ...prev, [battleId]: full }));
+      } catch {
+        // silently fail
+      } finally {
+        setBreakdownLoading(prev => ({ ...prev, [battleId]: false }));
+      }
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -348,28 +369,159 @@ export default function BattleMode() {
                   .slice(0, 5)
                   .map((battle) => {
                     const isWinner = battle.winner_id === user?.id;
+                    const isOpen = expandedBreakdowns[battle.id] ?? false;
+                    const isLoadingBreakdown = breakdownLoading[battle.id] ?? false;
+                    const detail = breakdownData[battle.id] ?? battle;
+                    const pot = detail.wager_amount * 2;
+                    const royalties = Math.floor(pot * 0.05);
+                    const winnerPayout = pot - royalties;
+                    const isManager1 = detail.manager1_id === user?.id;
+                    const myRemaining = isManager1 ? detail.player1_remaining_cards : detail.player2_remaining_cards;
+                    const oppRemaining = isManager1 ? detail.player2_remaining_cards : detail.player1_remaining_cards;
+                    const selections: BattleSelection[] = detail.card_selections || [];
+                    const rounds: Array<{ roundNum: number; attacker: BattleSelection; defender: BattleSelection }> = [];
+                    for (let i = 0; i + 1 < selections.length; i += 2) {
+                      rounds.push({ roundNum: Math.floor(i / 2) + 1, attacker: selections[i], defender: selections[i + 1] });
+                    }
                     return (
-                      <div
-                        key={battle.id}
-                        className="bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.12)] rounded-lg p-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Trophy
-                              className={`w-4 h-4 ${isWinner ? 'text-yellow-400' : 'text-red-400'}`}
-                            />
-                            <span className={`font-bold text-sm ${isWinner ? 'text-[#00FF85]' : 'text-red-400'}`}>
-                              {isWinner ? 'Victory' : 'Defeat'}
-                            </span>
+                      <div key={battle.id}>
+                        <div className="bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.12)] rounded-lg p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Trophy className={`w-4 h-4 ${isWinner ? 'text-yellow-400' : 'text-red-400'}`} />
+                              <span className={`font-bold text-sm ${isWinner ? 'text-[#00FF85]' : 'text-red-400'}`}>
+                                {isWinner ? 'Victory' : 'Defeat'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1.5">
+                                <Coins className="w-3.5 h-3.5 text-yellow-400" />
+                                <span className="text-white text-sm">{battle.wager_amount} coins</span>
+                              </div>
+                              <button
+                                onClick={() => handleToggleBreakdown(battle.id)}
+                                className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.05] border border-white/[0.1] text-[#B0B8C8] hover:text-white hover:border-white/20 transition-all text-[11px] font-semibold"
+                              >
+                                {isOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                {isOpen ? 'Hide' : 'Breakdown'}
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <Coins className="w-3.5 h-3.5 text-yellow-400" />
-                            <span className="text-white text-sm">{battle.wager_amount} coins</span>
-                          </div>
+                          <p className="text-[#B0B8C8]/60 text-xs mt-1.5">
+                            {new Date(battle.completed_at || '').toLocaleDateString()}
+                          </p>
                         </div>
-                        <p className="text-[#B0B8C8]/60 text-xs mt-1.5">
-                          {new Date(battle.completed_at || '').toLocaleDateString()}
-                        </p>
+
+                        {isOpen && (
+                          <div className="mt-1 rounded-xl bg-[rgba(10,18,35,0.9)] border border-[rgba(0,224,255,0.1)] p-4 space-y-4">
+                            {isLoadingBreakdown ? (
+                              <div className="space-y-2">
+                                <div className="h-3 rounded bg-white/[0.05] animate-pulse w-3/4" />
+                                <div className="h-3 rounded bg-white/[0.05] animate-pulse w-1/2" />
+                                <div className="h-3 rounded bg-white/[0.05] animate-pulse w-2/3" />
+                              </div>
+                            ) : (
+                              <>
+                                {/* Final Score */}
+                                <div>
+                                  <p className="text-[10px] font-bold text-[#B0B8C8] uppercase tracking-widest mb-2">Final Score</p>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="rounded-lg bg-[rgba(0,255,133,0.05)] border border-[rgba(0,255,133,0.12)] p-2 text-center">
+                                      <p className="text-[#B0B8C8] text-[9px] uppercase tracking-wide mb-0.5">You</p>
+                                      <p className="text-[#00FF85] text-xl font-black">{myRemaining}</p>
+                                      <p className="text-[#B0B8C8] text-[9px]">cards left</p>
+                                    </div>
+                                    <div className="rounded-lg bg-red-500/5 border border-red-500/15 p-2 text-center">
+                                      <p className="text-[#B0B8C8] text-[9px] uppercase tracking-wide mb-0.5">Opponent</p>
+                                      <p className="text-red-400 text-xl font-black">{oppRemaining}</p>
+                                      <p className="text-[#B0B8C8] text-[9px]">cards left</p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Payout */}
+                                <div>
+                                  <p className="text-[10px] font-bold text-[#B0B8C8] uppercase tracking-widest mb-2">Payout</p>
+                                  <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 space-y-1.5">
+                                    <div className="flex justify-between text-xs">
+                                      <span className="text-[#B0B8C8]">Total pot</span>
+                                      <span className="text-white font-semibold">{pot} coins</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs">
+                                      <span className="text-[#B0B8C8]">Royalties</span>
+                                      <span className="text-orange-400 font-semibold">−{royalties} coins</span>
+                                    </div>
+                                    <div className="h-px bg-white/10" />
+                                    <div className="flex justify-between text-xs">
+                                      <span className="text-white font-bold">Winner receives</span>
+                                      <span className="text-[#00FF85] font-black">{winnerPayout} coins</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Round by Round */}
+                                {rounds.length > 0 && (
+                                  <div>
+                                    <p className="text-[10px] font-bold text-[#B0B8C8] uppercase tracking-widest mb-2">Round by Round</p>
+                                    <div className="space-y-2">
+                                      {rounds.map(({ roundNum, attacker, defender }) => {
+                                        const attackerWins = defender.attacker_wins ?? false;
+                                        const attackerIsMe = attacker.user_id === user?.id;
+                                        const defenderIsMe = defender.user_id === user?.id;
+                                        return (
+                                          <div key={roundNum} className="rounded-lg bg-white/[0.02] border border-white/[0.05] p-2.5">
+                                            <div className="flex items-center justify-between mb-2">
+                                              <span className="text-[#B0B8C8] text-[9px] font-bold uppercase tracking-widest">Round {roundNum}</span>
+                                              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${attackerWins ? 'bg-red-500/15 text-red-400 border border-red-500/25' : 'bg-blue-500/15 text-blue-400 border border-blue-500/25'}`}>
+                                                {attackerWins ? 'Attacker Won' : 'Defended'}
+                                              </span>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-1.5">
+                                              <div className="rounded-md bg-black/20 p-1.5">
+                                                <p className="text-[#B0B8C8] text-[8px] font-bold uppercase mb-0.5">
+                                                  Attacker · {attackerIsMe ? 'You' : 'Opp'}
+                                                </p>
+                                                {attacker.skill && (
+                                                  <span className="inline-block mb-1 px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[8px] font-bold uppercase">{attacker.skill}</span>
+                                                )}
+                                                <p className="text-yellow-400 font-black text-xs">{attacker.value}</p>
+                                              </div>
+                                              <div className="rounded-md bg-black/20 p-1.5">
+                                                <p className="text-[#B0B8C8] text-[8px] font-bold uppercase mb-0.5">
+                                                  Defender · {defenderIsMe ? 'You' : 'Opp'}
+                                                </p>
+                                                <div className="flex items-center gap-1 mb-1">
+                                                  {attackerWins
+                                                    ? <Zap className="w-2.5 h-2.5 text-red-400 shrink-0" />
+                                                    : <Shield className="w-2.5 h-2.5 text-blue-400 shrink-0" />}
+                                                </div>
+                                                <p className="text-yellow-400 font-black text-xs">{defender.value}</p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Skills Used */}
+                                {(detail.used_skills || []).length > 0 && (
+                                  <div>
+                                    <p className="text-[10px] font-bold text-[#B0B8C8] uppercase tracking-widest mb-2">Skills Used</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {detail.used_skills.map((skill) => (
+                                        <span key={skill} className="px-2.5 py-1 bg-red-500/15 border border-red-500/30 rounded-full text-red-400 text-[10px] font-semibold capitalize">
+                                          {skill}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })
