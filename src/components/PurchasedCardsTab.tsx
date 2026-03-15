@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCoinBalance } from '../hooks/useCoinBalance';
-import { getPurchasedCards, type CardOwnership } from '../lib/cardTrading';
+import { getPurchasedCards, type CardOwnership, type CardSortBy } from '../lib/cardTrading';
 import { getManagedCards, proposeCardSwap, checkActiveSwapCooldown } from '../lib/cardSwaps';
-import { Coins, Repeat, User, TrendingUp, X, Lock, Clock } from 'lucide-react';
+import { Coins, Repeat, User, TrendingUp, X, Lock, Clock, RefreshCw } from 'lucide-react';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from './ui/Shimmer';
 import { SkeletonAvatar } from './ui/SkeletonPresets';
 import { GlassCard } from './ui/GlassCard';
+
+const PAGE_LIMIT = 20;
 
 interface PurchasedCardsTabProps {
   onSwapRequested?: () => void;
@@ -19,7 +21,11 @@ export default function PurchasedCardsTab({ onSwapRequested }: PurchasedCardsTab
   const { balance } = useCoinBalance();
   const [cards, setCards] = useState<CardOwnership[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<CardSortBy>('last_seen');
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   const [showSwapModal, setShowSwapModal] = useState(false);
   const [targetCard, setTargetCard] = useState<CardOwnership | null>(null);
@@ -31,7 +37,7 @@ export default function PurchasedCardsTab({ onSwapRequested }: PurchasedCardsTab
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
-    loadCards();
+    loadCards(0, 'last_seen', false);
   }, []);
 
   useEffect(() => {
@@ -40,17 +46,37 @@ export default function PurchasedCardsTab({ onSwapRequested }: PurchasedCardsTab
     return () => clearInterval(interval);
   }, [cooldown.blocked]);
 
-  const loadCards = async () => {
-    setLoading(true);
-    setError(null);
+  const loadCards = async (nextOffset: number, sort: CardSortBy, append: boolean) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+      setError(null);
+    }
     try {
-      const data = await getPurchasedCards();
-      setCards(data);
+      const result = await getPurchasedCards(nextOffset, PAGE_LIMIT, sort);
+      if (append) {
+        setCards(prev => [...prev, ...result.data]);
+      } else {
+        setCards(result.data);
+      }
+      setHasMore(result.hasMore);
+      setOffset(nextOffset);
     } catch {
-      setError('Failed to load purchased cards.');
+      if (!append) setError('Failed to load purchased cards.');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  };
+
+  const handleSortChange = (sort: CardSortBy) => {
+    setSortBy(sort);
+    loadCards(0, sort, false);
+  };
+
+  const handleLoadMore = () => {
+    loadCards(offset + PAGE_LIMIT, sortBy, true);
   };
 
   const openSwapModal = async (card: CardOwnership) => {
@@ -81,7 +107,7 @@ export default function PurchasedCardsTab({ onSwapRequested }: PurchasedCardsTab
         setTargetCard(null);
         alert('Swap request sent successfully!');
         if (onSwapRequested) onSwapRequested();
-        loadCards();
+        loadCards(0, sortBy, false);
       } else {
         setModalError(result.error || 'Failed to send swap request.');
       }
@@ -143,6 +169,25 @@ export default function PurchasedCardsTab({ onSwapRequested }: PurchasedCardsTab
         </div>
       </div>
 
+      <div className="flex gap-2">
+        {(['last_seen', 'price_high', 'ovr_low'] as CardSortBy[]).map((s) => {
+          const labels: Record<CardSortBy, string> = { last_seen: 'Last Seen', price_high: 'Price High to Low', ovr_low: 'OVR Low to High' };
+          return (
+            <button
+              key={s}
+              onClick={() => handleSortChange(s)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                sortBy === s
+                  ? 'bg-[rgba(0,224,255,0.15)] border-[rgba(0,224,255,0.45)] text-[#00E0FF]'
+                  : 'bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.1)] text-slate-400 hover:border-[rgba(0,224,255,0.25)] hover:text-slate-200'
+              }`}
+            >
+              {labels[s]}
+            </button>
+          );
+        })}
+      </div>
+
       {error && (
         <div className="p-4 bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.3)] rounded-xl text-red-300 text-sm">
           {error}
@@ -156,6 +201,7 @@ export default function PurchasedCardsTab({ onSwapRequested }: PurchasedCardsTab
           <p className="text-slate-500 text-sm mt-2">Cards appear here once they have been traded at least once</p>
         </GlassCard>
       ) : (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {cards.map((card) => {
             const isOwnCard = card.card_user_id === profile?.id || card.owner_id === profile?.id;
@@ -246,6 +292,26 @@ export default function PurchasedCardsTab({ onSwapRequested }: PurchasedCardsTab
             );
           })}
         </div>
+
+        {hasMore && (
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="px-8 py-3 bg-[rgba(0,224,255,0.08)] hover:bg-[rgba(0,224,255,0.15)] text-[#00E0FF] font-semibold rounded-xl border border-[rgba(0,224,255,0.25)] hover:border-[rgba(0,224,255,0.45)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+            >
+              {loadingMore ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                'Load More'
+              )}
+            </button>
+          </div>
+        )}
+        </>
       )}
 
       {showSwapModal && targetCard && (

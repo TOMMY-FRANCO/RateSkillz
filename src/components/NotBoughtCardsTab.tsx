@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCoinBalance } from '../hooks/useCoinBalance';
-import { getNotBoughtCards, purchaseCardAtFixedPrice, type CardWithRatings } from '../lib/cardTrading';
-import { Coins, ShoppingCart, User, TrendingUp, Trophy, Star } from 'lucide-react';
+import { getNotBoughtCards, purchaseCardAtFixedPrice, type CardWithRatings, type CardSortBy } from '../lib/cardTrading';
+import { Coins, ShoppingCart, User, TrendingUp, Trophy, Star, RefreshCw } from 'lucide-react';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from './ui/Shimmer';
 import { SkeletonAvatar } from './ui/SkeletonPresets';
+
+const PAGE_LIMIT = 20;
 
 interface NotBoughtCardsTabProps {
   onRequestSent?: () => void;
@@ -17,22 +19,46 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
   const { balance } = useCoinBalance();
   const [cards, setCards] = useState<CardWithRatings[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<CardSortBy>('last_seen');
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
-    loadCards();
+    loadCards(0, 'last_seen', false);
   }, []);
 
-  const loadCards = async () => {
-    setLoading(true);
+  const loadCards = async (nextOffset: number, sort: CardSortBy, append: boolean) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
     try {
-      const data = await getNotBoughtCards();
-      setCards(data);
+      const result = await getNotBoughtCards(nextOffset, PAGE_LIMIT, sort);
+      if (append) {
+        setCards(prev => [...prev, ...result.data]);
+      } else {
+        setCards(result.data);
+      }
+      setHasMore(result.hasMore);
+      setOffset(nextOffset);
     } catch (error) {
       console.error('Error loading not bought cards:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  };
+
+  const handleSortChange = (sort: CardSortBy) => {
+    setSortBy(sort);
+    loadCards(0, sort, false);
+  };
+
+  const handleLoadMore = () => {
+    loadCards(offset + PAGE_LIMIT, sortBy, true);
   };
 
   const handlePurchaseCard = async (card: CardWithRatings) => {
@@ -118,6 +144,25 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
         </div>
       </div>
 
+      <div className="flex gap-2">
+        {(['last_seen', 'price_high', 'ovr_low'] as CardSortBy[]).map((s) => {
+          const labels: Record<CardSortBy, string> = { last_seen: 'Last Seen', price_high: 'Price High to Low', ovr_low: 'OVR Low to High' };
+          return (
+            <button
+              key={s}
+              onClick={() => handleSortChange(s)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                sortBy === s
+                  ? 'bg-[rgba(0,224,255,0.15)] border-[rgba(0,224,255,0.45)] text-[#00E0FF]'
+                  : 'bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.1)] text-slate-400 hover:border-[rgba(0,224,255,0.25)] hover:text-slate-200'
+              }`}
+            >
+              {labels[s]}
+            </button>
+          );
+        })}
+      </div>
+
       {cards.length === 0 ? (
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-12 text-center">
           <Star className="w-16 h-16 text-gray-600 mx-auto mb-4" />
@@ -125,6 +170,7 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
           <p className="text-gray-500 text-sm mt-2">All cards have been purchased at least once</p>
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {cards.map((card) => {
             const isPurchasing = purchasing === card.id;
@@ -251,6 +297,26 @@ export default function NotBoughtCardsTab({ onRequestSent }: NotBoughtCardsTabPr
             );
           })}
         </div>
+
+        {hasMore && (
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="px-8 py-3 bg-[rgba(0,224,255,0.08)] hover:bg-[rgba(0,224,255,0.15)] text-[#00E0FF] font-semibold rounded-xl border border-[rgba(0,224,255,0.25)] hover:border-[rgba(0,224,255,0.45)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+            >
+              {loadingMore ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                'Load More'
+              )}
+            </button>
+          </div>
+        )}
+        </>
       )}
     </div>
   );

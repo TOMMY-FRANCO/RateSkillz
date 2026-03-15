@@ -11,6 +11,7 @@ import {
   checkPurchaseRestrictionsBatch,
   buyMyselfOut,
   type CardOwnership,
+  type CardSortBy,
 } from '../lib/cardTrading';
 import { useCoinBalance } from '../hooks/useCoinBalance';
 import { ArrowLeft, Coins, TrendingUp, Tag, ShoppingCart, Trophy, Store, User, X, Repeat, Trash2, Star, RefreshCw, AlertTriangle, Lock } from 'lucide-react';
@@ -50,42 +51,60 @@ export default function TradingDashboard() {
   const [mostTraded, setMostTraded] = useState<CardOwnership[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadMore, setLoadMore] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<TabKey>('marketplace');
   const [userBalances, setUserBalances] = useState<Map<string, number>>(new Map());
   const [restrictedCards, setRestrictedCards] = useState<Map<string, string>>(new Map());
+  const [marketSortBy, setMarketSortBy] = useState<CardSortBy>('last_seen');
+  const [marketOffset, setMarketOffset] = useState(0);
+  const [marketHasMore, setMarketHasMore] = useState(false);
+
+  const MARKET_LIMIT = 20;
 
   useEffect(() => {
     if (profile) {
-      loadData();
+      setMarketOffset(0);
+      loadData(false, 0, marketSortBy);
       markNotificationsReadBatch(profile.id, ['swap_offer', 'purchase_offer', 'card_sold', 'purchase_request']);
     }
   }, [profile?.id]);
 
-  const loadData = useCallback(async (isRefresh = false) => {
+  const loadData = useCallback(async (isRefresh = false, appendOffset = 0, sort: CardSortBy = 'last_seen') => {
     if (!profile) return;
+
+    const isAppend = appendOffset > 0;
 
     if (isRefresh) {
       setRefreshing(true);
+    } else if (isAppend) {
+      setLoadMore(true);
     } else {
       setLoading(true);
     }
     setLoadError(null);
 
     try {
-      const [cards, valuable, traded, listed] = await Promise.all([
+      const [cards, valuable, traded, listedResult] = await Promise.all([
         getCardsOwnedByUser(profile.id),
         getMostValuableCards(10),
         getMostTradedCards(10),
-        getListedCardsForSale()
+        getListedCardsForSale(appendOffset, MARKET_LIMIT, sort)
       ]);
 
       setOwnedCards(cards);
       setPortfolioValue(calculatePortfolioValue(cards));
       setMostValuable(valuable);
       setMostTraded(traded);
-      setListedCards(listed);
+      setMarketHasMore(listedResult.hasMore);
+
+      const listed = listedResult.data;
+      if (isAppend) {
+        setListedCards(prev => [...prev, ...listed]);
+      } else {
+        setListedCards(listed);
+      }
 
       const allUserIds = new Set<string>();
       listed.forEach(card => {
@@ -109,28 +128,51 @@ export default function TradingDashboard() {
           : Promise.resolve(new Map<string, string>()),
       ]);
 
-      setUserBalances(balances);
-
-      const cardRestrictions = new Map<string, string>();
-      listed.forEach(card => {
-        const reason = ownerRestrictions.get(card.owner_id);
-        if (reason) {
-          cardRestrictions.set(card.id, reason);
-        }
-      });
-      setRestrictedCards(cardRestrictions);
+      if (isAppend) {
+        setUserBalances(prev => new Map([...prev, ...balances]));
+        setRestrictedCards(prev => {
+          const next = new Map(prev);
+          listed.forEach(card => {
+            const reason = ownerRestrictions.get(card.owner_id);
+            if (reason) next.set(card.id, reason);
+          });
+          return next;
+        });
+      } else {
+        setUserBalances(balances);
+        const cardRestrictions = new Map<string, string>();
+        listed.forEach(card => {
+          const reason = ownerRestrictions.get(card.owner_id);
+          if (reason) cardRestrictions.set(card.id, reason);
+        });
+        setRestrictedCards(cardRestrictions);
+      }
     } catch (error) {
       console.error('Error loading trading data:', error);
       setLoadError('Failed to load trading data. Pull down to try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadMore(false);
     }
   }, [profile?.id]);
 
   const handleRefresh = () => {
     if (refreshing) return;
-    loadData(true);
+    setMarketOffset(0);
+    loadData(true, 0, marketSortBy);
+  };
+
+  const handleMarketSort = (sort: CardSortBy) => {
+    setMarketSortBy(sort);
+    setMarketOffset(0);
+    loadData(false, 0, sort);
+  };
+
+  const handleMarketLoadMore = () => {
+    const nextOffset = marketOffset + MARKET_LIMIT;
+    setMarketOffset(nextOffset);
+    loadData(false, nextOffset, marketSortBy);
   };
 
   const handleBuyMyselfOut = async (card: CardOwnership) => {
@@ -331,7 +373,7 @@ export default function TradingDashboard() {
 
         {selectedTab === 'marketplace' && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-2">
               <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                 <Store className="w-6 h-6 text-[#00E0FF]" />
                 Cards for Sale
@@ -344,6 +386,25 @@ export default function TradingDashboard() {
               </div>
             </div>
 
+            <div className="flex gap-2 mb-4">
+              {(['last_seen', 'price_high', 'ovr_low'] as CardSortBy[]).map((s) => {
+                const labels: Record<CardSortBy, string> = { last_seen: 'Last Seen', price_high: 'Price High to Low', ovr_low: 'OVR Low to High' };
+                return (
+                  <button
+                    key={s}
+                    onClick={() => handleMarketSort(s)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                      marketSortBy === s
+                        ? 'bg-[rgba(0,224,255,0.15)] border-[rgba(0,224,255,0.45)] text-[#00E0FF]'
+                        : 'bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.1)] text-slate-400 hover:border-[rgba(0,224,255,0.25)] hover:text-slate-200'
+                    }`}
+                  >
+                    {labels[s]}
+                  </button>
+                );
+              })}
+            </div>
+
             {listedCards.length === 0 ? (
               <GlassCard className="!p-12 text-center">
                 <Store className="w-16 h-16 text-slate-600 mx-auto mb-4" />
@@ -351,6 +412,7 @@ export default function TradingDashboard() {
                 <p className="text-slate-500 text-sm mt-2">Check back later or list your own cards!</p>
               </GlassCard>
             ) : (
+              <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {listedCards.map((card) => {
                   const isPurchasing = purchasing === card.id;
@@ -498,6 +560,25 @@ export default function TradingDashboard() {
                   );
                 })}
               </div>
+              {marketHasMore && (
+                <div className="flex justify-center mt-6">
+                  <button
+                    onClick={handleMarketLoadMore}
+                    disabled={loadMore}
+                    className="px-8 py-3 bg-[rgba(0,224,255,0.08)] hover:bg-[rgba(0,224,255,0.15)] text-[#00E0FF] font-semibold rounded-xl border border-[rgba(0,224,255,0.25)] hover:border-[rgba(0,224,255,0.45)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
+                  >
+                    {loadMore ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      'Load More'
+                    )}
+                  </button>
+                </div>
+              )}
+              </>
             )}
           </div>
         )}

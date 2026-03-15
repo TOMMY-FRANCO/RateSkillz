@@ -323,19 +323,37 @@ export async function checkPurchaseRestrictionsBatch(
   }
 }
 
-export async function getListedCardsForSale(): Promise<CardOwnership[]> {
-  const { data, error } = await supabase
+export type CardSortBy = 'last_seen' | 'price_high' | 'ovr_low';
+
+export async function getListedCardsForSale(
+  offset = 0,
+  limit = 20,
+  sortBy: CardSortBy = 'last_seen'
+): Promise<{ data: CardOwnership[]; hasMore: boolean }> {
+  let query = supabase
     .from('card_market_cache')
     .select(CARD_CACHE_COLUMNS)
-    .eq('is_listed_for_sale', true)
-    .order('current_price', { ascending: true })
-    .order('card_user_id', { ascending: true });
+    .eq('is_listed_for_sale', true);
+
+  if (sortBy === 'price_high') {
+    query = query.order('current_price', { ascending: false });
+  } else if (sortBy === 'ovr_low') {
+    query = query.order('current_price', { ascending: true });
+  } else {
+    query = query.order('acquired_at', { ascending: false });
+  }
+
+  query = query.range(offset, offset + limit - 1);
+
+  const { data, error } = await query;
   if (error) {
     console.error('Error fetching listed cards:', error);
-    return [];
+    return { data: [], hasMore: false };
   }
-  const mapped = (data || []).map(mapCacheToCardOwnership);
-  if (mapped.length === 0) return mapped;
+  const rows = data || [];
+  const mapped = rows.map(mapCacheToCardOwnership);
+  if (mapped.length === 0) return { data: [], hasMore: false };
+
   const cardUserIds = mapped.map(c => c.card_user_id);
   const { data: ownershipRows } = await supabase
     .from('card_ownership')
@@ -343,40 +361,59 @@ export async function getListedCardsForSale(): Promise<CardOwnership[]> {
     .in('card_user_id', cardUserIds);
   const lockMap = new Map<string, boolean>();
   (ownershipRows || []).forEach((r: any) => lockMap.set(r.card_user_id, r.is_locked_in_battle ?? false));
-  return mapped.map(c => ({ ...c, is_locked_in_battle: lockMap.get(c.card_user_id) ?? false }));
+  const result = mapped.map(c => ({ ...c, is_locked_in_battle: lockMap.get(c.card_user_id) ?? false }));
+  return { data: result, hasMore: rows.length === limit };
 }
 
-export async function getPurchasedCards(): Promise<CardOwnership[]> {
-  const { data, error } = await supabase
+export async function getPurchasedCards(
+  offset = 0,
+  limit = 20,
+  sortBy: CardSortBy = 'last_seen'
+): Promise<{ data: CardOwnership[]; hasMore: boolean }> {
+  let query = supabase
     .from('card_ownership')
     .select(`
       ${CARD_OWNERSHIP_COLUMNS},
       card_user:profiles!card_user_id(username, full_name, avatar_url),
       owner:profiles!owner_id(username, full_name)
     `)
-    .gt('times_traded', 0)
-    .order('current_price', { ascending: false });
+    .gt('times_traded', 0);
 
-  if (error) {
-    console.error('Error fetching purchased cards:', error);
-    return [];
+  if (sortBy === 'price_high') {
+    query = query.order('current_price', { ascending: false });
+  } else if (sortBy === 'ovr_low') {
+    query = query.order('current_price', { ascending: true });
+  } else {
+    query = query.order('acquired_at', { ascending: false });
   }
 
-  return (data || []).map((row: any) => ({
-    id: row.id,
-    card_user_id: row.card_user_id,
-    owner_id: row.owner_id,
-    current_price: row.current_price || row.base_price || 20,
-    base_price: row.base_price || 20,
-    is_listed_for_sale: row.is_listed_for_sale,
-    is_locked_in_battle: row.is_locked_in_battle ?? false,
-    times_traded: row.times_traded || 0,
-    last_sale_price: row.last_sale_price || null,
-    last_purchase_price: row.last_purchase_price || null,
-    acquired_at: row.acquired_at,
-    card_user: row.card_user || undefined,
-    owner: row.owner || undefined,
-  }));
+  query = query.range(offset, offset + limit - 1);
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('Error fetching purchased cards:', error);
+    return { data: [], hasMore: false };
+  }
+
+  const rows = data || [];
+  return {
+    data: rows.map((row: any) => ({
+      id: row.id,
+      card_user_id: row.card_user_id,
+      owner_id: row.owner_id,
+      current_price: row.current_price || row.base_price || 20,
+      base_price: row.base_price || 20,
+      is_listed_for_sale: row.is_listed_for_sale,
+      is_locked_in_battle: row.is_locked_in_battle ?? false,
+      times_traded: row.times_traded || 0,
+      last_sale_price: row.last_sale_price || null,
+      last_purchase_price: row.last_purchase_price || null,
+      acquired_at: row.acquired_at,
+      card_user: row.card_user || undefined,
+      owner: row.owner || undefined,
+    })),
+    hasMore: rows.length === limit,
+  };
 }
 
 export interface CardWithRatings extends CardOwnership {
@@ -416,20 +453,34 @@ export interface PurchaseRequest {
   };
 }
 
-export async function getNotBoughtCards(): Promise<CardWithRatings[]> {
-  const { data: cards, error } = await supabase
+export async function getNotBoughtCards(
+  offset = 0,
+  limit = 20,
+  sortBy: CardSortBy = 'last_seen'
+): Promise<{ data: CardWithRatings[]; hasMore: boolean }> {
+  let query = supabase
     .from('card_market_cache')
     .select(CARD_CACHE_COLUMNS)
-    .eq('times_traded', 0)
-    .order('acquired_at', { ascending: false });
+    .eq('times_traded', 0);
 
+  if (sortBy === 'price_high') {
+    query = query.order('current_price', { ascending: false });
+  } else if (sortBy === 'ovr_low') {
+    query = query.order('current_price', { ascending: true });
+  } else {
+    query = query.order('acquired_at', { ascending: false });
+  }
+
+  query = query.range(offset, offset + limit - 1);
+
+  const { data: cards, error } = await query;
   if (error) {
     console.error('Error fetching not bought cards:', error);
-    return [];
+    return { data: [], hasMore: false };
   }
 
   const notBought = (cards || []).filter((c: any) => c.owner_id === c.card_user_id);
-  if (notBought.length === 0) return [];
+  if (notBought.length === 0) return { data: [], hasMore: (cards || []).length === limit };
 
   const cardUserIds = notBought.map((c: any) => c.card_user_id);
 
@@ -450,7 +501,7 @@ export async function getNotBoughtCards(): Promise<CardWithRatings[]> {
   const tierMap = new Map<string, string>();
   (tiersResult.data || []).forEach((t: any) => tierMap.set(t.user_id, t.badge_tier));
 
-  return notBought.map((card: any) => {
+  const result = notBought.map((card: any) => {
     const p = profileMap.get(card.card_user_id);
     const mapped = mapCacheToCardOwnership(card);
     return {
@@ -476,6 +527,7 @@ export async function getNotBoughtCards(): Promise<CardWithRatings[]> {
       tier_badge: tierMap.get(card.card_user_id) || null,
     };
   });
+  return { data: result, hasMore: (cards || []).length === limit };
 }
 
 export async function getNoManagerCards(): Promise<CardWithRatings[]> {
