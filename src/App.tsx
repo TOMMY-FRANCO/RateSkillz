@@ -54,6 +54,7 @@ const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
 const ActivityFeed = lazy(() => import('./pages/ActivityFeed'));
 const DailyQuiz = lazy(() => import('./pages/DailyQuiz'));
 const Matchday = lazy(() => import('./pages/Matchday'));
+const News = lazy(() => import('./pages/News'));
 
 function LoadingScreen() {
   return (
@@ -328,6 +329,16 @@ function App() {
               <ProtectedRoute>
                 <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
                   <Matchday />
+                </LazyPageWrapper>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/news"
+            element={
+              <ProtectedRoute>
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <News />
                 </LazyPageWrapper>
               </ProtectedRoute>
             }
