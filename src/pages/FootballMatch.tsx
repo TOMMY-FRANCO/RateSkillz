@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, RefreshCw, Plus, AlertCircle, X, Search, UserCheck } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Plus, AlertCircle, X, Search, UserCheck, ChevronDown, ChevronUp, Trophy, MapPin, Calendar, Clock, FileText, Users } from 'lucide-react';
 import { ShimmerBar } from '../components/ui/Shimmer';
 import { useToast } from '../contexts/ToastContext';
 
@@ -12,9 +12,23 @@ interface FootballMatch {
   match_date: string;
   match_time: string | null;
   location: string | null;
+  notes: string | null;
   status: 'pending' | 'active' | 'completed' | 'cancelled' | 'disputed';
   wager_per_player: number;
+  team_size: number;
   organiser_id: string;
+  team_a_captain_id: string | null;
+  team_b_captain_id: string | null;
+  winning_team: string | null;
+}
+
+interface MatchPlayer {
+  id: string;
+  user_id: string;
+  team: string;
+  status: string;
+  username: string;
+  avatar_url: string | null;
 }
 
 interface MatchInvite {
@@ -70,26 +84,239 @@ function AvatarBubble({ name, avatar, size = 'md' }: { name: string; avatar: str
   );
 }
 
-function MatchCard({ match }: { match: FootballMatch }) {
+function MatchCard({ match, userId, onResultSubmitted }: { match: FootballMatch; userId: string; onResultSubmitted: (matchId: string) => void }) {
+  const toast = useToast();
+  const [expanded, setExpanded] = useState(false);
+  const [players, setPlayers] = useState<MatchPlayer[]>([]);
+  const [playersLoading, setPlayersLoading] = useState(false);
+  const [resultSubmitting, setResultSubmitting] = useState(false);
+
+  const isCaptain = userId === match.team_a_captain_id || userId === match.team_b_captain_id;
+  const canSubmitResult = isCaptain && (match.status === 'active' || match.status === 'pending');
+
+  const loadPlayers = async () => {
+    if (players.length > 0) return;
+    setPlayersLoading(true);
+    try {
+      const { data: playerRows, error } = await supabase
+        .from('football_match_players')
+        .select('id, user_id, team, status')
+        .eq('match_id', match.id);
+      if (error) throw error;
+
+      const userIds = (playerRows || []).map((r: any) => r.user_id);
+      if (userIds.length === 0) { setPlayers([]); return; }
+
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', userIds);
+      if (profileError) throw profileError;
+
+      const profileMap: Record<string, { username: string; avatar_url: string | null }> = {};
+      for (const p of profiles || []) profileMap[p.id] = { username: p.username || 'Unknown', avatar_url: p.avatar_url || null };
+
+      setPlayers(
+        (playerRows || []).map((r: any) => ({
+          id: r.id,
+          user_id: r.user_id,
+          team: r.team,
+          status: r.status,
+          username: profileMap[r.user_id]?.username ?? 'Unknown',
+          avatar_url: profileMap[r.user_id]?.avatar_url ?? null,
+        }))
+      );
+    } catch {
+      // silently fail — detail still shows without players
+    } finally {
+      setPlayersLoading(false);
+    }
+  };
+
+  const handleToggle = () => {
+    if (!expanded) loadPlayers();
+    setExpanded(prev => !prev);
+  };
+
+  const handleSubmitResult = async (winningTeam: string) => {
+    setResultSubmitting(true);
+    try {
+      const { error } = await supabase.rpc('submit_match_result', {
+        p_user_id: userId,
+        p_match_id: match.id,
+        p_winning_team: winningTeam,
+      });
+      if (error) throw error;
+      toast.success('Result submitted!');
+      onResultSubmitted(match.id);
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to submit result.');
+    } finally {
+      setResultSubmitting(false);
+    }
+  };
+
+  const teamA = players.filter(p => p.team === 'team_a');
+  const teamB = players.filter(p => p.team === 'team_b');
+
   return (
-    <div className="glass-card p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="text-white font-bold truncate">{match.match_name}</h3>
-          <p className="text-[#B0B8C8] text-sm mt-0.5">
-            {formatDate(match.match_date)}{match.match_time ? ` · ${match.match_time}` : ''}
-          </p>
-          {match.location && (
-            <p className="text-[#B0B8C8] text-xs mt-0.5 truncate">{match.location}</p>
+    <div className="glass-card overflow-hidden">
+      <button
+        onClick={handleToggle}
+        className="w-full p-4 text-left"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-white font-bold truncate">{match.match_name}</h3>
+            <p className="text-[#B0B8C8] text-sm mt-0.5">
+              {formatDate(match.match_date)}{match.match_time ? ` · ${match.match_time}` : ''}
+            </p>
+            {match.location && (
+              <p className="text-[#B0B8C8] text-xs mt-0.5 truncate">{match.location}</p>
+            )}
+            {match.wager_per_player > 0 && (
+              <p className="text-yellow-400 text-xs font-semibold mt-1">{match.wager_per_player} coins per player</p>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${STATUS_STYLES[match.status] || STATUS_STYLES.pending}`}>
+              {match.status.charAt(0).toUpperCase() + match.status.slice(1)}
+            </span>
+            {expanded
+              ? <ChevronUp className="w-4 h-4 text-[#B0B8C8]" />
+              : <ChevronDown className="w-4 h-4 text-[#B0B8C8]" />
+            }
+          </div>
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="border-t border-[rgba(0,224,255,0.1)] px-4 pb-4 pt-3 space-y-4">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            <div className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-[#00E0FF] flex-shrink-0" />
+              <span className="text-[#B0B8C8] text-xs">{formatDate(match.match_date)}</span>
+            </div>
+            {match.match_time && (
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-[#00E0FF] flex-shrink-0" />
+                <span className="text-[#B0B8C8] text-xs">{match.match_time}</span>
+              </div>
+            )}
+            {match.location && (
+              <div className="flex items-center gap-1.5 col-span-2">
+                <MapPin className="w-3.5 h-3.5 text-[#00E0FF] flex-shrink-0" />
+                <span className="text-[#B0B8C8] text-xs">{match.location}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-[#00E0FF] flex-shrink-0" />
+              <span className="text-[#B0B8C8] text-xs">{match.team_size}v{match.team_size}</span>
+            </div>
+            {match.wager_per_player > 0 && (
+              <div className="flex items-center gap-1.5">
+                <Trophy className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" />
+                <span className="text-yellow-400 text-xs font-semibold">{match.wager_per_player} coins/player</span>
+              </div>
+            )}
+            {match.notes && (
+              <div className="flex items-start gap-1.5 col-span-2">
+                <FileText className="w-3.5 h-3.5 text-[#00E0FF] flex-shrink-0 mt-0.5" />
+                <span className="text-[#B0B8C8] text-xs">{match.notes}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-[#00E0FF] text-xs font-bold mb-1.5">Team A</p>
+              {playersLoading ? (
+                <ShimmerBar className="h-8 rounded-xl" />
+              ) : teamA.length === 0 ? (
+                <p className="text-[#6B7A99] text-xs italic">No players</p>
+              ) : (
+                <div className="space-y-1">
+                  {teamA.map((p, idx) => (
+                    <div key={p.id} className="flex items-center gap-1.5">
+                      <AvatarBubble name={p.username} avatar={p.avatar_url} size="sm" />
+                      <span className="text-white text-xs truncate flex-1">@{p.username}</span>
+                      {idx === 0 && (
+                        <span className="text-[10px] font-black bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-full px-1.5 py-0.5 whitespace-nowrap">
+                          Captain
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="w-px bg-[rgba(0,224,255,0.1)]" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[#00E0FF] text-xs font-bold mb-1.5">Team B</p>
+              {playersLoading ? (
+                <ShimmerBar className="h-8 rounded-xl" />
+              ) : teamB.length === 0 ? (
+                <p className="text-[#6B7A99] text-xs italic">No players</p>
+              ) : (
+                <div className="space-y-1">
+                  {teamB.map((p, idx) => (
+                    <div key={p.id} className="flex items-center gap-1.5">
+                      <AvatarBubble name={p.username} avatar={p.avatar_url} size="sm" />
+                      <span className="text-white text-xs truncate flex-1">@{p.username}</span>
+                      {idx === 0 && (
+                        <span className="text-[10px] font-black bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-full px-1.5 py-0.5 whitespace-nowrap">
+                          Captain
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {match.status === 'completed' && match.winning_team && (
+            <div className="flex items-center gap-2 pt-1">
+              <Trophy className="w-4 h-4 text-[#00FF85]" />
+              <p className="text-[#00FF85] font-bold text-sm">
+                {match.winning_team === 'team_a' ? 'Team A Won' : 'Team B Won'}
+              </p>
+            </div>
           )}
-          {match.wager_per_player > 0 && (
-            <p className="text-yellow-400 text-xs font-semibold mt-1">{match.wager_per_player} coins per player</p>
+
+          {match.status === 'disputed' && (
+            <p className="text-orange-400 text-sm font-semibold pt-1">
+              Disputed — result disagreement, all coins refunded
+            </p>
+          )}
+
+          {match.status === 'cancelled' && (
+            <p className="text-red-400 text-sm font-semibold pt-1">Cancelled</p>
+          )}
+
+          {canSubmitResult && (
+            <div className="pt-1 space-y-2">
+              <p className="text-[#B0B8C8] text-xs font-semibold">Submit Result</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleSubmitResult('team_a')}
+                  disabled={resultSubmitting}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-[#00FF85]/15 text-[#00FF85] border border-[#00FF85]/30 hover:bg-[#00FF85]/25 transition-colors disabled:opacity-50"
+                >
+                  {resultSubmitting ? 'Submitting...' : 'Team A Won'}
+                </button>
+                <button
+                  onClick={() => handleSubmitResult('team_b')}
+                  disabled={resultSubmitting}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-[#00E0FF]/15 text-[#00E0FF] border border-[#00E0FF]/30 hover:bg-[#00E0FF]/25 transition-colors disabled:opacity-50"
+                >
+                  {resultSubmitting ? 'Submitting...' : 'Team B Won'}
+                </button>
+              </div>
+            </div>
           )}
         </div>
-        <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${STATUS_STYLES[match.status] || STATUS_STYLES.pending}`}>
-          {match.status.charAt(0).toUpperCase() + match.status.slice(1)}
-        </span>
-      </div>
+      )}
     </div>
   );
 }
@@ -817,7 +1044,23 @@ export default function FootballMatch() {
                 <p className="text-[#B0B8C8] text-sm">No matches yet. Create your first match!</p>
               </div>
             ) : (
-              myMatches.map(match => <MatchCard key={match.id} match={match} />)
+              myMatches.map(match => (
+              <MatchCard
+                key={match.id}
+                match={match}
+                userId={user.id}
+                onResultSubmitted={async (matchId) => {
+                  const { data } = await supabase
+                    .from('football_matches')
+                    .select('*')
+                    .eq('id', matchId)
+                    .maybeSingle();
+                  if (data) {
+                    setMyMatches(prev => prev.map(m => m.id === matchId ? data : m));
+                  }
+                }}
+              />
+            ))
             )}
           </div>
         )}
