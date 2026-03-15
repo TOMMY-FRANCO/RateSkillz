@@ -379,8 +379,14 @@ export default function Dashboard() {
 
           <button
             onClick={() => navigate('/news')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
+            <NotificationBadge
+              count={badgeCounts.news}
+              userId={profile?.id}
+              notificationType="news"
+              capAt9
+            />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#C44569] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
                 <Newspaper className="w-5 h-5 text-white" />
@@ -394,8 +400,14 @@ export default function Dashboard() {
 
           <button
             onClick={() => navigate('/daily-quiz')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
+            <NotificationBadge
+              count={badgeCounts.dailyQuiz}
+              userId={profile?.id}
+              notificationType="quiz_complete"
+              capAt9
+            />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <HelpCircle className="w-5 h-5 text-black" />
@@ -465,8 +477,14 @@ export default function Dashboard() {
 
           <button
             onClick={() => navigate('/activity-feed')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
+            <NotificationBadge
+              count={badgeCounts.activityFeed}
+              userId={profile?.id}
+              notificationType="activity_feed"
+              capAt9
+            />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
                 <Activity className="w-5 h-5 text-black" />
@@ -495,8 +513,14 @@ export default function Dashboard() {
 
           <button
             onClick={() => navigate('/football-match')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
+            <NotificationBadge
+              count={badgeCounts.footballMatch}
+              userId={profile?.id}
+              notificationType="football_match"
+              capAt9
+            />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#38BDF8] rounded-xl flex items-center justify-center shadow-lg shadow-[#00FF85]/30">
                 <Users className="w-5 h-5 text-black" />
@@ -510,8 +534,14 @@ export default function Dashboard() {
 
           <button
             onClick={() => navigate('/scouter')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
+            <NotificationBadge
+              count={badgeCounts.scouter}
+              userId={profile?.id}
+              notificationType="scout_interest"
+              capAt9
+            />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FF6B9D] rounded-xl flex items-center justify-center shadow-lg shadow-[#FFD700]/30">
                 <Search className="w-5 h-5 text-black" />
@@ -599,9 +629,9 @@ export default function Dashboard() {
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge
-              count={badgeCounts.profileViews}
+              count={badgeCounts.viewedMe}
               userId={profile?.id}
-              notificationType="profile_view"
+              notificationType="viewed_me"
               capAt9
             />
             <div className="flex items-center space-x-3">
