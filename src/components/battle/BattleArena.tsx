@@ -126,7 +126,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
 
   useEffect(() => {
     const allSkillsUsed = (battle.used_skills?.length ?? 0) >= 6;
-    if (battle.status !== 'active' || (isMyTurn && !allSkillsUsed)) {
+    if (battle.status !== 'active' || (!allSkillsUsed && isMyTurn)) {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
         pollIntervalRef.current = null;
@@ -155,7 +155,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
         pollIntervalRef.current = null;
       }
     };
-  }, [battle.status, isMyTurn, battle.id]);
+  }, [battle.status, isMyTurn, battle.id, battle.used_skills?.length]);
 
   const loadCards = async () => {
     if (!user) return;
