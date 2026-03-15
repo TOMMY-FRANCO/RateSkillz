@@ -38,6 +38,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [submitting, setSubmitting] = useState(false);
   const [roundResult, setRoundResult] = useState<{ attacker_wins: boolean } | null>(null);
+  const [lobbyCountdown, setLobbyCountdown] = useState(8);
   const [lastRoundSummary, setLastRoundSummary] = useState<RoundSummary | null>(null);
   const prevSelectionsLenRef = useRef<number>(initialBattle.card_selections?.length ?? 0);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -85,8 +86,13 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
 
   useEffect(() => {
     if (isCompleted) {
-      const timer = setTimeout(() => onComplete(), 3000);
-      return () => clearTimeout(timer);
+      setLobbyCountdown(8);
+      const timer = setTimeout(() => onComplete(), 8000);
+      const tick = setInterval(() => setLobbyCountdown(c => Math.max(0, c - 1)), 1000);
+      return () => {
+        clearTimeout(timer);
+        clearInterval(tick);
+      };
     }
   }, [isCompleted, onComplete]);
 
@@ -254,6 +260,9 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
             wagerAmount={battle.wager_amount}
             opponentName="Opponent"
           />
+          <div className="text-center text-[#B0B8C8] text-sm">
+            Returning to lobby in <span className="text-yellow-400 font-bold">{lobbyCountdown}s</span>...
+          </div>
           <div className="glass-card p-4">
             <h3 className="text-sm font-bold text-white uppercase tracking-wide mb-3">Skills Used</h3>
             <div className="flex gap-2 flex-wrap">
