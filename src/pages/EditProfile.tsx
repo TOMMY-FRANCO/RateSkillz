@@ -48,11 +48,14 @@ export default function EditProfile() {
 
   const [loadingEducation, setLoadingEducation] = useState(false);
 
+  const [city, setCity] = useState(profile?.city || '');
+
   // Safety features
   const [age, setAge] = useState(profile?.age || '');
   const [findableBySchool, setFindableBySchool] = useState(profile?.findable_by_school ?? true);
   const [showSafetyPopup, setShowSafetyPopup] = useState(false);
   const [hideFromLeaderboard, setHideFromLeaderboard] = useState(profile?.hide_from_leaderboard ?? false);
+  const [isCityVisible, setIsCityVisible] = useState(profile?.is_city_visible ?? false);
 
   useEffect(() => {
     if (profile) {
@@ -300,6 +303,8 @@ export default function EditProfile() {
       age: ageNum,
       findable_by_school: findableBySchool,
       hide_from_leaderboard: hideFromLeaderboard,
+      city: city || null,
+      is_city_visible: isCityVisible,
     });
 
     if (error) {
@@ -575,6 +580,189 @@ export default function EditProfile() {
             </div>
 
             <div>
+              <label htmlFor="city" className="block text-sm font-medium text-gray-300 mb-2">
+                City
+              </label>
+              <select
+                id="city"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+              >
+                <option value="">Select a city</option>
+                <optgroup label="England - London">
+                  <option value="City of London">City of London</option>
+                  <option value="Westminster">Westminster</option>
+                  <option value="Barking and Dagenham">Barking and Dagenham</option>
+                  <option value="Barnet">Barnet</option>
+                  <option value="Bexley">Bexley</option>
+                  <option value="Brent">Brent</option>
+                  <option value="Bromley">Bromley</option>
+                  <option value="Camden">Camden</option>
+                  <option value="Croydon">Croydon</option>
+                  <option value="Ealing">Ealing</option>
+                  <option value="Enfield">Enfield</option>
+                  <option value="Greenwich">Greenwich</option>
+                  <option value="Hackney">Hackney</option>
+                  <option value="Hammersmith and Fulham">Hammersmith and Fulham</option>
+                  <option value="Haringey">Haringey</option>
+                  <option value="Harrow">Harrow</option>
+                  <option value="Havering">Havering</option>
+                  <option value="Hillingdon">Hillingdon</option>
+                  <option value="Hounslow">Hounslow</option>
+                  <option value="Islington">Islington</option>
+                  <option value="Kensington and Chelsea">Kensington and Chelsea</option>
+                  <option value="Kingston upon Thames">Kingston upon Thames</option>
+                  <option value="Lambeth">Lambeth</option>
+                  <option value="Lewisham">Lewisham</option>
+                  <option value="Merton">Merton</option>
+                  <option value="Newham">Newham</option>
+                  <option value="Redbridge">Redbridge</option>
+                  <option value="Richmond upon Thames">Richmond upon Thames</option>
+                  <option value="Southwark">Southwark</option>
+                  <option value="Sutton">Sutton</option>
+                  <option value="Tower Hamlets">Tower Hamlets</option>
+                  <option value="Waltham Forest">Waltham Forest</option>
+                  <option value="Wandsworth">Wandsworth</option>
+                </optgroup>
+                <optgroup label="England - South East">
+                  <option value="Brighton">Brighton</option>
+                  <option value="Southampton">Southampton</option>
+                  <option value="Portsmouth">Portsmouth</option>
+                  <option value="Oxford">Oxford</option>
+                  <option value="Reading">Reading</option>
+                  <option value="Guildford">Guildford</option>
+                  <option value="Canterbury">Canterbury</option>
+                  <option value="Maidstone">Maidstone</option>
+                  <option value="Milton Keynes">Milton Keynes</option>
+                  <option value="Slough">Slough</option>
+                  <option value="Worthing">Worthing</option>
+                  <option value="Hastings">Hastings</option>
+                  <option value="Eastbourne">Eastbourne</option>
+                  <option value="Basingstoke">Basingstoke</option>
+                  <option value="Crawley">Crawley</option>
+                  <option value="Medway">Medway</option>
+                </optgroup>
+                <optgroup label="England - South West">
+                  <option value="Bristol">Bristol</option>
+                  <option value="Plymouth">Plymouth</option>
+                  <option value="Exeter">Exeter</option>
+                  <option value="Bath">Bath</option>
+                  <option value="Swindon">Swindon</option>
+                  <option value="Gloucester">Gloucester</option>
+                  <option value="Cheltenham">Cheltenham</option>
+                  <option value="Bournemouth">Bournemouth</option>
+                  <option value="Poole">Poole</option>
+                  <option value="Torquay">Torquay</option>
+                  <option value="Taunton">Taunton</option>
+                  <option value="Truro">Truro</option>
+                </optgroup>
+                <optgroup label="England - East of England">
+                  <option value="Cambridge">Cambridge</option>
+                  <option value="Norwich">Norwich</option>
+                  <option value="Ipswich">Ipswich</option>
+                  <option value="Colchester">Colchester</option>
+                  <option value="Peterborough">Peterborough</option>
+                  <option value="Luton">Luton</option>
+                  <option value="Southend-on-Sea">Southend-on-Sea</option>
+                  <option value="Chelmsford">Chelmsford</option>
+                  <option value="Stevenage">Stevenage</option>
+                  <option value="Watford">Watford</option>
+                  <option value="Bedford">Bedford</option>
+                </optgroup>
+                <optgroup label="England - East Midlands">
+                  <option value="Nottingham">Nottingham</option>
+                  <option value="Leicester">Leicester</option>
+                  <option value="Derby">Derby</option>
+                  <option value="Lincoln">Lincoln</option>
+                  <option value="Northampton">Northampton</option>
+                  <option value="Coventry">Coventry</option>
+                  <option value="Stoke-on-Trent">Stoke-on-Trent</option>
+                  <option value="Burton upon Trent">Burton upon Trent</option>
+                  <option value="Chesterfield">Chesterfield</option>
+                  <option value="Mansfield">Mansfield</option>
+                </optgroup>
+                <optgroup label="England - West Midlands">
+                  <option value="Birmingham">Birmingham</option>
+                  <option value="Wolverhampton">Wolverhampton</option>
+                  <option value="Coventry">Coventry</option>
+                  <option value="Dudley">Dudley</option>
+                  <option value="Walsall">Walsall</option>
+                  <option value="West Bromwich">West Bromwich</option>
+                  <option value="Solihull">Solihull</option>
+                  <option value="Worcester">Worcester</option>
+                  <option value="Hereford">Hereford</option>
+                  <option value="Shrewsbury">Shrewsbury</option>
+                  <option value="Telford">Telford</option>
+                </optgroup>
+                <optgroup label="England - Yorkshire and the Humber">
+                  <option value="Leeds">Leeds</option>
+                  <option value="Sheffield">Sheffield</option>
+                  <option value="Bradford">Bradford</option>
+                  <option value="Hull">Hull</option>
+                  <option value="York">York</option>
+                  <option value="Huddersfield">Huddersfield</option>
+                  <option value="Wakefield">Wakefield</option>
+                  <option value="Doncaster">Doncaster</option>
+                  <option value="Rotherham">Rotherham</option>
+                  <option value="Barnsley">Barnsley</option>
+                  <option value="Grimsby">Grimsby</option>
+                  <option value="Scarborough">Scarborough</option>
+                </optgroup>
+                <optgroup label="England - North West">
+                  <option value="Manchester">Manchester</option>
+                  <option value="Liverpool">Liverpool</option>
+                  <option value="Salford">Salford</option>
+                  <option value="Blackpool">Blackpool</option>
+                  <option value="Preston">Preston</option>
+                  <option value="Blackburn">Blackburn</option>
+                  <option value="Bolton">Bolton</option>
+                  <option value="Oldham">Oldham</option>
+                  <option value="Rochdale">Rochdale</option>
+                  <option value="Stockport">Stockport</option>
+                  <option value="Wigan">Wigan</option>
+                  <option value="Warrington">Warrington</option>
+                  <option value="Chester">Chester</option>
+                  <option value="Carlisle">Carlisle</option>
+                </optgroup>
+                <optgroup label="England - North East">
+                  <option value="Newcastle upon Tyne">Newcastle upon Tyne</option>
+                  <option value="Sunderland">Sunderland</option>
+                  <option value="Middlesbrough">Middlesbrough</option>
+                  <option value="Gateshead">Gateshead</option>
+                  <option value="South Shields">South Shields</option>
+                  <option value="Darlington">Darlington</option>
+                  <option value="Durham">Durham</option>
+                  <option value="Hartlepool">Hartlepool</option>
+                  <option value="Stockton-on-Tees">Stockton-on-Tees</option>
+                </optgroup>
+                <optgroup label="Scotland">
+                  <option value="Glasgow">Glasgow</option>
+                  <option value="Edinburgh">Edinburgh</option>
+                  <option value="Aberdeen">Aberdeen</option>
+                  <option value="Dundee">Dundee</option>
+                  <option value="Inverness">Inverness</option>
+                  <option value="Stirling">Stirling</option>
+                  <option value="Perth">Perth</option>
+                  <option value="Livingston">Livingston</option>
+                </optgroup>
+                <optgroup label="Wales">
+                  <option value="Cardiff">Cardiff</option>
+                  <option value="Swansea">Swansea</option>
+                  <option value="Newport">Newport</option>
+                  <option value="Wrexham">Wrexham</option>
+                  <option value="Bangor">Bangor</option>
+                </optgroup>
+                <optgroup label="Northern Ireland">
+                  <option value="Belfast">Belfast</option>
+                  <option value="Londonderry">Londonderry</option>
+                  <option value="Lisburn">Lisburn</option>
+                  <option value="Newry">Newry</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Gender
               </label>
@@ -763,9 +951,11 @@ export default function EditProfile() {
                       if (ageNum >= 11 && ageNum < 18) {
                         setFindableBySchool(false);
                         setHideFromLeaderboard(true);
+                        setIsCityVisible(false);
                       } else if (ageNum >= 18) {
                         setFindableBySchool(true);
                         setHideFromLeaderboard(false);
+                        setIsCityVisible(true);
                       }
                     }
                   }}
@@ -857,6 +1047,49 @@ export default function EditProfile() {
                       <>
                         <EyeOff className="w-4 h-4 text-gray-400" />
                         <span className="text-gray-400 font-medium">Hidden from leaderboards</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* City Visibility Toggle */}
+              {age && (
+                <div className="bg-gray-800 rounded-lg p-4 border border-gray-700 mt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <label htmlFor="city-visibility" className="block text-sm font-medium text-white mb-1">
+                        Show my city on profile
+                      </label>
+                      <p className="text-xs text-gray-400">
+                        Controls whether your city is displayed on your public profile. When OFF your city will not be visible to other users.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      id="city-visibility"
+                      onClick={() => setIsCityVisible(!isCityVisible)}
+                      className={`ml-4 relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-gray-800 ${
+                        isCityVisible ? 'bg-green-500' : 'bg-gray-600'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                          isCityVisible ? 'translate-x-7' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 text-sm">
+                    {isCityVisible ? (
+                      <>
+                        <Eye className="w-4 h-4 text-green-400" />
+                        <span className="text-green-400 font-medium">City visible on profile</span>
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="w-4 h-4 text-gray-400" />
+                        <span className="text-gray-400 font-medium">City hidden from profile</span>
                       </>
                     )}
                   </div>
