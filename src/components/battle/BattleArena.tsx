@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Swords, Clock, Flag, Target, Shield, Zap } from 'lucide-react';
+import { Swords, Clock, Flag, Target, Shield, Zap, ChevronRight } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { GlassButton } from '../ui/GlassButton';
 import { SkillSelectionScreen } from './SkillSelectionScreen';
@@ -9,12 +9,22 @@ import { BattleResultSkeleton, BattleResultReveal } from '../ui/HighValueSkeleto
 import { ShimmerBar, StaggerItem } from '../ui/Shimmer';
 import {
   Battle,
+  BattleSelection,
   PlayerCard,
   getPlayerCards,
   submitBattleMove,
   forfeitBattle,
   getBattle,
 } from '../../lib/battleMode';
+
+interface RoundSummary {
+  attackerCardName: string;
+  attackerSkill: string;
+  attackerValue: number;
+  defenderCardName: string;
+  defenderValue: number;
+  attackerWins: boolean;
+}
 
 interface BattleArenaProps {
   battle: Battle;
@@ -29,6 +39,8 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [submitting, setSubmitting] = useState(false);
   const [roundResult, setRoundResult] = useState<{ attacker_wins: boolean } | null>(null);
+  const [lastRoundSummary, setLastRoundSummary] = useState<RoundSummary | null>(null);
+  const prevSelectionsLenRef = useRef<number>(initialBattle.card_selections?.length ?? 0);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isMyTurn = battle.current_turn_user_id === user?.id;
@@ -46,6 +58,31 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   useEffect(() => {
     loadCards();
   }, [battle.id]);
+
+  useEffect(() => {
+    const selections: BattleSelection[] = battle.card_selections || [];
+    const len = selections.length;
+    const prev = prevSelectionsLenRef.current;
+
+    if (len >= 2 && len % 2 === 0 && len > prev) {
+      const attacker = selections[len - 2];
+      const defender = selections[len - 1];
+      const attackerCard = myCards.find(c => c.id === attacker.card_id);
+      const defenderCard = myCards.find(c => c.id === defender.card_id);
+      setLastRoundSummary({
+        attackerCardName: attackerCard?.player_name || 'Attacker',
+        attackerSkill: attacker.skill || 'overall',
+        attackerValue: attacker.value,
+        defenderCardName: defenderCard?.player_name || 'Defender',
+        defenderValue: defender.value,
+        attackerWins: defender.attacker_wins ?? false,
+      });
+    } else if (len % 2 === 1 && len > prev) {
+      setLastRoundSummary(null);
+    }
+
+    prevSelectionsLenRef.current = len;
+  }, [battle.card_selections, myCards]);
 
   useEffect(() => {
     if (isCompleted) {
@@ -281,29 +318,44 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
           </div>
         </GlassCard>
 
-        {roundResult && (
-          <GlassCard className={`p-6 mb-6 border-2 ${
-            roundResult.attacker_wins ? 'border-red-500 bg-red-500/10' : 'border-green-500 bg-green-500/10'
+        {lastRoundSummary && (
+          <GlassCard className={`p-5 mb-6 border-2 ${
+            lastRoundSummary.attackerWins ? 'border-red-500 bg-red-500/10' : 'border-[#00FF85] bg-[#00FF85]/10'
           }`}>
-            <div className="text-center">
-              {roundResult.attacker_wins ? (
-                <>
-                  <Zap className="w-12 h-12 text-red-500 mx-auto mb-2" />
-                  <h3 className="text-2xl font-bold text-red-500">Card Eliminated!</h3>
-                  <p className="text-white/70 mt-1">Your opponent won this round</p>
-                </>
+            <div className="flex items-center gap-2 mb-4">
+              {lastRoundSummary.attackerWins ? (
+                <Zap className="w-5 h-5 text-red-500" />
               ) : (
-                <>
-                  <Shield className="w-12 h-12 text-green-500 mx-auto mb-2" />
-                  <h3 className="text-2xl font-bold text-green-500">Defense Successful!</h3>
-                  <p className="text-white/70 mt-1">Your card held strong</p>
-                </>
+                <Shield className="w-5 h-5 text-[#00FF85]" />
               )}
+              <h3 className={`text-lg font-bold ${lastRoundSummary.attackerWins ? 'text-red-500' : 'text-[#00FF85]'}`}>
+                {lastRoundSummary.attackerWins ? 'Card Eliminated!' : 'Defense Held!'}
+              </h3>
             </div>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 bg-white/5 rounded-xl p-3 text-center">
+                <p className="text-white/50 text-xs uppercase tracking-wide mb-1">Attacker</p>
+                <p className="text-white font-semibold text-sm truncate">{lastRoundSummary.attackerCardName}</p>
+                <p className="text-yellow-400 text-xs capitalize mt-1">{lastRoundSummary.attackerSkill}</p>
+                <p className="text-2xl font-bold text-white mt-1">{lastRoundSummary.attackerValue}</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-white/40 flex-shrink-0" />
+              <div className="flex-1 bg-white/5 rounded-xl p-3 text-center">
+                <p className="text-white/50 text-xs uppercase tracking-wide mb-1">Defender</p>
+                <p className="text-white font-semibold text-sm truncate">{lastRoundSummary.defenderCardName}</p>
+                <p className="text-yellow-400 text-xs capitalize mt-1">{lastRoundSummary.attackerSkill}</p>
+                <p className="text-2xl font-bold text-white mt-1">{lastRoundSummary.defenderValue}</p>
+              </div>
+            </div>
+            <p className="text-center text-white/60 text-sm mt-3">
+              {lastRoundSummary.attackerWins
+                ? `Attacker's ${lastRoundSummary.attackerValue} beat Defender's ${lastRoundSummary.defenderValue}`
+                : `Defender's ${lastRoundSummary.defenderValue} held against Attacker's ${lastRoundSummary.attackerValue}`}
+            </p>
           </GlassCard>
         )}
 
-        {!isMyTurn && !roundResult && (
+        {!isMyTurn && !lastRoundSummary && (
           <GlassCard className="p-6 mb-6 text-center">
             <Target className="w-12 h-12 text-yellow-500 mx-auto mb-4 animate-pulse" />
             <h3 className="text-2xl font-bold text-white">Opponent's Turn</h3>
