@@ -484,12 +484,12 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
       </div>
 
       {/* Pitch */}
-      <div className="flex-1 flex flex-col max-w-2xl w-full mx-auto px-3 py-3 gap-3">
+      <div className="flex flex-col max-w-2xl w-full mx-auto px-3 py-3 gap-3">
 
         {/* ── PITCH CONTAINER ── */}
         <div
-          className="relative flex-1 rounded-2xl overflow-hidden flex flex-col bg-[#1a4a2e]"
-          style={{ minHeight: 480 }}
+          className="relative rounded-2xl overflow-hidden flex flex-col bg-[#1a4a2e]"
+          style={{ minHeight: 520, height: 'auto' }}
         >
           {/* Pitch line markings */}
           <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
@@ -540,7 +540,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
           </div>
 
           {/* ── ROW 1: Opponent's cards zone ── */}
-          <div className="relative z-10 flex-1 flex flex-col items-center justify-start pt-3 px-3" style={{ transform: 'none' }}>
+          <div className="relative z-10 flex flex-col items-center justify-start pt-3 px-3" style={{ transform: 'none' }}>
             <p className="text-[rgba(255,255,255,0.4)] text-[10px] font-bold uppercase tracking-widest mb-2">
               Opponent &mdash; {oppRemainingCards} card{oppRemainingCards !== 1 ? 's' : ''} left
             </p>
@@ -713,7 +713,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
           )}
 
           {/* ── ROW 3: My cards zone ── */}
-          <div className="relative z-10 flex-1 flex flex-col items-center justify-end pb-3 px-3">
+          <div className="relative z-10 flex flex-col items-center justify-end pb-3 px-3">
             <div className="flex gap-2 overflow-x-auto pb-1 justify-start w-full scrollbar-hide mb-2">
               {myCards.map((card) => {
                 const eliminated = eliminatedCardIds.includes(card.id);
