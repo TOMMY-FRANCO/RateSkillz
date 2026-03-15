@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { Shield } from 'lucide-react';
-import { GlassCard } from '../ui/GlassCard';
-import { GlassButton } from '../ui/GlassButton';
 import { PlayerCard } from '../../lib/battleMode';
 
 interface SkillSelectionScreenProps {
@@ -46,7 +44,6 @@ export function SkillSelectionScreen({
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
 
   const availableCards = cards.filter((card) => !eliminatedCards.includes(card.id));
-  const availableSkills = SKILLS.filter((skill) => !usedSkills.includes(skill.code));
   const usedSkillSet = new Set(usedSkills);
 
   const challengedSkill = attackerSkill
@@ -62,125 +59,130 @@ export function SkillSelectionScreen({
   const canConfirm = !!selectedCard && (!isAttacker || !!selectedSkill);
 
   return (
-    <div className="space-y-4">
-      <GlassCard className="p-5">
-        <h3 className="text-xl font-bold text-white mb-1">
+    <div className="glass-container p-4 space-y-4">
+      <div>
+        <h3 className="text-base font-bold text-white">
           {isAttacker ? 'Attack — pick card & skill' : 'Defend — pick your card'}
         </h3>
 
         {!isAttacker && challengedSkill && (
-          <div className="flex items-center gap-3 mt-3 mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
-            <Shield className="w-5 h-5 text-red-400 shrink-0" />
-            <p className="text-white/80 text-sm">
-              Opponent challenges with <span className="text-red-400 font-semibold">{challengedSkill.name}</span> — pick the card with the highest value
+          <div className="flex items-center gap-2.5 mt-3 p-3 bg-red-500/10 border border-red-500/25 rounded-xl">
+            <Shield className="w-4 h-4 text-red-400 shrink-0" />
+            <p className="text-[#B0B8C8] text-xs">
+              Opponent challenges with{' '}
+              <span className="text-red-400 font-semibold">{challengedSkill.name}</span>{' '}
+              — pick the card with the highest value
             </p>
           </div>
         )}
 
         {isAttacker && (
-          <p className="text-white/60 text-sm mt-1 mb-4">Choose a card, then pick the skill to challenge your opponent with</p>
+          <p className="text-[#B0B8C8] text-xs mt-1">
+            Choose a card, then pick the skill to challenge your opponent with
+          </p>
         )}
+      </div>
 
-        {/* Horizontal scrollable card row */}
-        <div className="overflow-x-auto pb-2 -mx-1 px-1">
-          <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
-            {availableCards.map((card) => {
-              const defenseValue = !isAttacker && attackerSkill
-                ? getSkillValue(card, attackerSkill)
-                : null;
-              const isSelected = selectedCard === card.id;
+      {/* Horizontal scrollable card row */}
+      <div className="overflow-x-auto pb-2 -mx-1 px-1">
+        <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
+          {availableCards.map((card) => {
+            const defenseValue =
+              !isAttacker && attackerSkill ? getSkillValue(card, attackerSkill) : null;
+            const isSelected = selectedCard === card.id;
+
+            return (
+              <button
+                key={card.id}
+                onClick={() => setSelectedCard(card.id)}
+                className={`flex flex-col items-center w-28 flex-shrink-0 rounded-2xl p-3 border-2 transition-all focus:outline-none ${
+                  isSelected
+                    ? 'border-[#00E0FF] bg-[rgba(0,224,255,0.08)] scale-105 shadow-[0_0_12px_rgba(0,224,255,0.2)]'
+                    : 'border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] hover:border-[rgba(0,224,255,0.3)] hover:bg-[rgba(0,224,255,0.04)] opacity-70 hover:opacity-100'
+                }`}
+              >
+                {card.avatar_url ? (
+                  <img
+                    src={card.avatar_url}
+                    alt={card.player_name}
+                    className="w-14 h-14 rounded-full object-cover border-2 border-[rgba(0,224,255,0.25)] mb-2"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center mb-2 border-2 border-[rgba(0,224,255,0.25)]">
+                    <span className="text-black font-black text-xl">
+                      {card.player_name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <p className="text-white text-xs font-semibold text-center w-full truncate leading-tight">
+                  {card.player_name}
+                </p>
+                <span className="mt-1.5 text-[10px] font-black text-black bg-gradient-to-r from-[#00FF85] to-[#00E0FF] px-2 py-0.5 rounded">
+                  {card.overall_rating}
+                </span>
+                {defenseValue !== null && (
+                  <p className="text-yellow-400 text-2xl font-black mt-2 leading-none">
+                    {defenseValue}
+                  </p>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Skill picker — attacker only */}
+      {isAttacker && (
+        <div>
+          <h4 className="text-xs font-bold text-[#B0B8C8] uppercase tracking-wide mb-2.5">
+            {selectedCard ? 'Select skill' : 'Select a card first'}
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {SKILLS.map((skill) => {
+              const card = availableCards.find((c) => c.id === selectedCard);
+              const value = card ? getSkillValue(card, skill.code) : null;
+              const isUsed = usedSkillSet.has(skill.code);
+              const isSelected = selectedSkill === skill.code;
 
               return (
                 <button
-                  key={card.id}
-                  onClick={() => setSelectedCard(card.id)}
-                  className={`flex flex-col items-center w-28 flex-shrink-0 rounded-2xl p-3 border-2 transition-all focus:outline-none ${
-                    isSelected
-                      ? 'border-[#00FF85] bg-[#00FF85]/10 scale-105'
-                      : 'border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10 opacity-75 hover:opacity-100'
+                  key={skill.code}
+                  onClick={() => !isUsed && selectedCard && setSelectedSkill(skill.code)}
+                  disabled={isUsed || !selectedCard}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-full border text-xs font-bold transition-all focus:outline-none ${
+                    isUsed
+                      ? 'border-white/10 bg-white/5 text-white/25 cursor-not-allowed'
+                      : isSelected
+                      ? 'bg-gradient-to-r from-[#00FF85] to-[#00E0FF] border-transparent text-black shadow-[0_0_10px_rgba(0,224,255,0.3)]'
+                      : 'border-[rgba(0,224,255,0.2)] bg-[rgba(15,24,41,0.85)] text-[#B0B8C8] hover:border-[#00E0FF] hover:text-white'
                   }`}
                 >
-                  {card.avatar_url ? (
-                    <img
-                      src={card.avatar_url}
-                      alt={card.player_name}
-                      className="w-14 h-14 rounded-full object-cover border-2 border-white/20 mb-2"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mb-2 border-2 border-white/20">
-                      <span className="text-white/50 text-xl font-bold">
-                        {card.player_name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
+                  <span>{skill.code}</span>
+                  {value !== null && !isUsed && (
+                    <span className={`font-black ${isSelected ? 'text-black' : 'text-white/60'}`}>
+                      {value}
+                    </span>
                   )}
-                  <p className="text-white text-xs font-semibold text-center w-full truncate leading-tight">
-                    {card.player_name}
-                  </p>
-                  <span className="mt-1.5 px-2 py-0.5 bg-[#00FF85]/20 text-[#00FF85] text-xs font-bold rounded-full">
-                    {card.overall_rating} OVR
-                  </span>
-                  {defenseValue !== null && (
-                    <p className="text-yellow-400 text-2xl font-black mt-2 leading-none">
-                      {defenseValue}
-                    </p>
-                  )}
+                  {isUsed && <span className="text-[10px] text-white/25">(used)</span>}
                 </button>
               );
             })}
           </div>
         </div>
+      )}
 
-        {/* Skill picker — shown to attacker always, hidden for defender */}
-        {isAttacker && (
-          <div className="mt-5">
-            <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">
-              {selectedCard ? 'Select skill' : 'Select a card first'}
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {SKILLS.map((skill) => {
-                const card = availableCards.find((c) => c.id === selectedCard);
-                const value = card ? getSkillValue(card, skill.code) : null;
-                const isUsed = usedSkillSet.has(skill.code);
-                const isSelected = selectedSkill === skill.code;
-
-                return (
-                  <button
-                    key={skill.code}
-                    onClick={() => !isUsed && selectedCard && setSelectedSkill(skill.code)}
-                    disabled={isUsed || !selectedCard}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-full border text-sm font-semibold transition-all focus:outline-none ${
-                      isUsed
-                        ? 'border-white/10 bg-white/5 text-white/25 cursor-not-allowed'
-                        : isSelected
-                        ? 'border-[#00FF85] bg-[#00FF85]/15 text-[#00FF85]'
-                        : 'border-white/20 bg-white/5 text-white/80 hover:border-white/40 hover:bg-white/10'
-                    }`}
-                  >
-                    <span>{skill.code}</span>
-                    {value !== null && !isUsed && (
-                      <span className={`font-black ${isSelected ? 'text-yellow-400' : 'text-white/50'}`}>
-                        {value}
-                      </span>
-                    )}
-                    {isUsed && <span className="text-xs text-white/30">(used)</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        <div className="mt-5">
-          <GlassButton
-            onClick={handleConfirm}
-            disabled={!canConfirm}
-            className="w-full"
-          >
-            Confirm Selection
-          </GlassButton>
-        </div>
-      </GlassCard>
+      <button
+        onClick={handleConfirm}
+        disabled={!canConfirm}
+        className={`w-full py-3 rounded-xl text-sm font-bold transition-all focus:outline-none ${
+          canConfirm
+            ? 'bg-gradient-to-r from-[#00FF85] to-[#00E0FF] text-black hover:opacity-90 shadow-[0_0_16px_rgba(0,224,255,0.3)]'
+            : 'bg-white/5 border border-white/10 text-white/30 cursor-not-allowed'
+        }`}
+      >
+        Confirm Selection
+      </button>
     </div>
   );
 }

@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Swords, Clock, Flag, Target, Shield, Zap, ChevronRight } from 'lucide-react';
-import { GlassCard } from '../ui/GlassCard';
-import { GlassButton } from '../ui/GlassButton';
 import { SkillSelectionScreen } from './SkillSelectionScreen';
 import { TiebreakerScreen } from './TiebreakerScreen';
 import { useAuth } from '../../contexts/AuthContext';
@@ -193,22 +191,22 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <div className="min-h-screen p-4">
+        <div className="max-w-2xl mx-auto space-y-4">
           <StaggerItem index={0}>
-            <div className="bg-white/[0.03] rounded-2xl border border-white/[0.06] p-6">
+            <div className="glass-container p-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <ShimmerBar className="w-8 h-8 rounded" />
-                  <ShimmerBar className="h-7 w-40 rounded" />
+                  <ShimmerBar className="h-6 w-36 rounded" />
                 </div>
-                <ShimmerBar className="h-9 w-24 rounded-lg" speed="slow" />
+                <ShimmerBar className="h-8 w-20 rounded-lg" speed="slow" />
               </div>
               <div className="grid grid-cols-3 gap-4 text-center">
                 {[0, 1, 2].map((i) => (
                   <div key={i} className="space-y-1">
-                    <ShimmerBar className="h-3 w-20 rounded mx-auto" speed="slow" />
-                    <ShimmerBar className="h-8 w-12 rounded mx-auto" speed="slow" />
+                    <ShimmerBar className="h-3 w-16 rounded mx-auto" speed="slow" />
+                    <ShimmerBar className="h-7 w-10 rounded mx-auto" speed="slow" />
                   </div>
                 ))}
               </div>
@@ -241,8 +239,8 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
       : battle.player1_remaining_cards;
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-        <div className="max-w-2xl mx-auto space-y-6">
+      <div className="min-h-screen p-4">
+        <div className="max-w-2xl mx-auto space-y-4">
           <BattleResultReveal
             isWinner={isWinner}
             myScore={myRemaining}
@@ -250,121 +248,127 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
             wagerAmount={battle.wager_amount}
             opponentName="Opponent"
           />
-          <GlassCard className="p-6">
-            <h3 className="text-xl font-bold text-white mb-4">Skills Used</h3>
+          <div className="glass-card p-4">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wide mb-3">Skills Used</h3>
             <div className="flex gap-2 flex-wrap">
               {(battle.used_skills || []).map((skill) => (
-                <div
+                <span
                   key={skill}
-                  className="px-3 py-1 bg-red-500/20 border border-red-500 rounded-full text-red-500 text-sm"
+                  className="px-3 py-1 bg-red-500/15 border border-red-500/40 rounded-full text-red-400 text-xs font-semibold"
                 >
                   {skill}
-                </div>
+                </span>
               ))}
               {(!battle.used_skills || battle.used_skills.length === 0) && (
-                <p className="text-white/50">No skills used</p>
+                <p className="text-[#B0B8C8] text-sm">No skills used</p>
               )}
             </div>
-          </GlassCard>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto">
-        <GlassCard className="p-6 mb-6">
+    <div className="min-h-screen p-4">
+      <div className="max-w-2xl mx-auto space-y-4">
+
+        {/* Header panel */}
+        <div className="glass-container p-4">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Swords className="w-8 h-8 text-red-500" />
-              <h1 className="text-3xl font-bold text-white">Battle Arena</h1>
+            <div className="flex items-center gap-2.5">
+              <Swords className="w-5 h-5 text-red-400" />
+              <h1 className="text-lg font-bold text-white">Battle Arena</h1>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {battle.status === 'active' && (
-                <div className="flex items-center gap-2 text-yellow-500">
-                  <Clock className="w-5 h-5" />
-                  <span className="text-2xl font-bold">{timeRemaining}s</span>
+                <div className={`flex items-center gap-1.5 ${timeRemaining <= 10 ? 'text-red-400' : 'text-yellow-400'}`}>
+                  <Clock className="w-4 h-4" />
+                  <span className="text-lg font-bold tabular-nums">{timeRemaining}s</span>
                 </div>
               )}
-              <GlassButton onClick={handleManualForfeit} variant="outline" size="sm">
-                <Flag className="w-4 h-4 mr-2" />
+              <button
+                onClick={handleManualForfeit}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold hover:bg-red-500/20 transition-all"
+              >
+                <Flag className="w-3.5 h-3.5" />
                 Forfeit
-              </GlassButton>
+              </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-white/60 text-sm mb-1">Your Cards</p>
-              <p className="text-3xl font-bold text-[#00FF85]">
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="glass-card p-3">
+              <p className="text-[#B0B8C8] text-xs mb-1">Your Cards</p>
+              <p className="text-2xl font-black text-[#00FF85]">
                 {battle.manager1_id === user?.id
                   ? battle.player1_remaining_cards
                   : battle.player2_remaining_cards}
               </p>
             </div>
-            <div>
-              <p className="text-white/60 text-sm mb-1">Wager</p>
-              <p className="text-3xl font-bold text-yellow-500">{battle.wager_amount}</p>
+            <div className="glass-card p-3">
+              <p className="text-[#B0B8C8] text-xs mb-1">Wager</p>
+              <p className="text-2xl font-black text-yellow-400">{battle.wager_amount}</p>
             </div>
-            <div>
-              <p className="text-white/60 text-sm mb-1">Opponent Cards</p>
-              <p className="text-3xl font-bold text-red-500">
+            <div className="glass-card p-3">
+              <p className="text-[#B0B8C8] text-xs mb-1">Opp. Cards</p>
+              <p className="text-2xl font-black text-red-400">
                 {battle.manager1_id === user?.id
                   ? battle.player2_remaining_cards
                   : battle.player1_remaining_cards}
               </p>
             </div>
           </div>
-        </GlassCard>
+        </div>
 
+        {/* Round result banner */}
         {lastRoundSummary && (
-          <GlassCard className={`p-5 mb-6 border-2 ${
-            lastRoundSummary.attackerWins ? 'border-red-500 bg-red-500/10' : 'border-[#00FF85] bg-[#00FF85]/10'
+          <div className={`glass-card p-4 border-l-4 ${
+            lastRoundSummary.attackerWins ? 'border-l-red-500' : 'border-l-[#00FF85]'
           }`}>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-3">
               {lastRoundSummary.attackerWins ? (
-                <Zap className="w-5 h-5 text-red-500" />
+                <Zap className="w-4 h-4 text-red-400" />
               ) : (
-                <Shield className="w-5 h-5 text-[#00FF85]" />
+                <Shield className="w-4 h-4 text-[#00FF85]" />
               )}
-              <h3 className={`text-lg font-bold ${lastRoundSummary.attackerWins ? 'text-red-500' : 'text-[#00FF85]'}`}>
+              <h3 className={`text-sm font-bold uppercase tracking-wide ${lastRoundSummary.attackerWins ? 'text-red-400' : 'text-[#00FF85]'}`}>
                 {lastRoundSummary.attackerWins ? 'Card Eliminated!' : 'Defense Held!'}
               </h3>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <div className="flex-1 bg-white/5 rounded-xl p-3 text-center">
-                <p className="text-white/50 text-xs uppercase tracking-wide mb-1">Attacker</p>
-                <p className="text-white font-semibold text-sm truncate">{lastRoundSummary.attackerCardName}</p>
-                <p className="text-yellow-400 text-xs capitalize mt-1">{lastRoundSummary.attackerSkill}</p>
-                <p className="text-2xl font-bold text-white mt-1">{lastRoundSummary.attackerValue}</p>
+                <p className="text-[#B0B8C8] text-[10px] uppercase tracking-wide mb-1">Attacker</p>
+                <p className="text-white font-semibold text-xs truncate">{lastRoundSummary.attackerCardName}</p>
+                <p className="text-yellow-400 text-[10px] capitalize mt-1">{lastRoundSummary.attackerSkill}</p>
+                <p className="text-xl font-black text-white mt-1">{lastRoundSummary.attackerValue}</p>
               </div>
-              <ChevronRight className="w-5 h-5 text-white/40 flex-shrink-0" />
+              <ChevronRight className="w-4 h-4 text-white/30 flex-shrink-0" />
               <div className="flex-1 bg-white/5 rounded-xl p-3 text-center">
-                <p className="text-white/50 text-xs uppercase tracking-wide mb-1">Defender</p>
-                <p className="text-white font-semibold text-sm truncate">{lastRoundSummary.defenderCardName}</p>
-                <p className="text-yellow-400 text-xs capitalize mt-1">{lastRoundSummary.attackerSkill}</p>
-                <p className="text-2xl font-bold text-white mt-1">{lastRoundSummary.defenderValue}</p>
+                <p className="text-[#B0B8C8] text-[10px] uppercase tracking-wide mb-1">Defender</p>
+                <p className="text-white font-semibold text-xs truncate">{lastRoundSummary.defenderCardName}</p>
+                <p className="text-yellow-400 text-[10px] capitalize mt-1">{lastRoundSummary.attackerSkill}</p>
+                <p className="text-xl font-black text-white mt-1">{lastRoundSummary.defenderValue}</p>
               </div>
             </div>
-            <p className="text-center text-white/60 text-sm mt-3">
+            <p className="text-center text-[#B0B8C8] text-xs mt-3">
               {lastRoundSummary.attackerWins
                 ? `Attacker's ${lastRoundSummary.attackerValue} beat Defender's ${lastRoundSummary.defenderValue}`
                 : `Defender's ${lastRoundSummary.defenderValue} held against Attacker's ${lastRoundSummary.attackerValue}`}
             </p>
-          </GlassCard>
+          </div>
         )}
 
+        {/* Opponent's turn waiting */}
         {!isMyTurn && !lastRoundSummary && (
-          <GlassCard className="p-6 mb-6 text-center">
-            <Target className="w-12 h-12 text-yellow-500 mx-auto mb-4 animate-pulse" />
-            <h3 className="text-2xl font-bold text-white">Opponent's Turn</h3>
-            <p className="text-white/70 mt-2">
-              Opponent's Turn - {timeRemaining}s remaining
-            </p>
-          </GlassCard>
+          <div className="glass-card p-6 text-center">
+            <Target className="w-10 h-10 text-yellow-400 mx-auto mb-3 animate-pulse" />
+            <h3 className="text-lg font-bold text-white">Opponent's Turn</h3>
+            <p className="text-[#B0B8C8] text-sm mt-1">{timeRemaining}s remaining</p>
+          </div>
         )}
 
+        {/* Skill selection */}
         {isMyTurn && !submitting && (
           <SkillSelectionScreen
             cards={myCards}
@@ -376,29 +380,32 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
           />
         )}
 
+        {/* Submitting spinner */}
         {submitting && (
-          <GlassCard className="p-6 mb-6 text-center">
-            <div className="animate-spin w-8 h-8 border-2 border-white/20 border-t-[#00FF85] rounded-full mx-auto mb-4" />
-            <p className="text-white/70">Submitting move...</p>
-          </GlassCard>
+          <div className="glass-card p-6 text-center">
+            <div className="w-8 h-8 border-2 border-white/10 border-t-[#00FF85] rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-[#B0B8C8] text-sm">Submitting move...</p>
+          </div>
         )}
 
-        <GlassCard className="p-6 mt-6">
-          <h3 className="text-xl font-bold text-white mb-4">Skills Used</h3>
+        {/* Used skills */}
+        <div className="glass-card p-4">
+          <h3 className="text-xs font-bold text-[#B0B8C8] uppercase tracking-wide mb-3">Skills Used</h3>
           <div className="flex gap-2 flex-wrap">
             {(battle.used_skills || []).map((skill) => (
-              <div
+              <span
                 key={skill}
-                className="px-3 py-1 bg-red-500/20 border border-red-500 rounded-full text-red-500 text-sm"
+                className="px-3 py-1 bg-red-500/15 border border-red-500/40 rounded-full text-red-400 text-xs font-semibold"
               >
                 {skill}
-              </div>
+              </span>
             ))}
             {(!battle.used_skills || battle.used_skills.length === 0) && (
-              <p className="text-white/50">No skills used yet</p>
+              <p className="text-[#B0B8C8] text-sm">No skills used yet</p>
             )}
           </div>
-        </GlassCard>
+        </div>
+
       </div>
     </div>
   );
