@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Swords, Trophy, Coins, Clock, ArrowLeft, ChevronDown, ChevronUp, Shield, Zap } from 'lucide-react';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
@@ -40,6 +40,7 @@ export default function BattleMode() {
   const [breakdownData, setBreakdownData] = useState<Record<string, Battle>>({});
   const [breakdownLoading, setBreakdownLoading] = useState<Record<string, boolean>>({});
   const [breakdownRoyalties, setBreakdownRoyalties] = useState<Record<string, BattleRoyalty[]>>({});
+  const battlePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleToggleBreakdown = async (battleId: string) => {
     const nowOpen = !expandedBreakdowns[battleId];
@@ -67,6 +68,51 @@ export default function BattleMode() {
       markNotificationsRead(user.id, 'battle_request');
     }
   }, [user]);
+
+  useEffect(() => {
+    if (battlePollRef.current) {
+      clearInterval(battlePollRef.current);
+      battlePollRef.current = null;
+    }
+
+    if (!user) return;
+
+    const existingActive = battles.find(
+      (b) => b.status === 'active' && (b.manager1_id === user.id || b.manager2_id === user.id)
+    );
+    if (existingActive) {
+      setActiveBattle(existingActive);
+      return;
+    }
+
+    const hasPendingAsChallenger = battles.some(
+      (b) => b.status === 'waiting' && b.manager1_id === user.id
+    );
+
+    if (hasPendingAsChallenger && isManager) {
+      battlePollRef.current = setInterval(async () => {
+        const updated = await getUserBattles(user.id);
+        setBattles(updated);
+        const nowActive = updated.find(
+          (b) => b.status === 'active' && (b.manager1_id === user.id || b.manager2_id === user.id)
+        );
+        if (nowActive) {
+          setActiveBattle(nowActive);
+          if (battlePollRef.current) {
+            clearInterval(battlePollRef.current);
+            battlePollRef.current = null;
+          }
+        }
+      }, 3000);
+    }
+
+    return () => {
+      if (battlePollRef.current) {
+        clearInterval(battlePollRef.current);
+        battlePollRef.current = null;
+      }
+    };
+  }, [battles, isManager]);
 
   const loadData = async () => {
     if (!user) return;
@@ -353,9 +399,14 @@ export default function BattleMode() {
                           </button>
                         )}
                       </div>
-                      <p className="text-[#B0B8C8] text-xs">
-                        {battle.manager1_id === user?.id ? 'Challenge sent' : 'Challenge received'}
-                      </p>
+                      {battle.manager1_id === user?.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                          <span className="text-yellow-400 text-[10px] font-semibold text-xs">Waiting for opponent to accept...</span>
+                        </div>
+                      ) : (
+                        <p className="text-[#B0B8C8] text-xs">Challenge received</p>
+                      )}
                     </div>
                   ))
               )}
