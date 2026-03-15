@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Target, Zap, RefreshCw } from 'lucide-react';
+import { Target, RefreshCw } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { GlassButton } from '../ui/GlassButton';
 import {
@@ -19,12 +19,12 @@ interface TiebreakerScreenProps {
 }
 
 const SKILLS = [
-  { code: 'PAC', name: 'Pace', color: 'from-green-500 to-emerald-500' },
-  { code: 'SHO', name: 'Shooting', color: 'from-red-500 to-rose-500' },
-  { code: 'PAS', name: 'Passing', color: 'from-blue-500 to-cyan-500' },
-  { code: 'DRI', name: 'Dribbling', color: 'from-teal-500 to-cyan-500' },
-  { code: 'DEF', name: 'Defending', color: 'from-orange-500 to-amber-500' },
-  { code: 'PHY', name: 'Physical', color: 'from-yellow-500 to-lime-500' },
+  { code: 'PAC', name: 'Pace' },
+  { code: 'SHO', name: 'Shooting' },
+  { code: 'PAS', name: 'Passing' },
+  { code: 'DRI', name: 'Dribbling' },
+  { code: 'DEF', name: 'Defending' },
+  { code: 'PHY', name: 'Physical' },
 ];
 
 const getSkillValue = (card: PlayerCard, skillCode: string): number => {
@@ -122,85 +122,108 @@ export function TiebreakerScreen({
     );
   }
 
+  const selectedCardObj = availableCards.find((c) => c.id === selectedCard);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto">
-        <GlassCard className="p-8 text-center mb-6">
-          <Target className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-          <h1 className="text-4xl font-bold text-white mb-4">Tiebreaker!</h1>
-          <p className="text-white/70 text-lg">
-            All skills have been used. Choose one card and one skill for the final showdown!
+      <div className="max-w-3xl mx-auto space-y-4">
+        <GlassCard className="p-6 text-center">
+          <Target className="w-12 h-12 text-yellow-500 mx-auto mb-3" />
+          <h1 className="text-3xl font-bold text-white mb-2">Tiebreaker!</h1>
+          <p className="text-white/60 text-sm">
+            All skills used. Pick one card and one skill for the final showdown.
           </p>
         </GlassCard>
 
-        <GlassCard className="p-6">
-          <h3 className="text-2xl font-bold text-white mb-6">Select Your Card</h3>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-            {availableCards.map((card) => (
-              <div
-                key={card.id}
-                onClick={() => setSelectedCard(card.id)}
-                className={`cursor-pointer transition-all ${
-                  selectedCard === card.id
-                    ? 'ring-4 ring-[#00FF85] scale-105'
-                    : 'hover:scale-105 opacity-70'
-                }`}
-              >
-                <GlassCard className="p-3">
-                  <img
-                    src={card.image_url}
-                    alt={card.player_name}
-                    width="200"
-                    height="128"
-                    className="w-full h-32 object-cover rounded-lg mb-2"
-                    loading="lazy"
-                  />
-                  <h4 className="text-white font-bold text-sm text-center">{card.player_name}</h4>
-                  <p className="text-[#00FF85] text-center text-xs">{card.overall_rating} OVR</p>
-                </GlassCard>
-              </div>
-            ))}
+        <GlassCard className="p-5">
+          <h3 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">Select Your Card</h3>
+
+          {/* Horizontal scrollable card row */}
+          <div className="overflow-x-auto pb-2 -mx-1 px-1">
+            <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
+              {availableCards.map((card) => {
+                const isSelected = selectedCard === card.id;
+                return (
+                  <button
+                    key={card.id}
+                    onClick={() => setSelectedCard(card.id)}
+                    className={`flex flex-col items-center w-28 flex-shrink-0 rounded-2xl p-3 border-2 transition-all focus:outline-none ${
+                      isSelected
+                        ? 'border-[#00FF85] bg-[#00FF85]/10 scale-105'
+                        : 'border-white/10 bg-white/5 hover:border-white/30 hover:bg-white/10 opacity-75 hover:opacity-100'
+                    }`}
+                  >
+                    {card.avatar_url ? (
+                      <img
+                        src={card.avatar_url}
+                        alt={card.player_name}
+                        className="w-14 h-14 rounded-full object-cover border-2 border-white/20 mb-2"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mb-2 border-2 border-white/20">
+                        <span className="text-white/50 text-xl font-bold">
+                          {card.player_name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <p className="text-white text-xs font-semibold text-center w-full truncate leading-tight">
+                      {card.player_name}
+                    </p>
+                    <span className="mt-1.5 px-2 py-0.5 bg-[#00FF85]/20 text-[#00FF85] text-xs font-bold rounded-full">
+                      {card.overall_rating} OVR
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {selectedCard && (
-            <div>
-              <h3 className="text-2xl font-bold text-white mb-6">Select Your Skill</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                {SKILLS.map((skill) => {
-                  const card = availableCards.find((c) => c.id === selectedCard);
-                  const value = card ? getSkillValue(card, skill.code) : 0;
-                  return (
-                    <div
-                      key={skill.code}
-                      onClick={() => setSelectedSkill(skill.code)}
-                      className={`cursor-pointer transition-all ${
-                        selectedSkill === skill.code
-                          ? 'ring-4 ring-[#00FF85] scale-105'
-                          : 'hover:scale-105'
-                      }`}
-                    >
-                      <GlassCard className="p-4">
-                        <div className={`bg-gradient-to-r ${skill.color} rounded-lg p-3 mb-2`}>
-                          <Zap className="w-6 h-6 text-white mx-auto" />
-                        </div>
-                        <h5 className="text-white font-bold text-center mb-1">{skill.name}</h5>
-                        <p className="text-[#00FF85] text-center text-2xl font-bold">{value}</p>
-                      </GlassCard>
-                    </div>
-                  );
-                })}
-              </div>
+          {/* Skill picker */}
+          <div className="mt-5">
+            <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-3">
+              {selectedCard ? 'Select skill' : 'Select a card first'}
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {SKILLS.map((skill) => {
+                const value = selectedCardObj ? getSkillValue(selectedCardObj, skill.code) : null;
+                const isSelected = selectedSkill === skill.code;
 
-              <GlassButton
-                onClick={handleConfirm}
-                disabled={!selectedSkill || submitting}
-                className="w-full"
-                size="lg"
-              >
-                {submitting ? 'Submitting...' : 'Confirm Tiebreaker Selection'}
-              </GlassButton>
+                return (
+                  <button
+                    key={skill.code}
+                    onClick={() => selectedCard && setSelectedSkill(skill.code)}
+                    disabled={!selectedCard}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-full border text-sm font-semibold transition-all focus:outline-none ${
+                      !selectedCard
+                        ? 'border-white/10 bg-white/5 text-white/25 cursor-not-allowed'
+                        : isSelected
+                        ? 'border-[#00FF85] bg-[#00FF85]/15 text-[#00FF85]'
+                        : 'border-white/20 bg-white/5 text-white/80 hover:border-white/40 hover:bg-white/10'
+                    }`}
+                  >
+                    <span>{skill.code}</span>
+                    {value !== null && selectedCard && (
+                      <span className={`font-black ${isSelected ? 'text-yellow-400' : 'text-white/50'}`}>
+                        {value}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          )}
+          </div>
+
+          <div className="mt-5">
+            <GlassButton
+              onClick={handleConfirm}
+              disabled={!selectedCard || !selectedSkill || submitting}
+              className="w-full"
+              size="lg"
+            >
+              {submitting ? 'Submitting...' : 'Confirm Tiebreaker Selection'}
+            </GlassButton>
+          </div>
         </GlassCard>
       </div>
     </div>
