@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Swords, Clock, Flag, Target, Shield, Zap, ChevronRight } from 'lucide-react';
+import { Swords, Clock, Flag, Shield, Zap, ChevronRight } from 'lucide-react';
 import { SkillSelectionScreen } from './SkillSelectionScreen';
 import { TiebreakerScreen } from './TiebreakerScreen';
 import { useAuth } from '../../contexts/AuthContext';
@@ -269,142 +269,241 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
     );
   }
 
-  return (
-    <div className="min-h-screen p-4">
-      <div className="max-w-2xl mx-auto space-y-4">
+  const myRemainingCards = battle.manager1_id === user?.id
+    ? battle.player1_remaining_cards
+    : battle.player2_remaining_cards;
+  const oppRemainingCards = battle.manager1_id === user?.id
+    ? battle.player2_remaining_cards
+    : battle.player1_remaining_cards;
 
-        {/* Header panel */}
-        <div className="glass-container p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2.5">
-              <Swords className="w-5 h-5 text-red-400" />
-              <h1 className="text-lg font-bold text-white">Battle Arena</h1>
+  const availableMyCards = myCards.filter(c => !eliminatedCardIds.includes(c.id));
+
+  return (
+    <div className="min-h-screen flex flex-col">
+
+      {/* Top HUD bar */}
+      <div className="glass-container rounded-none border-l-0 border-r-0 border-t-0 sticky top-0 z-40">
+        <div className="max-w-2xl mx-auto px-3 h-12 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Swords className="w-4 h-4 text-red-400 shrink-0" />
+            <span className="text-white text-sm font-bold">Battle Arena</span>
+          </div>
+          <div className="flex items-center gap-3">
+            {battle.status === 'active' && (
+              <div className={`flex items-center gap-1 ${timeRemaining <= 10 ? 'text-red-400' : 'text-yellow-400'}`}>
+                <Clock className="w-3.5 h-3.5" />
+                <span className="text-sm font-bold tabular-nums">{timeRemaining}s</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-[#00FF85] font-black">{myRemainingCards}</span>
+              <span className="text-white/30">vs</span>
+              <span className="text-red-400 font-black">{oppRemainingCards}</span>
             </div>
-            <div className="flex items-center gap-3">
-              {battle.status === 'active' && (
-                <div className={`flex items-center gap-1.5 ${timeRemaining <= 10 ? 'text-red-400' : 'text-yellow-400'}`}>
-                  <Clock className="w-4 h-4" />
-                  <span className="text-lg font-bold tabular-nums">{timeRemaining}s</span>
+            <span className="text-[#B0B8C8] text-xs">
+              <span className="text-yellow-400 font-bold">{battle.wager_amount}</span>
+              {' '}coins
+            </span>
+            <button
+              onClick={handleManualForfeit}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold hover:bg-red-500/20 transition-all"
+            >
+              <Flag className="w-3 h-3" />
+              Forfeit
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Pitch */}
+      <div className="flex-1 flex flex-col max-w-2xl w-full mx-auto px-3 py-3 gap-3">
+
+        {/* ── PITCH CONTAINER ── */}
+        <div
+          className="relative flex-1 rounded-2xl overflow-hidden flex flex-col"
+          style={{
+            background: 'linear-gradient(180deg, #0a2e14 0%, #0d3a1a 40%, #0d3a1a 60%, #0a2e14 100%)',
+            minHeight: 340,
+          }}
+        >
+          {/* Pitch line markings */}
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+            {/* Halfway line */}
+            <div
+              className="absolute left-4 right-4"
+              style={{ top: '50%', height: 1, background: 'rgba(255,255,255,0.18)' }}
+            />
+            {/* Centre circle */}
+            <div
+              className="absolute"
+              style={{
+                top: '50%', left: '50%',
+                width: 80, height: 80,
+                marginTop: -40, marginLeft: -40,
+                border: '1px solid rgba(255,255,255,0.18)',
+                borderRadius: '50%',
+              }}
+            />
+            {/* Centre dot */}
+            <div
+              className="absolute"
+              style={{
+                top: '50%', left: '50%',
+                width: 6, height: 6,
+                marginTop: -3, marginLeft: -3,
+                background: 'rgba(255,255,255,0.35)',
+                borderRadius: '50%',
+              }}
+            />
+            {/* Top penalty box */}
+            <div
+              className="absolute"
+              style={{
+                top: 0, left: '50%',
+                width: 160, height: 56,
+                marginLeft: -80,
+                border: '1px solid rgba(255,255,255,0.18)',
+                borderTop: 'none',
+                borderRadius: '0 0 8px 8px',
+              }}
+            />
+            {/* Bottom penalty box */}
+            <div
+              className="absolute"
+              style={{
+                bottom: 0, left: '50%',
+                width: 160, height: 56,
+                marginLeft: -80,
+                border: '1px solid rgba(255,255,255,0.18)',
+                borderBottom: 'none',
+                borderRadius: '8px 8px 0 0',
+              }}
+            />
+            {/* Outer pitch border */}
+            <div
+              className="absolute inset-3 rounded-xl"
+              style={{ border: '1px solid rgba(255,255,255,0.13)' }}
+            />
+          </div>
+
+          {/* ── ROW 1: Opponent's cards zone ── */}
+          <div className="relative z-10 flex-1 flex flex-col items-center justify-start pt-4 px-4">
+            <p className="text-[rgba(255,255,255,0.4)] text-[10px] font-bold uppercase tracking-widest mb-2">
+              Opponent &mdash; {oppRemainingCards} card{oppRemainingCards !== 1 ? 's' : ''} left
+            </p>
+            {/* Opponent card placeholders — count matches remaining cards */}
+            <div className="flex gap-2 flex-wrap justify-center">
+              {Array.from({ length: Math.max(0, oppRemainingCards) }).map((_, i) => (
+                <div
+                  key={i}
+                  className="w-10 h-14 rounded-lg border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] flex items-center justify-center"
+                >
+                  <span className="text-[rgba(255,255,255,0.2)] text-lg font-black">?</span>
                 </div>
+              ))}
+              {oppRemainingCards === 0 && (
+                <p className="text-red-400/60 text-xs font-semibold">No cards left</p>
               )}
-              <button
-                onClick={handleManualForfeit}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold hover:bg-red-500/20 transition-all"
-              >
-                <Flag className="w-3.5 h-3.5" />
-                Forfeit
-              </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="glass-card p-3">
-              <p className="text-[#B0B8C8] text-xs mb-1">Your Cards</p>
-              <p className="text-2xl font-black text-[#00FF85]">
-                {battle.manager1_id === user?.id
-                  ? battle.player1_remaining_cards
-                  : battle.player2_remaining_cards}
-              </p>
+          {/* ── ROW 2: Centre action zone ── */}
+          <div className="relative z-10 flex flex-col items-center justify-center py-3 px-4">
+            {lastRoundSummary ? (
+              /* Last round result */
+              <div
+                className={`w-full max-w-xs rounded-xl p-3 border text-center ${
+                  lastRoundSummary.attackerWins
+                    ? 'bg-red-900/40 border-red-500/40'
+                    : 'bg-green-900/40 border-[rgba(0,255,133,0.35)]'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-1.5 mb-2">
+                  {lastRoundSummary.attackerWins
+                    ? <Zap className="w-3.5 h-3.5 text-red-400" />
+                    : <Shield className="w-3.5 h-3.5 text-[#00FF85]" />}
+                  <span className={`text-xs font-bold uppercase tracking-wide ${lastRoundSummary.attackerWins ? 'text-red-400' : 'text-[#00FF85]'}`}>
+                    {lastRoundSummary.attackerWins ? 'Card Eliminated!' : 'Defense Held!'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 text-center">
+                    <p className="text-white text-xs font-semibold truncate">{lastRoundSummary.attackerCardName}</p>
+                    <p className="text-yellow-400 text-[10px] capitalize">{lastRoundSummary.attackerSkill}</p>
+                    <p className="text-white font-black text-lg">{lastRoundSummary.attackerValue}</p>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-white/30 shrink-0" />
+                  <div className="flex-1 text-center">
+                    <p className="text-white text-xs font-semibold truncate">{lastRoundSummary.defenderCardName}</p>
+                    <p className="text-yellow-400 text-[10px] capitalize">{lastRoundSummary.attackerSkill}</p>
+                    <p className="text-white font-black text-lg">{lastRoundSummary.defenderValue}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Turn status pill */
+              <div
+                className={`px-4 py-2 rounded-full border text-xs font-bold flex items-center gap-2 ${
+                  isMyTurn
+                    ? 'bg-[rgba(0,255,133,0.12)] border-[rgba(0,255,133,0.35)] text-[#00FF85]'
+                    : 'bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.12)] text-[rgba(255,255,255,0.5)]'
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${isMyTurn ? 'bg-[#00FF85] animate-pulse' : 'bg-white/30'}`}
+                />
+                {isMyTurn ? 'Your turn — make a move' : `Opponent's turn · ${timeRemaining}s`}
+              </div>
+            )}
+          </div>
+
+          {/* ── ROW 3: My cards zone ── */}
+          <div className="relative z-10 flex-1 flex flex-col items-center justify-end pb-4 px-4">
+            <div className="flex gap-2 flex-wrap justify-center mb-2">
+              {availableMyCards.map((card) => (
+                <div
+                  key={card.id}
+                  className="w-10 h-14 rounded-lg border border-[rgba(0,224,255,0.2)] bg-[rgba(0,224,255,0.06)] flex flex-col items-center justify-center gap-0.5"
+                >
+                  {card.avatar_url ? (
+                    <img
+                      src={card.avatar_url}
+                      alt={card.player_name}
+                      className="w-7 h-7 rounded-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center">
+                      <span className="text-black text-[9px] font-black">{card.player_name.charAt(0)}</span>
+                    </div>
+                  )}
+                  <span className="text-[8px] font-black text-[#00FF85]">{card.overall_rating}</span>
+                </div>
+              ))}
+              {availableMyCards.length === 0 && (
+                <p className="text-red-400/60 text-xs font-semibold">No cards left</p>
+              )}
             </div>
-            <div className="glass-card p-3">
-              <p className="text-[#B0B8C8] text-xs mb-1">Wager</p>
-              <p className="text-2xl font-black text-yellow-400">{battle.wager_amount}</p>
-            </div>
-            <div className="glass-card p-3">
-              <p className="text-[#B0B8C8] text-xs mb-1">Opp. Cards</p>
-              <p className="text-2xl font-black text-red-400">
-                {battle.manager1_id === user?.id
-                  ? battle.player2_remaining_cards
-                  : battle.player1_remaining_cards}
-              </p>
-            </div>
+            <p className="text-[rgba(255,255,255,0.4)] text-[10px] font-bold uppercase tracking-widest">
+              You &mdash; {myRemainingCards} card{myRemainingCards !== 1 ? 's' : ''} left
+            </p>
           </div>
         </div>
 
-        {/* Round result banner */}
-        {lastRoundSummary && (
-          <div className={`glass-card p-4 border-l-4 ${
-            lastRoundSummary.attackerWins ? 'border-l-red-500' : 'border-l-[#00FF85]'
-          }`}>
-            <div className="flex items-center gap-2 mb-3">
-              {lastRoundSummary.attackerWins ? (
-                <Zap className="w-4 h-4 text-red-400" />
-              ) : (
-                <Shield className="w-4 h-4 text-[#00FF85]" />
-              )}
-              <h3 className={`text-sm font-bold uppercase tracking-wide ${lastRoundSummary.attackerWins ? 'text-red-400' : 'text-[#00FF85]'}`}>
-                {lastRoundSummary.attackerWins ? 'Card Eliminated!' : 'Defense Held!'}
-              </h3>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 bg-white/5 rounded-xl p-3 text-center">
-                <p className="text-[#B0B8C8] text-[10px] uppercase tracking-wide mb-1">Attacker</p>
-                <p className="text-white font-semibold text-xs truncate">{lastRoundSummary.attackerCardName}</p>
-                <p className="text-yellow-400 text-[10px] capitalize mt-1">{lastRoundSummary.attackerSkill}</p>
-                <p className="text-xl font-black text-white mt-1">{lastRoundSummary.attackerValue}</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-white/30 flex-shrink-0" />
-              <div className="flex-1 bg-white/5 rounded-xl p-3 text-center">
-                <p className="text-[#B0B8C8] text-[10px] uppercase tracking-wide mb-1">Defender</p>
-                <p className="text-white font-semibold text-xs truncate">{lastRoundSummary.defenderCardName}</p>
-                <p className="text-yellow-400 text-[10px] capitalize mt-1">{lastRoundSummary.attackerSkill}</p>
-                <p className="text-xl font-black text-white mt-1">{lastRoundSummary.defenderValue}</p>
-              </div>
-            </div>
-            <p className="text-center text-[#B0B8C8] text-xs mt-3">
-              {lastRoundSummary.attackerWins
-                ? `Attacker's ${lastRoundSummary.attackerValue} beat Defender's ${lastRoundSummary.defenderValue}`
-                : `Defender's ${lastRoundSummary.defenderValue} held against Attacker's ${lastRoundSummary.attackerValue}`}
-            </p>
-          </div>
-        )}
-
-        {/* Opponent's turn waiting */}
-        {!isMyTurn && !lastRoundSummary && (
-          <div className="glass-card p-6 text-center">
-            <Target className="w-10 h-10 text-yellow-400 mx-auto mb-3 animate-pulse" />
-            <h3 className="text-lg font-bold text-white">Opponent's Turn</h3>
-            <p className="text-[#B0B8C8] text-sm mt-1">{timeRemaining}s remaining</p>
-          </div>
-        )}
-
-        {/* Skill selection */}
-        {isMyTurn && !submitting && (
-          <SkillSelectionScreen
-            cards={myCards}
-            usedSkills={battle.used_skills || []}
-            isAttacker={isAttacker}
-            onSelect={handleSkillSelection}
-            eliminatedCards={eliminatedCardIds}
-            attackerSkill={attackerSkill}
-          />
-        )}
-
-        {/* Submitting spinner */}
-        {submitting && (
-          <div className="glass-card p-6 text-center">
-            <div className="w-8 h-8 border-2 border-white/10 border-t-[#00FF85] rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-[#B0B8C8] text-sm">Submitting move...</p>
-          </div>
-        )}
-
-        {/* Used skills */}
-        <div className="glass-card p-4">
-          <h3 className="text-xs font-bold text-[#B0B8C8] uppercase tracking-wide mb-3">Skills Used</h3>
-          <div className="flex gap-2 flex-wrap">
+        {/* Used skills strip */}
+        {(battle.used_skills || []).length > 0 && (
+          <div className="glass-card p-3 flex items-center gap-2 flex-wrap">
+            <span className="text-[#B0B8C8] text-[10px] font-bold uppercase tracking-wide shrink-0">Used:</span>
             {(battle.used_skills || []).map((skill) => (
               <span
                 key={skill}
-                className="px-3 py-1 bg-red-500/15 border border-red-500/40 rounded-full text-red-400 text-xs font-semibold"
+                className="px-2.5 py-0.5 bg-red-500/15 border border-red-500/40 rounded-full text-red-400 text-[10px] font-semibold"
               >
                 {skill}
               </span>
             ))}
-            {(!battle.used_skills || battle.used_skills.length === 0) && (
-              <p className="text-[#B0B8C8] text-sm">No skills used yet</p>
-            )}
           </div>
-        </div>
+        )}
 
       </div>
     </div>
