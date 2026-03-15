@@ -125,7 +125,8 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   }, [battle.turn_started_at, isMyTurn, battle.status]);
 
   useEffect(() => {
-    if (battle.status !== 'active' || isMyTurn) {
+    const allSkillsUsed = (battle.used_skills?.length ?? 0) >= 6;
+    if (battle.status !== 'active' || (isMyTurn && !allSkillsUsed)) {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
         pollIntervalRef.current = null;
@@ -137,6 +138,12 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
       try {
         const updated = await getBattle(battle.id);
         setBattle(updated);
+        if (updated.status === 'completed' || updated.status === 'forfeited') {
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+        }
       } catch (error) {
         console.error('Error polling battle:', error);
       }
