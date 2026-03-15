@@ -33,6 +33,27 @@ interface Match {
   awayTeam: MatchTeam;
 }
 
+interface MatchScore {
+  home: number | null;
+  away: number | null;
+}
+
+interface FinishedMatch {
+  id: number;
+  matchday: number;
+  utcDate: string;
+  homeTeam: MatchTeam;
+  awayTeam: MatchTeam;
+  score: { fullTime: MatchScore };
+}
+
+interface Scorer {
+  player: { id: number; name: string };
+  team: { id: number; name: string; crest: string };
+  goals: number;
+  assists: number | null;
+}
+
 const TABS: { id: Tab; label: string }[] = [
   { id: 'table', label: 'Table' },
   { id: 'fixtures', label: 'Fixtures' },
@@ -209,6 +230,136 @@ function FixturesList({ data }: { data: unknown }) {
   );
 }
 
+function ResultsList({ data }: { data: unknown }) {
+  const allMatches: FinishedMatch[] = (data as { matches: FinishedMatch[] }).matches ?? [];
+  const recent = [...allMatches].reverse().slice(0, 10);
+
+  if (recent.length === 0) {
+    return (
+      <div className="glass-container rounded-xl p-8 text-center text-[#B0B8C8] text-sm">
+        No results found.
+      </div>
+    );
+  }
+
+  return (
+    <div className="glass-container rounded-xl overflow-hidden">
+      <div className="divide-y divide-[rgba(255,255,255,0.04)]">
+        {recent.map(match => {
+          const hg = match.score.fullTime.home ?? 0;
+          const ag = match.score.fullTime.away ?? 0;
+          const homeName = match.homeTeam.name;
+          const awayName = match.awayTeam.name;
+
+          let homeColor = 'text-[#B0B8C8]';
+          let awayColor = 'text-[#B0B8C8]';
+          if (hg > ag) { homeColor = 'text-[#00FF85]'; awayColor = 'text-red-400'; }
+          else if (ag > hg) { awayColor = 'text-[#00FF85]'; homeColor = 'text-red-400'; }
+
+          const { date } = formatMatchDate(match.utcDate);
+
+          return (
+            <div key={match.id} className="px-4 py-3">
+              <div className="flex items-center gap-2">
+                {/* Home */}
+                <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                  <span className={`text-sm truncate text-right font-medium ${homeColor}`}>{homeName}</span>
+                  <img
+                    src={match.homeTeam.crest}
+                    alt={homeName}
+                    className="w-6 h-6 object-contain flex-shrink-0"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                </div>
+
+                {/* Score */}
+                <div className="flex items-center gap-1.5 flex-shrink-0 px-2">
+                  <span className={`text-base font-bold ${homeColor}`}>{hg}</span>
+                  <span className="text-[#B0B8C8] text-xs font-semibold">-</span>
+                  <span className={`text-base font-bold ${awayColor}`}>{ag}</span>
+                </div>
+
+                {/* Away */}
+                <div className="flex items-center gap-2 flex-1 min-w-0 justify-start">
+                  <img
+                    src={match.awayTeam.crest}
+                    alt={awayName}
+                    className="w-6 h-6 object-contain flex-shrink-0"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                  <span className={`text-sm truncate font-medium ${awayColor}`}>{awayName}</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-[#B0B8C8] text-center mt-1">{date}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TopScorersList({ data }: { data: unknown }) {
+  const scorers: Scorer[] = (data as { scorers: Scorer[] }).scorers ?? [];
+
+  if (scorers.length === 0) {
+    return (
+      <div className="glass-container rounded-xl p-8 text-center text-[#B0B8C8] text-sm">
+        No scorers data found.
+      </div>
+    );
+  }
+
+  return (
+    <div className="glass-container rounded-xl overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-[rgba(0,224,255,0.1)] text-[#B0B8C8] text-xs font-semibold">
+        <span className="w-6 text-center">#</span>
+        <span className="flex-1">Player</span>
+        <span className="w-20 truncate text-right">Club</span>
+        <span className="w-8 text-center text-[#00FF85]">G</span>
+        <span className="w-8 text-center">A</span>
+      </div>
+
+      <div className="divide-y divide-[rgba(255,255,255,0.04)]">
+        {scorers.map((scorer, i) => {
+          const rank = i + 1;
+          const isTop = rank === 1;
+          return (
+            <div key={scorer.player.id} className="flex items-center gap-2 px-3 py-2.5">
+              <span className={`w-6 text-center text-xs font-semibold flex-shrink-0 ${isTop ? 'text-yellow-400' : 'text-[#B0B8C8]'}`}>
+                {rank}
+              </span>
+              <div className="flex-1 min-w-0">
+                <span className={`text-sm font-medium truncate block ${isTop ? 'text-yellow-400' : 'text-white'}`}>
+                  {scorer.player.name}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 w-20 justify-end flex-shrink-0">
+                <span className={`text-xs truncate text-right ${isTop ? 'text-yellow-400' : 'text-[#B0B8C8]'}`}>
+                  {scorer.team.name}
+                </span>
+                <img
+                  src={scorer.team.crest}
+                  alt={scorer.team.name}
+                  className="w-5 h-5 object-contain flex-shrink-0"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+              <span className={`w-8 text-center text-sm font-bold flex-shrink-0 ${isTop ? 'text-yellow-400' : 'text-[#00FF85]'}`}>
+                {scorer.goals}
+              </span>
+              <span className="w-8 text-center text-xs text-[#B0B8C8] flex-shrink-0">
+                {scorer.assists ?? 0}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function Matchday() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('table');
@@ -236,7 +387,7 @@ export default function Matchday() {
       if (tab === 'table')    url = `${API_BASE}/competitions/PL/standings`;
       if (tab === 'fixtures') url = `${API_BASE}/competitions/PL/matches?status=SCHEDULED`;
       if (tab === 'results')  url = `${API_BASE}/competitions/PL/matches?status=FINISHED`;
-      if (tab === 'scorers')  url = `${API_BASE}/competitions/PL/scorers`;
+      if (tab === 'scorers')  url = `${API_BASE}/competitions/PL/scorers?limit=20`;
 
       const res = await fetch(url, {
         headers: { 'X-Auth-Token': API_KEY ?? '' },
@@ -399,8 +550,8 @@ export default function Matchday() {
               <>
                 {activeTab === 'table'    && <LeagueTable data={current.data} />}
                 {activeTab === 'fixtures' && <FixturesList data={current.data} />}
-                {activeTab === 'results'  && <div />}
-                {activeTab === 'scorers'  && <div />}
+                {activeTab === 'results'  && <ResultsList data={current.data} />}
+                {activeTab === 'scorers'  && <TopScorersList data={current.data} />}
               </>
             )}
           </div>
