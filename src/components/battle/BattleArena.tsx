@@ -33,6 +33,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   const { user } = useAuth();
   const [battle, setBattle] = useState<Battle>(initialBattle);
   const [myCards, setMyCards] = useState<PlayerCard[]>([]);
+  const [opponentCards, setOpponentCards] = useState<PlayerCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeRemaining, setTimeRemaining] = useState(60);
   const [submitting, setSubmitting] = useState(false);
@@ -133,8 +134,13 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   const loadCards = async () => {
     if (!user) return;
     try {
-      const cards = await getPlayerCards(user.id);
+      const opponentId = battle.manager1_id === user.id ? battle.manager2_id : battle.manager1_id;
+      const [cards, oppCards] = await Promise.all([
+        getPlayerCards(user.id),
+        getPlayerCards(opponentId),
+      ]);
       setMyCards(cards);
+      setOpponentCards(oppCards);
     } catch (error) {
       console.error('Error loading cards:', error);
     } finally {
@@ -387,22 +393,53 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
           </div>
 
           {/* ── ROW 1: Opponent's cards zone ── */}
-          <div className="relative z-10 flex-1 flex flex-col items-center justify-start pt-4 px-4">
+          <div className="relative z-10 flex-1 flex flex-col items-center justify-start pt-3 px-3">
             <p className="text-[rgba(255,255,255,0.4)] text-[10px] font-bold uppercase tracking-widest mb-2">
               Opponent &mdash; {oppRemainingCards} card{oppRemainingCards !== 1 ? 's' : ''} left
             </p>
-            {/* Opponent card placeholders — count matches remaining cards */}
             <div className="flex gap-2 flex-wrap justify-center">
-              {Array.from({ length: Math.max(0, oppRemainingCards) }).map((_, i) => (
-                <div
-                  key={i}
-                  className="w-10 h-14 rounded-lg border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] flex items-center justify-center"
-                >
-                  <span className="text-[rgba(255,255,255,0.2)] text-lg font-black">?</span>
-                </div>
-              ))}
-              {oppRemainingCards === 0 && (
-                <p className="text-red-400/60 text-xs font-semibold">No cards left</p>
+              {opponentCards.map((card) => {
+                const eliminated = eliminatedCardIds.includes(card.id);
+                return (
+                  <div
+                    key={card.id}
+                    className="relative rotate-180"
+                    style={{ opacity: eliminated ? 0.3 : 1 }}
+                  >
+                    <div className="w-16 rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.07)] flex flex-col items-center py-2 px-1 gap-1">
+                      {card.avatar_url ? (
+                        <img
+                          src={card.avatar_url}
+                          alt={card.player_name}
+                          className="w-12 h-12 rounded-full object-cover border border-white/20"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-orange-400 flex items-center justify-center border border-white/20">
+                          <span className="text-white text-sm font-black">{card.player_name.charAt(0)}</span>
+                        </div>
+                      )}
+                      <p className="text-white text-[9px] font-bold truncate w-full text-center leading-tight">{card.username || card.player_name}</p>
+                      <span className="px-1.5 py-0.5 rounded-full bg-white/10 text-white text-[9px] font-black">{card.overall_rating}</span>
+                      <div className="grid grid-cols-3 gap-x-1 gap-y-0.5 w-full mt-0.5">
+                        {([['PAC', card.pace], ['SHO', card.shooting], ['PAS', card.passing], ['DRI', card.dribbling], ['DEF', card.defending], ['PHY', card.physical]] as [string, number][]).map(([label, val]) => (
+                          <div key={label} className="flex flex-col items-center">
+                            <span className="text-[rgba(255,255,255,0.4)] text-[7px] font-bold leading-none">{label}</span>
+                            <span className="text-white text-[8px] font-black leading-none">{val}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {eliminated && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-red-500 font-black text-2xl leading-none">✕</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {opponentCards.length === 0 && (
+                <p className="text-white/20 text-xs font-semibold">No cards</p>
               )}
             </div>
           </div>
@@ -458,30 +495,50 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
           </div>
 
           {/* ── ROW 3: My cards zone ── */}
-          <div className="relative z-10 flex-1 flex flex-col items-center justify-end pb-4 px-4">
+          <div className="relative z-10 flex-1 flex flex-col items-center justify-end pb-3 px-3">
             <div className="flex gap-2 flex-wrap justify-center mb-2">
-              {availableMyCards.map((card) => (
-                <div
-                  key={card.id}
-                  className="w-10 h-14 rounded-lg border border-[rgba(0,224,255,0.2)] bg-[rgba(0,224,255,0.06)] flex flex-col items-center justify-center gap-0.5"
-                >
-                  {card.avatar_url ? (
-                    <img
-                      src={card.avatar_url}
-                      alt={card.player_name}
-                      className="w-7 h-7 rounded-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center">
-                      <span className="text-black text-[9px] font-black">{card.player_name.charAt(0)}</span>
+              {myCards.map((card) => {
+                const eliminated = eliminatedCardIds.includes(card.id);
+                return (
+                  <div
+                    key={card.id}
+                    className="relative"
+                    style={{ opacity: eliminated ? 0.3 : 1 }}
+                  >
+                    <div className="w-16 rounded-xl border border-[rgba(0,255,133,0.2)] bg-[rgba(0,255,133,0.06)] flex flex-col items-center py-2 px-1 gap-1">
+                      {card.avatar_url ? (
+                        <img
+                          src={card.avatar_url}
+                          alt={card.player_name}
+                          className="w-12 h-12 rounded-full object-cover border border-[rgba(0,255,133,0.3)]"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center border border-[rgba(0,255,133,0.3)]">
+                          <span className="text-black text-sm font-black">{card.player_name.charAt(0)}</span>
+                        </div>
+                      )}
+                      <p className="text-white text-[9px] font-bold truncate w-full text-center leading-tight">{card.username || card.player_name}</p>
+                      <span className="px-1.5 py-0.5 rounded-full bg-[rgba(0,255,133,0.15)] text-[#00FF85] text-[9px] font-black">{card.overall_rating}</span>
+                      <div className="grid grid-cols-3 gap-x-1 gap-y-0.5 w-full mt-0.5">
+                        {([['PAC', card.pace], ['SHO', card.shooting], ['PAS', card.passing], ['DRI', card.dribbling], ['DEF', card.defending], ['PHY', card.physical]] as [string, number][]).map(([label, val]) => (
+                          <div key={label} className="flex flex-col items-center">
+                            <span className="text-[rgba(255,255,255,0.4)] text-[7px] font-bold leading-none">{label}</span>
+                            <span className="text-[#00FF85] text-[8px] font-black leading-none">{val}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  )}
-                  <span className="text-[8px] font-black text-[#00FF85]">{card.overall_rating}</span>
-                </div>
-              ))}
-              {availableMyCards.length === 0 && (
-                <p className="text-red-400/60 text-xs font-semibold">No cards left</p>
+                    {eliminated && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-red-500 font-black text-2xl leading-none">✕</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {myCards.length === 0 && (
+                <p className="text-white/20 text-xs font-semibold">No cards</p>
               )}
             </div>
             <p className="text-[rgba(255,255,255,0.4)] text-[10px] font-bold uppercase tracking-widest">
