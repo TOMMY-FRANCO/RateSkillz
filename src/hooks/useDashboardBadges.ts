@@ -12,6 +12,12 @@ export interface DashboardBadgeCounts {
   battleRequests: number;
   notifications: number;
   adAvailable: number;
+  activityFeed: number;
+  news: number;
+  dailyQuiz: number;
+  footballMatch: number;
+  scouter: number;
+  viewedMe: number;
 }
 
 const ZERO: DashboardBadgeCounts = {
@@ -23,6 +29,12 @@ const ZERO: DashboardBadgeCounts = {
   battleRequests: 0,
   notifications: 0,
   adAvailable: 0,
+  activityFeed: 0,
+  news: 0,
+  dailyQuiz: 0,
+  footballMatch: 0,
+  scouter: 0,
+  viewedMe: 0,
 };
 
 function cap(n: number): number {
@@ -38,7 +50,13 @@ function totalCount(counts: DashboardBadgeCounts): number {
     (counts.pendingFriendRequests ?? 0) +
     (counts.battleRequests ?? 0) +
     (counts.notifications ?? 0) +
-    (counts.adAvailable ?? 0)
+    (counts.adAvailable ?? 0) +
+    (counts.activityFeed ?? 0) +
+    (counts.news ?? 0) +
+    (counts.dailyQuiz ?? 0) +
+    (counts.footballMatch ?? 0) +
+    (counts.scouter ?? 0) +
+    (counts.viewedMe ?? 0)
   );
 }
 
@@ -74,6 +92,12 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
         notificationsResult,
         adViewResult,
         txResult,
+        activityFeedResult,
+        newsResult,
+        dailyQuizResult,
+        footballMatchResult,
+        scouterResult,
+        viewedMeResult,
       ] = await Promise.all([
         supabase
           .from('messages')
@@ -129,6 +153,48 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
               .from('coin_transactions')
               .select('id', { count: 'exact', head: true })
               .eq('user_id', userId),
+
+        supabase
+          .from('user_notifications')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('notification_type', 'activity_feed')
+          .eq('is_read', false),
+
+        supabase
+          .from('user_notifications')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('notification_type', 'news')
+          .eq('is_read', false),
+
+        supabase
+          .from('user_notifications')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('notification_type', 'quiz_complete')
+          .eq('is_read', false),
+
+        supabase
+          .from('user_notifications')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('notification_type', 'football_match')
+          .eq('is_read', false),
+
+        supabase
+          .from('user_notifications')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('notification_type', 'scout_interest')
+          .eq('is_read', false),
+
+        supabase
+          .from('user_notifications')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .eq('notification_type', 'viewed_me')
+          .eq('is_read', false),
       ]);
 
       const adAvailable = (adViewResult.count ?? 0) === 0 ? 1 : 0;
@@ -142,6 +208,12 @@ export async function fetchDashboardBadges(userId: string): Promise<DashboardBad
         battleRequests: cap(battleResult.count ?? 0),
         notifications: cap(notificationsResult.count ?? 0),
         adAvailable,
+        activityFeed: cap(activityFeedResult.count ?? 0),
+        news: cap(newsResult.count ?? 0),
+        dailyQuiz: cap(dailyQuizResult.count ?? 0),
+        footballMatch: cap(footballMatchResult.count ?? 0),
+        scouter: cap(scouterResult.count ?? 0),
+        viewedMe: cap(viewedMeResult.count ?? 0),
       };
     } catch {
       return { ...ZERO };
