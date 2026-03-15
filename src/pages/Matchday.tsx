@@ -11,6 +11,28 @@ interface TabData {
   loaded: boolean;
 }
 
+interface StandingRow {
+  position: number;
+  team: { id: number; name: string; crest: string };
+  playedGames: number;
+  goalDifference: number;
+  points: number;
+}
+
+interface MatchTeam {
+  id: number;
+  name: string;
+  crest: string;
+}
+
+interface Match {
+  id: number;
+  matchday: number;
+  utcDate: string;
+  homeTeam: MatchTeam;
+  awayTeam: MatchTeam;
+}
+
 const TABS: { id: Tab; label: string }[] = [
   { id: 'table', label: 'Table' },
   { id: 'fixtures', label: 'Fixtures' },
@@ -40,6 +62,151 @@ function ShimmerBar() {
 function formatTimestamp(date: Date): string {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) +
     ' · ' + date.toLocaleDateString([], { day: 'numeric', month: 'short' });
+}
+
+function formatMatchDate(utcDate: string): { date: string; time: string } {
+  const d = new Date(utcDate);
+  const date = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
+  return { date, time };
+}
+
+function rowBorderClass(pos: number, total: number): string {
+  if (pos <= 4) return 'border-l-2 border-l-[rgba(0,224,255,0.4)]';
+  if (pos > total - 3) return 'border-l-2 border-l-red-500/40';
+  return 'border-l-2 border-l-transparent';
+}
+
+function LeagueTable({ data }: { data: unknown }) {
+  const standings = (data as { standings: { type: string; table: StandingRow[] }[] }).standings;
+  const table = standings?.find(s => s.type === 'TOTAL')?.table ?? [];
+  const total = table.length;
+
+  return (
+    <div className="glass-container rounded-xl overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-[rgba(0,224,255,0.1)] text-[#B0B8C8] text-xs font-semibold">
+        <span className="w-6 text-center">#</span>
+        <span className="flex-1">Team</span>
+        <span className="w-7 text-center">P</span>
+        <span className="w-7 text-center">GD</span>
+        <span className="w-8 text-center font-bold text-white">Pts</span>
+      </div>
+
+      {table.map((row) => (
+        <div
+          key={row.team.id}
+          className={`flex items-center gap-2 px-3 py-2.5 border-b border-[rgba(255,255,255,0.04)] last:border-b-0 ${rowBorderClass(row.position, total)} ${row.position === 1 ? 'text-yellow-400' : 'text-white'}`}
+        >
+          <span className={`w-6 text-center text-xs font-semibold ${row.position === 1 ? 'text-yellow-400' : 'text-[#B0B8C8]'}`}>
+            {row.position}
+          </span>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <img
+              src={row.team.crest}
+              alt={row.team.name}
+              className="w-6 h-6 object-contain flex-shrink-0"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+            <span className={`text-sm truncate ${row.position === 1 ? 'text-yellow-400 font-semibold' : 'text-white'}`}>
+              {row.team.name}
+            </span>
+          </div>
+          <span className="w-7 text-center text-xs text-[#B0B8C8]">{row.playedGames}</span>
+          <span className={`w-7 text-center text-xs ${row.goalDifference > 0 ? 'text-green-400' : row.goalDifference < 0 ? 'text-red-400' : 'text-[#B0B8C8]'}`}>
+            {row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}
+          </span>
+          <span className={`w-8 text-center text-sm font-bold ${row.position === 1 ? 'text-yellow-400' : 'text-white'}`}>
+            {row.points}
+          </span>
+        </div>
+      ))}
+
+      {/* Legend */}
+      <div className="px-3 py-3 border-t border-[rgba(0,224,255,0.1)] flex flex-wrap gap-x-4 gap-y-1">
+        <span className="flex items-center gap-1.5 text-xs text-[#B0B8C8]">
+          <span className="w-2.5 h-2.5 rounded-sm bg-[rgba(0,224,255,0.4)]" /> Champions League
+        </span>
+        <span className="flex items-center gap-1.5 text-xs text-[#B0B8C8]">
+          <span className="w-2.5 h-2.5 rounded-sm bg-red-500/40" /> Relegation
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function FixturesList({ data }: { data: unknown }) {
+  const allMatches: Match[] = (data as { matches: Match[] }).matches ?? [];
+  const upcoming = allMatches.slice(0, 10);
+
+  const grouped = upcoming.reduce<Record<number, Match[]>>((acc, m) => {
+    if (!acc[m.matchday]) acc[m.matchday] = [];
+    acc[m.matchday].push(m);
+    return acc;
+  }, {});
+
+  const matchdays = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+
+  if (upcoming.length === 0) {
+    return (
+      <div className="glass-container rounded-xl p-8 text-center text-[#B0B8C8] text-sm">
+        No upcoming fixtures found.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {matchdays.map(md => (
+        <div key={md} className="glass-container rounded-xl overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-[rgba(0,224,255,0.1)]">
+            <span className="text-xs font-bold text-[#00E0FF] uppercase tracking-wider">
+              Matchday {md}
+            </span>
+          </div>
+          <div className="divide-y divide-[rgba(255,255,255,0.04)]">
+            {grouped[md].map(match => {
+              const { date, time } = formatMatchDate(match.utcDate);
+              return (
+                <div key={match.id} className="px-4 py-3">
+                  <div className="flex items-center justify-between gap-2">
+                    {/* Home */}
+                    <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                      <span className="text-sm text-white truncate text-right">{match.homeTeam.name}</span>
+                      <img
+                        src={match.homeTeam.crest}
+                        alt={match.homeTeam.name}
+                        className="w-6 h-6 object-contain flex-shrink-0"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    </div>
+
+                    {/* vs */}
+                    <div className="flex flex-col items-center flex-shrink-0 px-2 min-w-[56px]">
+                      <span className="text-xs font-bold text-[#B0B8C8]">vs</span>
+                      <span className="text-[10px] text-[#B0B8C8] whitespace-nowrap">{time}</span>
+                    </div>
+
+                    {/* Away */}
+                    <div className="flex items-center gap-2 flex-1 min-w-0 justify-start">
+                      <img
+                        src={match.awayTeam.crest}
+                        alt={match.awayTeam.name}
+                        className="w-6 h-6 object-contain flex-shrink-0"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                      <span className="text-sm text-white truncate">{match.awayTeam.name}</span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-[#B0B8C8] text-center mt-1">{date}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function Matchday() {
@@ -230,10 +397,10 @@ export default function Matchday() {
 
             {!isLoading && !current.error && current.loaded && (
               <>
-                {activeTab === 'table'    && <div>{/* Table content — placeholder */}</div>}
-                {activeTab === 'fixtures' && <div>{/* Fixtures content — placeholder */}</div>}
-                {activeTab === 'results'  && <div>{/* Results content — placeholder */}</div>}
-                {activeTab === 'scorers'  && <div>{/* Top Scorers content — placeholder */}</div>}
+                {activeTab === 'table'    && <LeagueTable data={current.data} />}
+                {activeTab === 'fixtures' && <FixturesList data={current.data} />}
+                {activeTab === 'results'  && <div />}
+                {activeTab === 'scorers'  && <div />}
               </>
             )}
           </div>
