@@ -262,9 +262,8 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
     const allCards = [...myCards, ...opponentCards];
     const getCardName = (cardId: string) => allCards.find(c => c.id === cardId)?.player_name || 'Unknown';
 
-    const royaltyRate = 0.05;
     const pot = battle.wager_amount * 2;
-    const totalRoyalties = Math.floor(pot * royaltyRate);
+    const totalRoyalties = royalties.reduce((sum, r) => sum + r.amount, 0);
     const winnerPayout = pot - totalRoyalties;
 
     const selections: BattleSelection[] = battle.card_selections || [];
