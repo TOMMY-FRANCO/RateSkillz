@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Swords, Clock, Flag, Shield, Zap, ChevronRight } from 'lucide-react';
+import { Swords, Clock, Flag, Shield, Zap, ChevronRight, Trophy } from 'lucide-react';
 import { SkillSelectionScreen } from './SkillSelectionScreen';
 import { TiebreakerScreen } from './TiebreakerScreen';
 import { useAuth } from '../../contexts/AuthContext';
@@ -243,12 +243,28 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
 
   if (isCompleted) {
     const isWinner = battle.winner_id === user?.id;
-    const myRemaining = battle.manager1_id === user?.id
-      ? battle.player1_remaining_cards
-      : battle.player2_remaining_cards;
-    const oppRemaining = battle.manager1_id === user?.id
-      ? battle.player2_remaining_cards
-      : battle.player1_remaining_cards;
+    const isManager1 = battle.manager1_id === user?.id;
+    const myRemaining = isManager1 ? battle.player1_remaining_cards : battle.player2_remaining_cards;
+    const oppRemaining = isManager1 ? battle.player2_remaining_cards : battle.player1_remaining_cards;
+
+    const allCards = [...myCards, ...opponentCards];
+    const getCardName = (cardId: string) => allCards.find(c => c.id === cardId)?.player_name || 'Unknown';
+
+    const royaltyRate = 0.05;
+    const pot = battle.wager_amount * 2;
+    const totalRoyalties = Math.floor(pot * royaltyRate);
+    const winnerPayout = pot - totalRoyalties;
+
+    const selections: BattleSelection[] = battle.card_selections || [];
+    const rounds: Array<{ roundNum: number; attacker: BattleSelection; defender: BattleSelection }> = [];
+    for (let i = 0; i + 1 < selections.length; i += 2) {
+      rounds.push({ roundNum: Math.floor(i / 2) + 1, attacker: selections[i], defender: selections[i + 1] });
+    }
+
+    const getUsername = (userId: string) => {
+      const card = allCards.find(c => c.card_user_id === userId);
+      return card?.username || (userId === user?.id ? 'You' : 'Opponent');
+    };
 
     return (
       <div className="min-h-screen p-4">
@@ -260,16 +276,115 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
             wagerAmount={battle.wager_amount}
             opponentName="Opponent"
           />
+
           <div className="text-center text-[#B0B8C8] text-sm">
             Returning to lobby in <span className="text-yellow-400 font-bold">{lobbyCountdown}s</span>...
           </div>
+
+          {/* Final Score */}
           <div className="glass-card p-4">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wide mb-3">Skills Used</h3>
+            <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-3 flex items-center gap-2">
+              <Trophy className="w-3.5 h-3.5 text-yellow-400" />
+              Final Score
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl bg-[rgba(0,255,133,0.06)] border border-[rgba(0,255,133,0.15)] p-3 text-center">
+                <p className="text-[#B0B8C8] text-[10px] font-bold uppercase tracking-wide mb-1">You</p>
+                <p className="text-[#00FF85] text-3xl font-black">{myRemaining}</p>
+                <p className="text-[#B0B8C8] text-[10px]">cards remaining</p>
+              </div>
+              <div className="rounded-xl bg-red-500/5 border border-red-500/20 p-3 text-center">
+                <p className="text-[#B0B8C8] text-[10px] font-bold uppercase tracking-wide mb-1">Opponent</p>
+                <p className="text-red-400 text-3xl font-black">{oppRemaining}</p>
+                <p className="text-[#B0B8C8] text-[10px]">cards remaining</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Payout */}
+          <div className="glass-card p-4">
+            <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-3 flex items-center gap-2">
+              <Zap className="w-3.5 h-3.5 text-yellow-400" />
+              Payout
+            </h3>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[#B0B8C8] text-sm">Total pot</span>
+                <span className="text-white font-bold">{pot} coins</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[#B0B8C8] text-sm">Royalties paid</span>
+                <span className="text-orange-400 font-bold">−{totalRoyalties} coins</span>
+              </div>
+              <div className="h-px bg-white/10" />
+              <div className="flex items-center justify-between">
+                <span className="text-white text-sm font-bold">Winner receives</span>
+                <span className="text-[#00FF85] font-black text-lg">{winnerPayout} coins</span>
+              </div>
+              {isWinner && (
+                <div className="mt-1 rounded-lg bg-[rgba(0,255,133,0.08)] border border-[rgba(0,255,133,0.2)] px-3 py-2 text-center">
+                  <span className="text-[#00FF85] text-xs font-bold">+{winnerPayout} coins added to your balance</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Round by Round */}
+          {rounds.length > 0 && (
+            <div className="glass-card p-4">
+              <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-3 flex items-center gap-2">
+                <Swords className="w-3.5 h-3.5 text-red-400" />
+                Round by Round
+              </h3>
+              <div className="space-y-2">
+                {rounds.map(({ roundNum, attacker, defender }) => {
+                  const attackerWins = defender.attacker_wins ?? false;
+                  const attackerName = attacker.user_id === user?.id ? 'You' : 'Opponent';
+                  const defenderName = defender.user_id === user?.id ? 'You' : 'Opponent';
+                  return (
+                    <div key={roundNum} className="rounded-xl bg-white/[0.03] border border-white/[0.07] p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[#B0B8C8] text-[10px] font-bold uppercase tracking-widest">Round {roundNum}</span>
+                        <span className={`text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full ${attackerWins ? 'bg-red-500/15 text-red-400 border border-red-500/30' : 'bg-blue-500/15 text-blue-400 border border-blue-500/30'}`}>
+                          {attackerWins ? 'Attacker Won' : 'Defended'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-lg bg-black/20 p-2">
+                          <p className="text-[#B0B8C8] text-[9px] font-bold uppercase tracking-wide mb-0.5">Attacker · {attackerName}</p>
+                          <p className="text-white text-xs font-semibold truncate">{getCardName(attacker.card_id)}</p>
+                          {attacker.skill && (
+                            <span className="inline-block mt-1 px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[9px] font-bold uppercase">{attacker.skill}</span>
+                          )}
+                          <p className="text-yellow-400 font-black text-sm mt-1">{attacker.value}</p>
+                        </div>
+                        <div className="rounded-lg bg-black/20 p-2">
+                          <p className="text-[#B0B8C8] text-[9px] font-bold uppercase tracking-wide mb-0.5">Defender · {defenderName}</p>
+                          <p className="text-white text-xs font-semibold truncate">{getCardName(defender.card_id)}</p>
+                          {attacker.skill && (
+                            <span className="inline-block mt-1 px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[9px] font-bold uppercase">{attacker.skill}</span>
+                          )}
+                          <p className="text-yellow-400 font-black text-sm mt-1">{defender.value}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Skills Used */}
+          <div className="glass-card p-4">
+            <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-3 flex items-center gap-2">
+              <ChevronRight className="w-3.5 h-3.5 text-[#00E0FF]" />
+              Skills Used
+            </h3>
             <div className="flex gap-2 flex-wrap">
               {(battle.used_skills || []).map((skill) => (
                 <span
                   key={skill}
-                  className="px-3 py-1 bg-red-500/15 border border-red-500/40 rounded-full text-red-400 text-xs font-semibold"
+                  className="px-3 py-1 bg-red-500/15 border border-red-500/40 rounded-full text-red-400 text-xs font-semibold capitalize"
                 >
                   {skill}
                 </span>
@@ -279,6 +394,8 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
               )}
             </div>
           </div>
+
+          <div className="h-4" />
         </div>
       </div>
     );
