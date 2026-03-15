@@ -494,6 +494,21 @@ export default function Dashboard() {
           </button>
 
           <button
+            onClick={() => navigate('/football-match')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#38BDF8] rounded-xl flex items-center justify-center shadow-lg shadow-[#00FF85]/30">
+                <Users className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Football Match</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Organise and wager</p>
+              </div>
+            </div>
+          </button>
+
+          <button
             onClick={() => navigate('/leaderboard')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
