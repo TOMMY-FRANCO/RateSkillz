@@ -25,7 +25,8 @@ export default function BattleMode() {
   const [activeBattle, setActiveBattle] = useState<Battle | null>(null);
   const [showCreateChallenge, setShowCreateChallenge] = useState(false);
   const [opponentId, setOpponentId] = useState('');
-  const [wagerAmount, setWagerAmount] = useState(50);
+  const [wagerAmount, setWagerAmount] = useState(10);
+  const [checkingBalance, setCheckingBalance] = useState(false);
   const [managers, setManagers] = useState<any[]>([]);
 
   useEffect(() => {
@@ -70,6 +71,24 @@ export default function BattleMode() {
     if (!user || !opponentId) return;
 
     try {
+      setCheckingBalance(true);
+      const { data: profile, error: balanceError } = await supabase
+        .from('profiles')
+        .select('coin_balance')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (balanceError || !profile) {
+        alert('Failed to verify coin balance. Please try again.');
+        return;
+      }
+
+      if (profile.coin_balance < wagerAmount) {
+        alert(`Insufficient coins. You need ${wagerAmount} coins to place this wager.`);
+        return;
+      }
+
+      setCheckingBalance(false);
       const result = await createBattleChallenge(user.id, opponentId, wagerAmount);
       if (result.success) {
         alert('Challenge created successfully!');
@@ -81,6 +100,8 @@ export default function BattleMode() {
     } catch (error) {
       console.error('Error creating challenge:', error);
       alert('Failed to create challenge');
+    } finally {
+      setCheckingBalance(false);
     }
   };
 
@@ -203,19 +224,26 @@ export default function BattleMode() {
                 </select>
               </div>
               <div>
-                <label className="block text-white/70 mb-2">Wager Amount (50-200 coins)</label>
-                <input
-                  type="number"
-                  min="50"
-                  max="200"
-                  value={wagerAmount}
-                  onChange={(e) => setWagerAmount(Number(e.target.value))}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white"
-                />
+                <label className="block text-white/70 mb-2">Wager Amount (10–150 coins)</label>
+                <div className="flex flex-wrap gap-2">
+                  {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150].map((amount) => (
+                    <button
+                      key={amount}
+                      onClick={() => setWagerAmount(amount)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-semibold border transition-all ${
+                        wagerAmount === amount
+                          ? 'bg-yellow-500 border-yellow-400 text-black shadow-lg shadow-yellow-500/30'
+                          : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      {amount}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="flex gap-3">
-                <GlassButton onClick={handleCreateChallenge} disabled={!opponentId}>
-                  Create Challenge
+                <GlassButton onClick={handleCreateChallenge} disabled={!opponentId || checkingBalance}>
+                  {checkingBalance ? 'Checking...' : 'Create Challenge'}
                 </GlassButton>
                 <GlassButton onClick={() => setShowCreateChallenge(false)} variant="outline">
                   Cancel
