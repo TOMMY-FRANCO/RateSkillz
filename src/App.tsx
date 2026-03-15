@@ -56,6 +56,7 @@ const DailyQuiz = lazy(() => import('./pages/DailyQuiz'));
 const Matchday = lazy(() => import('./pages/Matchday'));
 const WorldCup = lazy(() => import('./pages/WorldCup'));
 const TheWall = lazy(() => import('./pages/TheWall'));
+const FootballMatch = lazy(() => import('./pages/FootballMatch'));
 const News = lazy(() => import('./pages/News'));
 const SecretGames = lazy(() => import('./pages/SecretGames'));
 
@@ -352,6 +353,16 @@ function App() {
               <ProtectedRoute>
                 <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
                   <TheWall />
+                </LazyPageWrapper>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/football-match"
+            element={
+              <ProtectedRoute>
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <FootballMatch />
                 </LazyPageWrapper>
               </ProtectedRoute>
             }
