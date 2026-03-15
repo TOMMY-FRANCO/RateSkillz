@@ -170,7 +170,7 @@ function ChoosingScreen({ battle, userId, onChosen, onTimeout }: ChoosingScreenP
           >
             <Shield className="w-6 h-6 text-blue-400" />
             <span className="text-blue-400 font-bold text-sm">Go Second</span>
-            <span className="text-[#B0B8C8] text-[10px]">Defend first</span>
+            <span className="text-[#B0B8C8] text-[10px]">Attack second</span>
           </button>
         </div>
 
