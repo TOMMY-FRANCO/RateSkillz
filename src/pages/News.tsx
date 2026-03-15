@@ -97,6 +97,33 @@ function ArticleCard({ article, liked, onToggleLike, loggedIn }: ArticleCardProp
           <span>{article.likes_count}</span>
         </button>
       </div>
+
+      <div className="flex items-center gap-2 pt-1">
+        <a
+          href={`https://wa.me/?text=${encodeURIComponent(article.title + ' ' + 'https://ratingskill.com/news')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-[#B0B8C8] text-xs font-bold px-3 py-1.5 rounded-lg hover:border-[#00E0FF] hover:text-white transition-all"
+        >
+          WhatsApp
+        </a>
+        <a
+          href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://ratingskill.com/news')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-[#B0B8C8] text-xs font-bold px-3 py-1.5 rounded-lg hover:border-[#00E0FF] hover:text-white transition-all"
+        >
+          Facebook
+        </a>
+        <a
+          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title + ' ' + 'https://ratingskill.com/news')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-[#B0B8C8] text-xs font-bold px-3 py-1.5 rounded-lg hover:border-[#00E0FF] hover:text-white transition-all"
+        >
+          X
+        </a>
+      </div>
     </div>
   );
 }
