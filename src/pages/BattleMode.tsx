@@ -133,11 +133,13 @@ export default function BattleMode() {
       }
 
       const { data: managersData } = await supabase
-        .from('searchable_users_cache')
-        .select('user_id, username')
-        .neq('user_id', user.id);
+        .from('profiles')
+        .select('id, username')
+        .eq('is_manager', true)
+        .neq('id', user.id)
+        .eq('is_banned', false);
 
-      setManagers((managersData || []).map((m: any) => ({ id: m.user_id, username: m.username })));
+      setManagers((managersData || []).map((m: any) => ({ id: m.id, username: m.username })));
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
