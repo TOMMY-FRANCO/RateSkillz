@@ -53,6 +53,7 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
 const ActivityFeed = lazy(() => import('./pages/ActivityFeed'));
 const DailyQuiz = lazy(() => import('./pages/DailyQuiz'));
+const Matchday = lazy(() => import('./pages/Matchday'));
 
 function LoadingScreen() {
   return (
@@ -317,6 +318,16 @@ function App() {
               <ProtectedRoute>
                 <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
                   <DailyQuiz />
+                </LazyPageWrapper>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/matchday"
+            element={
+              <ProtectedRoute>
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <Matchday />
                 </LazyPageWrapper>
               </ProtectedRoute>
             }
