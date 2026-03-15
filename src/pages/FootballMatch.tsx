@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, RefreshCw, Plus, AlertCircle } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Plus, AlertCircle, X, Search, UserCheck } from 'lucide-react';
 import { ShimmerBar } from '../components/ui/Shimmer';
 import { useToast } from '../contexts/ToastContext';
 
@@ -25,6 +25,12 @@ interface MatchInvite {
   match: FootballMatch;
 }
 
+interface FriendProfile {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+}
+
 type Tab = 'my_matches' | 'invites';
 
 const STATUS_STYLES: Record<string, string> = {
@@ -35,12 +41,33 @@ const STATUS_STYLES: Record<string, string> = {
   disputed: 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
 };
 
+const inputClass =
+  'w-full px-3 py-2.5 rounded-xl bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-white text-sm placeholder-[#6B7A99] focus:outline-none focus:border-[#00E0FF] transition-colors';
+
 function formatDate(dateStr: string): string {
   try {
     return new Date(dateStr).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   } catch {
     return dateStr;
   }
+}
+
+function AvatarBubble({ name, avatar, size = 'md' }: { name: string; avatar: string | null; size?: 'sm' | 'md' }) {
+  const dim = size === 'sm' ? 'w-7 h-7 text-xs' : 'w-9 h-9 text-sm';
+  if (avatar) {
+    return (
+      <img
+        src={avatar}
+        alt={name}
+        className={`${dim} rounded-full object-cover border border-[rgba(0,224,255,0.3)] flex-shrink-0`}
+      />
+    );
+  }
+  return (
+    <div className={`${dim} rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center text-black font-black flex-shrink-0`}>
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
 }
 
 function MatchCard({ match }: { match: FootballMatch }) {
@@ -130,12 +157,408 @@ function MatchSkeleton() {
   );
 }
 
+function FriendPicker({
+  friends,
+  friendsLoading,
+  selectedIds,
+  onSelect,
+  onClose,
+}: {
+  friends: FriendProfile[];
+  friendsLoading: boolean;
+  selectedIds: Set<string>;
+  onSelect: (friend: FriendProfile) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState('');
+
+  const filtered = friends.filter(
+    f =>
+      !selectedIds.has(f.id) &&
+      f.username.toLowerCase().includes(query.toLowerCase()),
+  );
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative glass-container rounded-2xl w-full max-w-sm flex flex-col max-h-[70vh]">
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[rgba(0,224,255,0.1)]">
+          <h3 className="text-white font-bold text-base">Add Player</h3>
+          <button onClick={onClose} className="text-[#B0B8C8] hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="px-4 py-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7A99]" />
+            <input
+              autoFocus
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search friends..."
+              className={`${inputClass} pl-9`}
+            />
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
+          {friendsLoading ? (
+            <>
+              <ShimmerBar className="h-12 rounded-xl" />
+              <ShimmerBar className="h-12 rounded-xl" />
+              <ShimmerBar className="h-12 rounded-xl" />
+            </>
+          ) : filtered.length === 0 ? (
+            <p className="text-center text-[#B0B8C8] text-sm py-6">
+              {query ? 'No friends match your search.' : 'No friends available to add.'}
+            </p>
+          ) : (
+            filtered.map(f => (
+              <div key={f.id} className="glass-card p-3 flex items-center gap-3">
+                <AvatarBubble name={f.username} avatar={f.avatar_url} />
+                <span className="text-white text-sm font-semibold flex-1 truncate">@{f.username}</span>
+                <button
+                  onClick={() => { onSelect(f); onClose(); }}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#00E0FF]/20 text-[#00E0FF] border border-[#00E0FF]/30 hover:bg-[#00E0FF]/30 transition-colors text-xs font-bold"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TeamSection({
+  label,
+  players,
+  friends,
+  friendsLoading,
+  allSelectedIds,
+  onAdd,
+  onRemove,
+}: {
+  label: string;
+  players: FriendProfile[];
+  friends: FriendProfile[];
+  friendsLoading: boolean;
+  allSelectedIds: Set<string>;
+  onAdd: (f: FriendProfile) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  return (
+    <>
+      <div className="flex-1 min-w-0 space-y-2">
+        <h4 className="text-[#00E0FF] text-sm font-bold">{label}</h4>
+        <div className="space-y-1.5 min-h-[2.5rem]">
+          {players.map((p, idx) => (
+            <div key={p.id} className="flex items-center gap-2 bg-[rgba(0,224,255,0.05)] border border-[rgba(0,224,255,0.1)] rounded-xl px-2.5 py-1.5">
+              <AvatarBubble name={p.username} avatar={p.avatar_url} size="sm" />
+              <span className="text-white text-xs font-semibold flex-1 truncate">@{p.username}</span>
+              {idx === 0 && (
+                <span className="text-[10px] font-black bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 rounded-full px-1.5 py-0.5 whitespace-nowrap">
+                  Captain
+                </span>
+              )}
+              <button
+                onClick={() => onRemove(p.id)}
+                className="text-[#6B7A99] hover:text-red-400 transition-colors ml-0.5"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-[rgba(0,224,255,0.3)] text-[#00E0FF] text-xs font-semibold hover:bg-[rgba(0,224,255,0.05)] transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Add Player
+        </button>
+      </div>
+      {pickerOpen && (
+        <FriendPicker
+          friends={friends}
+          friendsLoading={friendsLoading}
+          selectedIds={allSelectedIds}
+          onSelect={onAdd}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+    </>
+  );
+}
+
+interface CreateMatchFormProps {
+  userId: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function CreateMatchModal({ userId, onClose, onSuccess }: CreateMatchFormProps) {
+  const toast = useToast();
+
+  const [matchName, setMatchName] = useState('');
+  const [matchDate, setMatchDate] = useState('');
+  const [matchTime, setMatchTime] = useState('');
+  const [location, setLocation] = useState('');
+  const [notes, setNotes] = useState('');
+  const [teamSize, setTeamSize] = useState(5);
+  const [wagerPerPlayer, setWagerPerPlayer] = useState(0);
+
+  const [teamA, setTeamA] = useState<FriendProfile[]>([]);
+  const [teamB, setTeamB] = useState<FriendProfile[]>([]);
+
+  const [friends, setFriends] = useState<FriendProfile[]>([]);
+  const [friendsLoading, setFriendsLoading] = useState(true);
+
+  const [submitting, setSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState('');
+
+  useEffect(() => {
+    loadFriends();
+  }, []);
+
+  const loadFriends = async () => {
+    setFriendsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('friends')
+        .select('id, user_id, friend_id, status')
+        .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
+        .eq('status', 'accepted');
+
+      if (error) throw error;
+
+      const friendIds = (data || []).map((row: any) =>
+        row.user_id === userId ? row.friend_id : row.user_id
+      );
+
+      if (friendIds.length === 0) {
+        setFriends([]);
+        return;
+      }
+
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', friendIds);
+
+      if (profileError) throw profileError;
+
+      setFriends(
+        (profiles || []).map((p: any) => ({
+          id: p.id,
+          username: p.username || 'Unknown',
+          avatar_url: p.avatar_url || null,
+        }))
+      );
+    } catch {
+      setFriends([]);
+    } finally {
+      setFriendsLoading(false);
+    }
+  };
+
+  const allSelectedIds = new Set([...teamA.map(p => p.id), ...teamB.map(p => p.id)]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setValidationError('');
+
+    if (!matchName.trim()) { setValidationError('Match name is required.'); return; }
+    if (!matchDate) { setValidationError('Match date is required.'); return; }
+    if (teamA.length === 0) { setValidationError('Team A must have at least 1 player.'); return; }
+    if (teamB.length === 0) { setValidationError('Team B must have at least 1 player.'); return; }
+
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.rpc('create_football_match', {
+        p_match_name: matchName.trim(),
+        p_match_date: matchDate,
+        p_match_time: matchTime || null,
+        p_location: location.trim() || null,
+        p_notes: notes.trim() || null,
+        p_team_size: teamSize,
+        p_wager_per_player: wagerPerPlayer,
+        p_team_a_player_ids: teamA.map(p => p.id),
+        p_team_b_player_ids: teamB.map(p => p.id),
+      });
+
+      if (error) throw error;
+
+      toast.success('Match created!');
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to create match.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative glass-container rounded-2xl w-full max-w-lg mx-4 my-6 p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-white text-xl font-bold">Create Match</h2>
+          <button onClick={onClose} className="text-[#B0B8C8] hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-[#B0B8C8]">Match Name *</label>
+            <input
+              value={matchName}
+              onChange={e => setMatchName(e.target.value)}
+              placeholder="e.g. Sunday League"
+              className={inputClass}
+              maxLength={100}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-[#B0B8C8]">Date *</label>
+              <input
+                type="date"
+                value={matchDate}
+                onChange={e => setMatchDate(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-[#B0B8C8]">Time</label>
+              <input
+                type="time"
+                value={matchTime}
+                onChange={e => setMatchTime(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-[#B0B8C8]">Location</label>
+            <input
+              value={location}
+              onChange={e => setLocation(e.target.value)}
+              placeholder="e.g. Victoria Park"
+              className={inputClass}
+              maxLength={200}
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-[#B0B8C8]">Notes</label>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Optional notes..."
+              rows={2}
+              className={`${inputClass} resize-none`}
+              maxLength={500}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-[#B0B8C8]">Team Size</label>
+              <input
+                type="number"
+                min={1}
+                max={11}
+                value={teamSize}
+                onChange={e => setTeamSize(Math.min(11, Math.max(1, Number(e.target.value))))}
+                className={inputClass}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-[#B0B8C8]">Wager / Player (coins)</label>
+              <input
+                type="number"
+                min={0}
+                value={wagerPerPlayer}
+                onChange={e => setWagerPerPlayer(Math.max(0, Number(e.target.value)))}
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center gap-2 mb-1">
+              <UserCheck className="w-4 h-4 text-[#00E0FF]" />
+              <span className="text-white text-sm font-bold">Teams</span>
+            </div>
+            <div className="flex gap-3">
+              <TeamSection
+                label="Team A"
+                players={teamA}
+                friends={friends}
+                friendsLoading={friendsLoading}
+                allSelectedIds={allSelectedIds}
+                onAdd={f => setTeamA(prev => [...prev, f])}
+                onRemove={id => setTeamA(prev => prev.filter(p => p.id !== id))}
+              />
+              <TeamSection
+                label="Team B"
+                players={teamB}
+                friends={friends}
+                friendsLoading={friendsLoading}
+                allSelectedIds={allSelectedIds}
+                onAdd={f => setTeamB(prev => [...prev, f])}
+                onRemove={id => setTeamB(prev => prev.filter(p => p.id !== id))}
+              />
+            </div>
+          </div>
+
+          {validationError && (
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+              <p className="text-red-400 text-xs">{validationError}</p>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="flex-1 py-3 rounded-xl text-sm font-bold bg-[rgba(15,24,41,0.85)] text-[#B0B8C8] border border-[rgba(0,224,255,0.15)] hover:border-[rgba(0,224,255,0.35)] hover:text-white transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex-1 py-3 rounded-xl text-sm font-bold bg-[#00E0FF] text-black hover:bg-[#00c4e0] transition-colors disabled:opacity-50"
+            >
+              {submitting ? 'Creating...' : 'Create Match'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function FootballMatch() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
 
   const [activeTab, setActiveTab] = useState<Tab>('my_matches');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const [myMatches, setMyMatches] = useState<FootballMatch[]>([]);
   const [myMatchesLoading, setMyMatchesLoading] = useState(true);
@@ -331,7 +754,7 @@ export default function FootballMatch() {
               <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
             </button>
             <button
-              onClick={() => navigate('/football-match/create')}
+              onClick={() => setShowCreateModal(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#00E0FF]/20 text-[#00E0FF] border border-[#00E0FF]/30 hover:bg-[#00E0FF]/30 transition-colors text-sm font-bold"
             >
               <Plus className="w-4 h-4" />
@@ -342,7 +765,6 @@ export default function FootballMatch() {
       </nav>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 space-y-5">
-
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab('my_matches')}
@@ -436,6 +858,14 @@ export default function FootballMatch() {
           </div>
         )}
       </main>
+
+      {showCreateModal && (
+        <CreateMatchModal
+          userId={user.id}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => { loadMyMatches(); setActiveTab('my_matches'); }}
+        />
+      )}
     </div>
   );
 }
