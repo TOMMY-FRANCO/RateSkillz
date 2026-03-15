@@ -29,7 +29,7 @@ export default function BattleMode() {
   const [activeBattle, setActiveBattle] = useState<Battle | null>(null);
   const [showCreateChallenge, setShowCreateChallenge] = useState(false);
   const [opponentId, setOpponentId] = useState('');
-  const [wagerAmount, setWagerAmount] = useState(10);
+  const [wagerAmount, setWagerAmount] = useState(50);
   const [checkingBalance, setCheckingBalance] = useState(false);
   const [managers, setManagers] = useState<any[]>([]);
 
@@ -258,9 +258,9 @@ export default function BattleMode() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-xs font-semibold text-[#B0B8C8]">Wager Amount (10–150 coins)</label>
+              <label className="block text-xs font-semibold text-[#B0B8C8]">Wager Amount (50–150 coins)</label>
               <div className="flex flex-wrap gap-2">
-                {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150].map((amount) => (
+                {[50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150].map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setWagerAmount(amount)}
