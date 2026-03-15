@@ -307,7 +307,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
               <span className="text-red-400 font-black">{oppRemainingCards}</span>
             </div>
             <span className="text-[#B0B8C8] text-xs">
-              <span className="text-yellow-400 font-bold">{battle.wager_amount}</span>
+              <span className="text-yellow-500 font-bold">{battle.wager_amount}</span>
               {' '}coins
             </span>
             <button
@@ -326,69 +326,54 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
 
         {/* ── PITCH CONTAINER ── */}
         <div
-          className="relative flex-1 rounded-2xl overflow-hidden flex flex-col"
-          style={{
-            background: 'linear-gradient(180deg, #0a2e14 0%, #0d3a1a 40%, #0d3a1a 60%, #0a2e14 100%)',
-            minHeight: 340,
-          }}
+          className="relative flex-1 rounded-2xl overflow-hidden flex flex-col bg-[#1a4a2e]"
+          style={{ minHeight: 340 }}
         >
           {/* Pitch line markings */}
           <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+            {/* Outer pitch border */}
+            <div className="absolute inset-3 rounded-xl border-2 border-white/20" />
             {/* Halfway line */}
-            <div
-              className="absolute left-4 right-4"
-              style={{ top: '50%', height: 1, background: 'rgba(255,255,255,0.18)' }}
-            />
+            <div className="absolute left-4 right-4 border-t-2 border-white/20" style={{ top: '50%' }} />
             {/* Centre circle */}
             <div
-              className="absolute"
+              className="absolute border-2 border-white/20 rounded-full"
               style={{
                 top: '50%', left: '50%',
                 width: 80, height: 80,
                 marginTop: -40, marginLeft: -40,
-                border: '1px solid rgba(255,255,255,0.18)',
-                borderRadius: '50%',
               }}
             />
             {/* Centre dot */}
             <div
-              className="absolute"
+              className="absolute rounded-full bg-white/35"
               style={{
                 top: '50%', left: '50%',
                 width: 6, height: 6,
                 marginTop: -3, marginLeft: -3,
-                background: 'rgba(255,255,255,0.35)',
-                borderRadius: '50%',
               }}
             />
             {/* Top penalty box */}
             <div
-              className="absolute"
+              className="absolute border-2 border-white/20"
               style={{
                 top: 0, left: '50%',
                 width: 160, height: 56,
                 marginLeft: -80,
-                border: '1px solid rgba(255,255,255,0.18)',
                 borderTop: 'none',
                 borderRadius: '0 0 8px 8px',
               }}
             />
             {/* Bottom penalty box */}
             <div
-              className="absolute"
+              className="absolute border-2 border-white/20"
               style={{
                 bottom: 0, left: '50%',
                 width: 160, height: 56,
                 marginLeft: -80,
-                border: '1px solid rgba(255,255,255,0.18)',
                 borderBottom: 'none',
                 borderRadius: '8px 8px 0 0',
               }}
-            />
-            {/* Outer pitch border */}
-            <div
-              className="absolute inset-3 rounded-xl"
-              style={{ border: '1px solid rgba(255,255,255,0.13)' }}
             />
           </div>
 
@@ -406,7 +391,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                     className="relative rotate-180"
                     style={{ opacity: eliminated ? 0.3 : 1 }}
                   >
-                    <div className="w-16 rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.07)] flex flex-col items-center py-2 px-1 gap-1">
+                    <div className="w-16 rounded-xl border border-white/10 bg-black/30 backdrop-blur-sm flex flex-col items-center py-2 px-1 gap-1">
                       {card.avatar_url ? (
                         <img
                           src={card.avatar_url}
@@ -447,6 +432,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
           {/* ── ROW 2: Centre action zone ── */}
           <div className="relative z-20 flex flex-col items-stretch px-3 py-1 gap-1.5">
 
+
             {/* Active round info: attacker card | timer | defender pick */}
             {(() => {
               const selections: BattleSelection[] = battle.card_selections || [];
@@ -457,10 +443,10 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
               const attackingCard = attackerCardId ? allCards.find(c => c.id === attackerCardId) : null;
 
               return (
-                <div className="flex items-stretch gap-2">
+                <div className="bg-black/40 rounded-2xl border border-white/10 p-2 flex items-stretch gap-2">
 
                   {/* Left: attacker card info */}
-                  <div className="flex-1 rounded-xl bg-black/30 border border-white/10 p-2 flex flex-col items-center justify-center min-w-0">
+                  <div className="flex-1 rounded-xl bg-black/30 border border-white/10 backdrop-blur-sm p-2 flex flex-col items-center justify-center min-w-0">
                     {pendingAttack && attackingCard ? (
                       <>
                         {attackingCard.avatar_url ? (
@@ -487,8 +473,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                   {/* Centre: countdown + status */}
                   <div className="flex flex-col items-center justify-center gap-1 shrink-0">
                     <div className={`w-12 h-12 rounded-full border-2 flex flex-col items-center justify-center ${timeRemaining <= 10 ? 'border-red-500/60 bg-red-500/10' : 'border-white/20 bg-black/30'}`}>
-                      <span className={`text-sm font-black tabular-nums leading-none ${timeRemaining <= 10 ? 'text-red-400' : 'text-white'}`}>{timeRemaining}</span>
-                      <span className="text-[7px] text-white/30 font-bold leading-none">SEC</span>
+                      <span className={`text-2xl font-bold tabular-nums leading-none ${timeRemaining <= 10 ? 'text-red-400' : 'text-yellow-400'}`}>{timeRemaining}</span>
                     </div>
                     <span className={`text-[8px] font-bold uppercase tracking-wide ${isMyTurn ? 'text-[#00FF85]' : 'text-white/30'}`}>
                       {isMyTurn ? 'Your turn' : 'Opponent'}
@@ -496,7 +481,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                   </div>
 
                   {/* Right: defender response or waiting indicator */}
-                  <div className="flex-1 rounded-xl bg-black/30 border border-white/10 p-2 flex flex-col items-center justify-center min-w-0">
+                  <div className="flex-1 rounded-xl bg-black/30 border border-white/10 backdrop-blur-sm p-2 flex flex-col items-center justify-center min-w-0">
                     {lastRoundSummary ? (
                       <>
                         <div className={`w-5 h-5 rounded-full flex items-center justify-center mb-1 ${lastRoundSummary.attackerWins ? 'bg-red-500/20' : 'bg-[rgba(0,255,133,0.15)]'}`}>
@@ -509,6 +494,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                         <span className={`text-[9px] font-black mt-0.5 ${lastRoundSummary.attackerWins ? 'text-red-400' : 'text-[#00FF85]'}`}>
                           {lastRoundSummary.attackerWins ? 'Eliminated' : 'Held'}
                         </span>
+
                       </>
                     ) : pendingAttack ? (
                       <>
@@ -575,7 +561,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                     className="relative"
                     style={{ opacity: eliminated ? 0.3 : 1 }}
                   >
-                    <div className="w-16 rounded-xl border border-[rgba(0,255,133,0.2)] bg-[rgba(0,255,133,0.06)] flex flex-col items-center py-2 px-1 gap-1">
+                    <div className="w-16 rounded-xl border border-white/10 bg-black/30 backdrop-blur-sm flex flex-col items-center py-2 px-1 gap-1">
                       {card.avatar_url ? (
                         <img
                           src={card.avatar_url}

@@ -126,7 +126,7 @@ export function TiebreakerScreen({
               <span className="text-yellow-400 text-xs font-bold">Final Showdown</span>
             </div>
             <span className="text-[#B0B8C8] text-xs">
-              <span className="text-yellow-400 font-bold">{battle.wager_amount}</span>
+              <span className="text-yellow-500 font-bold">{battle.wager_amount}</span>
               {' '}coins
             </span>
           </div>
@@ -138,63 +138,54 @@ export function TiebreakerScreen({
 
         {/* ── PITCH CONTAINER ── */}
         <div
-          className="relative flex-1 rounded-2xl overflow-hidden flex flex-col"
-          style={{
-            background: 'linear-gradient(180deg, #0a2e14 0%, #0d3a1a 40%, #0d3a1a 60%, #0a2e14 100%)',
-            minHeight: 340,
-          }}
+          className="relative flex-1 rounded-2xl overflow-hidden flex flex-col bg-[#1a4a2e]"
+          style={{ minHeight: 340 }}
         >
           {/* Pitch line markings */}
           <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+            {/* Outer pitch border */}
+            <div className="absolute inset-3 rounded-xl border-2 border-white/20" />
+            {/* Halfway line */}
+            <div className="absolute left-4 right-4 border-t-2 border-white/20" style={{ top: '50%' }} />
+            {/* Centre circle */}
             <div
-              className="absolute left-4 right-4"
-              style={{ top: '50%', height: 1, background: 'rgba(255,255,255,0.18)' }}
-            />
-            <div
-              className="absolute"
+              className="absolute border-2 border-white/20 rounded-full"
               style={{
                 top: '50%', left: '50%',
                 width: 80, height: 80,
                 marginTop: -40, marginLeft: -40,
-                border: '1px solid rgba(255,255,255,0.18)',
-                borderRadius: '50%',
               }}
             />
+            {/* Centre dot */}
             <div
-              className="absolute"
+              className="absolute rounded-full bg-white/35"
               style={{
                 top: '50%', left: '50%',
                 width: 6, height: 6,
                 marginTop: -3, marginLeft: -3,
-                background: 'rgba(255,255,255,0.35)',
-                borderRadius: '50%',
               }}
             />
+            {/* Top penalty box */}
             <div
-              className="absolute"
+              className="absolute border-2 border-white/20"
               style={{
                 top: 0, left: '50%',
                 width: 160, height: 56,
                 marginLeft: -80,
-                border: '1px solid rgba(255,255,255,0.18)',
                 borderTop: 'none',
                 borderRadius: '0 0 8px 8px',
               }}
             />
+            {/* Bottom penalty box */}
             <div
-              className="absolute"
+              className="absolute border-2 border-white/20"
               style={{
                 bottom: 0, left: '50%',
                 width: 160, height: 56,
                 marginLeft: -80,
-                border: '1px solid rgba(255,255,255,0.18)',
                 borderBottom: 'none',
                 borderRadius: '8px 8px 0 0',
               }}
-            />
-            <div
-              className="absolute inset-3 rounded-xl"
-              style={{ border: '1px solid rgba(255,255,255,0.13)' }}
             />
           </div>
 
@@ -210,7 +201,7 @@ export function TiebreakerScreen({
                   const eliminated = eliminatedCards.includes(card.id);
                   return (
                     <div key={card.id} className="relative rotate-180" style={{ opacity: eliminated ? 0.3 : 1 }}>
-                      <div className="w-16 rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.07)] flex flex-col items-center py-2 px-1 gap-1">
+                      <div className="w-16 rounded-xl border border-white/10 bg-black/30 backdrop-blur-sm flex flex-col items-center py-2 px-1 gap-1">
                         {card.avatar_url ? (
                           <img src={card.avatar_url} alt={card.player_name} className="w-12 h-12 rounded-full object-cover border border-white/20" loading="lazy" />
                         ) : (
@@ -237,10 +228,10 @@ export function TiebreakerScreen({
 
             {submitted ? (
               /* Submitted — show both picks once available, pulsing wait otherwise */
-              <div className="flex items-stretch gap-2">
+              <div className="bg-black/40 rounded-2xl border border-white/10 p-2 flex items-stretch gap-2">
 
                 {/* My submitted pick */}
-                <div className="flex-1 rounded-xl bg-black/30 border border-[rgba(0,255,133,0.2)] p-2 flex flex-col items-center justify-center min-w-0">
+                <div className="flex-1 rounded-xl bg-black/30 border border-[rgba(0,255,133,0.2)] backdrop-blur-sm p-2 flex flex-col items-center justify-center min-w-0">
                   {myTiebreakerCard ? (
                     <>
                       {myTiebreakerCard.avatar_url ? (
@@ -275,7 +266,7 @@ export function TiebreakerScreen({
                 </div>
 
                 {/* Opponent pick — shown if resolved, otherwise pulsing wait */}
-                <div className="flex-1 rounded-xl bg-black/30 border border-white/10 p-2 flex flex-col items-center justify-center min-w-0">
+                <div className="flex-1 rounded-xl bg-black/30 border border-white/10 backdrop-blur-sm p-2 flex flex-col items-center justify-center min-w-0">
                   {opponentTiebreakerMove ? (
                     <>
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-orange-400 flex items-center justify-center border border-red-400/30 mb-1">
@@ -304,8 +295,8 @@ export function TiebreakerScreen({
               </div>
             ) : (
               /* Not yet submitted — show VS prompt in centre */
-              <div className="flex items-stretch gap-2">
-                <div className="flex-1 rounded-xl bg-black/30 border border-[rgba(0,255,133,0.15)] p-2 flex flex-col items-center justify-center min-w-0">
+              <div className="bg-black/40 rounded-2xl border border-white/10 p-2 flex items-stretch gap-2">
+                <div className="flex-1 rounded-xl bg-black/30 border border-[rgba(0,255,133,0.15)] backdrop-blur-sm p-2 flex flex-col items-center justify-center min-w-0">
                   <span className="text-[#00FF85]/50 text-[9px] font-semibold">Pick below</span>
                 </div>
                 <div className="flex flex-col items-center justify-center gap-1 shrink-0">
@@ -314,7 +305,7 @@ export function TiebreakerScreen({
                   </div>
                   <span className="text-yellow-400 text-[8px] font-bold uppercase tracking-wide">TB</span>
                 </div>
-                <div className="flex-1 rounded-xl bg-black/30 border border-white/10 p-2 flex flex-col items-center justify-center min-w-0">
+                <div className="flex-1 rounded-xl bg-black/30 border border-white/10 backdrop-blur-sm p-2 flex flex-col items-center justify-center min-w-0">
                   <span className="text-white/20 text-[9px] font-semibold">–</span>
                 </div>
               </div>
@@ -434,7 +425,7 @@ export function TiebreakerScreen({
                 const eliminated = eliminatedCards.includes(card.id);
                 return (
                   <div key={card.id} className="relative" style={{ opacity: eliminated ? 0.3 : 1 }}>
-                    <div className="w-16 rounded-xl border border-[rgba(0,255,133,0.2)] bg-[rgba(0,255,133,0.06)] flex flex-col items-center py-2 px-1 gap-1">
+                    <div className="w-16 rounded-xl border border-white/10 bg-black/30 backdrop-blur-sm flex flex-col items-center py-2 px-1 gap-1">
                       {card.avatar_url ? (
                         <img src={card.avatar_url} alt={card.player_name} className="w-12 h-12 rounded-full object-cover border border-[rgba(0,255,133,0.3)]" loading="lazy" />
                       ) : (
