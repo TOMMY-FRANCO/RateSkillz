@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Swords, Clock, Flag, Shield, Zap, ChevronRight, Trophy } from 'lucide-react';
+import { playSound } from '../../lib/sounds';
 import { SkillSelectionScreen } from './SkillSelectionScreen';
 import { TiebreakerScreen } from './TiebreakerScreen';
 import { useAuth } from '../../contexts/AuthContext';
@@ -178,12 +179,23 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
       );
       if (!result.success) {
         alert(result.error || 'Failed to submit move');
+      } else if (result.no_skills_left && result.battle_over) {
+        const isWinner = result.winner_id === user?.id;
+        playSound(isWinner ? 'battle-win' : 'battle-loss');
+        const updated = await getBattle(battle.id);
+        setBattle(updated);
+      } else if (result.no_skills_left && result.tiebreaker) {
+        const updated = await getBattle(battle.id);
+        setBattle(updated);
       } else if (!result.is_attacker) {
         setRoundResult({ attacker_wins: result.attacker_wins });
         setTimeout(() => setRoundResult(null), 2000);
+        const updated = await getBattle(battle.id);
+        setBattle(updated);
+      } else {
+        const updated = await getBattle(battle.id);
+        setBattle(updated);
       }
-      const updated = await getBattle(battle.id);
-      setBattle(updated);
     } catch (error) {
       console.error('Error submitting move:', error);
       alert('Failed to submit move');

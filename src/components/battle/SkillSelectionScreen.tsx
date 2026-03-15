@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shield } from 'lucide-react';
+import { Shield, AlertCircle } from 'lucide-react';
 import { PlayerCard } from '../../lib/battleMode';
 
 interface SkillSelectionScreenProps {
@@ -45,6 +45,16 @@ export function SkillSelectionScreen({
 
   const availableCards = cards.filter((card) => !eliminatedCards.includes(card.id));
   const usedSkillSet = new Set(usedSkills);
+
+  if (isAttacker && usedSkillSet.size >= SKILLS.length) {
+    return (
+      <div className="glass-container p-6 flex flex-col items-center gap-3 text-center">
+        <AlertCircle className="w-8 h-8 text-red-400 shrink-0 animate-pulse" />
+        <p className="text-white font-bold text-base">No Skills Remaining</p>
+        <p className="text-[#B0B8C8] text-sm animate-pulse">Waiting for battle to resolve automatically...</p>
+      </div>
+    );
+  }
 
   const challengedSkill = attackerSkill
     ? SKILLS.find((s) => s.code === attackerSkill)
