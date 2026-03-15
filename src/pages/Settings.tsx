@@ -16,6 +16,7 @@ export default function Settings() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [versionTap, setVersionTap] = useState(0);
   const [isVerified, setIsVerified] = useState(false);
   const [hasSocialBadge, setHasSocialBadge] = useState(false);
   const [friendCount, setFriendCount] = useState(0);
@@ -267,7 +268,16 @@ export default function Settings() {
             <p className="text-gray-400 text-sm">
               RatingSkill® - Create your personalised RatingSkill® card and get rated by friends.
             </p>
-            <p className="text-gray-500 text-xs mt-4">Version 1.0.0</p>
+            <p
+              className={`text-xs mt-4 cursor-pointer select-none ${versionTap === 0 ? 'text-gray-500' : versionTap === 1 ? 'text-red-500' : versionTap === 2 ? 'text-yellow-400' : 'text-blue-400'}`}
+              onClick={() => setVersionTap(v => v + 1)}
+            >Version 1.0.0</p>
+            {versionTap >= 3 && (
+              <button
+                onClick={() => navigate('/secret-games')}
+                className="w-full mt-2 py-2 rounded-lg font-bold text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 transition-all animate-pulse"
+              >ENTER!</button>
+            )}
           </div>
         </div>
       </main>
