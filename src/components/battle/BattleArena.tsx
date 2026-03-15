@@ -113,7 +113,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
 
     const interval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - new Date(battle.turn_started_at!).getTime()) / 1000);
-      const remaining = Math.max(0, 60 - elapsed);
+      const remaining = Math.max(0, 75 - elapsed);
       setTimeRemaining(remaining);
       if (remaining === 0 && isMyTurn) {
         handleAutoForfeit();
@@ -458,7 +458,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
           </div>
           <div className="flex items-center gap-3">
             {battle.status === 'active' && (
-              <div className={`flex items-center gap-1 ${timeRemaining <= 10 ? 'text-red-400' : 'text-yellow-400'}`}>
+              <div className={`flex items-center gap-1 ${timeRemaining <= 15 ? 'text-red-400' : 'text-yellow-400'}`}>
                 <Clock className="w-3.5 h-3.5" />
                 <span className="text-sm font-bold tabular-nums">{timeRemaining}s</span>
               </div>
@@ -634,8 +634,8 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
 
                   {/* Centre: countdown + status */}
                   <div className="flex flex-col items-center justify-center gap-1 shrink-0">
-                    <div className={`w-12 h-12 rounded-full border-2 flex flex-col items-center justify-center ${timeRemaining <= 10 ? 'border-red-500/60 bg-red-500/10' : 'border-white/20 bg-black/30'}`}>
-                      <span className={`text-2xl font-bold tabular-nums leading-none ${timeRemaining <= 10 ? 'text-red-400' : 'text-yellow-400'}`}>{timeRemaining}</span>
+                    <div className={`w-12 h-12 rounded-full border-2 flex flex-col items-center justify-center ${timeRemaining <= 15 ? 'border-red-500/60 bg-red-500/10' : 'border-white/20 bg-black/30'}`}>
+                      <span className={`text-2xl font-bold tabular-nums leading-none ${timeRemaining <= 15 ? 'text-red-400' : 'text-yellow-400'}`}>{timeRemaining}</span>
                     </div>
                     <span className={`text-[8px] font-bold uppercase tracking-wide ${isMyTurn ? 'text-[#00FF85]' : 'text-white/30'}`}>
                       {isMyTurn ? 'Your turn' : 'Opponent'}
