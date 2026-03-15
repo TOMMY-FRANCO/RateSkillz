@@ -314,6 +314,27 @@ export default function Dashboard() {
           </button>
 
           <button
+            onClick={() => navigate('/friends')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
+          >
+            <NotificationBadge
+              count={badgeCounts.pendingFriendRequests}
+              userId={profile?.id}
+              notificationType="coin_request"
+              capAt9
+            />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <Users className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Friends</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Manage connections</p>
+              </div>
+            </div>
+          </button>
+
+          <button
             onClick={() => navigate('/search-friends')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
           >
@@ -324,26 +345,6 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-white font-bold text-sm sm:text-base">Search Friends</h3>
                 <p className="text-[#B0B8C8] text-xs sm:text-sm">Find & connect</p>
-              </div>
-            </div>
-          </button>
-
-          <button
-            onClick={() => navigate('/trading')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={getCount(['swap_offer', 'purchase_offer', 'card_sold', 'purchase_request'])}
-              userId={profile?.id}
-              notificationType="card_sold"
-            />
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
-                <ShoppingBag className="w-5 h-5 text-black" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">Card Trading</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Buy & sell cards</p>
               </div>
             </div>
           </button>
@@ -378,22 +379,21 @@ export default function Dashboard() {
           </button>
 
           <button
-            onClick={() => navigate('/news')}
+            onClick={() => navigate('/trading')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge
-              count={badgeCounts.news}
+              count={getCount(['swap_offer', 'purchase_offer', 'card_sold', 'purchase_request'])}
               userId={profile?.id}
-              notificationType="news"
-              capAt9
+              notificationType="card_sold"
             />
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#C44569] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
-                <Newspaper className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
+                <ShoppingBag className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">News</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Football updates</p>
+                <h3 className="text-white font-bold text-sm sm:text-base">Card Trading</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Buy & sell cards</p>
               </div>
             </div>
           </button>
@@ -420,21 +420,6 @@ export default function Dashboard() {
           </button>
 
           <button
-            onClick={() => navigate('/shop')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FFD700]/30">
-                <ShoppingBag className="w-5 h-5 text-black" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">Coin Shop</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Buy coins</p>
-              </div>
-            </div>
-          </button>
-
-          <button
             onClick={() => navigate('/watch-ad')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
@@ -450,125 +435,6 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-white font-bold text-sm sm:text-base">Watch & Earn</h3>
                 <p className="text-[#B0B8C8] text-xs sm:text-sm">Get 5 coins/day</p>
-              </div>
-            </div>
-          </button>
-
-          <button
-            onClick={() => navigate('/transactions')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.transactions}
-              userId={profile?.id}
-              notificationType="transaction"
-              capAt9
-            />
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#38BDF8] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
-                <TrendingUp className="w-5 h-5 text-black" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">Transactions</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">View history</p>
-              </div>
-            </div>
-          </button>
-
-          <button
-            onClick={() => navigate('/activity-feed')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.activityFeed}
-              userId={profile?.id}
-              notificationType="activity_feed"
-              capAt9
-            />
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
-                <Activity className="w-5 h-5 text-black" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">Activity Feed</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Recent activity</p>
-              </div>
-            </div>
-          </button>
-
-          <button
-            onClick={() => navigate('/the-wall')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#FF8C42] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
-                <MessageSquare className="w-5 h-5 text-black" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">The Wall</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Community board</p>
-              </div>
-            </div>
-          </button>
-
-          <button
-            onClick={() => navigate('/football-match')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.footballMatch}
-              userId={profile?.id}
-              notificationType="football_match"
-              capAt9
-            />
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#38BDF8] rounded-xl flex items-center justify-center shadow-lg shadow-[#00FF85]/30">
-                <Users className="w-5 h-5 text-black" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">Football Match</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Organise and wager</p>
-              </div>
-            </div>
-          </button>
-
-          <button
-            onClick={() => navigate('/scouter')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.scouter}
-              userId={profile?.id}
-              notificationType="scout_interest"
-              capAt9
-            />
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FF6B9D] rounded-xl flex items-center justify-center shadow-lg shadow-[#FFD700]/30">
-                <Search className="w-5 h-5 text-black" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">Scouter</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Find local teams</p>
-              </div>
-            </div>
-          </button>
-
-          <button
-            onClick={() => navigate('/leaderboard')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={getCount(['rank_update'])}
-              userId={profile?.id}
-              notificationType="rank_update"
-            />
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FFD700]/30">
-                <Trophy className="w-5 h-5 text-black" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">Leaderboard</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Top 100 rankings</p>
               </div>
             </div>
           </button>
@@ -604,22 +470,136 @@ export default function Dashboard() {
           </button>
 
           <button
-            onClick={() => navigate('/friends')}
+            onClick={() => navigate('/football-match')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
             <NotificationBadge
-              count={badgeCounts.pendingFriendRequests}
+              count={badgeCounts.footballMatch}
               userId={profile?.id}
-              notificationType="coin_request"
+              notificationType="football_match"
               capAt9
             />
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#38BDF8] rounded-xl flex items-center justify-center shadow-lg shadow-[#00FF85]/30">
                 <Users className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">Friends</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Manage connections</p>
+                <h3 className="text-white font-bold text-sm sm:text-base">Football Match</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Organise and wager</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/the-wall')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#FF8C42] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
+                <MessageSquare className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">The Wall</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Community board</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/news')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
+          >
+            <NotificationBadge
+              count={badgeCounts.news}
+              userId={profile?.id}
+              notificationType="news"
+              capAt9
+            />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#C44569] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
+                <Newspaper className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">News</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Football updates</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/activity-feed')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
+          >
+            <NotificationBadge
+              count={badgeCounts.activityFeed}
+              userId={profile?.id}
+              notificationType="activity_feed"
+              capAt9
+            />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
+                <Activity className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Activity Feed</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Recent activity</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/scouter')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
+          >
+            <NotificationBadge
+              count={badgeCounts.scouter}
+              userId={profile?.id}
+              notificationType="scout_interest"
+              capAt9
+            />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FF6B9D] rounded-xl flex items-center justify-center shadow-lg shadow-[#FFD700]/30">
+                <Search className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Scouter</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Find local teams</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/transactions')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
+          >
+            <NotificationBadge
+              count={badgeCounts.transactions}
+              userId={profile?.id}
+              notificationType="transaction"
+              capAt9
+            />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#38BDF8] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
+                <TrendingUp className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Transactions</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">View history</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/shop')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FFD700]/30">
+                <ShoppingBag className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Coin Shop</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Buy coins</p>
               </div>
             </div>
           </button>
@@ -688,21 +668,6 @@ export default function Dashboard() {
           </button>
 
           <button
-            onClick={() => setShowInviteQR(true)}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
-                <QrCode className="w-5 h-5 text-black" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">Show QR Code</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Invite new users</p>
-              </div>
-            </div>
-          </button>
-
-          <button
             onClick={() => setShowFriendQR(true)}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
           >
@@ -713,6 +678,21 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-white font-bold text-sm sm:text-base">Add Friend QR Code</h3>
                 <p className="text-[#B0B8C8] text-xs sm:text-sm">Share friend code</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setShowInviteQR(true)}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <QrCode className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Show QR Code</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Invite new users</p>
               </div>
             </div>
           </button>
