@@ -59,6 +59,7 @@ const TheWall = lazy(() => import('./pages/TheWall'));
 const FootballMatch = lazy(() => import('./pages/FootballMatch'));
 const News = lazy(() => import('./pages/News'));
 const SecretGames = lazy(() => import('./pages/SecretGames'));
+const Scouter = lazy(() => import('./pages/Scouter'));
 
 function LoadingScreen() {
   return (
@@ -373,6 +374,16 @@ function App() {
               <ProtectedRoute>
                 <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
                   <News />
+                </LazyPageWrapper>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/scouter"
+            element={
+              <ProtectedRoute>
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <Scouter />
                 </LazyPageWrapper>
               </ProtectedRoute>
             }
