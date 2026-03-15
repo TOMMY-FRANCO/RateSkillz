@@ -639,7 +639,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                           </span>
                         )}
                         <span className="text-white font-black text-base leading-none mt-0.5">{pendingAttack.value}</span>
-                        <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">ATK</span>
+                        <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">Attacking</span>
                       </>
                     ) : (
                       <span className="text-white/20 text-[9px] font-semibold">Waiting…</span>
@@ -667,6 +667,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                         </div>
                         <p className="text-white text-[9px] font-bold truncate w-full text-center">{lastRoundSummary.defenderCardName}</p>
                         <span className="text-white font-black text-base leading-none mt-0.5">{lastRoundSummary.defenderValue}</span>
+                        <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">On Pitch</span>
                         <span className={`text-[9px] font-black mt-0.5 ${lastRoundSummary.attackerWins ? 'text-red-400' : 'text-[#00FF85]'}`}>
                           {lastRoundSummary.attackerWins ? 'Eliminated' : 'Held'}
                         </span>
@@ -677,7 +678,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                         <div className="w-5 h-5 rounded-full border border-white/20 flex items-center justify-center mb-1 animate-pulse">
                           <Shield className="w-3 h-3 text-white/30" />
                         </div>
-                        <span className="text-white/30 text-[9px] font-semibold">Defending…</span>
+                        <span className="text-white/30 text-[9px] font-semibold">On Pitch…</span>
                       </>
                     ) : (
                       <span className="text-white/20 text-[9px] font-semibold">–</span>

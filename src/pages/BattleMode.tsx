@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Swords, Trophy, Coins, Clock, ArrowLeft, ChevronDown, ChevronUp, Shield, Zap } from 'lucide-react';
+import { Swords, Trophy, Coins, Clock, ArrowLeft, ChevronDown, ChevronUp, Shield, Zap, X } from 'lucide-react';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
 import { BattleArena } from '../components/battle/BattleArena';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,6 +14,8 @@ import {
   acceptBattleChallenge,
   getBattle,
   getBattleRoyalties,
+  chooseFirstPlayer,
+  cancelBattle,
 } from '../lib/battleMode';
 import { supabase } from '../lib/supabase';
 import { markNotificationsRead } from '../lib/notifications';
@@ -24,6 +26,165 @@ const selectClass = `w-full px-3 py-2.5 rounded-lg text-sm font-semibold
   appearance-none cursor-pointer transition-colors
   hover:border-[rgba(0,224,255,0.5)]`;
 
+const CHALLENGE_TIMEOUT_SECONDS = 60;
+const CHOOSE_TIMEOUT_SECONDS = 60;
+
+function useChallengeCountdown(createdAt: string) {
+  const [secondsLeft, setSecondsLeft] = useState(() => {
+    const elapsed = Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000);
+    return Math.max(0, CHALLENGE_TIMEOUT_SECONDS - elapsed);
+  });
+
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const id = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000);
+      setSecondsLeft(Math.max(0, CHALLENGE_TIMEOUT_SECONDS - elapsed));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [createdAt]);
+
+  return secondsLeft;
+}
+
+function ChallengeCountdown({ createdAt }: { createdAt: string }) {
+  const secondsLeft = useChallengeCountdown(createdAt);
+  const isUrgent = secondsLeft <= 15;
+  return (
+    <div className={`flex items-center gap-1 ${isUrgent ? 'text-red-400' : 'text-yellow-400'}`}>
+      <Clock className="w-3 h-3" />
+      <span className={`text-[10px] font-bold tabular-nums ${isUrgent ? 'animate-pulse' : ''}`}>
+        {secondsLeft}s
+      </span>
+    </div>
+  );
+}
+
+interface ChoosingScreenProps {
+  battle: Battle;
+  userId: string;
+  onChosen: (updatedBattle: Battle) => void;
+  onTimeout: () => void;
+}
+
+function ChoosingScreen({ battle, userId, onChosen, onTimeout }: ChoosingScreenProps) {
+  const [secondsLeft, setSecondsLeft] = useState(CHOOSE_TIMEOUT_SECONDS);
+  const [choosing, setChoosing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timedOutRef = useRef(false);
+
+  useEffect(() => {
+    const tick = setInterval(() => {
+      setSecondsLeft(s => {
+        const next = s - 1;
+        if (next <= 0 && !timedOutRef.current) {
+          timedOutRef.current = true;
+          clearInterval(tick);
+          onTimeout();
+        }
+        return Math.max(0, next);
+      });
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [onTimeout]);
+
+  useEffect(() => {
+    pollRef.current = setInterval(async () => {
+      try {
+        const updated = await getBattle(battle.id);
+        if (updated.status === 'active') {
+          if (pollRef.current) clearInterval(pollRef.current);
+          onChosen(updated);
+        } else if (updated.status === 'forfeited' || updated.status === 'completed') {
+          if (pollRef.current) clearInterval(pollRef.current);
+          onTimeout();
+        }
+      } catch {
+      }
+    }, 2000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [battle.id, onChosen, onTimeout]);
+
+  const handleChoose = async (goFirst: boolean) => {
+    if (choosing) return;
+    setChoosing(true);
+    setError(null);
+    try {
+      await chooseFirstPlayer(battle.id, userId, goFirst);
+      const updated = await getBattle(battle.id);
+      if (updated.status === 'active') {
+        if (pollRef.current) clearInterval(pollRef.current);
+        onChosen(updated);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to choose. Try again.');
+      setChoosing(false);
+    }
+  };
+
+  const isUrgent = secondsLeft <= 15;
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="max-w-sm w-full glass-container p-6 space-y-6 text-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border border-yellow-500/30">
+            <Swords className="w-7 h-7 text-yellow-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Choose Your Position</h2>
+          <p className="text-[#B0B8C8] text-sm">
+            The first player to press <span className="text-[#00FF85] font-bold">Go First</span> will attack first.<br />
+            <span className="text-[#B0B8C8]/60 text-xs">Both players must choose before the battle begins.</span>
+          </p>
+        </div>
+
+        <div className={`flex items-center justify-center gap-2 ${isUrgent ? 'text-red-400' : 'text-yellow-400'}`}>
+          <Clock className={`w-4 h-4 ${isUrgent ? 'animate-pulse' : ''}`} />
+          <span className={`text-lg font-black tabular-nums ${isUrgent ? 'animate-pulse' : ''}`}>{secondsLeft}s</span>
+          <span className="text-[#B0B8C8] text-xs">remaining</span>
+        </div>
+
+        {error && (
+          <p className="text-red-400 text-xs font-semibold bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+            {error}
+          </p>
+        )}
+
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => handleChoose(true)}
+            disabled={choosing || secondsLeft <= 0}
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-[#00FF85]/10 to-[#00E0FF]/10 border border-[#00FF85]/30 hover:border-[#00FF85]/60 hover:bg-[#00FF85]/15 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Zap className="w-6 h-6 text-[#00FF85]" />
+            <span className="text-[#00FF85] font-bold text-sm">Go First</span>
+            <span className="text-[#B0B8C8] text-[10px]">Attack first</span>
+          </button>
+          <button
+            onClick={() => handleChoose(false)}
+            disabled={choosing || secondsLeft <= 0}
+            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-400/10 border border-blue-500/30 hover:border-blue-400/60 hover:bg-blue-500/15 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Shield className="w-6 h-6 text-blue-400" />
+            <span className="text-blue-400 font-bold text-sm">Go Second</span>
+            <span className="text-[#B0B8C8] text-[10px]">Defend first</span>
+          </button>
+        </div>
+
+        {choosing && (
+          <div className="flex items-center justify-center gap-2 text-[#B0B8C8] text-sm">
+            <div className="w-4 h-4 border-2 border-[#00E0FF]/40 border-t-[#00E0FF] rounded-full animate-spin" />
+            <span>Waiting for opponent...</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function BattleMode() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -31,6 +192,7 @@ export default function BattleMode() {
   const [isManager, setIsManager] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeBattle, setActiveBattle] = useState<Battle | null>(null);
+  const [choosingBattle, setChoosingBattle] = useState<Battle | null>(null);
   const [showCreateChallenge, setShowCreateChallenge] = useState(false);
   const [opponentId, setOpponentId] = useState('');
   const [wagerAmount, setWagerAmount] = useState(50);
@@ -40,6 +202,7 @@ export default function BattleMode() {
   const [breakdownData, setBreakdownData] = useState<Record<string, Battle>>({});
   const [breakdownLoading, setBreakdownLoading] = useState<Record<string, boolean>>({});
   const [breakdownRoyalties, setBreakdownRoyalties] = useState<Record<string, BattleRoyalty[]>>({});
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const battlePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleToggleBreakdown = async (battleId: string) => {
@@ -55,7 +218,6 @@ export default function BattleMode() {
         setBreakdownData(prev => ({ ...prev, [battleId]: full }));
         setBreakdownRoyalties(prev => ({ ...prev, [battleId]: royals }));
       } catch {
-        // silently fail
       } finally {
         setBreakdownLoading(prev => ({ ...prev, [battleId]: false }));
       }
@@ -85,6 +247,13 @@ export default function BattleMode() {
       return;
     }
 
+    const existingChoosing = battles.find(
+      (b) => b.status === 'choosing' && (b.manager1_id === user.id || b.manager2_id === user.id)
+    );
+    if (existingChoosing) {
+      setChoosingBattle(existingChoosing);
+    }
+
     const hasPendingAsChallenger = battles.some(
       (b) => b.status === 'waiting' && b.manager1_id === user.id
     );
@@ -93,6 +262,17 @@ export default function BattleMode() {
       battlePollRef.current = setInterval(async () => {
         const updated = await getUserBattles(user.id);
         setBattles(updated);
+        const nowChoosing = updated.find(
+          (b) => b.status === 'choosing' && (b.manager1_id === user.id || b.manager2_id === user.id)
+        );
+        if (nowChoosing) {
+          setChoosingBattle(nowChoosing);
+          if (battlePollRef.current) {
+            clearInterval(battlePollRef.current);
+            battlePollRef.current = null;
+          }
+          return;
+        }
         const nowActive = updated.find(
           (b) => b.status === 'active' && (b.manager1_id === user.id || b.manager2_id === user.id)
         );
@@ -130,6 +310,14 @@ export default function BattleMode() {
       );
       if (activeBattleData) {
         setActiveBattle(activeBattleData);
+        return;
+      }
+
+      const choosingBattleData = userBattles.find(
+        (b) => b.status === 'choosing' && (b.manager1_id === user.id || b.manager2_id === user.id)
+      );
+      if (choosingBattleData) {
+        setChoosingBattle(choosingBattleData);
       }
 
       const { data: managersData } = await supabase
@@ -185,8 +373,14 @@ export default function BattleMode() {
     }
   };
 
-  const handleAcceptChallenge = async (battleId: string) => {
+  const handleAcceptChallenge = async (battleId: string, createdAt: string) => {
     if (!user) return;
+    const elapsed = Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000);
+    if (elapsed >= CHALLENGE_TIMEOUT_SECONDS) {
+      alert('This challenge has expired.');
+      loadData();
+      return;
+    }
 
     try {
       const result = await acceptBattleChallenge(battleId, user.id);
@@ -200,6 +394,30 @@ export default function BattleMode() {
       alert('Failed to accept challenge');
     }
   };
+
+  const handleCancelChallenge = async (battleId: string) => {
+    if (!user || cancellingId) return;
+    setCancellingId(battleId);
+    try {
+      await cancelBattle(battleId, user.id);
+      loadData();
+    } catch (error) {
+      console.error('Error cancelling challenge:', error);
+      alert('Failed to cancel challenge');
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const handleChooseComplete = useCallback((updatedBattle: Battle) => {
+    setChoosingBattle(null);
+    setActiveBattle(updatedBattle);
+  }, []);
+
+  const handleChooseTimeout = useCallback(() => {
+    setChoosingBattle(null);
+    loadData();
+  }, []);
 
   if (loading) {
     return (
@@ -231,6 +449,17 @@ export default function BattleMode() {
       setActiveBattle(null);
       loadData();
     }} />;
+  }
+
+  if (choosingBattle && user) {
+    return (
+      <ChoosingScreen
+        battle={choosingBattle}
+        userId={user.id}
+        onChosen={handleChooseComplete}
+        onTimeout={handleChooseTimeout}
+      />
+    );
   }
 
   if (!isManager) {
@@ -382,35 +611,61 @@ export default function BattleMode() {
               ) : (
                 battles
                   .filter((b) => b.status === 'waiting')
-                  .map((battle) => (
-                    <div
-                      key={battle.id}
-                      className="bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.12)] rounded-lg p-3"
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <Coins className="w-4 h-4 text-yellow-400" />
-                          <span className="text-white font-bold text-sm">{battle.wager_amount} coins</span>
+                  .map((battle) => {
+                    const elapsed = Math.floor((Date.now() - new Date(battle.created_at).getTime()) / 1000);
+                    const isExpired = elapsed >= CHALLENGE_TIMEOUT_SECONDS;
+                    const isOpponent = battle.manager2_id === user?.id;
+                    const isChallenger = battle.manager1_id === user?.id;
+
+                    return (
+                      <div
+                        key={battle.id}
+                        className="bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.12)] rounded-lg p-3"
+                      >
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-2">
+                            <Coins className="w-4 h-4 text-yellow-400" />
+                            <span className="text-white font-bold text-sm">{battle.wager_amount} coins</span>
+                            <ChallengeCountdown createdAt={battle.created_at} />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isOpponent && (
+                              isExpired ? (
+                                <span className="text-[#B0B8C8] text-xs font-bold px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+                                  Expired
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => handleAcceptChallenge(battle.id, battle.created_at)}
+                                  className="bg-gradient-to-r from-[#00FF85] to-[#00E0FF] text-black font-bold px-3 py-1.5 rounded-lg text-xs hover:opacity-90 transition-all"
+                                >
+                                  Accept
+                                </button>
+                              )
+                            )}
+                            {isChallenger && (
+                              <button
+                                onClick={() => handleCancelChallenge(battle.id)}
+                                disabled={cancellingId === battle.id}
+                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-500/10 border border-red-500/25 text-red-400 text-xs font-bold hover:bg-red-500/20 transition-all disabled:opacity-50"
+                              >
+                                <X className="w-3 h-3" />
+                                {cancellingId === battle.id ? '...' : 'Cancel'}
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        {battle.manager2_id === user?.id && (
-                          <button
-                            onClick={() => handleAcceptChallenge(battle.id)}
-                            className="bg-gradient-to-r from-[#00FF85] to-[#00E0FF] text-black font-bold px-3 py-1.5 rounded-lg text-xs hover:opacity-90 transition-all"
-                          >
-                            Accept
-                          </button>
+                        {isChallenger ? (
+                          <div className="flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                            <span className="text-yellow-400 text-[10px] font-semibold text-xs">Waiting for opponent to accept...</span>
+                          </div>
+                        ) : (
+                          <p className="text-[#B0B8C8] text-xs">Challenge received</p>
                         )}
                       </div>
-                      {battle.manager1_id === user?.id ? (
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
-                          <span className="text-yellow-400 text-[10px] font-semibold text-xs">Waiting for opponent to accept...</span>
-                        </div>
-                      ) : (
-                        <p className="text-[#B0B8C8] text-xs">Challenge received</p>
-                      )}
-                    </div>
-                  ))
+                    );
+                  })
               )}
             </div>
           </div>
@@ -483,7 +738,6 @@ export default function BattleMode() {
                               </div>
                             ) : (
                               <>
-                                {/* Final Score */}
                                 <div>
                                   <p className="text-[10px] font-bold text-[#B0B8C8] uppercase tracking-widest mb-2">Final Score</p>
                                   <div className="grid grid-cols-2 gap-2">
@@ -500,7 +754,6 @@ export default function BattleMode() {
                                   </div>
                                 </div>
 
-                                {/* Payout */}
                                 <div>
                                   <p className="text-[10px] font-bold text-[#B0B8C8] uppercase tracking-widest mb-2">Payout</p>
                                   <div className="rounded-lg bg-white/[0.03] border border-white/[0.06] p-3 space-y-1.5">
@@ -535,7 +788,6 @@ export default function BattleMode() {
                                   </div>
                                 </div>
 
-                                {/* Round by Round */}
                                 {rounds.length > 0 && (
                                   <div>
                                     <p className="text-[10px] font-bold text-[#B0B8C8] uppercase tracking-widest mb-2">Round by Round</p>
@@ -581,7 +833,6 @@ export default function BattleMode() {
                                   </div>
                                 )}
 
-                                {/* Skills Used */}
                                 {(detail.used_skills || []).length > 0 && (
                                   <div>
                                     <p className="text-[10px] font-bold text-[#B0B8C8] uppercase tracking-widest mb-2">Skills Used</p>

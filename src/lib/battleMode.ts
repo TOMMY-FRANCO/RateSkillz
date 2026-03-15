@@ -5,7 +5,7 @@ export interface Battle {
   manager1_id: string;
   manager2_id: string;
   wager_amount: number;
-  status: 'waiting' | 'active' | 'completed' | 'forfeited';
+  status: 'waiting' | 'choosing' | 'active' | 'completed' | 'forfeited';
   created_at: string;
   completed_at: string | null;
   winner_id: string | null;
@@ -115,6 +115,16 @@ export async function forfeitBattle(battleId: string, userId: string) {
   const { data, error } = await supabase.rpc('forfeit_battle', {
     p_battle_id: battleId,
     p_user_id: userId,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function chooseFirstPlayer(battleId: string, userId: string, goFirst: boolean) {
+  const { data, error } = await supabase.rpc('choose_first_player', {
+    p_battle_id: battleId,
+    p_user_id: userId,
+    p_go_first: goFirst,
   });
   if (error) throw error;
   return data;
