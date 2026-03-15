@@ -509,6 +509,21 @@ export default function Dashboard() {
           </button>
 
           <button
+            onClick={() => navigate('/scouter')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FF6B9D] rounded-xl flex items-center justify-center shadow-lg shadow-[#FFD700]/30">
+                <Search className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Scouter</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Find local teams</p>
+              </div>
+            </div>
+          </button>
+
+          <button
             onClick={() => navigate('/leaderboard')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
