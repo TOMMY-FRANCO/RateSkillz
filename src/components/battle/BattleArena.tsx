@@ -445,54 +445,124 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
           </div>
 
           {/* ── ROW 2: Centre action zone ── */}
-          <div className="relative z-10 flex flex-col items-center justify-center py-3 px-4">
-            {lastRoundSummary ? (
-              /* Last round result */
-              <div
-                className={`w-full max-w-xs rounded-xl p-3 border text-center ${
-                  lastRoundSummary.attackerWins
-                    ? 'bg-red-900/40 border-red-500/40'
-                    : 'bg-green-900/40 border-[rgba(0,255,133,0.35)]'
-                }`}
-              >
-                <div className="flex items-center justify-center gap-1.5 mb-2">
-                  {lastRoundSummary.attackerWins
-                    ? <Zap className="w-3.5 h-3.5 text-red-400" />
-                    : <Shield className="w-3.5 h-3.5 text-[#00FF85]" />}
-                  <span className={`text-xs font-bold uppercase tracking-wide ${lastRoundSummary.attackerWins ? 'text-red-400' : 'text-[#00FF85]'}`}>
-                    {lastRoundSummary.attackerWins ? 'Card Eliminated!' : 'Defense Held!'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 text-center">
-                    <p className="text-white text-xs font-semibold truncate">{lastRoundSummary.attackerCardName}</p>
-                    <p className="text-yellow-400 text-[10px] capitalize">{lastRoundSummary.attackerSkill}</p>
-                    <p className="text-white font-black text-lg">{lastRoundSummary.attackerValue}</p>
+          <div className="relative z-20 flex flex-col items-stretch px-3 py-1 gap-1.5">
+
+            {/* Active round info: attacker card | timer | defender pick */}
+            {(() => {
+              const selections: BattleSelection[] = battle.card_selections || [];
+              const len = selections.length;
+              const pendingAttack = len % 2 === 1 ? selections[len - 1] : null;
+              const attackerCardId = pendingAttack?.card_id;
+              const allCards = [...myCards, ...opponentCards];
+              const attackingCard = attackerCardId ? allCards.find(c => c.id === attackerCardId) : null;
+
+              return (
+                <div className="flex items-stretch gap-2">
+
+                  {/* Left: attacker card info */}
+                  <div className="flex-1 rounded-xl bg-black/30 border border-white/10 p-2 flex flex-col items-center justify-center min-w-0">
+                    {pendingAttack && attackingCard ? (
+                      <>
+                        {attackingCard.avatar_url ? (
+                          <img src={attackingCard.avatar_url} alt={attackingCard.player_name} className="w-8 h-8 rounded-full object-cover border border-red-400/40 mb-1" loading="lazy" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-orange-400 flex items-center justify-center border border-red-400/40 mb-1">
+                            <span className="text-white text-xs font-black">{attackingCard.player_name.charAt(0)}</span>
+                          </div>
+                        )}
+                        <p className="text-white text-[9px] font-bold truncate w-full text-center">{attackingCard.username || attackingCard.player_name}</p>
+                        {pendingAttack.skill && (
+                          <span className="mt-1 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[9px] font-black uppercase tracking-wide">
+                            {pendingAttack.skill}
+                          </span>
+                        )}
+                        <span className="text-white font-black text-base leading-none mt-0.5">{pendingAttack.value}</span>
+                        <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">ATK</span>
+                      </>
+                    ) : (
+                      <span className="text-white/20 text-[9px] font-semibold">Waiting…</span>
+                    )}
                   </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-white/30 shrink-0" />
-                  <div className="flex-1 text-center">
-                    <p className="text-white text-xs font-semibold truncate">{lastRoundSummary.defenderCardName}</p>
-                    <p className="text-yellow-400 text-[10px] capitalize">{lastRoundSummary.attackerSkill}</p>
-                    <p className="text-white font-black text-lg">{lastRoundSummary.defenderValue}</p>
+
+                  {/* Centre: countdown + status */}
+                  <div className="flex flex-col items-center justify-center gap-1 shrink-0">
+                    <div className={`w-12 h-12 rounded-full border-2 flex flex-col items-center justify-center ${timeRemaining <= 10 ? 'border-red-500/60 bg-red-500/10' : 'border-white/20 bg-black/30'}`}>
+                      <span className={`text-sm font-black tabular-nums leading-none ${timeRemaining <= 10 ? 'text-red-400' : 'text-white'}`}>{timeRemaining}</span>
+                      <span className="text-[7px] text-white/30 font-bold leading-none">SEC</span>
+                    </div>
+                    <span className={`text-[8px] font-bold uppercase tracking-wide ${isMyTurn ? 'text-[#00FF85]' : 'text-white/30'}`}>
+                      {isMyTurn ? 'Your turn' : 'Opponent'}
+                    </span>
                   </div>
+
+                  {/* Right: defender response or waiting indicator */}
+                  <div className="flex-1 rounded-xl bg-black/30 border border-white/10 p-2 flex flex-col items-center justify-center min-w-0">
+                    {lastRoundSummary ? (
+                      <>
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center mb-1 ${lastRoundSummary.attackerWins ? 'bg-red-500/20' : 'bg-[rgba(0,255,133,0.15)]'}`}>
+                          {lastRoundSummary.attackerWins
+                            ? <Zap className="w-3 h-3 text-red-400" />
+                            : <Shield className="w-3 h-3 text-[#00FF85]" />}
+                        </div>
+                        <p className="text-white text-[9px] font-bold truncate w-full text-center">{lastRoundSummary.defenderCardName}</p>
+                        <span className="text-white font-black text-base leading-none mt-0.5">{lastRoundSummary.defenderValue}</span>
+                        <span className={`text-[9px] font-black mt-0.5 ${lastRoundSummary.attackerWins ? 'text-red-400' : 'text-[#00FF85]'}`}>
+                          {lastRoundSummary.attackerWins ? 'Eliminated' : 'Held'}
+                        </span>
+                      </>
+                    ) : pendingAttack ? (
+                      <>
+                        <div className="w-5 h-5 rounded-full border border-white/20 flex items-center justify-center mb-1 animate-pulse">
+                          <Shield className="w-3 h-3 text-white/30" />
+                        </div>
+                        <span className="text-white/30 text-[9px] font-semibold">Defending…</span>
+                      </>
+                    ) : (
+                      <span className="text-white/20 text-[9px] font-semibold">–</span>
+                    )}
+                  </div>
+
                 </div>
-              </div>
-            ) : (
-              /* Turn status pill */
-              <div
-                className={`px-4 py-2 rounded-full border text-xs font-bold flex items-center gap-2 ${
-                  isMyTurn
-                    ? 'bg-[rgba(0,255,133,0.12)] border-[rgba(0,255,133,0.35)] text-[#00FF85]'
-                    : 'bg-[rgba(255,255,255,0.06)] border-[rgba(255,255,255,0.12)] text-[rgba(255,255,255,0.5)]'
-                }`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${isMyTurn ? 'bg-[#00FF85] animate-pulse' : 'bg-white/30'}`}
-                />
-                {isMyTurn ? 'Your turn — make a move' : `Opponent's turn · ${timeRemaining}s`}
+              );
+            })()}
+
+            {/* Round result banner */}
+            {lastRoundSummary && (
+              <div className={`rounded-lg px-3 py-1.5 border flex items-center justify-center gap-2 ${lastRoundSummary.attackerWins ? 'bg-red-900/40 border-red-500/30' : 'bg-green-900/30 border-[rgba(0,255,133,0.25)]'}`}>
+                <span className={`text-[10px] font-bold uppercase tracking-wide ${lastRoundSummary.attackerWins ? 'text-red-400' : 'text-[#00FF85]'}`}>
+                  {lastRoundSummary.attackerWins ? 'Card eliminated!' : 'Defense held!'}
+                </span>
+                <span className="text-white/30 text-[9px]">·</span>
+                <span className="text-yellow-400 text-[9px] font-semibold capitalize">{lastRoundSummary.attackerSkill}</span>
+                <span className="text-white/30 text-[9px]">{lastRoundSummary.attackerValue} vs {lastRoundSummary.defenderValue}</span>
               </div>
             )}
+
           </div>
+
+          {/* ── INLINE SKILL SELECTION PANEL (my turn only) ── */}
+          {isMyTurn && !submitting && (
+            <div className="relative z-30 mx-3 mb-2 rounded-2xl overflow-hidden bg-[rgba(10,18,35,0.92)] border border-[rgba(0,224,255,0.18)] shadow-[0_0_24px_rgba(0,224,255,0.08)]">
+              <SkillSelectionScreen
+                cards={myCards}
+                usedSkills={battle.used_skills || []}
+                isAttacker={isAttacker}
+                onSelect={handleSkillSelection}
+                eliminatedCards={eliminatedCardIds}
+                attackerSkill={attackerSkill}
+              />
+            </div>
+          )}
+
+          {/* Waiting indicator when not my turn and no inline panel */}
+          {!isMyTurn && !lastRoundSummary && (
+            <div className="relative z-10 flex justify-center pb-2">
+              <div className="px-4 py-1.5 rounded-full border border-white/10 bg-black/20 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-white/25 animate-pulse" />
+                <span className="text-white/40 text-[10px] font-semibold">Waiting for opponent…</span>
+              </div>
+            </div>
+          )}
 
           {/* ── ROW 3: My cards zone ── */}
           <div className="relative z-10 flex-1 flex flex-col items-center justify-end pb-3 px-3">
