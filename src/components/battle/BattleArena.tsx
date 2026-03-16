@@ -192,12 +192,12 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
           setBattle(updated);
           return;
         }
+        const updated = await getBattle(battle.id);
+        setBattle(updated);
         if (!result.is_attacker) {
           setRoundResult({ attacker_wins: result.attacker_wins });
           setTimeout(() => setRoundResult(null), 2000);
         }
-        const updated = await getBattle(battle.id);
-        setBattle(updated);
       }
     } catch (error) {
       console.error('Error submitting move:', error);
@@ -669,7 +669,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                         <span className="text-white font-black text-base leading-none mt-0.5">{lastRoundSummary.defenderValue}</span>
                         <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">On Pitch</span>
                         <span className={`text-[9px] font-black mt-0.5 ${lastRoundSummary.attackerWins ? 'text-red-400' : 'text-[#00FF85]'}`}>
-                          {lastRoundSummary.attackerWins ? 'Eliminated' : 'Held'}
+                          {lastRoundSummary.attackerWins ? 'Eliminated' : 'Eliminated'}
                         </span>
 
                       </>
@@ -693,7 +693,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
             {lastRoundSummary && (
               <div className={`rounded-lg px-3 py-1.5 border flex items-center justify-center gap-2 ${lastRoundSummary.attackerWins ? 'bg-red-900/40 border-red-500/30' : 'bg-green-900/30 border-[rgba(0,255,133,0.25)]'}`}>
                 <span className={`text-[10px] font-bold uppercase tracking-wide ${lastRoundSummary.attackerWins ? 'text-red-400' : 'text-[#00FF85]'}`}>
-                  {lastRoundSummary.attackerWins ? 'Card eliminated!' : 'Defense held!'}
+                  {lastRoundSummary.attackerWins ? 'Card eliminated!' : 'Card eliminated!'}
                 </span>
                 <span className="text-white/30 text-[9px]">·</span>
                 <span className="text-yellow-400 text-[9px] font-semibold capitalize">{lastRoundSummary.attackerSkill}</span>
