@@ -204,6 +204,7 @@ export default function BattleMode() {
   const [breakdownRoyalties, setBreakdownRoyalties] = useState<Record<string, BattleRoyalty[]>>({});
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const battlePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hasPendingChallengeRef = useRef(false);
 
   const handleToggleBreakdown = async (battleId: string) => {
     const nowOpen = !expandedBreakdowns[battleId];
@@ -232,6 +233,32 @@ export default function BattleMode() {
   }, [user]);
 
   useEffect(() => {
+    if (!user) return;
+    const hasPending = battles.some(
+      (b) => b.status === 'waiting' && b.manager1_id === user.id
+    );
+    const hasChoosing = battles.find(
+      (b) => b.status === 'choosing' &&
+      (b.manager1_id === user.id || b.manager2_id === user.id)
+    );
+    const hasActive = battles.find(
+      (b) => b.status === 'active' &&
+      (b.manager1_id === user.id || b.manager2_id === user.id)
+    );
+
+    if (hasChoosing) {
+      setChoosingBattle(hasChoosing);
+      return;
+    }
+    if (hasActive) {
+      setActiveBattle(hasActive);
+      return;
+    }
+
+    hasPendingChallengeRef.current = hasPending;
+  }, [battles, user]);
+
+  useEffect(() => {
     if (battlePollRef.current) {
       clearInterval(battlePollRef.current);
       battlePollRef.current = null;
@@ -239,31 +266,8 @@ export default function BattleMode() {
 
     if (!user || !isManager) return;
 
-    const hasPendingAsChallenger = battles.some(
-      (b) => b.status === 'waiting' && b.manager1_id === user.id
-    );
-
-    const existingChoosing = battles.find(
-      (b) => b.status === 'choosing' &&
-      (b.manager1_id === user.id || b.manager2_id === user.id)
-    );
-    if (existingChoosing) {
-      setChoosingBattle(existingChoosing);
-      return;
-    }
-
-    const existingActive = battles.find(
-      (b) => b.status === 'active' &&
-      (b.manager1_id === user.id || b.manager2_id === user.id)
-    );
-    if (existingActive) {
-      setActiveBattle(existingActive);
-      return;
-    }
-
-    if (!hasPendingAsChallenger) return;
-
     battlePollRef.current = setInterval(async () => {
+      if (!hasPendingChallengeRef.current) return;
       try {
         const updated = await getUserBattles(user.id);
         setBattles(updated);
@@ -274,8 +278,7 @@ export default function BattleMode() {
         );
         if (nowChoosing) {
           setChoosingBattle(nowChoosing);
-          clearInterval(battlePollRef.current!);
-          battlePollRef.current = null;
+          hasPendingChallengeRef.current = false;
           return;
         }
 
@@ -285,8 +288,7 @@ export default function BattleMode() {
         );
         if (nowActive) {
           setActiveBattle(nowActive);
-          clearInterval(battlePollRef.current!);
-          battlePollRef.current = null;
+          hasPendingChallengeRef.current = false;
         }
       } catch (error) {
         console.error('Error polling battles:', error);
@@ -299,7 +301,6 @@ export default function BattleMode() {
         battlePollRef.current = null;
       }
     };
-  // Stable deps only — battles array ref intentionally excluded to prevent duplicate intervals
   }, [user?.id, isManager]);
 
   const loadData = async () => {
