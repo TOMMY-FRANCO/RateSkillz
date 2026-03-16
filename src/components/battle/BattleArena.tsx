@@ -800,7 +800,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
           </div>
 
           {/* ── INLINE SKILL SELECTION PANEL (my turn only) ── */}
-          {isMyTurn && !submitting && !lastRoundSummary && (
+          {isMyTurn && !submitting && (
             <div className="relative z-30 mx-3 mb-2 rounded-2xl overflow-hidden bg-[rgba(10,18,35,0.92)] border border-[rgba(0,224,255,0.18)] shadow-[0_0_24px_rgba(0,224,255,0.08)]">
               <SkillSelectionScreen
                 cards={myCards}
