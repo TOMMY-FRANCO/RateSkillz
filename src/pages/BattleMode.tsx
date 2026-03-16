@@ -235,7 +235,9 @@ export default function BattleMode() {
   useEffect(() => {
     if (!user) return;
     const hasPending = battles.some(
-      (b) => b.status === 'waiting' && b.manager1_id === user.id
+      (b) =>
+        b.status === 'waiting' &&
+        (b.manager1_id === user.id || b.manager2_id === user.id)
     );
     const hasChoosing = battles.find(
       (b) => b.status === 'choosing' &&
@@ -559,7 +561,7 @@ export default function BattleMode() {
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-[#B0B8C8]">Wager Amount (50–150 coins)</label>
               <div className="flex flex-wrap gap-2">
-                {[50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150].map((amount) => (
+                {[50, 100, 150, 200].map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setWagerAmount(amount)}
