@@ -52,6 +52,8 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isMyTurn = battle.current_turn_user_id === user?.id;
+  const isMyTurnRef = useRef(isMyTurn);
+  isMyTurnRef.current = isMyTurn;
   const isAttacker = (battle.card_selections?.length ?? 0) % 2 === 0;
   const isCompleted = battle.status === 'completed' || battle.status === 'forfeited';
 
@@ -73,28 +75,35 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
     const prev = prevSelectionsLenRef.current;
 
     if (len >= 2 && len % 2 === 0 && len > prev) {
-      const sittingMove = selections[len - 2];
-      const attackerMove = selections[len - 1];
+      // selections[len-2] = is_attacker:true = committed/sitting card (placed first)
+      // selections[len-1] = is_attacker:false = real attacker (attacked second)
+      // attacker_wins and eliminated_card_id live on the is_attacker:false move
+      const committedMove = selections[len - 2];
+      const realAttackerMove = selections[len - 1];
       const allCards = [...myCards, ...opponentCards];
-      const attackerCard = allCards.find(c => c.id === attackerMove.card_id);
-      const sittingCard = allCards.find(c => c.id === sittingMove.card_id);
+      const realAttackerCard = allCards.find(c => c.id === realAttackerMove.card_id);
+      const committedCard = allCards.find(c => c.id === committedMove.card_id);
+      const attackerWins = (realAttackerMove as any).attacker_wins ?? false;
+      const eliminatedCardId = (realAttackerMove as any).eliminated_card_id ?? null;
       setLastRoundSummary({
-        attackerCardId: attackerMove.card_id,
-        attackerCardName: attackerCard?.player_name || 'Attacker',
-        attackerSkill: sittingMove.skill || 'overall',
-        attackerValue: attackerMove.value,
-        defenderCardId: sittingMove.card_id,
-        defenderCardName: sittingCard?.player_name || 'On Pitch',
-        defenderValue: sittingMove.value,
-        attackerWins: attackerMove.attacker_wins ?? false,
-        eliminatedCardId: (attackerMove as any).eliminated_card_id ?? null,
+        // Left panel = real attacker (is_attacker:false)
+        attackerCardId: realAttackerMove.card_id,
+        attackerCardName: realAttackerCard?.player_name || 'Attacker',
+        attackerSkill: committedMove.skill || 'overall',
+        attackerValue: realAttackerMove.value,
+        // Right panel = committed/sitting card (is_attacker:true)
+        defenderCardId: committedMove.card_id,
+        defenderCardName: committedCard?.player_name || 'On Pitch',
+        defenderValue: committedMove.value,
+        attackerWins,
+        eliminatedCardId,
       });
     } else if (len % 2 === 1 && len > prev) {
       setLastRoundSummary(null);
     }
 
     prevSelectionsLenRef.current = len;
-  }, [battle.card_selections, myCards]);
+  }, [battle.card_selections, myCards, opponentCards]);
 
   useEffect(() => {
     if (isCompleted) {
@@ -133,7 +142,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
 
   useEffect(() => {
     const allSkillsUsed = (battle.used_skills?.length ?? 0) >= 6;
-    if (battle.status !== 'active' || (!allSkillsUsed && isMyTurn)) {
+    if (battle.status !== 'active' || (!allSkillsUsed && isMyTurnRef.current)) {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
         pollIntervalRef.current = null;
@@ -146,6 +155,12 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
         const updated = await getBattle(battle.id);
         setBattle(updated);
         if (updated.status === 'completed' || updated.status === 'forfeited') {
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+        }
+        if (!isMyTurnRef.current && updated.current_turn_user_id === user?.id) {
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
             pollIntervalRef.current = null;
@@ -615,18 +630,24 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
           <div className="relative z-20 flex flex-col items-stretch px-3 py-1 gap-1.5">
 
 
-            {/* Active round info: attacker card | timer | defender pick */}
+            {/* Active round info: attacking card (left) | timer | committed card (right) */}
             {(() => {
               const selections: BattleSelection[] = battle.card_selections || [];
               const len = selections.length;
-              const sittingMove = len % 2 === 1 ? selections[len - 1] : null;
+              // Pending committed card: odd length means last move is is_attacker:true (committed/sitting)
+              const pendingCommittedMove = len % 2 === 1 ? selections[len - 1] : null;
               const allCards = [...myCards, ...opponentCards];
-              const sittingCard = sittingMove ? allCards.find(c => c.id === sittingMove.card_id) : null;
+              const pendingCommittedCard = pendingCommittedMove ? allCards.find(c => c.id === pendingCommittedMove.card_id) : null;
+
+              // When attacker_wins=true → committed card (right panel, defenderCardId) is eliminated
+              // When attacker_wins=false → attacking card (left panel, attackerCardId) is eliminated
+              const leftEliminated = lastRoundSummary && !lastRoundSummary.attackerWins && lastRoundSummary.eliminatedCardId === lastRoundSummary.attackerCardId;
+              const rightEliminated = lastRoundSummary && lastRoundSummary.attackerWins && lastRoundSummary.eliminatedCardId === lastRoundSummary.defenderCardId;
 
               return (
                 <div className="bg-black/40 rounded-2xl border border-white/10 p-2 flex items-stretch gap-2">
 
-                  {/* Left: active attacker card info */}
+                  {/* Left: attacking card (is_attacker:false) — shows after round completes, or "Waiting for attack" when pending */}
                   <div className="flex-1 rounded-xl bg-black/30 border border-white/10 backdrop-blur-sm p-2 flex flex-col items-center justify-center min-w-0">
                     {lastRoundSummary ? (
                       <>
@@ -635,13 +656,15 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                         </div>
                         <p className="text-white text-[9px] font-bold truncate w-full text-center">{lastRoundSummary.attackerCardName}</p>
                         <span className="text-white font-black text-base leading-none mt-0.5">{lastRoundSummary.attackerValue}</span>
-                        <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">{isMyTurn ? 'Your Attack' : 'Their Attack'}</span>
-                        {lastRoundSummary.eliminatedCardId === lastRoundSummary.attackerCardId && (
+                        <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">Attacked</span>
+                        {leftEliminated && (
                           <span className="text-[9px] font-black mt-0.5 text-red-400">Eliminated</span>
                         )}
                       </>
+                    ) : pendingCommittedMove ? (
+                      <span className="text-white/20 text-[9px] font-semibold text-center">Waiting for attack…</span>
                     ) : (
-                      <span className="text-white/20 text-[9px] font-semibold">Waiting…</span>
+                      <span className="text-white/20 text-[9px] font-semibold">–</span>
                     )}
                   </div>
 
@@ -655,7 +678,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                     </span>
                   </div>
 
-                  {/* Right: sitting card on pitch */}
+                  {/* Right: committed card (is_attacker:true) — always shows committed card */}
                   <div className="flex-1 rounded-xl bg-black/30 border border-white/10 backdrop-blur-sm p-2 flex flex-col items-center justify-center min-w-0">
                     {lastRoundSummary ? (
                       <>
@@ -672,29 +695,29 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                         )}
                         <span className="text-white font-black text-base leading-none mt-0.5">{lastRoundSummary.defenderValue}</span>
                         <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">On Pitch</span>
-                        {lastRoundSummary.eliminatedCardId === lastRoundSummary.defenderCardId && (
+                        {rightEliminated && (
                           <span className="text-[9px] font-black mt-0.5 text-red-400">Eliminated</span>
                         )}
                       </>
-                    ) : sittingMove && sittingCard ? (
+                    ) : pendingCommittedMove && pendingCommittedCard ? (
                       <>
-                        {sittingCard.avatar_url ? (
-                          <img src={sittingCard.avatar_url} alt={sittingCard.player_name} className="w-8 h-8 rounded-full object-cover border border-white/20 mb-1" loading="lazy" />
+                        {pendingCommittedCard.avatar_url ? (
+                          <img src={pendingCommittedCard.avatar_url} alt={pendingCommittedCard.player_name} className="w-8 h-8 rounded-full object-cover border border-white/20 mb-1" loading="lazy" />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center border border-white/20 mb-1">
-                            <span className="text-white text-xs font-black">{sittingCard.player_name.charAt(0)}</span>
+                            <span className="text-white text-xs font-black">{pendingCommittedCard.player_name.charAt(0)}</span>
                           </div>
                         )}
-                        <p className="text-white text-[9px] font-bold truncate w-full text-center">{sittingCard.username || sittingCard.player_name}</p>
-                        {sittingMove.skill && (
+                        <p className="text-white text-[9px] font-bold truncate w-full text-center">{pendingCommittedCard.username || pendingCommittedCard.player_name}</p>
+                        {pendingCommittedMove.skill && (
                           <span className="mt-1 px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-white/60 text-[9px] font-black uppercase tracking-wide">
-                            {sittingMove.skill}
+                            {pendingCommittedMove.skill}
                           </span>
                         )}
-                        <span className="text-white font-black text-base leading-none mt-0.5">{sittingMove.value}</span>
+                        <span className="text-white font-black text-base leading-none mt-0.5">{pendingCommittedMove.value}</span>
                         <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">On Pitch</span>
                       </>
-                    ) : sittingMove ? (
+                    ) : pendingCommittedMove ? (
                       <>
                         <div className="w-5 h-5 rounded-full border border-white/20 flex items-center justify-center mb-1 animate-pulse">
                           <Shield className="w-3 h-3 text-white/30" />
