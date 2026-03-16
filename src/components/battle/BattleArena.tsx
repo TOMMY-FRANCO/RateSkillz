@@ -226,6 +226,9 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
       } else {
         const updated = await getBattle(battle.id);
         setBattle(updated);
+        if (result.skills_reset) {
+          setBattle(prev => ({ ...prev, used_skills: [] }));
+        }
         if (result.battle_over || result.tiebreaker) {
           return;
         }
@@ -790,7 +793,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
             {lastRoundSummary && (
               <div className={`rounded-lg px-3 py-1.5 border flex items-center justify-center gap-2 ${lastRoundSummary.attackerWins ? 'bg-red-900/40 border-red-500/30' : 'bg-green-900/30 border-[rgba(0,255,133,0.25)]'}`}>
                 <span className={`text-[10px] font-bold uppercase tracking-wide ${lastRoundSummary.attackerWins ? 'text-red-400' : 'text-[#00FF85]'}`}>
-                  {lastRoundSummary.attackerWins ? 'Card eliminated!' : 'Card eliminated!'}
+                  {lastRoundSummary.attackerWins ? 'Card eliminated!' : 'Defended — card survives!'}
                 </span>
                 <span className="text-white/30 text-[9px]">·</span>
                 <span className="text-yellow-400 text-[9px] font-semibold capitalize">{lastRoundSummary.attackerSkill}</span>
