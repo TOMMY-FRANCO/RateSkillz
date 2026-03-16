@@ -127,24 +127,26 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   }, [isCompleted, battle.id]);
 
   useEffect(() => {
-    if (!battle.turn_started_at || battle.status !== 'active') return;
-
-    if (!isMyTurn) {
+    if (!battle.turn_started_at || battle.status !== 'active') {
       setTimeRemaining(75);
       return;
     }
 
-    const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - new Date(battle.turn_started_at!).getTime()) / 1000);
+    const update = () => {
+      const elapsed = Math.floor(
+        (Date.now() - new Date(battle.turn_started_at!).getTime()) / 1000
+      );
       const remaining = Math.max(0, 75 - elapsed);
       setTimeRemaining(remaining);
-      if (remaining === 0) {
+      if (remaining === 0 && isMyTurn) {
         handleAutoForfeit();
       }
-    }, 1000);
+    };
 
+    update();
+    const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [battle.turn_started_at, isMyTurn, battle.status]);
+  }, [battle.turn_started_at, battle.status, isMyTurn]);
 
   useEffect(() => {
     if (battle.status !== 'active') {
