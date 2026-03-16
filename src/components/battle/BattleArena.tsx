@@ -129,11 +129,16 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   useEffect(() => {
     if (!battle.turn_started_at || battle.status !== 'active') return;
 
+    if (!isMyTurn) {
+      setTimeRemaining(75);
+      return;
+    }
+
     const interval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - new Date(battle.turn_started_at!).getTime()) / 1000);
       const remaining = Math.max(0, 75 - elapsed);
       setTimeRemaining(remaining);
-      if (remaining === 0 && isMyTurn) {
+      if (remaining === 0) {
         handleAutoForfeit();
       }
     }, 1000);
@@ -151,7 +156,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
       return;
     }
 
-    pollIntervalRef.current = setInterval(async () => {
+    const doPoll = async () => {
       try {
         const updated = await getBattle(battle.id);
         setBattle(updated);
@@ -170,7 +175,10 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
       } catch (error) {
         console.error('Error polling battle:', error);
       }
-    }, 3000);
+    };
+
+    doPoll();
+    pollIntervalRef.current = setInterval(doPoll, 1500);
 
     return () => {
       if (pollIntervalRef.current) {
