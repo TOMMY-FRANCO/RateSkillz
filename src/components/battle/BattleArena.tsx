@@ -146,6 +146,12 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   }, [battle.turn_started_at, battle.status, isMyTurn]);
 
   useEffect(() => {
+    if (isMyTurn) {
+      setLastRoundSummary(null);
+    }
+  }, [isMyTurn]);
+
+  useEffect(() => {
     if (battle.status !== 'active') {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
