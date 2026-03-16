@@ -62,9 +62,11 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
     .map((move: any) => move.eliminated_card_id as string);
 
   const attackerSkill = battle.stuck_card_id
-    ? (battle.card_selections || []).find(
-        (s: any) => s.card_id === battle.stuck_card_id && s.is_attacker === true
-      )?.skill ?? null
+    ? [...(battle.card_selections || [])]
+        .reverse()
+        .find(
+          (s: any) => s.card_id === battle.stuck_card_id && s.is_attacker === true
+        )?.skill ?? null
     : null;
 
   useEffect(() => {
