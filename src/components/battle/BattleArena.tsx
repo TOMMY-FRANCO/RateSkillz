@@ -54,8 +54,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   const isMyTurn = battle.current_turn_user_id === user?.id;
   const isMyTurnRef = useRef(isMyTurn);
   isMyTurnRef.current = isMyTurn;
-  const isAttacker = battle.stuck_card_id === null ||
-    battle.stuck_card_owner_id !== user?.id;
+  const isAttacker = battle.stuck_card_id === null;
   const isCompleted = battle.status === 'completed' || battle.status === 'forfeited';
 
   const eliminatedCardIds = (battle.card_selections || [])
