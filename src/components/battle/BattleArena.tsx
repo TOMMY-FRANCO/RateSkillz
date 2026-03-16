@@ -54,7 +54,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   const isMyTurn = battle.current_turn_user_id === user?.id;
   const isMyTurnRef = useRef(isMyTurn);
   isMyTurnRef.current = isMyTurn;
-  const isAttacker = (battle.card_selections?.length ?? 0) % 2 === 0;
+  const isAttacker = battle.stuck_card_id === null;
   const isCompleted = battle.status === 'completed' || battle.status === 'forfeited';
 
   const eliminatedCardIds = (battle.card_selections || [])
@@ -641,7 +641,9 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
               const allCards = [...myCards, ...opponentCards];
 
               // Pending committed card: odd length means the last move is the committed/sitting card
-              const pendingCommittedMove = len % 2 === 1 ? selections[len - 1] : null;
+              const pendingCommittedMove = battle.stuck_card_id
+                ? selections.find(s => s.card_id === battle.stuck_card_id) ?? null
+                : null;
               const pendingCommittedCard = pendingCommittedMove ? allCards.find(c => c.id === pendingCommittedMove.card_id) : null;
               const pendingIsMe = pendingCommittedMove?.user_id === user?.id;
 
@@ -807,7 +809,11 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
             <div className="relative z-10 flex justify-center pb-2">
               <div className="px-4 py-1.5 rounded-full border border-white/10 bg-black/20 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-white/25 animate-pulse" />
-                <span className="text-white/40 text-[10px] font-semibold">Waiting for opponent…</span>
+                <span className="text-white/40 text-[10px] font-semibold">
+                  {battle.stuck_card_id && battle.stuck_card_owner_id === user?.id
+                    ? 'Your card is on the pitch — opponent is choosing…'
+                    : 'Waiting for opponent…'}
+                </span>
               </div>
             </div>
           )}
