@@ -19,12 +19,15 @@ import {
 } from '../../lib/battleMode';
 
 interface RoundSummary {
+  attackerCardId: string;
   attackerCardName: string;
   attackerSkill: string;
   attackerValue: number;
+  defenderCardId: string;
   defenderCardName: string;
   defenderValue: number;
   attackerWins: boolean;
+  eliminatedCardId: string | null;
 }
 
 interface BattleArenaProps {
@@ -72,15 +75,19 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
     if (len >= 2 && len % 2 === 0 && len > prev) {
       const attacker = selections[len - 2];
       const defender = selections[len - 1];
-      const attackerCard = myCards.find(c => c.id === attacker.card_id);
-      const defenderCard = myCards.find(c => c.id === defender.card_id);
+      const allCards = [...myCards, ...opponentCards];
+      const attackerCard = allCards.find(c => c.id === attacker.card_id);
+      const defenderCard = allCards.find(c => c.id === defender.card_id);
       setLastRoundSummary({
+        attackerCardId: attacker.card_id,
         attackerCardName: attackerCard?.player_name || 'Attacker',
         attackerSkill: attacker.skill || 'overall',
         attackerValue: attacker.value,
+        defenderCardId: defender.card_id,
         defenderCardName: defenderCard?.player_name || 'Defender',
         defenderValue: defender.value,
         attackerWins: defender.attacker_wins ?? false,
+        eliminatedCardId: (defender as any).eliminated_card_id ?? null,
       });
     } else if (len % 2 === 1 && len > prev) {
       setLastRoundSummary(null);
@@ -623,7 +630,24 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
 
                   {/* Left: attacker card info */}
                   <div className="flex-1 rounded-xl bg-black/30 border border-white/10 backdrop-blur-sm p-2 flex flex-col items-center justify-center min-w-0">
-                    {pendingAttack && attackingCard ? (
+                    {lastRoundSummary ? (
+                      <>
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center mb-1 bg-red-500/20">
+                          <Zap className="w-3 h-3 text-red-400" />
+                        </div>
+                        <p className="text-white text-[9px] font-bold truncate w-full text-center">{lastRoundSummary.attackerCardName}</p>
+                        {lastRoundSummary.attackerSkill && (
+                          <span className="mt-1 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[9px] font-black uppercase tracking-wide">
+                            {lastRoundSummary.attackerSkill}
+                          </span>
+                        )}
+                        <span className="text-white font-black text-base leading-none mt-0.5">{lastRoundSummary.attackerValue}</span>
+                        <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">Attacking</span>
+                        {lastRoundSummary.eliminatedCardId === lastRoundSummary.attackerCardId && (
+                          <span className="text-[9px] font-black mt-0.5 text-red-400">Eliminated</span>
+                        )}
+                      </>
+                    ) : pendingAttack && attackingCard ? (
                       <>
                         {attackingCard.avatar_url ? (
                           <img src={attackingCard.avatar_url} alt={attackingCard.player_name} className="w-8 h-8 rounded-full object-cover border border-red-400/40 mb-1" loading="lazy" />
@@ -668,10 +692,9 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                         <p className="text-white text-[9px] font-bold truncate w-full text-center">{lastRoundSummary.defenderCardName}</p>
                         <span className="text-white font-black text-base leading-none mt-0.5">{lastRoundSummary.defenderValue}</span>
                         <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">On Pitch</span>
-                        <span className={`text-[9px] font-black mt-0.5 ${lastRoundSummary.attackerWins ? 'text-red-400' : 'text-[#00FF85]'}`}>
-                          {lastRoundSummary.attackerWins ? 'Eliminated' : 'Eliminated'}
-                        </span>
-
+                        {lastRoundSummary.eliminatedCardId === lastRoundSummary.defenderCardId && (
+                          <span className="text-[9px] font-black mt-0.5 text-red-400">Eliminated</span>
+                        )}
                       </>
                     ) : pendingAttack ? (
                       <>
