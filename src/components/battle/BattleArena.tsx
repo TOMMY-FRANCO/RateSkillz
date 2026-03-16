@@ -158,17 +158,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
     const doPoll = async () => {
       try {
         const updated = await getBattle(battle.id);
-        setBattle(prev => {
-          if (
-            prev.stuck_card_id !== updated.stuck_card_id ||
-            prev.current_turn_user_id !== updated.current_turn_user_id ||
-            prev.card_selections?.length !== updated.card_selections?.length ||
-            prev.status !== updated.status
-          ) {
-            return updated;
-          }
-          return prev;
-        });
+        setBattle(updated);
         if (updated.status === 'completed' || updated.status === 'forfeited') {
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
@@ -181,7 +171,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
     };
 
     doPoll();
-    pollIntervalRef.current = setInterval(doPoll, 1500);
+    pollIntervalRef.current = setInterval(doPoll, 1000);
 
     return () => {
       if (pollIntervalRef.current) {
