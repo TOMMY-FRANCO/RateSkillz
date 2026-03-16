@@ -73,21 +73,21 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
     const prev = prevSelectionsLenRef.current;
 
     if (len >= 2 && len % 2 === 0 && len > prev) {
-      const attacker = selections[len - 2];
-      const defender = selections[len - 1];
+      const sittingMove = selections[len - 2];
+      const attackerMove = selections[len - 1];
       const allCards = [...myCards, ...opponentCards];
-      const attackerCard = allCards.find(c => c.id === attacker.card_id);
-      const defenderCard = allCards.find(c => c.id === defender.card_id);
+      const attackerCard = allCards.find(c => c.id === attackerMove.card_id);
+      const sittingCard = allCards.find(c => c.id === sittingMove.card_id);
       setLastRoundSummary({
-        attackerCardId: attacker.card_id,
+        attackerCardId: attackerMove.card_id,
         attackerCardName: attackerCard?.player_name || 'Attacker',
-        attackerSkill: attacker.skill || 'overall',
-        attackerValue: attacker.value,
-        defenderCardId: defender.card_id,
-        defenderCardName: defenderCard?.player_name || 'Defender',
-        defenderValue: defender.value,
-        attackerWins: defender.attacker_wins ?? false,
-        eliminatedCardId: (defender as any).eliminated_card_id ?? null,
+        attackerSkill: sittingMove.skill || 'overall',
+        attackerValue: attackerMove.value,
+        defenderCardId: sittingMove.card_id,
+        defenderCardName: sittingCard?.player_name || 'On Pitch',
+        defenderValue: sittingMove.value,
+        attackerWins: attackerMove.attacker_wins ?? false,
+        eliminatedCardId: (attackerMove as any).eliminated_card_id ?? null,
       });
     } else if (len % 2 === 1 && len > prev) {
       setLastRoundSummary(null);
@@ -184,23 +184,22 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   const handleSkillSelection = useCallback(async (cardId: string, skill?: string) => {
     if (!user || submitting) return;
     setSubmitting(true);
+    const currentIsAttacker = (battle.card_selections?.length ?? 0) % 2 === 0;
     try {
       const result = await submitBattleMove(
         battle.id,
         user.id,
         cardId,
-        isAttacker ? (skill || null) : null
+        currentIsAttacker ? (skill || null) : null
       );
       if (!result.success) {
         alert(result.error || 'Failed to submit move');
       } else {
-        if (result.battle_over || result.tiebreaker) {
-          const updated = await getBattle(battle.id);
-          setBattle(updated);
-          return;
-        }
         const updated = await getBattle(battle.id);
         setBattle(updated);
+        if (result.battle_over || result.tiebreaker) {
+          return;
+        }
         if (!result.is_attacker) {
           setRoundResult({ attacker_wins: result.attacker_wins });
           setTimeout(() => setRoundResult(null), 2000);
@@ -212,7 +211,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
     } finally {
       setSubmitting(false);
     }
-  }, [user, submitting, battle.id, isAttacker]);
+  }, [user, submitting, battle.id, battle.card_selections?.length]);
 
   const handleAutoForfeit = useCallback(async () => {
     if (!user) return;
@@ -620,15 +619,14 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
             {(() => {
               const selections: BattleSelection[] = battle.card_selections || [];
               const len = selections.length;
-              const pendingAttack = len % 2 === 1 ? selections[len - 1] : null;
-              const attackerCardId = pendingAttack?.card_id;
+              const sittingMove = len % 2 === 1 ? selections[len - 1] : null;
               const allCards = [...myCards, ...opponentCards];
-              const attackingCard = attackerCardId ? allCards.find(c => c.id === attackerCardId) : null;
+              const sittingCard = sittingMove ? allCards.find(c => c.id === sittingMove.card_id) : null;
 
               return (
                 <div className="bg-black/40 rounded-2xl border border-white/10 p-2 flex items-stretch gap-2">
 
-                  {/* Left: attacker card info */}
+                  {/* Left: active attacker card info */}
                   <div className="flex-1 rounded-xl bg-black/30 border border-white/10 backdrop-blur-sm p-2 flex flex-col items-center justify-center min-w-0">
                     {lastRoundSummary ? (
                       <>
@@ -636,34 +634,11 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                           <Zap className="w-3 h-3 text-red-400" />
                         </div>
                         <p className="text-white text-[9px] font-bold truncate w-full text-center">{lastRoundSummary.attackerCardName}</p>
-                        {lastRoundSummary.attackerSkill && (
-                          <span className="mt-1 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[9px] font-black uppercase tracking-wide">
-                            {lastRoundSummary.attackerSkill}
-                          </span>
-                        )}
                         <span className="text-white font-black text-base leading-none mt-0.5">{lastRoundSummary.attackerValue}</span>
-                        <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">Attacking</span>
+                        <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">{isMyTurn ? 'Your Attack' : 'Their Attack'}</span>
                         {lastRoundSummary.eliminatedCardId === lastRoundSummary.attackerCardId && (
                           <span className="text-[9px] font-black mt-0.5 text-red-400">Eliminated</span>
                         )}
-                      </>
-                    ) : pendingAttack && attackingCard ? (
-                      <>
-                        {attackingCard.avatar_url ? (
-                          <img src={attackingCard.avatar_url} alt={attackingCard.player_name} className="w-8 h-8 rounded-full object-cover border border-red-400/40 mb-1" loading="lazy" />
-                        ) : (
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-orange-400 flex items-center justify-center border border-red-400/40 mb-1">
-                            <span className="text-white text-xs font-black">{attackingCard.player_name.charAt(0)}</span>
-                          </div>
-                        )}
-                        <p className="text-white text-[9px] font-bold truncate w-full text-center">{attackingCard.username || attackingCard.player_name}</p>
-                        {pendingAttack.skill && (
-                          <span className="mt-1 px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/40 text-red-400 text-[9px] font-black uppercase tracking-wide">
-                            {pendingAttack.skill}
-                          </span>
-                        )}
-                        <span className="text-white font-black text-base leading-none mt-0.5">{pendingAttack.value}</span>
-                        <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">Attacking</span>
                       </>
                     ) : (
                       <span className="text-white/20 text-[9px] font-semibold">Waiting…</span>
@@ -680,7 +655,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                     </span>
                   </div>
 
-                  {/* Right: defender response or waiting indicator */}
+                  {/* Right: sitting card on pitch */}
                   <div className="flex-1 rounded-xl bg-black/30 border border-white/10 backdrop-blur-sm p-2 flex flex-col items-center justify-center min-w-0">
                     {lastRoundSummary ? (
                       <>
@@ -690,13 +665,36 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                             : <Shield className="w-3 h-3 text-[#00FF85]" />}
                         </div>
                         <p className="text-white text-[9px] font-bold truncate w-full text-center">{lastRoundSummary.defenderCardName}</p>
+                        {lastRoundSummary.attackerSkill && (
+                          <span className="mt-1 px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-white/60 text-[9px] font-black uppercase tracking-wide">
+                            {lastRoundSummary.attackerSkill}
+                          </span>
+                        )}
                         <span className="text-white font-black text-base leading-none mt-0.5">{lastRoundSummary.defenderValue}</span>
                         <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">On Pitch</span>
                         {lastRoundSummary.eliminatedCardId === lastRoundSummary.defenderCardId && (
                           <span className="text-[9px] font-black mt-0.5 text-red-400">Eliminated</span>
                         )}
                       </>
-                    ) : pendingAttack ? (
+                    ) : sittingMove && sittingCard ? (
+                      <>
+                        {sittingCard.avatar_url ? (
+                          <img src={sittingCard.avatar_url} alt={sittingCard.player_name} className="w-8 h-8 rounded-full object-cover border border-white/20 mb-1" loading="lazy" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center border border-white/20 mb-1">
+                            <span className="text-white text-xs font-black">{sittingCard.player_name.charAt(0)}</span>
+                          </div>
+                        )}
+                        <p className="text-white text-[9px] font-bold truncate w-full text-center">{sittingCard.username || sittingCard.player_name}</p>
+                        {sittingMove.skill && (
+                          <span className="mt-1 px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-white/60 text-[9px] font-black uppercase tracking-wide">
+                            {sittingMove.skill}
+                          </span>
+                        )}
+                        <span className="text-white font-black text-base leading-none mt-0.5">{sittingMove.value}</span>
+                        <span className="text-[rgba(255,255,255,0.3)] text-[8px] mt-0.5">On Pitch</span>
+                      </>
+                    ) : sittingMove ? (
                       <>
                         <div className="w-5 h-5 rounded-full border border-white/20 flex items-center justify-center mb-1 animate-pulse">
                           <Shield className="w-3 h-3 text-white/30" />
