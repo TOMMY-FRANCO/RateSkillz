@@ -54,7 +54,8 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   const isMyTurn = battle.current_turn_user_id === user?.id;
   const isMyTurnRef = useRef(isMyTurn);
   isMyTurnRef.current = isMyTurn;
-  const isAttacker = battle.stuck_card_id === null;
+  const isAttacker = battle.stuck_card_id === null ||
+    battle.stuck_card_owner_id !== user?.id;
   const isCompleted = battle.status === 'completed' || battle.status === 'forfeited';
 
   const eliminatedCardIds = (battle.card_selections || [])
@@ -160,7 +161,17 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
     const doPoll = async () => {
       try {
         const updated = await getBattle(battle.id);
-        setBattle(updated);
+        setBattle(prev => {
+          if (
+            prev.stuck_card_id !== updated.stuck_card_id ||
+            prev.current_turn_user_id !== updated.current_turn_user_id ||
+            prev.card_selections?.length !== updated.card_selections?.length ||
+            prev.status !== updated.status
+          ) {
+            return updated;
+          }
+          return prev;
+        });
         if (updated.status === 'completed' || updated.status === 'forfeited') {
           if (pollIntervalRef.current) {
             clearInterval(pollIntervalRef.current);
