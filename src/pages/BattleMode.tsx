@@ -237,54 +237,61 @@ export default function BattleMode() {
       battlePollRef.current = null;
     }
 
-    if (!user) return;
+    if (!user || !isManager) return;
+
+    const hasPendingAsChallenger = battles.some(
+      (b) => b.status === 'waiting' && b.manager1_id === user.id
+    );
+
+    const existingChoosing = battles.find(
+      (b) => b.status === 'choosing' &&
+      (b.manager1_id === user.id || b.manager2_id === user.id)
+    );
+    if (existingChoosing) {
+      setChoosingBattle(existingChoosing);
+      return;
+    }
 
     const existingActive = battles.find(
-      (b) => b.status === 'active' && (b.manager1_id === user.id || b.manager2_id === user.id)
+      (b) => b.status === 'active' &&
+      (b.manager1_id === user.id || b.manager2_id === user.id)
     );
     if (existingActive) {
       setActiveBattle(existingActive);
       return;
     }
 
-    const existingChoosing = battles.find(
-      (b) => b.status === 'choosing' && (b.manager1_id === user.id || b.manager2_id === user.id)
-    );
-    if (existingChoosing) {
-      setChoosingBattle(existingChoosing);
-    }
+    if (!hasPendingAsChallenger) return;
 
-    const hasPendingAsChallenger = battles.some(
-      (b) => b.status === 'waiting' && b.manager1_id === user.id
-    );
-
-    if (hasPendingAsChallenger && isManager) {
-      battlePollRef.current = setInterval(async () => {
+    battlePollRef.current = setInterval(async () => {
+      try {
         const updated = await getUserBattles(user.id);
         setBattles(updated);
+
         const nowChoosing = updated.find(
-          (b) => b.status === 'choosing' && (b.manager1_id === user.id || b.manager2_id === user.id)
+          (b) => b.status === 'choosing' &&
+          (b.manager1_id === user.id || b.manager2_id === user.id)
         );
         if (nowChoosing) {
           setChoosingBattle(nowChoosing);
-          if (battlePollRef.current) {
-            clearInterval(battlePollRef.current);
-            battlePollRef.current = null;
-          }
+          clearInterval(battlePollRef.current!);
+          battlePollRef.current = null;
           return;
         }
+
         const nowActive = updated.find(
-          (b) => b.status === 'active' && (b.manager1_id === user.id || b.manager2_id === user.id)
+          (b) => b.status === 'active' &&
+          (b.manager1_id === user.id || b.manager2_id === user.id)
         );
         if (nowActive) {
           setActiveBattle(nowActive);
-          if (battlePollRef.current) {
-            clearInterval(battlePollRef.current);
-            battlePollRef.current = null;
-          }
+          clearInterval(battlePollRef.current!);
+          battlePollRef.current = null;
         }
-      }, 3000);
-    }
+      } catch (error) {
+        console.error('Error polling battles:', error);
+      }
+    }, 3000);
 
     return () => {
       if (battlePollRef.current) {
@@ -292,7 +299,8 @@ export default function BattleMode() {
         battlePollRef.current = null;
       }
     };
-  }, [battles, isManager]);
+  // Stable deps only — battles array ref intentionally excluded to prevent duplicate intervals
+  }, [user?.id, isManager]);
 
   const loadData = async () => {
     if (!user) return;
@@ -304,21 +312,6 @@ export default function BattleMode() {
 
       const userBattles = await getUserBattles(user.id);
       setBattles(userBattles);
-
-      const activeBattleData = userBattles.find(
-        (b) => b.status === 'active' && (b.manager1_id === user.id || b.manager2_id === user.id)
-      );
-      if (activeBattleData) {
-        setActiveBattle(activeBattleData);
-        return;
-      }
-
-      const choosingBattleData = userBattles.find(
-        (b) => b.status === 'choosing' && (b.manager1_id === user.id || b.manager2_id === user.id)
-      );
-      if (choosingBattleData) {
-        setChoosingBattle(choosingBattleData);
-      }
 
       const { data: managersData } = await supabase
         .from('profiles')
