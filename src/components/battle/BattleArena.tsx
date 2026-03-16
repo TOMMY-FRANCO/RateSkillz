@@ -138,9 +138,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
       );
       const remaining = Math.max(0, 75 - elapsed);
       setTimeRemaining(remaining);
-      if (remaining === 0 && isMyTurn) {
-        handleAutoForfeit();
-      }
+
     };
 
     update();
