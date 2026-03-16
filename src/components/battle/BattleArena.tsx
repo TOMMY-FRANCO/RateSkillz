@@ -248,6 +248,9 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   const handleAutoForfeit = useCallback(async () => {
     if (!user) return;
     try {
+      const fresh = await getBattle(battle.id);
+      if (fresh.current_turn_user_id !== user.id) return;
+      if (fresh.status !== 'active') return;
       await forfeitBattle(battle.id, user.id);
     } catch (error) {
       console.error('Error auto-forfeiting:', error);
