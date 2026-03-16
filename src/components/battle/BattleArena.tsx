@@ -72,40 +72,38 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
   }, [battle.id]);
 
   useEffect(() => {
-    const selections: BattleSelection[] = battle.card_selections || [];
-    const len = selections.length;
-    const prev = prevSelectionsLenRef.current;
+  const selections: BattleSelection[] = battle.card_selections || [];
+  const len = selections.length;
+  const prev = prevSelectionsLenRef.current;
 
-    if (len >= 2 && len % 2 === 0 && len > prev) {
-      // selections[len-2] = is_attacker:true = committed/sitting card (placed first)
-      // selections[len-1] = is_attacker:false = real attacker (attacked second)
-      // attacker_wins and eliminated_card_id live on the is_attacker:false move
-      const committedMove = selections[len - 2];
-      const realAttackerMove = selections[len - 1];
-      const allCards = [...myCards, ...opponentCards];
-      const realAttackerCard = allCards.find(c => c.id === realAttackerMove.card_id);
-      const committedCard = allCards.find(c => c.id === committedMove.card_id);
-      const attackerWins = (realAttackerMove as any).attacker_wins ?? false;
-      const eliminatedCardId = (realAttackerMove as any).eliminated_card_id ?? null;
-      setLastRoundSummary({
-        // Left panel = real attacker (is_attacker:false)
-        attackerCardId: realAttackerMove.card_id,
-        attackerCardName: realAttackerCard?.player_name || 'Attacker',
-        attackerSkill: committedMove.skill || 'overall',
-        attackerValue: realAttackerMove.value,
-        // Right panel = committed/sitting card (is_attacker:true)
-        defenderCardId: committedMove.card_id,
-        defenderCardName: committedCard?.player_name || 'On Pitch',
-        defenderValue: committedMove.value,
-        attackerWins,
-        eliminatedCardId,
-      });
-    } else if (len % 2 === 1 && len > prev) {
-      setLastRoundSummary(null);
-    }
+  if (len >= 2 && len % 2 === 0 && len > prev) {
+    const committedMove = selections[len - 2]; // is_attacker:true  — card on pitch
+    const responseMove  = selections[len - 1]; // is_attacker:false — card played against it
 
-    prevSelectionsLenRef.current = len;
-  }, [battle.card_selections, myCards, opponentCards]);
+    const allCards = [...myCards, ...opponentCards];
+    const committedCard = allCards.find(c => c.id === committedMove.card_id);
+    const responseCard  = allCards.find(c => c.id === responseMove.card_id);
+
+    const attackerWins     = (responseMove as any).attacker_wins ?? false;
+    const eliminatedCardId = (responseMove as any).eliminated_card_id ?? null;
+
+    setLastRoundSummary({
+      attackerCardId:   committedMove.card_id,
+      attackerCardName: committedCard?.player_name || 'On Pitch',
+      attackerSkill:    committedMove.skill || 'overall',
+      attackerValue:    committedMove.value,
+      defenderCardId:   responseMove.card_id,
+      defenderCardName: responseCard?.player_name || 'Responder',
+      defenderValue:    responseMove.value,
+      attackerWins,
+      eliminatedCardId,
+    });
+  } else if (len % 2 === 1 && len > prev) {
+    setLastRoundSummary(null);
+  }
+
+  prevSelectionsLenRef.current = len;
+}, [battle.card_selections, myCards, opponentCards]);
 
   useEffect(() => {
     if (isCompleted) {
