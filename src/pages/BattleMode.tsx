@@ -561,7 +561,7 @@ export default function BattleMode() {
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-[#B0B8C8]">Wager Amount (50–150 coins)</label>
               <div className="flex flex-wrap gap-2">
-                {[50, 100, 150, 200].map((amount) => (
+                {[50, 100, 150].map((amount) => (
                   <button
                     key={amount}
                     onClick={() => setWagerAmount(amount)}
