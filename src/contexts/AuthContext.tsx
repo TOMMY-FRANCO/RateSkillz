@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { ensureProfileExists } from '../lib/profileCreation';
 import { reconcileUserBalance } from '../lib/balanceReconciliation';
@@ -257,14 +257,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const activityUpdatingRef = useRef(false);
+
   useEffect(() => {
     if (!profile) return;
 
-    updateActivity();
+    const safeUpdateActivity = async () => {
+      if (activityUpdatingRef.current) return;
+      activityUpdatingRef.current = true;
+      try {
+        await updateActivity();
+      } finally {
+        activityUpdatingRef.current = false;
+      }
+    };
 
-    const interval = setInterval(() => {
-      updateActivity();
-    }, 60000);
+    safeUpdateActivity();
+
+    const interval = setInterval(safeUpdateActivity, 300000);
 
     return () => clearInterval(interval);
   }, [profile?.id]);
