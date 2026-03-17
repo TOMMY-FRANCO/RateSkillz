@@ -51,7 +51,7 @@ export function isUserOnline(lastActive?: string): boolean {
   if (!lastActive) return false;
   const lastActiveTime = new Date(lastActive).getTime();
   const now = Date.now();
-  return now - lastActiveTime < 5 * 60 * 1000;
+  return now - lastActiveTime < 10 * 60 * 1000;
 }
 
 interface AuthContextType {
