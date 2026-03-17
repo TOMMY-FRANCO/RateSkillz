@@ -653,7 +653,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
 
               // Pending committed card: odd length means the last move is the committed/sitting card
               const pendingCommittedMove = battle.stuck_card_id
-                ? selections.find(s => s.card_id === battle.stuck_card_id) ?? null
+                ? [...selections].reverse().find(s => s.card_id === battle.stuck_card_id) ?? null
                 : null;
               const pendingCommittedCard = pendingCommittedMove ? allCards.find(c => c.id === pendingCommittedMove.card_id) : null;
               const pendingIsMe = pendingCommittedMove?.user_id === user?.id;
