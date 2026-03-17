@@ -6,6 +6,8 @@ import { reconcileCoinPool } from '../lib/coinPoolReconciliation';
 import { requestNotificationPermission } from '../lib/messageNotifications';
 import { clearAppBadge } from '../lib/appBadge';
 
+let reconciliationDoneForSession = false;
+
 export interface Profile {
   id: string;
   username: string;
@@ -210,17 +212,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }, 1000);
 
             // Defer reconciliation to after initial render for faster startup
-            setTimeout(() => {
-              // Reconcile balance on app load to fix any discrepancies
-              reconcileUserBalance(session.user.id).catch(error => {
-                console.error('[Session] Balance reconciliation failed:', error);
-              });
-
-              // Reconcile coin pool on app load to fix any pool discrepancies
-              reconcileCoinPool().catch(error => {
-                console.error('[Session] Pool reconciliation failed:', error);
-              });
-            }, 2000);
+            if (!reconciliationDoneForSession) {
+              reconciliationDoneForSession = true;
+              setTimeout(() => {
+                reconcileUserBalance(session.user.id).catch(error => {
+                  console.error('[Session] Balance reconciliation failed:', error);
+                });
+                reconcileCoinPool().catch(error => {
+                  console.error('[Session] Pool reconciliation failed:', error);
+                });
+              }, 2000);
+            }
           } else {
             console.warn('[Session] Could not load profile after retries');
           }
@@ -544,6 +546,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    reconciliationDoneForSession = false;
     if (supabase && user) {
       const now = new Date().toISOString();
       await supabase
