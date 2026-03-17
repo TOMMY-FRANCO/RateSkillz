@@ -81,20 +81,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const now = new Date().toISOString();
 
-      await supabase
-        .from('profiles')
-        .update({ last_active: now })
-        .eq('id', profile.id);
-
-      await supabase
-        .from('user_presence')
-        .upsert({
-          user_id: profile.id,
-          last_seen: now,
-          updated_at: now,
-        }, {
-          onConflict: 'user_id'
-        });
+      await Promise.all([
+        supabase
+          .from('profiles')
+          .update({ last_active: now })
+          .eq('id', profile.id),
+        supabase
+          .from('user_presence')
+          .upsert({
+            user_id: profile.id,
+            last_seen: now,
+            updated_at: now,
+          }, {
+            onConflict: 'user_id'
+          }),
+      ]);
     } catch (error) {
       console.error('Error updating activity:', error);
     }
@@ -512,20 +513,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('[SignIn] Profile loaded');
       console.log('[SignIn] Updating activity...');
       const now = new Date().toISOString();
-      await supabase
-        .from('profiles')
-        .update({ last_active: now })
-        .eq('id', authData.user.id);
-
-      await supabase
-        .from('user_presence')
-        .upsert({
-          user_id: authData.user.id,
-          last_seen: now,
-          updated_at: now,
-        }, {
-          onConflict: 'user_id'
-        });
+      await Promise.all([
+        supabase
+          .from('profiles')
+          .update({ last_active: now })
+          .eq('id', authData.user.id),
+        supabase
+          .from('user_presence')
+          .upsert({
+            user_id: authData.user.id,
+            last_seen: now,
+            updated_at: now,
+          }, {
+            onConflict: 'user_id'
+          }),
+      ]);
 
       setUser({ id: authData.user.id });
       setSession({ user: { id: authData.user.id } });

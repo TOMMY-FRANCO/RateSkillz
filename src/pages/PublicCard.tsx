@@ -50,37 +50,35 @@ export default function PublicCard() {
 
       setViewsCount(profileData.profile_views_count || 0);
 
-      const stats = await getUserStats(profileData.id);
+      const [stats, socialLinksResult, likesResult, balanceResult] = await Promise.all([
+        getUserStats(profileData.id),
+        supabase
+          .from('social_links')
+          .select('user_id, instagram, snapchat, tiktok, youtube, twitter, facebook, website, created_at, updated_at')
+          .eq('user_id', profileData.id)
+          .maybeSingle(),
+        supabase
+          .from('profile_likes')
+          .select('id')
+          .eq('profile_id', profileData.id)
+          .eq('is_like', true),
+        supabase
+          .from('coins')
+          .select('balance')
+          .eq('user_id', profileData.id)
+          .maybeSingle(),
+      ]);
+
       setUserStats(stats);
-
-      const { data: socialLinksData } = await supabase
-        .from('social_links')
-        .select('user_id, instagram, snapchat, tiktok, youtube, twitter, facebook, website, created_at, updated_at')
-        .eq('user_id', profileData.id)
-        .maybeSingle();
-
-      setSocialLinks(socialLinksData);
-
+      setSocialLinks(socialLinksResult.data);
       setFriendsCount(profileData.friend_count || 0);
+      setLikesCount(likesResult.data?.length || 0);
 
-      const { data: likesData } = await supabase
-        .from('profile_likes')
-        .select('id')
-        .eq('profile_id', profileData.id)
-        .eq('is_like', true);
-      setLikesCount(likesData?.length || 0);
-
-      const { data: balanceData, error: balanceError } = await supabase
-        .from('coins')
-        .select('balance')
-        .eq('user_id', profileData.id)
-        .maybeSingle();
-
-      if (balanceError) {
-        console.error('Error loading coin balance:', balanceError);
+      if (balanceResult.error) {
+        console.error('Error loading coin balance:', balanceResult.error);
       }
 
-      setCoinBalance(balanceData?.balance || 0);
+      setCoinBalance(balanceResult.data?.balance || 0);
       setBalanceLoading(false);
 
       updateMetaTags({
