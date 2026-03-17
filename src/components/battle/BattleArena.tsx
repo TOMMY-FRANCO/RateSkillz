@@ -298,6 +298,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
       <TiebreakerScreen
         battle={battle}
         myCards={myCards}
+        opponentCards={opponentCards}
         eliminatedCards={eliminatedCardIds}
         onComplete={onComplete}
       />
