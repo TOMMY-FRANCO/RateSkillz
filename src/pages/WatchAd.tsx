@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft, Coins, Tv, CheckCircle, Clock, Sparkles } from 'lucide-react';
 import { awardAdCoins, getCoinBalance, canWatchAdToday } from '../lib/coins';
-import { dismissAdBadge } from '../lib/notifications';
+import { dismissAdBadge, markNotificationsRead } from '../lib/notifications';
 
 type Phase =
   | 'checking'
@@ -15,6 +16,7 @@ type Phase =
 
 export default function WatchAd() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [phase, setPhase] = useState<Phase>('checking');
   const [countdown, setCountdown] = useState(30);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -31,6 +33,10 @@ export default function WatchAd() {
     loadBalance();
     checkAdAvailability();
   }, []);
+
+  useEffect(() => {
+    if (user?.id) markNotificationsRead(user.id, 'transaction').catch(() => {});
+  }, [user]);
 
   useEffect(() => {
     if (phase === 'watching' && countdown > 0) {

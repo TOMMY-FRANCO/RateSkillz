@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { markNotificationsRead } from '../lib/notifications';
 
 type FeedCategory = 'gold' | 'blue' | 'red' | 'purple';
 
@@ -107,6 +108,7 @@ export default function ActivityFeed() {
 
   useEffect(() => {
     if (!user) return;
+    if (user?.id) markNotificationsRead(user.id, 'rank_update').catch(() => {});
     setLoading(true);
     loadFeed().finally(() => setLoading(false));
   }, [user, loadFeed]);

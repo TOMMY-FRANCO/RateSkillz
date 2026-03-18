@@ -17,6 +17,7 @@ import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimm
 import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
 import { checkCanSendCoins } from '../lib/coinTransfers';
 import { supabase } from '../lib/supabase';
+import { markNotificationsRead } from '../lib/notifications';
 import { playSound } from '../lib/sounds';
 import QuickMessageTray, { DAILY_LIMIT } from '../components/QuickMessageTray';
 import EmojiPicker from '../components/EmojiPicker';
@@ -72,6 +73,7 @@ export default function Chat() {
 
   useEffect(() => {
     if (!user || !conversationId) return;
+    if (user?.id) markNotificationsRead(user.id, 'message').catch(() => {});
 
     const loadConversationData = async () => {
       setLoading(true);
