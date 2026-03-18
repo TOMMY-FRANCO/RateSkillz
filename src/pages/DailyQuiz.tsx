@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, CheckCircle, XCircle, Trophy, Coins, Clock, Share2, MessageCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { markNotificationsRead } from '../lib/notifications';
 import { supabase } from '../lib/supabase';
 import QuizShareModal from '../components/QuizShareModal';
 
@@ -286,6 +287,11 @@ export default function DailyQuiz() {
       .maybeSingle();
     return data;
   }, [user]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    markNotificationsRead(user.id, 'quiz_complete').catch(() => {});
+  }, [user?.id]);
 
   useEffect(() => {
     let cancelled = false;
