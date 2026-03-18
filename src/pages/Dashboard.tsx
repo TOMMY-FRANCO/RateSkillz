@@ -314,6 +314,21 @@ export default function Dashboard() {
           </button>
 
           <button
+            onClick={() => navigate('/search-friends')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <Search className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Search Friends</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Find & connect</p>
+              </div>
+            </div>
+          </button>
+
+          <button
             onClick={() => navigate('/friends')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
@@ -335,16 +350,21 @@ export default function Dashboard() {
           </button>
 
           <button
-            onClick={() => navigate('/search-friends')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+            onClick={() => navigate('/trading')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
+            <NotificationBadge
+              count={getCount(['swap_offer', 'purchase_offer', 'card_sold', 'purchase_request'])}
+              userId={profile?.id}
+              notificationType="card_sold"
+            />
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
-                <Search className="w-5 h-5 text-black" />
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
+                <ShoppingBag className="w-5 h-5 text-black" />
               </div>
               <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">Search Friends</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Find & connect</p>
+                <h3 className="text-white font-bold text-sm sm:text-base">Card Trading</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Buy & sell cards</p>
               </div>
             </div>
           </button>
@@ -374,26 +394,6 @@ export default function Dashboard() {
                 <p className="text-[#B0B8C8] text-xs sm:text-sm">
                   {profile.is_manager ? 'Card battles & wagers' : 'View battles & challenges'}
                 </p>
-              </div>
-            </div>
-          </button>
-
-          <button
-            onClick={() => navigate('/trading')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={getCount(['swap_offer', 'purchase_offer', 'card_sold', 'purchase_request'])}
-              userId={profile?.id}
-              notificationType="card_sold"
-            />
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
-                <ShoppingBag className="w-5 h-5 text-black" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">Card Trading</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Buy & sell cards</p>
               </div>
             </div>
           </button>
@@ -435,6 +435,27 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-white font-bold text-sm sm:text-base">Watch & Earn</h3>
                 <p className="text-[#B0B8C8] text-xs sm:text-sm">Get 5 coins/day</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/activity-feed')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
+          >
+            <NotificationBadge
+              count={badgeCounts.activityFeed}
+              userId={profile?.id}
+              notificationType="activity_feed"
+              capAt9
+            />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
+                <Activity className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Activity Feed</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Recent activity</p>
               </div>
             </div>
           </button>
@@ -527,48 +548,6 @@ export default function Dashboard() {
           </button>
 
           <button
-            onClick={() => navigate('/activity-feed')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.activityFeed}
-              userId={profile?.id}
-              notificationType="activity_feed"
-              capAt9
-            />
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
-                <Activity className="w-5 h-5 text-black" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">Activity Feed</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Recent activity</p>
-              </div>
-            </div>
-          </button>
-
-          <button
-            onClick={() => navigate('/scouter')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.scouter}
-              userId={profile?.id}
-              notificationType="scout_interest"
-              capAt9
-            />
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FF6B9D] rounded-xl flex items-center justify-center shadow-lg shadow-[#FFD700]/30">
-                <Search className="w-5 h-5 text-black" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-sm sm:text-base">Scouter</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">Find local teams</p>
-              </div>
-            </div>
-          </button>
-
-          <button
             onClick={() => navigate('/transactions')}
             className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
           >
@@ -621,6 +600,27 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-white font-bold text-sm sm:text-base">Viewed Me</h3>
                 <p className="text-[#B0B8C8] text-xs sm:text-sm">See who visited</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/scouter')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
+          >
+            <NotificationBadge
+              count={badgeCounts.scouter}
+              userId={profile?.id}
+              notificationType="scout_interest"
+              capAt9
+            />
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FF6B9D] rounded-xl flex items-center justify-center shadow-lg shadow-[#FFD700]/30">
+                <Search className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Scouter</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Find local teams</p>
               </div>
             </div>
           </button>
