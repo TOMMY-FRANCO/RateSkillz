@@ -99,10 +99,16 @@ export default defineConfig({
     rollupOptions: {
       external: ['@capacitor/core', '@capacitor/haptics', '@capacitor/status-bar', '@capacitor/splash-screen', '@capacitor/push-notifications'],
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'supabase-vendor': ['@supabase/supabase-js'],
-          'ui-vendor': ['lucide-react']
+        manualChunks: (id) => {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom')) {
+            return 'react-vendor';
+          }
+          if (id.includes('node_modules/@supabase')) {
+            return 'supabase-vendor';
+          }
+          if (id.includes('node_modules/lucide-react')) {
+            return 'ui-vendor';
+          }
         }
       }
     },
