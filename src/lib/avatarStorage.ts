@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 const AVATAR_BUCKET = 'avatars';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
+const MAX_FILE_SIZE = 500 * 1024; // 500KB
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png'];
 
 interface AvatarUploadResult {
@@ -57,7 +57,7 @@ async function stripExifAndConvert(file: File): Promise<Blob> {
 
 export async function uploadAvatar(file: File, userId: string): Promise<AvatarUploadResult> {
   if (file.size > MAX_FILE_SIZE) {
-    throw new Error('File size must be less than 3MB');
+    throw new Error('File size must be less than 500KB. Please compress your image and try again.');
   }
 
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
@@ -90,14 +90,14 @@ export async function uploadAvatar(file: File, userId: string): Promise<AvatarUp
     );
     const validation = await validationRes.json();
     if (!validation.valid) {
-      throw new Error(validation.error || 'Server rejected the file. Only JPEG and PNG images under 3MB are allowed.');
+      throw new Error(validation.error || 'Server rejected the file. Only JPEG and PNG images under 500KB are allowed.');
     }
   }
 
   const stripped = await stripExifAndConvert(file);
 
   if (stripped.size > MAX_FILE_SIZE) {
-    throw new Error('Processed image exceeds 3MB. Please use a smaller image.');
+    throw new Error('File size must be less than 500KB. Please compress your image and try again.');
   }
 
   const ext = file.type === 'image/png' ? 'png' : 'jpg';

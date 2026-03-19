@@ -221,8 +221,8 @@ export default function EditProfile() {
 
       const file = e.target.files[0];
 
-      if (file.size > 3 * 1024 * 1024) {
-        setMessage('File size must be less than 3MB');
+      if (file.size > 500 * 1024) {
+        setMessage('File size must be less than 500KB. Please compress your image and try again.');
         setUploading(false);
         return;
       }
@@ -268,7 +268,7 @@ export default function EditProfile() {
       setMessage('Photo saved successfully!');
       setUploading(false);
     } catch (error) {
-      setMessage('Error saving photo: ' + (error as Error).message);
+      setMessage((error as Error).message || 'Error saving photo');
       setUploading(false);
     }
   };
@@ -1099,7 +1099,7 @@ export default function EditProfile() {
 
             {message && (
               <div className={`rounded-lg p-3 ${
-                message.includes('Error')
+                message.includes('Error') || message.includes('must be') || message.includes('Only') || message.includes('Invalid') || message.includes('rejected') || message.includes('No file')
                   ? 'bg-red-500/10 border border-red-500/50 text-red-400'
                   : 'bg-green-500/10 border border-green-500/50 text-green-400'
               }`}>
