@@ -1,4 +1,5 @@
 import { useEffect, lazy, Suspense } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
@@ -151,6 +152,19 @@ function App() {
     const interval = setInterval(() => updatePresence(user.id), 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [user]);
+
+  useEffect(() => {
+    let listenerHandle: any = null;
+    CapacitorApp.addListener('backButton', () => {
+      const path = window.location.pathname;
+      if (path === '/dashboard') {
+        CapacitorApp.minimizeApp();
+      } else {
+        window.location.replace('/dashboard');
+      }
+    }).then(handle => { listenerHandle = handle; });
+    return () => { if (listenerHandle) listenerHandle.remove(); };
+  }, []);
 
   useEffect(() => {
     // Initialize performance monitoring
