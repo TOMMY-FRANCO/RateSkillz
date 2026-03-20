@@ -61,6 +61,7 @@ const FootballMatch = lazy(() => import('./pages/FootballMatch'));
 const News = lazy(() => import('./pages/News'));
 const SecretGames = lazy(() => import('./pages/SecretGames'));
 const Scouter = lazy(() => import('./pages/Scouter'));
+const UsernameSetup = lazy(() => import('./pages/UsernameSetup'));
 
 function LoadingScreen() {
   return (
@@ -490,6 +491,16 @@ function App() {
           <Route path="/card/:username" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><PublicCard /></LazyPageWrapper>} />
           <Route path="/verify/:token" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><VerifyProfile /></LazyPageWrapper>} />
           <Route path="/add-friend" element={<LazyPageWrapper skeleton={<AddFriendByQRSkeleton />}><AddFriendByQR /></LazyPageWrapper>} />
+          <Route
+            path="/username-setup"
+            element={
+              <ProtectedRoute>
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <UsernameSetup />
+                </LazyPageWrapper>
+              </ProtectedRoute>
+            }
+          />
           <Route path="/secret-games" element={<ProtectedRoute><LazyPageWrapper skeleton={<GenericPageSkeleton />}><SecretGames /></LazyPageWrapper></ProtectedRoute>} />
           <Route path="/shimmer-demo" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><ShimmerDemo /></LazyPageWrapper>} />
           <Route path="/terms" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><TermsOfService /></LazyPageWrapper>} />

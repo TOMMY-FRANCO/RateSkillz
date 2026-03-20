@@ -205,6 +205,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setProfile(profileData);
             console.log('[Session] Profile loaded successfully');
 
+            if (profileData.username_customized === false && window.location.pathname !== '/username-setup') {
+              window.location.replace('/username-setup');
+            }
+
             // Request notification permission on first login
             setTimeout(() => {
               requestNotificationPermission().catch(error => {
