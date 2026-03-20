@@ -223,8 +223,8 @@ export default function Tutorial({ isOpen, onClose, onComplete }: TutorialProps)
   }
  
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-start justify-center p-3 overflow-y-auto">
-      <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 rounded-2xl w-full max-w-lg relative my-4">
+    <div className="fixed inset-0 bg-black/80 z-50 flex flex-col overflow-y-auto" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 16px)', paddingLeft: '12px', paddingRight: '12px', paddingBottom: '16px' }}>
+      <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 rounded-2xl w-full max-w-lg relative mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex-1">
