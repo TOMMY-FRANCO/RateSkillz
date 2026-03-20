@@ -62,6 +62,7 @@ const News = lazy(() => import('./pages/News'));
 const SecretGames = lazy(() => import('./pages/SecretGames'));
 const Scouter = lazy(() => import('./pages/Scouter'));
 const UsernameSetup = lazy(() => import('./pages/UsernameSetup'));
+const SkinStore = lazy(() => import('./pages/SkinStore'));
 
 function LoadingScreen() {
   return (
@@ -319,6 +320,16 @@ function App() {
               <ProtectedRoute>
                 <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
                   <Shop />
+                </LazyPageWrapper>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/skin-store"
+            element={
+              <ProtectedRoute>
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <SkinStore />
                 </LazyPageWrapper>
               </ProtectedRoute>
             }
