@@ -251,13 +251,21 @@ export default function SkinStore() {
     if (isOwned(skin.id)) { toast.info('You already own this skin.'); return; }
     setPurchasing(skin.id);
     try {
+      const { data: existingOwnership } = await supabase.from('user_skins').select('id').eq('user_id', user.id).eq('skin_id', skin.id).maybeSingle();
+      if (existingOwnership) {
+        toast.info('You already own this skin.');
+        setPurchasing(null);
+        return;
+      }
       const before = profile.coin_balance ?? 0;
       const after = before - skin.price;
       await supabase.from('profiles').update({ coin_balance: after }).eq('id', user.id);
       await supabase.from('coin_transactions').insert({ user_id: user.id, amount: -skin.price, transaction_type: 'purchase', description: `Skin purchased: ${skin.name}`, balance_after: after });
       await supabase.from('user_skins').insert({ user_id: user.id, skin_id: skin.id, is_active: false });
       await supabase.from('skin_purchases').insert({ user_id: user.id, skin_id: skin.id, amount: skin.price, balance_before: before, balance_after: after });
-      await supabase.from('coin_pool').update({ distributed_coins: after, remaining_coins: after }).eq('pool_type', 'skin_shop_purchase').catch(() => {});
+      try {
+        await supabase.from('coin_pool').update({ distributed_coins: supabase.rpc('increment', { x: skin.price }), remaining_coins: supabase.rpc('decrement', { x: skin.price }) }).eq('pool_type', 'skin_shop_purchase');
+      } catch {}
       await supabase.from('user_notifications').insert({ user_id: user.id, notification_type: 'transaction', message: `You purchased the "${skin.name}" skin for ${skin.price} coins. New balance: ${after} coins.`, activity_feed_type: 'skin_purchase' }).catch(() => {});
       await supabase.from('notifications').insert({ user_id: user.id, type: 'skin_purchase', message: `Congratulations! You just equipped the "${skin.name}" skin on your card. Looking fresh!` }).catch(() => {});
       if (isWishlisted(skin.id)) {
