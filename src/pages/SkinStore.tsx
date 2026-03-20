@@ -263,19 +263,22 @@ export default function SkinStore() {
       await supabase.from('coin_transactions').insert({ user_id: user.id, amount: -skin.price, transaction_type: 'purchase', description: `Skin purchased: ${skin.name}`, balance_after: after });
       await supabase.from('user_skins').insert({ user_id: user.id, skin_id: skin.id, is_active: false });
       await supabase.from('skin_purchases').insert({ user_id: user.id, skin_id: skin.id, amount: skin.price, balance_before: before, balance_after: after });
-      try {
-        await supabase.from('coin_pool').update({ distributed_coins: supabase.rpc('increment', { x: skin.price }), remaining_coins: supabase.rpc('decrement', { x: skin.price }) }).eq('pool_type', 'skin_shop_purchase');
-      } catch {}
-      await supabase.from('user_notifications').insert({ user_id: user.id, notification_type: 'transaction', message: `You purchased the "${skin.name}" skin for ${skin.price} coins. New balance: ${after} coins.`, activity_feed_type: 'skin_purchase' }).catch(() => {});
-      await supabase.from('notifications').insert({ user_id: user.id, type: 'skin_purchase', message: `Congratulations! You just equipped the "${skin.name}" skin on your card. Looking fresh!` }).catch(() => {});
-      if (isWishlisted(skin.id)) {
-        await supabase.from('skin_wishlist').delete().eq('user_id', user.id).eq('skin_id', skin.id).catch(() => {});
-        setWishlist(prev => prev.filter(w => w.skin_id !== skin.id));
-      }
       setOwnedSkins(prev => [...prev, { skin_id: skin.id, is_active: false }]);
+      if (isWishlisted(skin.id)) {
+        setWishlist(prev => prev.filter(w => w.skin_id !== skin.id));
+        try { await supabase.from('skin_wishlist').delete().eq('user_id', user.id).eq('skin_id', skin.id); } catch (_) {}
+      }
       await refreshProfile();
       await fetchAll();
       toast.success(`"${skin.name}" purchased!`);
+      try {
+        await supabase.from('coin_pool').update({
+          distributed_coins: supabase.rpc('increment', { x: skin.price }),
+          remaining_coins: supabase.rpc('decrement', { x: skin.price }),
+        }).eq('pool_type', 'skin_shop_purchase');
+      } catch (_) {}
+      try { await supabase.from('user_notifications').insert({ user_id: user.id, notification_type: 'transaction', message: `You purchased the "${skin.name}" skin for ${skin.price} coins. New balance: ${after} coins.`, activity_feed_type: 'skin_purchase' }); } catch (_) {}
+      try { await supabase.from('notifications').insert({ user_id: user.id, type: 'skin_purchase', message: `Congratulations! You just equipped the "${skin.name}" skin on your card. Looking fresh!` }); } catch (_) {}
     } catch (err: any) {
       toast.error(err?.message || 'Purchase failed.');
     } finally {
