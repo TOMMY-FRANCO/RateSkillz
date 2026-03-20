@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import {
   ArrowLeft, ShoppingCart, Heart, Zap, Award, Sparkles,
-  Loader2, CheckCircle, History, X,
+  Loader2, CheckCircle, History, X, PowerOff,
 } from 'lucide-react';
 import { CoinBalance } from '../components/CoinBalance';
 
@@ -290,6 +290,17 @@ export default function SkinStore() {
     }
   };
 
+  const handleDeactivate = async () => {
+    if (!user) return;
+    try {
+      await supabase.from('user_skins').update({ is_active: false }).eq('user_id', user.id);
+      setOwnedSkins(prev => prev.map(s => ({ ...s, is_active: false })));
+      toast.success('Skin deactivated.');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to deactivate skin.');
+    }
+  };
+
   const handleWishlist = async (skinId: string) => {
     if (!user) return;
     setWishlistLoading(skinId);
@@ -442,11 +453,19 @@ export default function SkinStore() {
                           </button>
                         )}
                         {owned ? (
-                          <button onClick={() => !active && handleActivate(skin.id)} disabled={active || isActivating}
-                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${active ? 'bg-[#00FF85]/10 border border-[#00FF85]/30 text-[#00FF85] cursor-default' : 'bg-gradient-to-r from-[#00FF85] to-[#00E0FF] text-black hover:opacity-90 disabled:opacity-50'}`}>
-                            {isActivating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                            {active ? 'Active' : 'Equip'}
-                          </button>
+                          active ? (
+                            <button onClick={handleDeactivate}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20">
+                              <PowerOff className="w-3.5 h-3.5" />
+                              Turn Off
+                            </button>
+                          ) : (
+                            <button onClick={() => handleActivate(skin.id)} disabled={isActivating}
+                              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all bg-gradient-to-r from-[#00FF85] to-[#00E0FF] text-black hover:opacity-90 disabled:opacity-50">
+                              {isActivating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                              Equip
+                            </button>
+                          )
                         ) : (
                           <button onClick={() => handlePurchase(skin)} disabled={isPurchasing || !canAfford}
                             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${canAfford ? 'bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black hover:opacity-90 disabled:opacity-50' : 'bg-white/5 border border-white/10 text-[#B0B8C8]/50 cursor-not-allowed'}`}>
