@@ -1,5 +1,4 @@
 import { useEffect, lazy, Suspense } from 'react';
-import { App as CapacitorApp } from '@capacitor/app';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
@@ -155,15 +154,27 @@ function App() {
 
   useEffect(() => {
     let listenerHandle: any = null;
-    CapacitorApp.addListener('backButton', () => {
-      const path = window.location.pathname;
-      if (path === '/dashboard') {
-        CapacitorApp.minimizeApp();
-      } else {
-        window.location.replace('/dashboard');
+    const setupBackButton = async () => {
+      try {
+        const capacitorAppModule = await import('@capacitor/app');
+        const CapApp = capacitorAppModule.App;
+        const handle = await CapApp.addListener('backButton', () => {
+          const path = window.location.pathname;
+          if (path === '/dashboard') {
+            CapApp.minimizeApp();
+          } else {
+            window.location.replace('/dashboard');
+          }
+        });
+        listenerHandle = handle;
+      } catch {
+        // Not running in Capacitor native app, skip silently
       }
-    }).then(handle => { listenerHandle = handle; });
-    return () => { if (listenerHandle) listenerHandle.remove(); };
+    };
+    setupBackButton();
+    return () => {
+      if (listenerHandle) listenerHandle.remove();
+    };
   }, []);
 
   useEffect(() => {
