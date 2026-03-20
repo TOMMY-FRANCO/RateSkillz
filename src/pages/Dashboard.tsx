@@ -70,39 +70,35 @@ export default function Dashboard() {
     if (!profile) return;
 
     try {
-      const [stats, profileData, summaryData, rankData] = await Promise.all([
-        getUserStats(profile.id),
+      const [stats, profileData, rankData] = await Promise.all([
+        withCache(CacheKeys.profile(profile.id) + ':stats', CACHE_TTL.LONG, () => getUserStats(profile.id)),
         withCache(
           CacheKeys.profile(profile.id),
           CACHE_TTL.SHORT,
           () => supabase
             .from('profiles')
-            .select('has_social_badge, unread_profile_views, tutorial_completed')
+            .select('has_social_badge, unread_profile_views, tutorial_completed, is_verified')
             .eq('id', profile.id)
             .maybeSingle()
             .then(r => r.data)
         ),
-        supabase
-          .from('profile_summary')
-          .select('is_verified')
-          .eq('user_id', profile.id)
-          .maybeSingle(),
-        Promise.all([
-          supabase
-            .from('leaderboard_cache')
-            .select('rank')
-            .eq('user_id', profile.id)
-            .maybeSingle(),
-          supabase
-            .from('leaderboard_cache')
-            .select('rank', { count: 'exact', head: true }),
-        ]),
+        withCache(CacheKeys.profile(profile.id) + ':rank', CACHE_TTL.LONG, () =>
+          Promise.all([
+            supabase
+              .from('leaderboard_cache')
+              .select('rank')
+              .eq('user_id', profile.id)
+              .maybeSingle(),
+            supabase
+              .from('leaderboard_cache')
+              .select('rank', { count: 'exact', head: true }),
+          ])
+        ),
       ]);
 
       setUserStats(stats);
 
-      const isVerifiedVal = summaryData.data?.is_verified || false;
-      setIsVerified(isVerifiedVal);
+      setIsVerified(profileData?.is_verified || false);
 
       if (profileData) {
         setHasSocialBadge(profileData.has_social_badge || false);
