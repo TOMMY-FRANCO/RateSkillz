@@ -214,12 +214,12 @@ export default function Dashboard() {
               >
                 <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
               </button>
-              <button
+              <div
                 onClick={() => navigate('/shop')}
-                className="bg-none border-none cursor-pointer hover:scale-105 transition-transform"
+                className="cursor-pointer hover:scale-105 transition-transform"
               >
                 <CoinBalance />
-              </button>
+              </div>
               <button
                 onClick={handleSignOut}
                 className="text-[#B0B8C8] hover:text-red-400 transition-colors bg-none border-none cursor-pointer"
@@ -246,7 +246,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-4 min-h-[420px] items-start">
           {loading ? (
             <div className="text-white">Loading your card...</div>
           ) : (

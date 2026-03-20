@@ -23,13 +23,13 @@ export function CoinBalance() {
       <span className="text-sm font-bold text-[#00FF85] font-['Roboto_Mono'] drop-shadow-[0_0_10px_rgba(0,255,133,0.5)]">
         {balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </span>
-      <button
-        onClick={handleRefresh}
-        className="opacity-0 group-hover:opacity-100 transition-all active:scale-90"
+      <span
+        onClick={(e) => { e.stopPropagation(); handleRefresh(); }}
+        className="opacity-0 group-hover:opacity-100 transition-all active:scale-90 cursor-pointer"
         title="Refresh balance"
       >
-        <RefreshCw className="w-3 h-3 text-[#00FF85] hover:text-[#00E0FF] active:animate-spin" />
-      </button>
+        <RefreshCw className="w-3 h-3 text-[#00FF85] hover:text-[#00E0FF]" />
+      </span>
     </div>
   );
 }
