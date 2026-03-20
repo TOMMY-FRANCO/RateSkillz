@@ -9,6 +9,7 @@ import {
 import { sendFriendRequest, removeFriend } from '../lib/friendRequests';
 import { displayUsername } from '../lib/username';
 import { useToast } from '../contexts/ToastContext';
+import { isOnline, formatTimeAgo } from '../lib/presence';
 
 interface SearchResult {
   id: string;
@@ -55,22 +56,6 @@ const RATING_TIERS = [
 
 const RESULTS_PER_PAGE = 20;
 
-function getIsOnline(updatedAt: string): boolean {
-  return Date.now() - new Date(updatedAt).getTime() < 5 * 60 * 1000;
-}
-
-function getTimeAgo(dateString: string): string {
-  const diffMs = Date.now() - new Date(dateString).getTime();
-  const mins = Math.floor(diffMs / 60000);
-  const hours = Math.floor(diffMs / 3600000);
-  const days = Math.floor(diffMs / 86400000);
-  if (mins < 5) return 'Online now';
-  if (mins < 60) return `${mins}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days === 1) return 'Yesterday';
-  if (days < 7) return `${days}d ago`;
-  return new Date(dateString).toLocaleDateString();
-}
 
 function UserAvatar({ src, name }: { src: string | null; name: string }) {
   return src ? (
@@ -257,8 +242,8 @@ export default function SearchFriends() {
       }
 
       if (onlineOnly) {
-        const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-        q = q.gte('updated_at', fiveMinAgo);
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+        q = q.gte('updated_at', oneHourAgo);
       }
 
       if (educationIds !== null) {
@@ -723,7 +708,7 @@ export default function SearchFriends() {
             {results.map(result => {
               const fs = friendStatuses.get(result.id);
               const isProcessing = actionLoading === result.id;
-              const online = getIsOnline(result.updated_at);
+              const online = isOnline(result.updated_at);
 
               return (
                 <div key={result.id} className="glass-card p-4">
@@ -760,7 +745,7 @@ export default function SearchFriends() {
                           </span>
                         )}
                         <span className={`text-[10px] ${online ? 'text-[#00FF85]' : 'text-[#B0B8C8]/60'}`}>
-                          {getTimeAgo(result.updated_at)}
+                          {formatTimeAgo(result.updated_at)}
                         </span>
                       </div>
                     </div>
