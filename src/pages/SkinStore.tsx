@@ -272,10 +272,11 @@ export default function SkinStore() {
       await fetchAll();
       toast.success(`"${skin.name}" purchased!`);
       try {
-        await supabase.from('coin_pool').update({
-          distributed_coins: supabase.rpc('increment', { x: skin.price }),
-          remaining_coins: supabase.rpc('decrement', { x: skin.price }),
-        }).eq('pool_type', 'skin_shop_purchase');
+        await supabase.from('skin_revenue').insert({
+          user_id: user.id,
+          skin_id: skin.id,
+          amount: skin.price,
+        });
       } catch (_) {}
       try { await supabase.from('user_notifications').insert({ user_id: user.id, notification_type: 'transaction', message: `You purchased the "${skin.name}" skin for ${skin.price} coins. New balance: ${after} coins.`, activity_feed_type: 'skin_purchase' }); } catch (_) {}
       try { await supabase.from('notifications').insert({ user_id: user.id, type: 'skin_purchase', message: `Congratulations! You just equipped the "${skin.name}" skin on your card. Looking fresh!` }); } catch (_) {}
