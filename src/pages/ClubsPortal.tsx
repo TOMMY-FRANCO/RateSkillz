@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
-import { Shield, Loader2, ArrowLeft, Search, Upload, RefreshCw, ChevronDown, ChevronUp, Plus, Trash2, CreditCard as Edit2, Check, X, Ticket, Calendar, MapPin, Globe, Save, Instagram, Facebook, Youtube, Twitter } from 'lucide-react';
+import { Shield, Loader2, ArrowLeft, Search, Upload, RefreshCw, ChevronDown, ChevronUp, Plus, Trash2, CreditCard as Edit2, Check, X, Ticket, Calendar, MapPin, Globe, Save, Instagram, Facebook, Youtube, Twitter, User, UserCheck } from 'lucide-react';
 
 interface FootballClub {
   id: string;
@@ -408,6 +408,512 @@ function MatchesPanel({ club, toast }: { club: FootballClub; toast: ReturnType<t
   );
 }
 
+interface ClubPlayer {
+  id: string;
+  club_id: string;
+  name: string;
+  position: string | null;
+  jersey_number: number | null;
+  avatar_url: string | null;
+  profile_id: string | null;
+  pitch_x: number;
+  pitch_y: number;
+  slot_position: string | null;
+  is_substitute: boolean;
+  is_confirmed: boolean;
+  profile?: { username: string | null; avatar_url: string | null } | null;
+}
+
+const FORMATION_433: { slot_position: string; pitch_x: number; pitch_y: number }[] = [
+  { slot_position: 'GK',  pitch_x: 50, pitch_y: 88 },
+  { slot_position: 'LB',  pitch_x: 15, pitch_y: 68 },
+  { slot_position: 'CB',  pitch_x: 35, pitch_y: 68 },
+  { slot_position: 'CB',  pitch_x: 65, pitch_y: 68 },
+  { slot_position: 'RB',  pitch_x: 85, pitch_y: 68 },
+  { slot_position: 'LM',  pitch_x: 15, pitch_y: 46 },
+  { slot_position: 'CM',  pitch_x: 50, pitch_y: 46 },
+  { slot_position: 'RM',  pitch_x: 85, pitch_y: 46 },
+  { slot_position: 'LW',  pitch_x: 15, pitch_y: 22 },
+  { slot_position: 'ST',  pitch_x: 50, pitch_y: 16 },
+  { slot_position: 'RW',  pitch_x: 85, pitch_y: 22 },
+];
+
+const SUB_SLOT_POSITIONS = ['SUB 1', 'SUB 2', 'SUB 3', 'SUB 4', 'SUB 5'];
+
+function PlayerSlotPin({
+  player,
+  onToggleConfirmed,
+  onLinkUser,
+  onUnlink,
+  saving,
+}: {
+  player: ClubPlayer;
+  onToggleConfirmed: () => void;
+  onLinkUser: (username: string) => void;
+  onUnlink: () => void;
+  saving: boolean;
+}) {
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchVal, setSearchVal] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<{ id: string; username: string; avatar_url: string | null }[]>([]);
+
+  const doSearch = async (q: string) => {
+    if (!q.trim()) { setSearchResults([]); return; }
+    setSearching(true);
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .ilike('username', `%${q.trim()}%`)
+        .limit(5);
+      setSearchResults(data || []);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const confirmed = player.is_confirmed;
+  const hasProfile = !!player.profile_id && player.profile;
+  const avatarSrc = hasProfile ? player.profile!.avatar_url : null;
+  const displayName = hasProfile ? (player.profile!.username || player.name) : player.name;
+
+  return (
+    <div className="flex flex-col items-center gap-1 w-full">
+      <div
+        className={`relative w-10 h-10 rounded-full border-2 flex items-center justify-center overflow-hidden transition-all cursor-pointer ${
+          confirmed
+            ? 'border-green-400 shadow-[0_0_10px_rgba(74,222,128,0.6)]'
+            : 'border-gray-600'
+        }`}
+        onClick={onToggleConfirmed}
+        title={confirmed ? 'Confirmed — click to unconfirm' : 'Unconfirmed — click to confirm'}
+      >
+        {saving ? (
+          <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+        ) : avatarSrc ? (
+          <img src={avatarSrc} alt={displayName} className="w-full h-full object-cover" />
+        ) : confirmed ? (
+          <UserCheck className="w-5 h-5 text-green-400" />
+        ) : (
+          <User className="w-5 h-5 text-gray-500" />
+        )}
+      </div>
+
+      <span className="text-[10px] font-bold text-white/80 leading-none">{player.slot_position}</span>
+      {player.jersey_number != null && (
+        <span className="text-[9px] text-cyan-400 leading-none">#{player.jersey_number}</span>
+      )}
+      <span className="text-[9px] text-gray-400 leading-none truncate max-w-[60px] text-center">{displayName}</span>
+
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => setShowSearch(s => !s)}
+          className="text-[9px] px-1.5 py-0.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-cyan-700 text-gray-400 hover:text-cyan-400 rounded transition-all"
+        >
+          {showSearch ? 'Close' : 'Link'}
+        </button>
+        {player.profile_id && (
+          <button
+            type="button"
+            onClick={onUnlink}
+            className="text-[9px] px-1.5 py-0.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-red-700 text-gray-400 hover:text-red-400 rounded transition-all"
+          >
+            Unlink
+          </button>
+        )}
+      </div>
+
+      {showSearch && (
+        <div className="w-40 bg-gray-900 border border-gray-700 rounded-lg p-2 space-y-1.5 z-50">
+          <div className="flex items-center gap-1">
+            <input
+              type="text"
+              value={searchVal}
+              onChange={e => { setSearchVal(e.target.value); doSearch(e.target.value); }}
+              placeholder="Username..."
+              className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-600"
+            />
+            {searching && <Loader2 className="w-3 h-3 animate-spin text-gray-400 flex-shrink-0" />}
+          </div>
+          {searchResults.map(u => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => { onLinkUser(u.id); setShowSearch(false); setSearchVal(''); setSearchResults([]); }}
+              className="w-full flex items-center gap-1.5 px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs text-white transition-all text-left"
+            >
+              {u.avatar_url ? (
+                <img src={u.avatar_url} className="w-5 h-5 rounded-full object-cover flex-shrink-0" alt="" />
+              ) : (
+                <User className="w-4 h-4 text-gray-500 flex-shrink-0" />
+              )}
+              <span className="truncate">{u.username}</span>
+            </button>
+          ))}
+          {searchResults.length === 0 && searchVal.trim() && !searching && (
+            <p className="text-xs text-gray-500 text-center py-1">No users found</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SubSlotCard({
+  player,
+  onToggleConfirmed,
+  onLinkUser,
+  onUnlink,
+  saving,
+}: {
+  player: ClubPlayer;
+  onToggleConfirmed: () => void;
+  onLinkUser: (profileId: string) => void;
+  onUnlink: () => void;
+  saving: boolean;
+}) {
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchVal, setSearchVal] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<{ id: string; username: string; avatar_url: string | null }[]>([]);
+
+  const doSearch = async (q: string) => {
+    if (!q.trim()) { setSearchResults([]); return; }
+    setSearching(true);
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .ilike('username', `%${q.trim()}%`)
+        .limit(5);
+      setSearchResults(data || []);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const confirmed = player.is_confirmed;
+  const hasProfile = !!player.profile_id && player.profile;
+  const avatarSrc = hasProfile ? player.profile!.avatar_url : null;
+  const displayName = hasProfile ? (player.profile!.username || player.name) : player.name;
+
+  return (
+    <div className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all ${confirmed ? 'bg-green-900/10 border-green-500/30 shadow-[0_0_10px_rgba(74,222,128,0.2)]' : 'bg-gray-800/50 border-gray-700/60'}`}>
+      <div
+        className={`w-10 h-10 rounded-full border-2 flex items-center justify-center overflow-hidden cursor-pointer transition-all ${confirmed ? 'border-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]' : 'border-gray-600'}`}
+        onClick={onToggleConfirmed}
+        title={confirmed ? 'Confirmed — click to unconfirm' : 'Unconfirmed — click to confirm'}
+      >
+        {saving ? (
+          <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+        ) : avatarSrc ? (
+          <img src={avatarSrc} alt={displayName} className="w-full h-full object-cover" />
+        ) : confirmed ? (
+          <UserCheck className="w-5 h-5 text-green-400" />
+        ) : (
+          <User className="w-5 h-5 text-gray-500" />
+        )}
+      </div>
+      <span className="text-[10px] font-bold text-white/80 leading-none">{player.slot_position}</span>
+      {player.jersey_number != null && (
+        <span className="text-[9px] text-cyan-400 leading-none">#{player.jersey_number}</span>
+      )}
+      <span className="text-[9px] text-gray-400 leading-none truncate max-w-[56px] text-center">{displayName}</span>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => setShowSearch(s => !s)}
+          className="text-[9px] px-1.5 py-0.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-cyan-700 text-gray-400 hover:text-cyan-400 rounded transition-all"
+        >
+          {showSearch ? 'Close' : 'Link'}
+        </button>
+        {player.profile_id && (
+          <button
+            type="button"
+            onClick={onUnlink}
+            className="text-[9px] px-1.5 py-0.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-red-700 text-gray-400 hover:text-red-400 rounded transition-all"
+          >
+            Unlink
+          </button>
+        )}
+      </div>
+      {showSearch && (
+        <div className="w-40 bg-gray-900 border border-gray-700 rounded-lg p-2 space-y-1.5 z-50">
+          <div className="flex items-center gap-1">
+            <input
+              type="text"
+              value={searchVal}
+              onChange={e => { setSearchVal(e.target.value); doSearch(e.target.value); }}
+              placeholder="Username..."
+              className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-600"
+            />
+            {searching && <Loader2 className="w-3 h-3 animate-spin text-gray-400 flex-shrink-0" />}
+          </div>
+          {searchResults.map(u => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => { onLinkUser(u.id); setShowSearch(false); setSearchVal(''); setSearchResults([]); }}
+              className="w-full flex items-center gap-1.5 px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs text-white transition-all text-left"
+            >
+              {u.avatar_url ? (
+                <img src={u.avatar_url} className="w-5 h-5 rounded-full object-cover flex-shrink-0" alt="" />
+              ) : (
+                <User className="w-4 h-4 text-gray-500 flex-shrink-0" />
+              )}
+              <span className="truncate">{u.username}</span>
+            </button>
+          ))}
+          {searchResults.length === 0 && searchVal.trim() && !searching && (
+            <p className="text-xs text-gray-500 text-center py-1">No users found</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SquadPanel({ club, toast }: { club: FootballClub; toast: ReturnType<typeof useToast> }) {
+  const [players, setPlayers] = useState<ClubPlayer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [initialising, setInitialising] = useState(false);
+
+  const loadPlayers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('club_players')
+        .select('id, club_id, name, position, jersey_number, avatar_url, profile_id, pitch_x, pitch_y, slot_position, is_substitute, is_confirmed')
+        .eq('club_id', club.id)
+        .order('is_substitute', { ascending: true })
+        .order('pitch_y', { ascending: false });
+      if (error) throw error;
+
+      const rows = data || [];
+      if (rows.length === 0) { setPlayers([]); setLoading(false); return; }
+
+      const profileIds = rows.filter(r => r.profile_id).map(r => r.profile_id as string);
+      let profileMap: Record<string, { username: string | null; avatar_url: string | null }> = {};
+      if (profileIds.length > 0) {
+        const { data: pData } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', profileIds);
+        if (pData) {
+          for (const p of pData) profileMap[p.id] = { username: p.username, avatar_url: p.avatar_url };
+        }
+      }
+
+      setPlayers(rows.map(r => ({
+        ...r,
+        pitch_x: Number(r.pitch_x ?? 50),
+        pitch_y: Number(r.pitch_y ?? 50),
+        profile: r.profile_id ? (profileMap[r.profile_id] ?? null) : null,
+      })));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to load squad');
+    } finally {
+      setLoading(false);
+    }
+  }, [club.id]);
+
+  useEffect(() => { loadPlayers(); }, [loadPlayers]);
+
+  const handleInitialise = async () => {
+    setInitialising(true);
+    try {
+      const starters = FORMATION_433.map(slot => ({
+        club_id: club.id,
+        name: slot.slot_position,
+        slot_position: slot.slot_position,
+        pitch_x: slot.pitch_x,
+        pitch_y: slot.pitch_y,
+        is_substitute: false,
+        is_confirmed: false,
+      }));
+      const subs = SUB_SLOT_POSITIONS.map(label => ({
+        club_id: club.id,
+        name: label,
+        slot_position: label,
+        pitch_x: 50,
+        pitch_y: 50,
+        is_substitute: true,
+        is_confirmed: false,
+      }));
+      const { error } = await supabase.from('club_players').insert([...starters, ...subs]);
+      if (error) throw error;
+      await loadPlayers();
+      toast.success('Squad initialised with 4-3-3 formation');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to initialise squad');
+    } finally {
+      setInitialising(false);
+    }
+  };
+
+  const handleToggleConfirmed = async (player: ClubPlayer) => {
+    setSavingId(player.id);
+    try {
+      const newVal = !player.is_confirmed;
+      const { error } = await supabase.from('club_players').update({ is_confirmed: newVal }).eq('id', player.id);
+      if (error) throw error;
+      setPlayers(prev => prev.map(p => p.id === player.id ? { ...p, is_confirmed: newVal } : p));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update confirmed status');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleLinkUser = async (player: ClubPlayer, profileId: string) => {
+    setSavingId(player.id);
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .eq('id', profileId)
+        .maybeSingle();
+      const { error } = await supabase.from('club_players').update({ profile_id: profileId }).eq('id', player.id);
+      if (error) throw error;
+      setPlayers(prev => prev.map(p => p.id === player.id ? {
+        ...p,
+        profile_id: profileId,
+        profile: profileData ? { username: profileData.username, avatar_url: profileData.avatar_url } : null,
+      } : p));
+      toast.success('User linked');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to link user');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleUnlink = async (player: ClubPlayer) => {
+    setSavingId(player.id);
+    try {
+      const { error } = await supabase.from('club_players').update({ profile_id: null }).eq('id', player.id);
+      if (error) throw error;
+      setPlayers(prev => prev.map(p => p.id === player.id ? { ...p, profile_id: null, profile: null } : p));
+      toast.success('User unlinked');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to unlink user');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const starters = players.filter(p => !p.is_substitute);
+  const subs = players.filter(p => p.is_substitute);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-6">
+        <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+        <span className="ml-2 text-xs text-gray-400">Loading squad...</span>
+      </div>
+    );
+  }
+
+  if (players.length === 0) {
+    return (
+      <div className="px-6 pb-4 pt-2 flex flex-col items-center gap-3">
+        <p className="text-xs text-gray-500">No squad slots yet. Initialise with a 4-3-3 formation.</p>
+        <button
+          onClick={handleInitialise}
+          disabled={initialising}
+          className="flex items-center gap-2 px-4 py-2 bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-all"
+        >
+          {initialising ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+          Initialise 4-3-3
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 pb-4 pt-2 space-y-4">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-bold text-white">Squad</h4>
+        <span className="text-xs text-gray-500">{starters.filter(p => p.is_confirmed).length}/{starters.length} confirmed</span>
+      </div>
+
+      <div
+        className="relative w-full rounded-xl overflow-hidden border border-green-900/60"
+        style={{ paddingBottom: '140%', background: 'linear-gradient(to bottom, #14532d, #166534, #15803d, #166534, #14532d)' }}
+      >
+        <div className="absolute inset-0">
+          <div className="absolute inset-x-0 top-1/2 -translate-y-px h-px bg-white/20" />
+          <div
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/20"
+            style={{ width: '22%', paddingBottom: '22%' }}
+          />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-white/30" />
+          <div
+            className="absolute inset-x-[20%] top-0 border-b border-l border-r border-white/20"
+            style={{ height: '18%' }}
+          />
+          <div
+            className="absolute inset-x-[20%] bottom-0 border-t border-l border-r border-white/20"
+            style={{ height: '18%' }}
+          />
+          <div
+            className="absolute inset-x-[35%] top-0 border-b border-l border-r border-white/15"
+            style={{ height: '9%' }}
+          />
+          <div
+            className="absolute inset-x-[35%] bottom-0 border-t border-l border-r border-white/15"
+            style={{ height: '9%' }}
+          />
+          <div className="absolute left-1/2 top-0 -translate-x-1/2 w-px h-2 bg-white/20" />
+          <div className="absolute left-1/2 bottom-0 -translate-x-1/2 w-px h-2 bg-white/20" />
+
+          {starters.map(player => (
+            <div
+              key={player.id}
+              className="absolute"
+              style={{
+                left: `${player.pitch_x}%`,
+                top: `${player.pitch_y}%`,
+                transform: 'translate(-50%, -50%)',
+                zIndex: 10,
+              }}
+            >
+              <PlayerSlotPin
+                player={player}
+                onToggleConfirmed={() => handleToggleConfirmed(player)}
+                onLinkUser={(profileId) => handleLinkUser(player, profileId)}
+                onUnlink={() => handleUnlink(player)}
+                saving={savingId === player.id}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {subs.length > 0 && (
+        <div>
+          <h5 className="text-xs font-semibold text-gray-400 mb-2">Substitutes</h5>
+          <div className="flex flex-wrap gap-3">
+            {subs.map(player => (
+              <SubSlotCard
+                key={player.id}
+                player={player}
+                onToggleConfirmed={() => handleToggleConfirmed(player)}
+                onLinkUser={(profileId) => handleLinkUser(player, profileId)}
+                onUnlink={() => handleUnlink(player)}
+                saving={savingId === player.id}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface SocialUrls {
   instagram_url: string;
   facebook_url: string;
@@ -468,6 +974,7 @@ function ClubRow({
   onToggleVisibility: (club: FootballClub, column: VisibilityColumn) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [expandedTab, setExpandedTab] = useState<'matches' | 'squad'>('matches');
   const [websiteUrl, setWebsiteUrl] = useState(club.website_url ?? '');
   const [savingUrl, setSavingUrl] = useState(false);
   const [socialUrls, setSocialUrls] = useState<SocialUrls>({
@@ -689,7 +1196,22 @@ function ClubRow({
 
       {expanded && (
         <div className="bg-gray-900/40 border-t border-gray-800/60">
-          <MatchesPanel club={club} toast={toast} />
+          <div className="flex gap-1 px-4 pt-3 pb-1">
+            <button
+              onClick={() => setExpandedTab('matches')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${expandedTab === 'matches' ? 'bg-cyan-700 text-white' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'}`}
+            >
+              Matches
+            </button>
+            <button
+              onClick={() => setExpandedTab('squad')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${expandedTab === 'squad' ? 'bg-cyan-700 text-white' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'}`}
+            >
+              Squad
+            </button>
+          </div>
+          {expandedTab === 'matches' && <MatchesPanel club={club} toast={toast} />}
+          {expandedTab === 'squad' && <SquadPanel club={club} toast={toast} />}
         </div>
       )}
     </div>
