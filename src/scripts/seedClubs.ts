@@ -93,6 +93,179 @@ const NORTH_LONDON_MENS_CLUBS = [
   },
 ] as const;
 
+const NORTH_LONDON_WOMENS_CLUBS = [
+  {
+    name: 'Arsenal Women',
+    region: 'North',
+    gender: 'womens',
+    league: 'WSL',
+    borough: 'Islington',
+    description:
+      'Arsenal Women FC is a professional women\'s football club based in Islington, North London. One of the most decorated women\'s clubs in England, playing home games at the Emirates Stadium.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Tottenham Hotspur Women',
+    region: 'North',
+    gender: 'womens',
+    league: 'WSL',
+    borough: 'Haringey',
+    description:
+      'Tottenham Hotspur Women FC compete in the Women\'s Super League. They play their home matches at Tottenham Hotspur Stadium in Haringey, North London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'London City Lionesses',
+    region: 'North',
+    gender: 'womens',
+    league: 'WSL',
+    borough: 'North London',
+    description:
+      'London City Lionesses are a professional women\'s football club competing in the Women\'s Super League, based in North London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'London Bees',
+    region: 'North',
+    gender: 'womens',
+    league: 'National League',
+    borough: 'Harrow',
+    description:
+      'London Bees are a women\'s football club competing in the National League. They play their home matches at The Hive Stadium in Harrow, North London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Camden Town FC Women',
+    region: 'North',
+    gender: 'womens',
+    league: 'London and South East Regional League',
+    borough: 'Camden',
+    description:
+      'Camden Town FC Women compete in the London and South East Regional League, representing the Camden community in North London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Haringey Borough FC Women',
+    region: 'North',
+    gender: 'womens',
+    league: 'Isthmian League',
+    borough: 'Haringey',
+    description:
+      'Haringey Borough FC Women compete in the Isthmian League, playing their home matches at Coles Park in Haringey, North London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Hampstead Women FC',
+    region: 'North',
+    gender: 'womens',
+    league: 'Regional',
+    borough: 'Hampstead',
+    description:
+      'Hampstead Women FC is a women\'s football club based in Hampstead, North London, competing in regional football.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'East Finchley Women',
+    region: 'North',
+    gender: 'womens',
+    league: 'GLWFL Division One North',
+    borough: 'Barnet',
+    description:
+      'East Finchley Women compete in the Greater London Women\'s Football League Division One North, based in Barnet, North London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Alexandra Park WFC',
+    region: 'North',
+    gender: 'womens',
+    league: 'GLWFL',
+    borough: 'Muswell Hill',
+    description:
+      'Alexandra Park Women\'s Football Club compete in the Greater London Women\'s Football League, based in Muswell Hill, North London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Barnet Nightingales FC',
+    region: 'North',
+    gender: 'womens',
+    league: 'Youth',
+    borough: 'Barnet',
+    description:
+      'Barnet Nightingales FC is a youth women\'s football club based in Barnet, North London, developing the next generation of female footballers.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'AFC Southgate',
+    region: 'North',
+    gender: 'womens',
+    league: 'Development',
+    borough: 'Southgate',
+    description:
+      'AFC Southgate Women is a development women\'s football club based in Southgate, North London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'United Dragons',
+    region: 'North',
+    gender: 'womens',
+    league: 'Grassroots',
+    borough: 'Maida Vale',
+    description:
+      'United Dragons is a grassroots women\'s football club based in Maida Vale, North London, promoting participation and community football.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Limitless Sports FC Women',
+    region: 'North',
+    gender: 'womens',
+    league: 'Youth',
+    borough: 'Tottenham',
+    description:
+      'Limitless Sports FC Women is a youth women\'s football club based in Tottenham, North London, focused on developing young female talent.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Panthera FC',
+    region: 'North',
+    gender: 'womens',
+    league: 'Grassroots',
+    borough: 'Barnet',
+    description:
+      'Panthera FC is a grassroots women\'s football club based in Barnet, North London, providing football opportunities at the community level.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+] as const;
+
+const ALL_CLUBS = [...NORTH_LONDON_MENS_CLUBS, ...NORTH_LONDON_WOMENS_CLUBS];
+
 async function seedClubs() {
   console.log('Starting club seed...');
 
@@ -106,7 +279,7 @@ async function seedClubs() {
   }
 
   const existingNames = new Set((existing || []).map((c: { name: string }) => c.name));
-  const toInsert = NORTH_LONDON_MENS_CLUBS.filter(c => !existingNames.has(c.name));
+  const toInsert = ALL_CLUBS.filter(c => !existingNames.has(c.name));
 
   if (toInsert.length === 0) {
     console.log('All clubs already exist — nothing to insert.');
