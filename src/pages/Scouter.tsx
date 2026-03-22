@@ -240,7 +240,7 @@ function PlayerAvatarCard({
         />
       ) : (
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00FF85] to-[#38BDF8] flex items-center justify-center text-black font-black text-sm flex-shrink-0">
-          {name.charAt(0).toUpperCase()}
+          {(name || username || position || '?').charAt(0).toUpperCase()}
         </div>
       )}
       <div className="min-w-0 flex-1">
@@ -1396,7 +1396,7 @@ export default function Scouter() {
                             />
                           ) : (
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00FF85] to-[#38BDF8] flex items-center justify-center text-black font-black text-base flex-shrink-0">
-                              {listing.team_name.charAt(0).toUpperCase()}
+                              {(listing.team_name || '?').charAt(0).toUpperCase()}
                             </div>
                           )}
                           <div className="min-w-0 flex-1">
