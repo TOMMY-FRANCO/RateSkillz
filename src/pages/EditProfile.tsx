@@ -50,6 +50,16 @@ export default function EditProfile() {
 
   const [city, setCity] = useState(profile?.city || '');
 
+  const [isOAuthUser, setIsOAuthUser] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState('');
+
   // Safety features
   const [age, setAge] = useState(profile?.age || '');
   const [findableBySchool, setFindableBySchool] = useState(profile?.findable_by_school ?? true);
@@ -60,8 +70,18 @@ export default function EditProfile() {
   useEffect(() => {
     if (profile) {
       loadCurrentEducation();
+      checkOAuthUser(profile.id);
     }
   }, [profile?.id]);
+
+  const checkOAuthUser = async (userId: string) => {
+    const { data } = await supabase
+      .from('oauth_accounts')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    setIsOAuthUser(!!data);
+  };
 
   const loadCurrentEducation = async () => {
     if (!profile) return;
@@ -271,6 +291,29 @@ export default function EditProfile() {
       setMessage((error as Error).message || 'Error saving photo');
       setUploading(false);
     }
+  };
+
+  const handlePasswordChange = async () => {
+    setPasswordMessage('');
+    if (newPassword.length < 8) {
+      setPasswordMessage('New password must be at least 8 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage('New password and confirm password do not match.');
+      return;
+    }
+    setPasswordSaving(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      setPasswordMessage('Error: ' + error.message);
+    } else {
+      setPasswordMessage('Password updated successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    }
+    setPasswordSaving(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -784,6 +827,89 @@ export default function EditProfile() {
                 ))}
               </div>
             </div>
+
+            {!isOAuthUser && (
+              <div className="border-t border-gray-700 pt-6">
+                <h3 className="text-lg font-semibold text-white mb-4">Change Password</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Current Password</label>
+                    <div className="relative">
+                      <input
+                        type={showCurrentPassword ? 'text' : 'password'}
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="w-full px-4 py-3 pr-10 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                        placeholder="Enter current password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                      >
+                        {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">New Password</label>
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full px-4 py-3 pr-10 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                        placeholder="Minimum 8 characters"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                      >
+                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Confirm New Password</label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full px-4 py-3 pr-10 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                        placeholder="Repeat new password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  {passwordMessage && (
+                    <div className={`rounded-lg p-3 ${
+                      passwordMessage.includes('Error') || passwordMessage.includes('must be') || passwordMessage.includes('do not match')
+                        ? 'bg-red-500/10 border border-red-500/50 text-red-400'
+                        : 'bg-green-500/10 border border-green-500/50 text-green-400'
+                    }`}>
+                      <p className="text-sm">{passwordMessage}</p>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handlePasswordChange}
+                    disabled={passwordSaving}
+                    className="w-full py-3 bg-gradient-to-r from-green-500 to-cyan-500 text-black font-semibold rounded-lg hover:from-green-400 hover:to-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-black transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  >
+                    <Save className="w-5 h-5" />
+                    <span>{passwordSaving ? 'Saving...' : 'Save Password'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-semibold text-white mb-4">Education (Internal Use)</h3>
