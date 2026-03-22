@@ -47,50 +47,50 @@ export default function UsernameSetup() {
   };
 
   const handleConfirm = async () => {
-    if (!profile || !username || formatError || !available) return;
-    setSaving(true);
-    setSaveError(null);
+  if (!profile || !username || formatError || !available) return;
+  setSaving(true);
+  setSaveError(null);
+
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        username: username.toLowerCase(),
+        username_customized: true,
+        username_last_changed: new Date().toISOString(),
+      })
+      .eq('id', profile.id);
+
+    if (error) throw error;
 
     try {
-      // Direct update — this is their first-time pick so no cooldown applies
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          username: username.toLowerCase(),
-          username_customized: true,
-          username_last_changed: new Date().toISOString(),
-        })
-        .eq('id', profile.id);
-
-      if (error) throw error;
-
-      // Log to username history
       await supabase.from('username_history').insert({
         user_id: profile.id,
         old_username: profile.username,
         new_username: username.toLowerCase(),
-      }).catch(() => {});
+      });
+    } catch (_) {}
 
-      await refreshProfile();
-      navigate('/dashboard', { replace: true });
-    } catch (err: any) {
-      setSaveError(err.message || 'Failed to save username. Please try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
+    await refreshProfile();
+    navigate('/dashboard', { replace: true });
+  } catch (err: any) {
+    setSaveError(err.message || 'Failed to save username. Please try again.');
+  } finally {
+    setSaving(false);
+  }
+};
 
-  const handleSkip = async () => {
-    if (!profile) return;
-    // Mark as customized so they don't see this screen again
+const handleSkip = async () => {
+  if (!profile) return;
+  try {
     await supabase
       .from('profiles')
       .update({ username_customized: true })
-      .eq('id', profile.id)
-      .catch(() => {});
-    await refreshProfile();
-    navigate('/dashboard', { replace: true });
-  };
+      .eq('id', profile.id);
+  } catch (_) {}
+  await refreshProfile();
+  navigate('/dashboard', { replace: true });
+};
 
   const isValid = username.length > 0 && !formatError && available === true && !checking;
 
