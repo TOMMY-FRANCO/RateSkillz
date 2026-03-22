@@ -68,6 +68,9 @@ interface FootballClub {
   threads_url: string | null;
   is_verified: boolean;
   is_partner: boolean;
+  win_count: number;
+  loss_count: number;
+  draw_count: number;
 }
 
 interface ClubStaff {
@@ -360,6 +363,23 @@ function ClubCard({
                 Partner Club
               </span>
             )}
+
+            {club.is_partner && (() => {
+              const total = club.win_count + club.loss_count + club.draw_count;
+              const winRate = total > 0 ? Math.round((club.win_count / total) * 100) : 0;
+              return (
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                  <span className="text-xs font-bold">
+                    <span className="text-green-400">W {club.win_count}</span>
+                    <span className="text-[#B0B8C8] mx-1">·</span>
+                    <span className="text-yellow-400">D {club.draw_count}</span>
+                    <span className="text-[#B0B8C8] mx-1">·</span>
+                    <span className="text-red-400">L {club.loss_count}</span>
+                  </span>
+                  <span className="text-[#B0B8C8] text-xs">Win rate: {winRate}%</span>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="flex-shrink-0 ml-1 mt-1">
