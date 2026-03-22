@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   ArrowLeft, RefreshCw, MapPin, MessageCircle, Plus, AlertCircle, X,
   Loader2, Trash2, Users, Shield, Search, ChevronDown, ChevronUp,
-  CheckCircle, Ticket, Calendar, Trophy,
+  CheckCircle, Ticket, Calendar, Trophy, ExternalLink,
 } from 'lucide-react';
 import { ShimmerBar } from '../components/ui/Shimmer';
 import { useToast } from '../contexts/ToastContext';
@@ -58,6 +58,7 @@ interface FootballClub {
   borough: string | null;
   description: string | null;
   badge_url: string | null;
+  website_url: string | null;
   is_verified: boolean;
   is_partner: boolean;
 }
@@ -514,6 +515,21 @@ function ClubCard({
               {detailsLoaded && staff.length === 0 && players.length === 0 && !club.is_partner && (
                 <div className="py-4 text-center">
                   <p className="text-[#B0B8C8] text-sm">No additional details available yet.</p>
+                </div>
+              )}
+
+              {club.is_partner && club.website_url && (
+                <div className="pt-1">
+                  <a
+                    href={club.website_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[rgba(0,224,255,0.08)] border border-[rgba(0,224,255,0.2)] text-[#00E0FF] text-xs font-semibold hover:bg-[rgba(0,224,255,0.15)] transition-all"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Visit Club Website
+                  </a>
                 </div>
               )}
             </>

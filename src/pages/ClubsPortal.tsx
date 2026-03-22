@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
-import { Shield, Loader2, ArrowLeft, Search, Upload, RefreshCw, ChevronDown, ChevronUp, Plus, Trash2, CreditCard as Edit2, Check, X, Ticket, Calendar, MapPin } from 'lucide-react';
+import { Shield, Loader2, ArrowLeft, Search, Upload, RefreshCw, ChevronDown, ChevronUp, Plus, Trash2, CreditCard as Edit2, Check, X, Ticket, Calendar, MapPin, Globe, Save } from 'lucide-react';
 
 interface FootballClub {
   id: string;
@@ -12,6 +12,7 @@ interface FootballClub {
   league: string | null;
   borough: string | null;
   badge_url: string | null;
+  website_url: string | null;
   is_verified: boolean;
   is_partner: boolean;
 }
@@ -402,6 +403,7 @@ function ClubRow({
   onToggleVerified,
   onTogglePartner,
   onBadgeUpload,
+  onWebsiteUrlSave,
 }: {
   club: FootballClub;
   toast: ReturnType<typeof useToast>;
@@ -411,8 +413,11 @@ function ClubRow({
   onToggleVerified: (club: FootballClub) => void;
   onTogglePartner: (club: FootballClub) => void;
   onBadgeUpload: (club: FootballClub, file: File) => void;
+  onWebsiteUrlSave: (club: FootballClub, url: string) => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [websiteUrl, setWebsiteUrl] = useState(club.website_url ?? '');
+  const [savingUrl, setSavingUrl] = useState(false);
 
   return (
     <div className="border-b border-gray-800/60 last:border-0">
@@ -483,6 +488,34 @@ function ClubRow({
           </div>
 
           <div className="flex flex-col items-center gap-1">
+            <span className="text-xs text-gray-500">Website</span>
+            <div className="flex items-center gap-1">
+              <div className="relative">
+                <Globe className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-500 pointer-events-none" />
+                <input
+                  type="url"
+                  value={websiteUrl}
+                  onChange={e => setWebsiteUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="pl-6 pr-2 py-1 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-600 transition-colors w-36"
+                />
+              </div>
+              <button
+                onClick={async () => {
+                  setSavingUrl(true);
+                  await onWebsiteUrlSave(club, websiteUrl);
+                  setSavingUrl(false);
+                }}
+                disabled={savingUrl}
+                className="p-1.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 border border-gray-700 hover:border-cyan-700 text-gray-400 hover:text-cyan-400 rounded-lg transition-all"
+                title="Save website URL"
+              >
+                {savingUrl ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center gap-1">
             <span className="text-xs text-gray-500">Matches</span>
             <button
               onClick={() => setExpanded(x => !x)}
@@ -519,7 +552,7 @@ export default function ClubsPortal() {
     try {
       const { data, error } = await supabase
         .from('football_clubs')
-        .select('id, name, region, gender, league, borough, badge_url, is_verified, is_partner')
+        .select('id, name, region, gender, league, borough, badge_url, website_url, is_verified, is_partner')
         .order('region')
         .order('name');
       if (error) throw error;
@@ -558,6 +591,20 @@ export default function ClubsPortal() {
       toast.error(err instanceof Error ? err.message : 'Failed to update partner status');
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  const handleWebsiteUrlSave = async (club: FootballClub, url: string) => {
+    try {
+      const { error } = await supabase
+        .from('football_clubs')
+        .update({ website_url: url.trim() || null })
+        .eq('id', club.id);
+      if (error) throw error;
+      setClubs(prev => prev.map(c => c.id === club.id ? { ...c, website_url: url.trim() || null } : c));
+      toast.success(`Website URL saved for ${club.name}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save website URL');
     }
   };
 
@@ -660,6 +707,7 @@ export default function ClubsPortal() {
                   onToggleVerified={handleToggleVerified}
                   onTogglePartner={handleTogglePartner}
                   onBadgeUpload={handleBadgeUpload}
+                  onWebsiteUrlSave={handleWebsiteUrlSave}
                 />
               ))}
             </div>
