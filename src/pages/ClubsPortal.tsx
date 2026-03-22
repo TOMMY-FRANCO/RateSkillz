@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
-import { Shield, Loader2, ArrowLeft, Search, Upload, RefreshCw, ChevronDown, ChevronUp, Plus, Trash2, CreditCard as Edit2, Check, X, Ticket, Calendar, MapPin, Globe, Save } from 'lucide-react';
+import { Shield, Loader2, ArrowLeft, Search, Upload, RefreshCw, ChevronDown, ChevronUp, Plus, Trash2, CreditCard as Edit2, Check, X, Ticket, Calendar, MapPin, Globe, Save, Instagram, Facebook, Youtube, Twitter } from 'lucide-react';
 
 interface FootballClub {
   id: string;
@@ -13,6 +13,12 @@ interface FootballClub {
   borough: string | null;
   badge_url: string | null;
   website_url: string | null;
+  instagram_url: string | null;
+  facebook_url: string | null;
+  twitter_url: string | null;
+  tiktok_url: string | null;
+  youtube_url: string | null;
+  threads_url: string | null;
   is_verified: boolean;
   is_partner: boolean;
 }
@@ -394,6 +400,38 @@ function MatchesPanel({ club, toast }: { club: FootballClub; toast: ReturnType<t
   );
 }
 
+interface SocialUrls {
+  instagram_url: string;
+  facebook_url: string;
+  twitter_url: string;
+  tiktok_url: string;
+  youtube_url: string;
+  threads_url: string;
+}
+
+function SocialInput({ icon, value, onChange, placeholder, color }: {
+  icon: React.ReactNode;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  color: string;
+}) {
+  return (
+    <div className="relative">
+      <span className={`absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 flex items-center justify-center pointer-events-none ${color}`}>
+        {icon}
+      </span>
+      <input
+        type="url"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="pl-6 pr-2 py-1 bg-gray-800 border border-gray-700 rounded-lg text-xs text-white placeholder-gray-600 focus:outline-none focus:border-cyan-600 transition-colors w-36"
+      />
+    </div>
+  );
+}
+
 function ClubRow({
   club,
   toast,
@@ -404,6 +442,7 @@ function ClubRow({
   onTogglePartner,
   onBadgeUpload,
   onWebsiteUrlSave,
+  onSocialUrlsSave,
 }: {
   club: FootballClub;
   toast: ReturnType<typeof useToast>;
@@ -414,10 +453,20 @@ function ClubRow({
   onTogglePartner: (club: FootballClub) => void;
   onBadgeUpload: (club: FootballClub, file: File) => void;
   onWebsiteUrlSave: (club: FootballClub, url: string) => Promise<void>;
+  onSocialUrlsSave: (club: FootballClub, urls: SocialUrls) => Promise<void>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [websiteUrl, setWebsiteUrl] = useState(club.website_url ?? '');
   const [savingUrl, setSavingUrl] = useState(false);
+  const [socialUrls, setSocialUrls] = useState<SocialUrls>({
+    instagram_url: club.instagram_url ?? '',
+    facebook_url: club.facebook_url ?? '',
+    twitter_url: club.twitter_url ?? '',
+    tiktok_url: club.tiktok_url ?? '',
+    youtube_url: club.youtube_url ?? '',
+    threads_url: club.threads_url ?? '',
+  });
+  const [savingSocial, setSavingSocial] = useState(false);
 
   return (
     <div className="border-b border-gray-800/60 last:border-0">
@@ -515,6 +564,77 @@ function ClubRow({
             </div>
           </div>
 
+          <div className="flex flex-col items-start gap-1">
+            <div className="flex items-center justify-between w-full">
+              <span className="text-xs text-gray-500">Social Links</span>
+              <button
+                onClick={async () => {
+                  setSavingSocial(true);
+                  await onSocialUrlsSave(club, socialUrls);
+                  setSavingSocial(false);
+                }}
+                disabled={savingSocial}
+                className="flex items-center gap-1 px-2 py-0.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 border border-gray-700 hover:border-cyan-700 text-gray-400 hover:text-cyan-400 text-xs rounded-lg transition-all"
+                title="Save all social links"
+              >
+                {savingSocial ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                <span>Save</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              <SocialInput
+                icon={<Instagram className="w-3 h-3" />}
+                value={socialUrls.instagram_url}
+                onChange={v => setSocialUrls(p => ({ ...p, instagram_url: v }))}
+                placeholder="Instagram URL"
+                color="text-pink-400"
+              />
+              <SocialInput
+                icon={<Facebook className="w-3 h-3" />}
+                value={socialUrls.facebook_url}
+                onChange={v => setSocialUrls(p => ({ ...p, facebook_url: v }))}
+                placeholder="Facebook URL"
+                color="text-blue-400"
+              />
+              <SocialInput
+                icon={<Twitter className="w-3 h-3" />}
+                value={socialUrls.twitter_url}
+                onChange={v => setSocialUrls(p => ({ ...p, twitter_url: v }))}
+                placeholder="Twitter/X URL"
+                color="text-white"
+              />
+              <SocialInput
+                icon={
+                  <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V9.01a8.16 8.16 0 004.78 1.52V7.08a4.85 4.85 0 01-1.01-.39z"/>
+                  </svg>
+                }
+                value={socialUrls.tiktok_url}
+                onChange={v => setSocialUrls(p => ({ ...p, tiktok_url: v }))}
+                placeholder="TikTok URL"
+                color="text-white"
+              />
+              <SocialInput
+                icon={<Youtube className="w-3 h-3" />}
+                value={socialUrls.youtube_url}
+                onChange={v => setSocialUrls(p => ({ ...p, youtube_url: v }))}
+                placeholder="YouTube URL"
+                color="text-red-400"
+              />
+              <SocialInput
+                icon={
+                  <svg viewBox="0 0 24 24" className="w-3 h-3 fill-current" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.587 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 013.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.578-1.33-.873-2.431-.879h-.01c-.928 0-1.686.216-2.246.64-.48.363-.91.926-1.05 1.87l-2.01-.301c.17-1.267.732-2.222 1.672-2.838.93-.607 2.126-.916 3.556-.916h.018c1.663.007 3.011.498 3.905 1.52.848.97 1.285 2.36 1.298 4.13a7.53 7.53 0 01-.14 1.44c1.097.622 1.97 1.493 2.548 2.788.868 1.982.856 4.912-1.399 7.106-1.746 1.71-3.975 2.571-6.849 2.594l-.023.001z"/>
+                  </svg>
+                }
+                value={socialUrls.threads_url}
+                onChange={v => setSocialUrls(p => ({ ...p, threads_url: v }))}
+                placeholder="Threads URL"
+                color="text-gray-300"
+              />
+            </div>
+          </div>
+
           <div className="flex flex-col items-center gap-1">
             <span className="text-xs text-gray-500">Matches</span>
             <button
@@ -552,7 +672,7 @@ export default function ClubsPortal() {
     try {
       const { data, error } = await supabase
         .from('football_clubs')
-        .select('id, name, region, gender, league, borough, badge_url, website_url, is_verified, is_partner')
+        .select('id, name, region, gender, league, borough, badge_url, website_url, instagram_url, facebook_url, twitter_url, tiktok_url, youtube_url, threads_url, is_verified, is_partner')
         .order('region')
         .order('name');
       if (error) throw error;
@@ -591,6 +711,35 @@ export default function ClubsPortal() {
       toast.error(err instanceof Error ? err.message : 'Failed to update partner status');
     } finally {
       setTogglingId(null);
+    }
+  };
+
+  const handleSocialUrlsSave = async (club: FootballClub, urls: SocialUrls) => {
+    try {
+      const { error } = await supabase
+        .from('football_clubs')
+        .update({
+          instagram_url: urls.instagram_url.trim() || null,
+          facebook_url: urls.facebook_url.trim() || null,
+          twitter_url: urls.twitter_url.trim() || null,
+          tiktok_url: urls.tiktok_url.trim() || null,
+          youtube_url: urls.youtube_url.trim() || null,
+          threads_url: urls.threads_url.trim() || null,
+        })
+        .eq('id', club.id);
+      if (error) throw error;
+      setClubs(prev => prev.map(c => c.id === club.id ? {
+        ...c,
+        instagram_url: urls.instagram_url.trim() || null,
+        facebook_url: urls.facebook_url.trim() || null,
+        twitter_url: urls.twitter_url.trim() || null,
+        tiktok_url: urls.tiktok_url.trim() || null,
+        youtube_url: urls.youtube_url.trim() || null,
+        threads_url: urls.threads_url.trim() || null,
+      } : c));
+      toast.success(`Social links saved for ${club.name}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save social links');
     }
   };
 
@@ -708,6 +857,7 @@ export default function ClubsPortal() {
                   onTogglePartner={handleTogglePartner}
                   onBadgeUpload={handleBadgeUpload}
                   onWebsiteUrlSave={handleWebsiteUrlSave}
+                  onSocialUrlsSave={handleSocialUrlsSave}
                 />
               ))}
             </div>
