@@ -71,6 +71,14 @@ interface FootballClub {
   win_count: number;
   loss_count: number;
   draw_count: number;
+  show_website: boolean;
+  show_social_links: boolean;
+  show_contact: boolean;
+  show_matches: boolean;
+  show_squad: boolean;
+  show_staff: boolean;
+  show_win_ratio: boolean;
+  show_description: boolean;
 }
 
 interface ClubStaff {
@@ -364,7 +372,7 @@ function ClubCard({
               </span>
             )}
 
-            {club.is_partner && (() => {
+            {club.is_partner && club.show_win_ratio && (() => {
               const total = club.win_count + club.loss_count + club.draw_count;
               const winRate = total > 0 ? Math.round((club.win_count / total) * 100) : 0;
               return (
@@ -390,13 +398,13 @@ function ClubCard({
           </div>
         </div>
 
-        {club.description && (
+        {club.is_partner && club.show_description && club.description && (
           <p className="mt-3 text-[#B0B8C8] text-xs leading-relaxed line-clamp-2">
             {club.description}
           </p>
         )}
 
-        {club.is_partner && recentMatches.length > 0 && !expanded && (
+        {club.is_partner && club.show_matches && recentMatches.length > 0 && !expanded && (
           <div className="flex items-center gap-1.5 mt-3 flex-wrap">
             <span className="text-[#B0B8C8] text-xs font-semibold mr-1">Recent:</span>
             {recentMatches.map(m => (
@@ -417,13 +425,13 @@ function ClubCard({
 
           {detailsLoaded && (
             <>
-              {club.description && (
+              {club.is_partner && club.show_description && club.description && (
                 <div className="pt-4">
                   <p className="text-[#B0B8C8] text-sm leading-relaxed">{club.description}</p>
                 </div>
               )}
 
-              {club.is_partner && recentMatches.length > 0 && (
+              {club.is_partner && club.show_matches && recentMatches.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3 pt-2">
                     <Trophy className="w-4 h-4 text-yellow-400" />
@@ -453,7 +461,7 @@ function ClubCard({
                 </div>
               )}
 
-              {club.is_partner && upcomingMatches.length > 0 && (
+              {club.is_partner && club.show_matches && upcomingMatches.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <Calendar className="w-4 h-4 text-[#00E0FF]" />
@@ -490,7 +498,7 @@ function ClubCard({
                 </div>
               )}
 
-              {staff.length > 0 && (
+              {club.is_partner && club.show_staff && staff.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <Users className="w-4 h-4 text-[#B0B8C8]" />
@@ -515,7 +523,7 @@ function ClubCard({
                 </div>
               )}
 
-              {players.length > 0 && (
+              {club.is_partner && club.show_squad && players.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <Shield className="w-4 h-4 text-[#B0B8C8]" />
@@ -548,9 +556,9 @@ function ClubCard({
                 </div>
               )}
 
-              {club.is_partner && (club.website_url || club.instagram_url || club.facebook_url || club.twitter_url || club.tiktok_url || club.youtube_url || club.threads_url) && (
+              {club.is_partner && (club.show_website || club.show_social_links) && (club.website_url || club.instagram_url || club.facebook_url || club.twitter_url || club.tiktok_url || club.youtube_url || club.threads_url) && (
                 <div className="pt-1 flex flex-wrap gap-2" onClick={e => e.stopPropagation()}>
-                  {club.website_url && (
+                  {club.show_website && club.website_url && (
                     <a
                       href={club.website_url}
                       target="_blank"
@@ -561,7 +569,7 @@ function ClubCard({
                       Website
                     </a>
                   )}
-                  {club.instagram_url && (
+                  {club.show_social_links && club.instagram_url && (
                     <a
                       href={club.instagram_url}
                       target="_blank"
@@ -572,7 +580,7 @@ function ClubCard({
                       Instagram
                     </a>
                   )}
-                  {club.facebook_url && (
+                  {club.show_social_links && club.facebook_url && (
                     <a
                       href={club.facebook_url}
                       target="_blank"
@@ -583,7 +591,7 @@ function ClubCard({
                       Facebook
                     </a>
                   )}
-                  {club.twitter_url && (
+                  {club.show_social_links && club.twitter_url && (
                     <a
                       href={club.twitter_url}
                       target="_blank"
@@ -594,7 +602,7 @@ function ClubCard({
                       Twitter/X
                     </a>
                   )}
-                  {club.tiktok_url && (
+                  {club.show_social_links && club.tiktok_url && (
                     <a
                       href={club.tiktok_url}
                       target="_blank"
@@ -607,7 +615,7 @@ function ClubCard({
                       TikTok
                     </a>
                   )}
-                  {club.youtube_url && (
+                  {club.show_social_links && club.youtube_url && (
                     <a
                       href={club.youtube_url}
                       target="_blank"
@@ -618,7 +626,7 @@ function ClubCard({
                       YouTube
                     </a>
                   )}
-                  {club.threads_url && (
+                  {club.show_social_links && club.threads_url && (
                     <a
                       href={club.threads_url}
                       target="_blank"

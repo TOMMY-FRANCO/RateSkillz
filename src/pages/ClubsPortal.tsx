@@ -21,6 +21,14 @@ interface FootballClub {
   threads_url: string | null;
   is_verified: boolean;
   is_partner: boolean;
+  show_website: boolean;
+  show_social_links: boolean;
+  show_contact: boolean;
+  show_matches: boolean;
+  show_squad: boolean;
+  show_staff: boolean;
+  show_win_ratio: boolean;
+  show_description: boolean;
 }
 
 interface ClubMatch {
@@ -432,6 +440,8 @@ function SocialInput({ icon, value, onChange, placeholder, color }: {
   );
 }
 
+type VisibilityColumn = 'show_website' | 'show_social_links' | 'show_contact' | 'show_matches' | 'show_squad' | 'show_staff' | 'show_win_ratio' | 'show_description';
+
 function ClubRow({
   club,
   toast,
@@ -443,6 +453,7 @@ function ClubRow({
   onBadgeUpload,
   onWebsiteUrlSave,
   onSocialUrlsSave,
+  onToggleVisibility,
 }: {
   club: FootballClub;
   toast: ReturnType<typeof useToast>;
@@ -454,6 +465,7 @@ function ClubRow({
   onBadgeUpload: (club: FootballClub, file: File) => void;
   onWebsiteUrlSave: (club: FootballClub, url: string) => Promise<void>;
   onSocialUrlsSave: (club: FootballClub, urls: SocialUrls) => Promise<void>;
+  onToggleVisibility: (club: FootballClub, column: VisibilityColumn) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [websiteUrl, setWebsiteUrl] = useState(club.website_url ?? '');
@@ -648,6 +660,33 @@ function ClubRow({
         </div>
       </div>
 
+      <div className="px-6 pb-3 flex flex-wrap gap-x-5 gap-y-2 border-t border-gray-800/40 pt-3">
+        {(
+          [
+            { col: 'show_website', label: 'Website' },
+            { col: 'show_social_links', label: 'Social Links' },
+            { col: 'show_contact', label: 'Contact' },
+            { col: 'show_matches', label: 'Matches' },
+            { col: 'show_squad', label: 'Squad' },
+            { col: 'show_staff', label: 'Staff' },
+            { col: 'show_win_ratio', label: 'Win Ratio' },
+            { col: 'show_description', label: 'Description' },
+          ] as { col: VisibilityColumn; label: string }[]
+        ).map(({ col, label }) => (
+          <div key={col} className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => onToggleVisibility(club, col)}
+              disabled={togglingId === club.id + '_' + col}
+              className={`relative w-8 h-4 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-60 flex-shrink-0 ${club[col] ? 'bg-cyan-600' : 'bg-gray-700'}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform duration-200 ${club[col] ? 'translate-x-4' : 'translate-x-0'}`} />
+            </button>
+            <span className="text-xs text-gray-400 whitespace-nowrap">{label}</span>
+          </div>
+        ))}
+      </div>
+
       {expanded && (
         <div className="bg-gray-900/40 border-t border-gray-800/60">
           <MatchesPanel club={club} toast={toast} />
@@ -672,7 +711,7 @@ export default function ClubsPortal() {
     try {
       const { data, error } = await supabase
         .from('football_clubs')
-        .select('id, name, region, gender, league, borough, badge_url, website_url, instagram_url, facebook_url, twitter_url, tiktok_url, youtube_url, threads_url, is_verified, is_partner')
+        .select('id, name, region, gender, league, borough, badge_url, website_url, instagram_url, facebook_url, twitter_url, tiktok_url, youtube_url, threads_url, is_verified, is_partner, show_website, show_social_links, show_contact, show_matches, show_squad, show_staff, show_win_ratio, show_description')
         .order('region')
         .order('name');
       if (error) throw error;
@@ -754,6 +793,20 @@ export default function ClubsPortal() {
       toast.success(`Website URL saved for ${club.name}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save website URL');
+    }
+  };
+
+  const handleToggleVisibility = async (club: FootballClub, column: VisibilityColumn) => {
+    setTogglingId(club.id + '_' + column);
+    try {
+      const newValue = !club[column];
+      const { error } = await supabase.from('football_clubs').update({ [column]: newValue }).eq('id', club.id);
+      if (error) throw error;
+      setClubs(prev => prev.map(c => c.id === club.id ? { ...c, [column]: newValue } : c));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update visibility');
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -858,6 +911,7 @@ export default function ClubsPortal() {
                   onBadgeUpload={handleBadgeUpload}
                   onWebsiteUrlSave={handleWebsiteUrlSave}
                   onSocialUrlsSave={handleSocialUrlsSave}
+                  onToggleVisibility={handleToggleVisibility}
                 />
               ))}
             </div>
