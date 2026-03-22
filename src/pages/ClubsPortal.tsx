@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
-import { Shield, Loader2, ArrowLeft, Search, Upload, RefreshCw, ChevronDown, ChevronUp, Plus, Trash2, CreditCard as Edit2, Check, X, Ticket, Calendar, MapPin, Globe, Save, Instagram, Facebook, Youtube, Twitter, User, UserCheck } from 'lucide-react';
+import { Shield, Loader2, ArrowLeft, Search, Upload, RefreshCw, ChevronDown, ChevronUp, Plus, Trash2, CreditCard as Edit2, Check, X, Ticket, Calendar, MapPin, Globe, Save, Instagram, Facebook, Youtube, Twitter, User, UserCheck, Pencil } from 'lucide-react';
 
 interface FootballClub {
   id: string;
@@ -421,7 +421,7 @@ interface ClubPlayer {
   slot_position: string | null;
   is_substitute: boolean;
   is_confirmed: boolean;
-  profile?: { username: string | null; avatar_url: string | null } | null;
+  profile?: { username: string | null; avatar_url: string | null; position?: string | null } | null;
 }
 
 const FORMATION_433: { slot_position: string; pitch_x: number; pitch_y: number }[] = [
@@ -445,18 +445,25 @@ function PlayerSlotPin({
   onToggleConfirmed,
   onLinkUser,
   onUnlink,
+  onEditSave,
   saving,
 }: {
   player: ClubPlayer;
   onToggleConfirmed: () => void;
   onLinkUser: (username: string) => void;
   onUnlink: () => void;
+  onEditSave: (id: string, name: string, slotPosition: string, jerseyNumber: number | null) => Promise<void>;
   saving: boolean;
 }) {
   const [showSearch, setShowSearch] = useState(false);
   const [searchVal, setSearchVal] = useState('');
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<{ id: string; username: string; avatar_url: string | null }[]>([]);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editName, setEditName] = useState(player.name || '');
+  const [editPosition, setEditPosition] = useState(player.slot_position || '');
+  const [editJersey, setEditJersey] = useState(player.jersey_number != null ? String(player.jersey_number) : '');
+  const [editSaving, setEditSaving] = useState(false);
 
   const doSearch = async (q: string) => {
     if (!q.trim()) { setSearchResults([]); return; }
@@ -501,6 +508,9 @@ function PlayerSlotPin({
       </div>
 
       <span className="text-[10px] font-bold text-white/80 leading-none">{player.slot_position}</span>
+      {player.profile?.position && (
+        <span className="text-[8px] text-gray-500 leading-none truncate max-w-[60px] text-center">{player.profile.position}</span>
+      )}
       {player.jersey_number != null && (
         <span className="text-[9px] text-cyan-400 leading-none">#{player.jersey_number}</span>
       )}
@@ -523,7 +533,76 @@ function PlayerSlotPin({
             Unlink
           </button>
         )}
+        <button
+          type="button"
+          onClick={() => {
+            setEditName(player.name || '');
+            setEditPosition(player.slot_position || '');
+            setEditJersey(player.jersey_number != null ? String(player.jersey_number) : '');
+            setShowEdit(s => !s);
+          }}
+          className="text-[9px] px-1 py-0.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-yellow-700 text-gray-400 hover:text-yellow-400 rounded transition-all"
+          title="Edit slot"
+        >
+          <Pencil className="w-2.5 h-2.5" />
+        </button>
       </div>
+
+      {showEdit && (
+        <div className="w-40 bg-gray-900 border border-gray-700 rounded-lg p-2 space-y-1.5 z-50">
+          <input
+            type="text"
+            value={editName}
+            onChange={e => setEditName(e.target.value)}
+            placeholder="Name"
+            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-600"
+          />
+          <input
+            type="text"
+            value={editPosition}
+            onChange={e => setEditPosition(e.target.value)}
+            placeholder="Position"
+            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-600"
+          />
+          <input
+            type="number"
+            value={editJersey}
+            onChange={e => setEditJersey(e.target.value)}
+            placeholder="Jersey #"
+            min={1}
+            max={99}
+            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-600"
+          />
+          <div className="flex gap-1">
+            <button
+              type="button"
+              disabled={editSaving}
+              onClick={async () => {
+                setEditSaving(true);
+                try {
+                  const jerseyNum = editJersey.trim() !== '' ? parseInt(editJersey, 10) : null;
+                  await onEditSave(player.id, editName.trim(), editPosition.trim(), isNaN(jerseyNum as number) ? null : jerseyNum);
+                  setShowEdit(false);
+                } finally {
+                  setEditSaving(false);
+                }
+              }}
+              className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-[9px] font-semibold rounded transition-all"
+            >
+              {editSaving ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Check className="w-2.5 h-2.5" />}
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowEdit(false)}
+              className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-[9px] rounded transition-all"
+            >
+              <X className="w-2.5 h-2.5" />
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {showSearch && (
         <div className="w-40 bg-gray-900 border border-gray-700 rounded-lg p-2 space-y-1.5 z-50">
@@ -566,18 +645,25 @@ function SubSlotCard({
   onToggleConfirmed,
   onLinkUser,
   onUnlink,
+  onEditSave,
   saving,
 }: {
   player: ClubPlayer;
   onToggleConfirmed: () => void;
   onLinkUser: (profileId: string) => void;
   onUnlink: () => void;
+  onEditSave: (id: string, name: string, slotPosition: string, jerseyNumber: number | null) => Promise<void>;
   saving: boolean;
 }) {
   const [showSearch, setShowSearch] = useState(false);
   const [searchVal, setSearchVal] = useState('');
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<{ id: string; username: string; avatar_url: string | null }[]>([]);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editName, setEditName] = useState(player.name || '');
+  const [editPosition, setEditPosition] = useState(player.slot_position || '');
+  const [editJersey, setEditJersey] = useState(player.jersey_number != null ? String(player.jersey_number) : '');
+  const [editSaving, setEditSaving] = useState(false);
 
   const doSearch = async (q: string) => {
     if (!q.trim()) { setSearchResults([]); return; }
@@ -617,6 +703,9 @@ function SubSlotCard({
         )}
       </div>
       <span className="text-[10px] font-bold text-white/80 leading-none">{player.slot_position}</span>
+      {player.profile?.position && (
+        <span className="text-[8px] text-gray-500 leading-none truncate max-w-[56px] text-center">{player.profile.position}</span>
+      )}
       {player.jersey_number != null && (
         <span className="text-[9px] text-cyan-400 leading-none">#{player.jersey_number}</span>
       )}
@@ -638,7 +727,77 @@ function SubSlotCard({
             Unlink
           </button>
         )}
+        <button
+          type="button"
+          onClick={() => {
+            setEditName(player.name || '');
+            setEditPosition(player.slot_position || '');
+            setEditJersey(player.jersey_number != null ? String(player.jersey_number) : '');
+            setShowEdit(s => !s);
+          }}
+          className="text-[9px] px-1 py-0.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-yellow-700 text-gray-400 hover:text-yellow-400 rounded transition-all"
+          title="Edit slot"
+        >
+          <Pencil className="w-2.5 h-2.5" />
+        </button>
       </div>
+
+      {showEdit && (
+        <div className="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 space-y-1.5">
+          <input
+            type="text"
+            value={editName}
+            onChange={e => setEditName(e.target.value)}
+            placeholder="Name"
+            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-600"
+          />
+          <input
+            type="text"
+            value={editPosition}
+            onChange={e => setEditPosition(e.target.value)}
+            placeholder="Position"
+            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-600"
+          />
+          <input
+            type="number"
+            value={editJersey}
+            onChange={e => setEditJersey(e.target.value)}
+            placeholder="Jersey #"
+            min={1}
+            max={99}
+            className="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-600"
+          />
+          <div className="flex gap-1">
+            <button
+              type="button"
+              disabled={editSaving}
+              onClick={async () => {
+                setEditSaving(true);
+                try {
+                  const jerseyNum = editJersey.trim() !== '' ? parseInt(editJersey, 10) : null;
+                  await onEditSave(player.id, editName.trim(), editPosition.trim(), isNaN(jerseyNum as number) ? null : jerseyNum);
+                  setShowEdit(false);
+                } finally {
+                  setEditSaving(false);
+                }
+              }}
+              className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-[9px] font-semibold rounded transition-all"
+            >
+              {editSaving ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Check className="w-2.5 h-2.5" />}
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowEdit(false)}
+              className="flex-1 flex items-center justify-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 text-[9px] rounded transition-all"
+            >
+              <X className="w-2.5 h-2.5" />
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {showSearch && (
         <div className="w-40 bg-gray-900 border border-gray-700 rounded-lg p-2 space-y-1.5 z-50">
           <div className="flex items-center gap-1">
@@ -696,14 +855,14 @@ function SquadPanel({ club, toast }: { club: FootballClub; toast: ReturnType<typ
       if (rows.length === 0) { setPlayers([]); setLoading(false); return; }
 
       const profileIds = rows.filter(r => r.profile_id).map(r => r.profile_id as string);
-      let profileMap: Record<string, { username: string | null; avatar_url: string | null }> = {};
+      let profileMap: Record<string, { username: string | null; avatar_url: string | null; position?: string | null }> = {};
       if (profileIds.length > 0) {
         const { data: pData } = await supabase
           .from('profiles')
-          .select('id, username, avatar_url')
+          .select('id, username, avatar_url, position')
           .in('id', profileIds);
         if (pData) {
-          for (const p of pData) profileMap[p.id] = { username: p.username, avatar_url: p.avatar_url };
+          for (const p of pData) profileMap[p.id] = { username: p.username, avatar_url: p.avatar_url, position: p.position ?? null };
         }
       }
 
@@ -773,7 +932,7 @@ function SquadPanel({ club, toast }: { club: FootballClub; toast: ReturnType<typ
     try {
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('id, username, avatar_url')
+        .select('id, username, avatar_url, position')
         .eq('id', profileId)
         .maybeSingle();
       const { error } = await supabase.from('club_players').update({ profile_id: profileId }).eq('id', player.id);
@@ -781,7 +940,7 @@ function SquadPanel({ club, toast }: { club: FootballClub; toast: ReturnType<typ
       setPlayers(prev => prev.map(p => p.id === player.id ? {
         ...p,
         profile_id: profileId,
-        profile: profileData ? { username: profileData.username, avatar_url: profileData.avatar_url } : null,
+        profile: profileData ? { username: profileData.username, avatar_url: profileData.avatar_url, position: profileData.position ?? null } : null,
       } : p));
       toast.success('User linked');
     } catch (err) {
@@ -802,6 +961,21 @@ function SquadPanel({ club, toast }: { club: FootballClub; toast: ReturnType<typ
       toast.error(err instanceof Error ? err.message : 'Failed to unlink user');
     } finally {
       setSavingId(null);
+    }
+  };
+
+  const handleEditSave = async (id: string, name: string, slotPosition: string, jerseyNumber: number | null) => {
+    try {
+      const { error } = await supabase
+        .from('club_players')
+        .update({ name, slot_position: slotPosition, jersey_number: jerseyNumber })
+        .eq('id', id);
+      if (error) throw error;
+      setPlayers(prev => prev.map(p => p.id === id ? { ...p, name, slot_position: slotPosition, jersey_number: jerseyNumber } : p));
+      toast.success('Slot updated');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update slot');
+      throw err;
     }
   };
 
@@ -886,6 +1060,7 @@ function SquadPanel({ club, toast }: { club: FootballClub; toast: ReturnType<typ
                 onToggleConfirmed={() => handleToggleConfirmed(player)}
                 onLinkUser={(profileId) => handleLinkUser(player, profileId)}
                 onUnlink={() => handleUnlink(player)}
+                onEditSave={handleEditSave}
                 saving={savingId === player.id}
               />
             </div>
@@ -904,6 +1079,7 @@ function SquadPanel({ club, toast }: { club: FootballClub; toast: ReturnType<typ
                 onToggleConfirmed={() => handleToggleConfirmed(player)}
                 onLinkUser={(profileId) => handleLinkUser(player, profileId)}
                 onUnlink={() => handleUnlink(player)}
+                onEditSave={handleEditSave}
                 saving={savingId === player.id}
               />
             ))}
