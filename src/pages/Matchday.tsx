@@ -61,6 +61,21 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'scorers', label: 'Top Scorers' },
 ];
 
+const COMPETITIONS: { label: string; code: string }[] = [
+  { label: 'Premier League', code: 'PL' },
+  { label: 'Championship', code: 'ELC' },
+  { label: 'League One', code: 'EL1' },
+  { label: 'League Two', code: 'EL2' },
+  { label: "Women's Super League", code: 'WSL' },
+];
+
+const EMPTY_TAB_DATA: Record<Tab, TabData> = {
+  table:    { data: null, lastUpdated: null, error: null, loaded: false },
+  fixtures: { data: null, lastUpdated: null, error: null, loaded: false },
+  results:  { data: null, lastUpdated: null, error: null, loaded: false },
+  scorers:  { data: null, lastUpdated: null, error: null, loaded: false },
+};
+
 const API_BASE = 'https://api.football-data.org/v4';
 const API_KEY = import.meta.env.VITE_FOOTBALL_DATA_API_KEY;
 
@@ -363,31 +378,30 @@ function TopScorersList({ data }: { data: unknown }) {
 export default function Matchday() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('table');
+  const [activeCompetition, setActiveCompetition] = useState('PL');
   const [loading, setLoading] = useState<Record<Tab, boolean>>({
     table: false, fixtures: false, results: false, scorers: false,
   });
-  const [tabData, setTabData] = useState<Record<Tab, TabData>>({
-    table:    { data: null, lastUpdated: null, error: null, loaded: false },
-    fixtures: { data: null, lastUpdated: null, error: null, loaded: false },
-    results:  { data: null, lastUpdated: null, error: null, loaded: false },
-    scorers:  { data: null, lastUpdated: null, error: null, loaded: false },
-  });
+  const [tabData, setTabData] = useState<Record<Tab, TabData>>({ ...EMPTY_TAB_DATA });
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const touchStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const activeCompetitionRef = useRef(activeCompetition);
+  activeCompetitionRef.current = activeCompetition;
 
-  const fetchTab = useCallback(async (tab: Tab) => {
+  const fetchTab = useCallback(async (tab: Tab, competitionCode?: string) => {
+    const code = competitionCode ?? activeCompetitionRef.current;
     setLoading(prev => ({ ...prev, [tab]: true }));
     setTabData(prev => ({ ...prev, [tab]: { ...prev[tab], error: null } }));
 
     try {
       let url = '';
-      if (tab === 'table')    url = `${API_BASE}/competitions/PL/standings`;
-      if (tab === 'fixtures') url = `${API_BASE}/competitions/PL/matches?status=SCHEDULED`;
-      if (tab === 'results')  url = `${API_BASE}/competitions/PL/matches?status=FINISHED`;
-      if (tab === 'scorers')  url = `${API_BASE}/competitions/PL/scorers?limit=20`;
+      if (tab === 'table')    url = `${API_BASE}/competitions/${code}/standings`;
+      if (tab === 'fixtures') url = `${API_BASE}/competitions/${code}/matches?status=SCHEDULED`;
+      if (tab === 'results')  url = `${API_BASE}/competitions/${code}/matches?status=FINISHED`;
+      if (tab === 'scorers')  url = `${API_BASE}/competitions/${code}/scorers?limit=20`;
 
       const res = await fetch(url, {
         headers: { 'X-Auth-Token': API_KEY ?? '' },
@@ -420,6 +434,15 @@ export default function Matchday() {
       fetchTab(tab);
     }
   }, [tabData, loading, fetchTab]);
+
+  const handleCompetitionSelect = useCallback((code: string) => {
+    if (code === activeCompetitionRef.current) return;
+    setActiveCompetition(code);
+    activeCompetitionRef.current = code;
+    setTabData({ ...EMPTY_TAB_DATA });
+    setLoading({ table: false, fixtures: false, results: false, scorers: false });
+    fetchTab(activeTab, code);
+  }, [activeTab, fetchTab]);
 
   const handleRefresh = useCallback(async () => {
     if (isRefreshing) return;
@@ -511,6 +534,25 @@ export default function Matchday() {
       >
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
 
+          {/* Competition selector */}
+          <div className="overflow-x-auto pb-1 mb-4 -mx-1 px-1">
+            <div className="flex gap-2 w-max">
+              {COMPETITIONS.map(comp => (
+                <button
+                  key={comp.code}
+                  onClick={() => handleCompetitionSelect(comp.code)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
+                    activeCompetition === comp.code
+                      ? 'bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black'
+                      : 'bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.15)] text-[#B0B8C8] hover:border-[rgba(0,224,255,0.35)] hover:text-white'
+                  }`}
+                >
+                  {comp.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Tab bar */}
           <div className="flex gap-2 mb-6 flex-wrap">
             {TABS.map(tab => (
@@ -562,6 +604,11 @@ export default function Matchday() {
               Last updated {formatTimestamp(current.lastUpdated)}
             </p>
           )}
+
+          {/* Attribution */}
+          <p className="text-gray-600 text-[10px] text-center mt-4">
+            Football data provided by the Football-Data.org API
+          </p>
 
         </div>
       </div>
