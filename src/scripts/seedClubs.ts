@@ -264,7 +264,318 @@ const NORTH_LONDON_WOMENS_CLUBS = [
   },
 ] as const;
 
-const ALL_CLUBS = [...NORTH_LONDON_MENS_CLUBS, ...NORTH_LONDON_WOMENS_CLUBS];
+const SOUTH_LONDON_MENS_CLUBS = [
+  {
+    name: 'Crystal Palace',
+    region: 'South',
+    gender: 'mens',
+    league: 'Premier League',
+    borough: 'Croydon',
+    description:
+      'Crystal Palace Football Club is a professional football club based in Croydon, South London. Known as the Eagles, they play their home matches at Selhurst Park.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Millwall',
+    region: 'South',
+    gender: 'mens',
+    league: 'Championship',
+    borough: 'Southwark',
+    description:
+      'Millwall Football Club is a professional football club based in Southwark, South London. Known as the Lions, they play their home matches at The Den.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Charlton Athletic',
+    region: 'South',
+    gender: 'mens',
+    league: 'Championship',
+    borough: 'Greenwich',
+    description:
+      'Charlton Athletic Football Club is a professional football club based in Greenwich, South London. Known as the Addicks, they play their home matches at The Valley.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'AFC Wimbledon',
+    region: 'South',
+    gender: 'mens',
+    league: 'League Two',
+    borough: 'Merton',
+    description:
+      'AFC Wimbledon is a professional football club based in Merton, South London. They play their home matches at Plough Lane, reconnecting with their spiritual home.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Bromley FC',
+    region: 'South',
+    gender: 'mens',
+    league: 'League Two',
+    borough: 'Bromley',
+    description:
+      'Bromley Football Club compete in League Two, playing their home matches at Hayes Lane in Bromley, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Sutton United',
+    region: 'South',
+    gender: 'mens',
+    league: 'National League',
+    borough: 'Sutton',
+    description:
+      'Sutton United Football Club compete in the National League, playing their home matches at Gander Green Lane in Sutton, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Dulwich Hamlet',
+    region: 'South',
+    gender: 'mens',
+    league: 'National League South',
+    borough: 'Southwark',
+    description:
+      'Dulwich Hamlet Football Club is a non-league football club based in Southwark, South London. They compete in the National League South and play at Champion Hill.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Welling United',
+    region: 'South',
+    gender: 'mens',
+    league: 'National League South',
+    borough: 'Bexley',
+    description:
+      'Welling United Football Club compete in the National League South, playing their home matches at Park View Road in Bexley, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Cray Wanderers',
+    region: 'South',
+    gender: 'mens',
+    league: 'Isthmian League',
+    borough: 'Bromley',
+    description:
+      'Cray Wanderers Football Club is one of the oldest football clubs in the world, competing in the Isthmian League and based in Bromley, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Carshalton Athletic',
+    region: 'South',
+    gender: 'mens',
+    league: 'Isthmian League',
+    borough: 'Sutton',
+    description:
+      'Carshalton Athletic Football Club compete in the Isthmian League, playing their home matches at War Memorial Sports Ground in Sutton, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Kingstonian',
+    region: 'South',
+    gender: 'mens',
+    league: 'Isthmian League',
+    borough: 'Kingston upon Thames',
+    description:
+      'Kingstonian Football Club is a non-league football club based in Kingston upon Thames, South London, competing in the Isthmian League.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Tooting and Mitcham United',
+    region: 'South',
+    gender: 'mens',
+    league: 'Isthmian League',
+    borough: 'Merton',
+    description:
+      'Tooting and Mitcham United Football Club compete in the Isthmian League, playing their home matches at Imperial Fields in Merton, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Fisher FC',
+    region: 'South',
+    gender: 'mens',
+    league: 'Isthmian League',
+    borough: 'Rotherhithe',
+    description:
+      'Fisher Football Club is a community football club based in Rotherhithe, South London, competing in the Isthmian League.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+] as const;
+
+const SOUTH_LONDON_WOMENS_CLUBS = [
+  {
+    name: 'Crystal Palace Women',
+    region: 'South',
+    gender: 'womens',
+    league: 'WSL',
+    borough: 'Sutton',
+    description:
+      'Crystal Palace Women FC compete in the Women\'s Super League, playing their home matches at VBS Community Stadium in Sutton, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Charlton Athletic Women',
+    region: 'South',
+    gender: 'womens',
+    league: 'Championship',
+    borough: 'Greenwich',
+    description:
+      'Charlton Athletic Women compete in the Women\'s Championship, playing their home matches at The Valley in Greenwich, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'London City Lionesses Women',
+    region: 'South',
+    gender: 'womens',
+    league: 'WSL',
+    borough: 'Southwark',
+    description:
+      'London City Lionesses Women compete in the Women\'s Super League, playing their home matches at The Den in Southwark, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Chelsea FC Women',
+    region: 'South',
+    gender: 'womens',
+    league: 'WSL',
+    borough: 'Kingston upon Thames',
+    description:
+      'Chelsea FC Women are one of the most successful women\'s clubs in England, competing in the Women\'s Super League and playing at Kingsmeadow in Kingston upon Thames.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'AFC Wimbledon Women',
+    region: 'South',
+    gender: 'womens',
+    league: 'FA Womens National League',
+    borough: 'Merton',
+    description:
+      'AFC Wimbledon Women compete in the FA Women\'s National League, playing their home matches at Plough Lane in Merton, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Dulwich Hamlet Women',
+    region: 'South',
+    gender: 'womens',
+    league: 'Regional',
+    borough: 'Southwark',
+    description:
+      'Dulwich Hamlet Women compete in regional women\'s football, playing their home matches at Champion Hill in Southwark, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Millwall Lionesses',
+    region: 'South',
+    gender: 'womens',
+    league: 'Regional',
+    borough: 'Southwark',
+    description:
+      'Millwall Lionesses are the women\'s football club associated with Millwall FC, competing in regional women\'s football in Southwark, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Sutton United Women',
+    region: 'South',
+    gender: 'womens',
+    league: 'Regional',
+    borough: 'Sutton',
+    description:
+      'Sutton United Women compete in regional women\'s football, based in Sutton, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Bromley FC Women',
+    region: 'South',
+    gender: 'womens',
+    league: 'Regional',
+    borough: 'Bromley',
+    description:
+      'Bromley FC Women compete in regional women\'s football, based in Bromley, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'South London Womens FC',
+    region: 'South',
+    gender: 'womens',
+    league: 'GLWFL',
+    borough: 'Clapham',
+    description:
+      'South London Women\'s FC compete in the Greater London Women\'s Football League, based in Clapham, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Croydon FC Women',
+    region: 'South',
+    gender: 'womens',
+    league: 'GLWFL',
+    borough: 'Croydon',
+    description:
+      'Croydon FC Women compete in the Greater London Women\'s Football League, representing the Croydon community in South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'AFC Greenwich Borough',
+    region: 'South',
+    gender: 'womens',
+    league: 'Regional',
+    borough: 'Greenwich',
+    description:
+      'AFC Greenwich Borough Women compete in regional women\'s football, based in Greenwich, South London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+] as const;
+
+const ALL_CLUBS = [
+  ...NORTH_LONDON_MENS_CLUBS,
+  ...NORTH_LONDON_WOMENS_CLUBS,
+  ...SOUTH_LONDON_MENS_CLUBS,
+  ...SOUTH_LONDON_WOMENS_CLUBS,
+];
 
 async function seedClubs() {
   console.log('Starting club seed...');
