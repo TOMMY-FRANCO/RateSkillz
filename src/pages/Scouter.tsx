@@ -2,7 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, RefreshCw, MapPin, MessageCircle, Plus, AlertCircle, X, Loader2, Trash2, Users } from 'lucide-react';
+import {
+  ArrowLeft, RefreshCw, MapPin, MessageCircle, Plus, AlertCircle, X,
+  Loader2, Trash2, Users, Shield, Search, ChevronDown, ChevronUp,
+  CheckCircle, Ticket, Calendar, Trophy,
+} from 'lucide-react';
 import { ShimmerBar } from '../components/ui/Shimmer';
 import { useToast } from '../contexts/ToastContext';
 
@@ -45,6 +49,55 @@ interface CreateFormData {
   whatsapp_link: string;
 }
 
+interface FootballClub {
+  id: string;
+  name: string;
+  region: 'North' | 'East' | 'South' | 'West';
+  gender: 'mens' | 'womens';
+  league: string | null;
+  borough: string | null;
+  description: string | null;
+  badge_url: string | null;
+  is_verified: boolean;
+  is_partner: boolean;
+}
+
+interface ClubStaff {
+  id: string;
+  club_id: string;
+  role: string;
+  name: string;
+  avatar_url: string | null;
+  profile_id: string | null;
+  profile?: { username: string } | null;
+}
+
+interface ClubPlayer {
+  id: string;
+  club_id: string;
+  name: string;
+  position: string | null;
+  jersey_number: number | null;
+  avatar_url: string | null;
+  profile_id: string | null;
+  profile?: { username: string } | null;
+}
+
+interface ClubMatch {
+  id: string;
+  club_id: string;
+  match_date: string;
+  opponent: string;
+  venue: string | null;
+  is_home: boolean;
+  result: 'win' | 'loss' | 'draw' | 'upcoming';
+  goals_for: number | null;
+  goals_against: number | null;
+  tickets_available: boolean;
+  ticket_price: number | null;
+  seats_remaining: number | null;
+}
+
 const DEFAULT_FORM: CreateFormData = {
   title: '',
   position_needed: '',
@@ -63,6 +116,9 @@ const DEFAULT_FORM: CreateFormData = {
 const inputClass = `w-full px-3 py-2.5 rounded-lg text-sm bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-white placeholder-[#B0B8C8] focus:outline-none focus:border-[#00E0FF] transition-colors`;
 const selectClass = `w-full px-3 py-2.5 rounded-lg text-sm font-semibold bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-white focus:outline-none focus:border-[#00E0FF] appearance-none cursor-pointer transition-colors hover:border-[rgba(0,224,255,0.5)]`;
 const labelClass = `block text-xs font-semibold text-[#B0B8C8] mb-1`;
+
+const REGIONS = ['All', 'North', 'East', 'South', 'West'] as const;
+type RegionFilter = typeof REGIONS[number];
 
 function ListingSkeleton() {
   return (
@@ -83,6 +139,575 @@ function ListingSkeleton() {
         <ShimmerBar className="h-9 flex-1 rounded-lg" />
         <ShimmerBar className="h-9 flex-1 rounded-lg" />
       </div>
+    </div>
+  );
+}
+
+function ClubSkeleton() {
+  return (
+    <div className="glass-card p-4 space-y-3">
+      <div className="flex items-center gap-3">
+        <ShimmerBar className="w-14 h-14 rounded-full flex-shrink-0" />
+        <div className="flex-1 space-y-2">
+          <ShimmerBar className="h-5 w-36 rounded" />
+          <ShimmerBar className="h-3 w-24 rounded" />
+          <ShimmerBar className="h-3 w-20 rounded" />
+        </div>
+      </div>
+      <ShimmerBar className="h-3 w-full rounded" />
+      <ShimmerBar className="h-3 w-4/5 rounded" />
+    </div>
+  );
+}
+
+function RippleBadge({ isPartner }: { isPartner: boolean }) {
+  return (
+    <div className="relative flex items-center justify-center w-5 h-5 flex-shrink-0">
+      <span
+        className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${
+          isPartner ? 'bg-green-400' : 'bg-gray-500'
+        }`}
+      />
+      <span
+        className={`relative inline-flex rounded-full h-3 w-3 ${
+          isPartner ? 'bg-green-400' : 'bg-gray-500'
+        }`}
+      />
+    </div>
+  );
+}
+
+function ResultPill({ result }: { result: 'win' | 'loss' | 'draw' }) {
+  const styles = {
+    win: 'bg-green-500/20 border border-green-500/40 text-green-400',
+    loss: 'bg-red-500/20 border border-red-500/40 text-red-400',
+    draw: 'bg-yellow-500/20 border border-yellow-500/40 text-yellow-400',
+  };
+  return (
+    <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase ${styles[result]}`}>
+      {result}
+    </span>
+  );
+}
+
+function PlayerAvatarCard({
+  name,
+  avatarUrl,
+  position,
+  jerseyNumber,
+  username,
+  onClick,
+}: {
+  name: string;
+  avatarUrl: string | null;
+  position?: string | null;
+  jerseyNumber?: number | null;
+  username?: string | null;
+  onClick?: () => void;
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className={`flex items-center gap-3 p-2.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all ${
+        onClick ? 'cursor-pointer' : ''
+      }`}
+    >
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={name}
+          className="w-10 h-10 rounded-full object-cover border-2 border-[rgba(0,224,255,0.3)] flex-shrink-0"
+          loading="lazy"
+        />
+      ) : (
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00FF85] to-[#38BDF8] flex items-center justify-center text-black font-black text-sm flex-shrink-0">
+          {name.charAt(0).toUpperCase()}
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="text-white text-xs font-bold truncate">{name}</p>
+        {(position || jerseyNumber != null) && (
+          <p className="text-[#B0B8C8] text-xs truncate">
+            {jerseyNumber != null ? `#${jerseyNumber}` : ''}
+            {jerseyNumber != null && position ? ' · ' : ''}
+            {position || ''}
+          </p>
+        )}
+        {username && (
+          <p className="text-[#00E0FF] text-xs truncate">@{username}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ClubCard({
+  club,
+  expanded,
+  onToggle,
+  navigate,
+}: {
+  club: FootballClub;
+  expanded: boolean;
+  onToggle: () => void;
+  navigate: (path: string) => void;
+}) {
+  const [staff, setStaff] = useState<ClubStaff[]>([]);
+  const [players, setPlayers] = useState<ClubPlayer[]>([]);
+  const [matches, setMatches] = useState<ClubMatch[]>([]);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [detailsLoaded, setDetailsLoaded] = useState(false);
+
+  const recentMatches = matches.filter(m => m.result !== 'upcoming').slice(0, 5);
+  const upcomingMatches = matches.filter(m => m.result === 'upcoming');
+
+  const wins = recentMatches.filter(m => m.result === 'win').length;
+  const losses = recentMatches.filter(m => m.result === 'loss').length;
+  const draws = recentMatches.filter(m => m.result === 'draw').length;
+
+  const loadDetails = useCallback(async () => {
+    if (detailsLoaded || loadingDetails) return;
+    setLoadingDetails(true);
+    try {
+      const [staffRes, playersRes, matchesRes] = await Promise.all([
+        supabase
+          .from('club_staff')
+          .select('*, profile:profiles(username)')
+          .eq('club_id', club.id)
+          .order('role'),
+        supabase
+          .from('club_players')
+          .select('*, profile:profiles(username)')
+          .eq('club_id', club.id)
+          .order('jersey_number', { ascending: true, nullsFirst: false }),
+        supabase
+          .from('club_matches')
+          .select('*')
+          .eq('club_id', club.id)
+          .order('match_date', { ascending: false })
+          .limit(20),
+      ]);
+      setStaff((staffRes.data || []) as ClubStaff[]);
+      setPlayers((playersRes.data || []) as ClubPlayer[]);
+      setMatches((matchesRes.data || []) as ClubMatch[]);
+      setDetailsLoaded(true);
+    } finally {
+      setLoadingDetails(false);
+    }
+  }, [club.id, detailsLoaded, loadingDetails]);
+
+  const handleToggle = () => {
+    if (!expanded && !detailsLoaded) {
+      loadDetails();
+    }
+    onToggle();
+  };
+
+  return (
+    <div className="glass-card overflow-hidden">
+      <div
+        className="p-4 cursor-pointer select-none"
+        onClick={handleToggle}
+      >
+        <div className="flex items-start gap-3">
+          <div className="w-14 h-14 rounded-full flex-shrink-0 bg-gray-700 border-2 border-[rgba(0,224,255,0.2)] flex items-center justify-center overflow-hidden">
+            {club.is_verified && club.badge_url ? (
+              <img
+                src={club.badge_url}
+                alt={club.name}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <Shield className="w-7 h-7 text-gray-500" />
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-white font-bold text-base leading-tight">{club.name}</h3>
+              <RippleBadge isPartner={club.is_partner} />
+              {club.is_verified && (
+                <CheckCircle className="w-4 h-4 text-[#00E0FF] flex-shrink-0" />
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
+              {club.league && (
+                <span className="text-[#B0B8C8] text-xs">{club.league}</span>
+              )}
+              {club.borough && (
+                <div className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-[#B0B8C8]" />
+                  <span className="text-[#B0B8C8] text-xs">{club.borough}</span>
+                </div>
+              )}
+            </div>
+
+            {club.is_partner && (
+              <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full text-xs font-bold bg-green-500/15 border border-green-500/30 text-green-400">
+                Partner Club
+              </span>
+            )}
+          </div>
+
+          <div className="flex-shrink-0 ml-1 mt-1">
+            {expanded
+              ? <ChevronUp className="w-4 h-4 text-[#B0B8C8]" />
+              : <ChevronDown className="w-4 h-4 text-[#B0B8C8]" />
+            }
+          </div>
+        </div>
+
+        {club.description && (
+          <p className="mt-3 text-[#B0B8C8] text-xs leading-relaxed line-clamp-2">
+            {club.description}
+          </p>
+        )}
+
+        {club.is_partner && recentMatches.length > 0 && !expanded && (
+          <div className="flex items-center gap-1.5 mt-3 flex-wrap">
+            <span className="text-[#B0B8C8] text-xs font-semibold mr-1">Recent:</span>
+            {recentMatches.map(m => (
+              <ResultPill key={m.id} result={m.result as 'win' | 'loss' | 'draw'} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {expanded && (
+        <div className="border-t border-white/10 px-4 pb-4 space-y-5">
+          {loadingDetails && (
+            <div className="py-6 flex items-center justify-center gap-2">
+              <Loader2 className="w-5 h-5 text-[#00E0FF] animate-spin" />
+              <span className="text-[#B0B8C8] text-sm">Loading club details...</span>
+            </div>
+          )}
+
+          {detailsLoaded && (
+            <>
+              {club.description && (
+                <div className="pt-4">
+                  <p className="text-[#B0B8C8] text-sm leading-relaxed">{club.description}</p>
+                </div>
+              )}
+
+              {club.is_partner && recentMatches.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3 pt-2">
+                    <Trophy className="w-4 h-4 text-yellow-400" />
+                    <h4 className="text-white font-bold text-sm">Recent Results</h4>
+                    <span className="text-[#B0B8C8] text-xs ml-auto">
+                      {wins}W · {draws}D · {losses}L
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {recentMatches.map(m => (
+                      <div key={m.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+                        <ResultPill result={m.result as 'win' | 'loss' | 'draw'} />
+                        <span className="text-white text-xs font-semibold flex-1 min-w-0 truncate">
+                          vs {m.opponent}
+                        </span>
+                        {m.goals_for != null && m.goals_against != null && (
+                          <span className="text-[#B0B8C8] text-xs font-mono">
+                            {m.goals_for}–{m.goals_against}
+                          </span>
+                        )}
+                        <span className="text-[#B0B8C8] text-xs">
+                          {new Date(m.match_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {club.is_partner && upcomingMatches.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Calendar className="w-4 h-4 text-[#00E0FF]" />
+                    <h4 className="text-white font-bold text-sm">Upcoming Matches</h4>
+                  </div>
+                  <div className="space-y-2">
+                    {upcomingMatches.map(m => (
+                      <div key={m.id} className="px-3 py-2.5 rounded-lg bg-[rgba(0,224,255,0.05)] border border-[rgba(0,224,255,0.15)]">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white text-xs font-bold flex-1">vs {m.opponent}</span>
+                          <span className="text-[#00E0FF] text-xs font-semibold">
+                            {new Date(m.match_date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}
+                          </span>
+                        </div>
+                        {m.venue && (
+                          <div className="flex items-center gap-1 mt-1">
+                            <MapPin className="w-3 h-3 text-[#B0B8C8]" />
+                            <span className="text-[#B0B8C8] text-xs">{m.venue} · {m.is_home ? 'Home' : 'Away'}</span>
+                          </div>
+                        )}
+                        {m.tickets_available && (
+                          <div className="flex items-center gap-1.5 mt-1.5">
+                            <Ticket className="w-3.5 h-3.5 text-green-400" />
+                            <span className="text-green-400 text-xs font-semibold">
+                              Tickets available
+                              {m.ticket_price != null ? ` · £${m.ticket_price.toFixed(2)}` : ''}
+                              {m.seats_remaining != null ? ` · ${m.seats_remaining} seats left` : ''}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {staff.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Users className="w-4 h-4 text-[#B0B8C8]" />
+                    <h4 className="text-white font-bold text-sm">Staff</h4>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {staff.map(s => (
+                      <PlayerAvatarCard
+                        key={s.id}
+                        name={s.name}
+                        avatarUrl={s.avatar_url}
+                        position={s.role}
+                        username={s.profile?.username ?? null}
+                        onClick={
+                          s.profile?.username
+                            ? () => navigate(`/profile/${s.profile!.username}`)
+                            : undefined
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {players.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Shield className="w-4 h-4 text-[#B0B8C8]" />
+                    <h4 className="text-white font-bold text-sm">Players</h4>
+                    <span className="text-[#B0B8C8] text-xs ml-auto">{players.length} registered</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {players.map(p => (
+                      <PlayerAvatarCard
+                        key={p.id}
+                        name={p.name}
+                        avatarUrl={p.avatar_url}
+                        position={p.position}
+                        jerseyNumber={p.jersey_number}
+                        username={p.profile?.username ?? null}
+                        onClick={
+                          p.profile?.username
+                            ? () => navigate(`/profile/${p.profile!.username}`)
+                            : undefined
+                        }
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {detailsLoaded && staff.length === 0 && players.length === 0 && !club.is_partner && (
+                <div className="py-4 text-center">
+                  <p className="text-[#B0B8C8] text-sm">No additional details available yet.</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ClubsTab() {
+  const navigate = useNavigate();
+  const [clubs, setClubs] = useState<FootballClub[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [gender, setGender] = useState<'mens' | 'womens'>('mens');
+  const [regionFilter, setRegionFilter] = useState<RegionFilter>('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedClubId, setExpandedClubId] = useState<string | null>(null);
+  const [collapsedRegions, setCollapsedRegions] = useState<Set<string>>(new Set());
+
+  const fetchClubs = useCallback(async () => {
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from('football_clubs')
+        .select('*')
+        .order('name');
+      if (err) throw err;
+      setClubs((data || []) as FootballClub[]);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load clubs');
+    }
+  }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      await fetchClubs();
+      setLoading(false);
+    };
+    load();
+  }, [fetchClubs]);
+
+  const toggleRegion = (region: string) => {
+    setCollapsedRegions(prev => {
+      const next = new Set(prev);
+      if (next.has(region)) next.delete(region);
+      else next.add(region);
+      return next;
+    });
+  };
+
+  const filtered = clubs.filter(c => {
+    if (c.gender !== gender) return false;
+    if (regionFilter !== 'All' && c.region !== regionFilter) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        c.name.toLowerCase().includes(q) ||
+        (c.borough || '').toLowerCase().includes(q) ||
+        (c.league || '').toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  const regionOrder: Array<'North' | 'East' | 'South' | 'West'> = ['North', 'East', 'South', 'West'];
+  const activeRegions = regionFilter === 'All'
+    ? regionOrder.filter(r => filtered.some(c => c.region === r))
+    : ([regionFilter] as Array<'North' | 'East' | 'South' | 'West'>).filter(r => filtered.some(c => c.region === r));
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 4 }).map((_, i) => <ClubSkeleton key={i} />)}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="glass-card p-8 text-center space-y-3">
+        <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
+        <p className="text-[#B0B8C8] text-sm">{error}</p>
+        <button
+          onClick={() => { setLoading(true); fetchClubs().finally(() => setLoading(false)); }}
+          className="px-4 py-2 rounded-lg bg-[rgba(0,224,255,0.1)] border border-[rgba(0,224,255,0.2)] text-[#00E0FF] text-sm font-semibold hover:bg-[rgba(0,224,255,0.2)] transition-all"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#B0B8C8] pointer-events-none" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="Search clubs, boroughs, leagues..."
+          className="w-full pl-9 pr-3 py-2.5 rounded-lg text-sm bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-white placeholder-[#B0B8C8] focus:outline-none focus:border-[#00E0FF] transition-colors"
+        />
+      </div>
+
+      <div className="flex gap-1 p-1 rounded-lg bg-white/5 border border-white/10">
+        <button
+          onClick={() => setGender('mens')}
+          className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${
+            gender === 'mens'
+              ? 'bg-gradient-to-r from-[#00FF85] to-[#38BDF8] text-black'
+              : 'text-[#B0B8C8] hover:text-white'
+          }`}
+        >
+          Men's
+        </button>
+        <button
+          onClick={() => setGender('womens')}
+          className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${
+            gender === 'womens'
+              ? 'bg-gradient-to-r from-[#00FF85] to-[#38BDF8] text-black'
+              : 'text-[#B0B8C8] hover:text-white'
+          }`}
+        >
+          Women's
+        </button>
+      </div>
+
+      <div className="flex gap-1.5 flex-wrap">
+        {REGIONS.map(r => (
+          <button
+            key={r}
+            onClick={() => setRegionFilter(r)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
+              regionFilter === r
+                ? 'bg-[rgba(0,224,255,0.15)] border-[rgba(0,224,255,0.4)] text-[#00E0FF]'
+                : 'border-white/10 text-[#B0B8C8] hover:border-white/20 hover:text-white bg-white/5'
+            }`}
+          >
+            {r}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="glass-card p-10 text-center">
+          <Shield className="w-10 h-10 text-[#B0B8C8]/20 mx-auto mb-3" />
+          <p className="text-[#B0B8C8] text-sm font-semibold">No clubs found</p>
+          <p className="text-[#B0B8C8]/50 text-xs mt-1">Try adjusting your filters</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {activeRegions.map(region => {
+            const regionClubs = filtered.filter(c => c.region === region);
+            const isCollapsed = collapsedRegions.has(region);
+            return (
+              <div key={region}>
+                <button
+                  onClick={() => toggleRegion(region)}
+                  className="flex items-center gap-2 w-full mb-3 group"
+                >
+                  <span className="text-xs font-bold text-[#00E0FF] uppercase tracking-widest">
+                    {region} London
+                  </span>
+                  <span className="text-[#B0B8C8] text-xs">({regionClubs.length})</span>
+                  <div className="flex-1 h-px bg-white/10" />
+                  {isCollapsed
+                    ? <ChevronDown className="w-3.5 h-3.5 text-[#B0B8C8] group-hover:text-white transition-colors" />
+                    : <ChevronUp className="w-3.5 h-3.5 text-[#B0B8C8] group-hover:text-white transition-colors" />
+                  }
+                </button>
+                {!isCollapsed && (
+                  <div className="space-y-3">
+                    {regionClubs.map(club => (
+                      <ClubCard
+                        key={club.id}
+                        club={club}
+                        expanded={expandedClubId === club.id}
+                        onToggle={() => setExpandedClubId(
+                          expandedClubId === club.id ? null : club.id
+                        )}
+                        navigate={navigate}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -351,6 +976,8 @@ export default function Scouter() {
   const navigate = useNavigate();
   const toast = useToast();
 
+  const [activeTab, setActiveTab] = useState<'listings' | 'clubs'>('listings');
+
   const [listings, setListings] = useState<ScoutListing[]>([]);
   const [myInterests, setMyInterests] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -533,7 +1160,7 @@ export default function Scouter() {
               >
                 <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
               </button>
-              {isScoutTeam && (
+              {isScoutTeam && activeTab === 'listings' && (
                 <button
                   onClick={() => setShowCreateModal(true)}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gradient-to-r from-[#00FF85] to-[#38BDF8] text-black text-xs font-bold hover:opacity-90 transition-all"
@@ -544,208 +1171,239 @@ export default function Scouter() {
               )}
             </div>
           </div>
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-0">
+            <div className="flex border-b border-white/10">
+              <button
+                onClick={() => setActiveTab('listings')}
+                className={`px-4 py-3 text-sm font-bold border-b-2 transition-all ${
+                  activeTab === 'listings'
+                    ? 'border-[#00E0FF] text-[#00E0FF]'
+                    : 'border-transparent text-[#B0B8C8] hover:text-white'
+                }`}
+              >
+                Listings
+              </button>
+              <button
+                onClick={() => setActiveTab('clubs')}
+                className={`px-4 py-3 text-sm font-bold border-b-2 transition-all ${
+                  activeTab === 'clubs'
+                    ? 'border-[#00E0FF] text-[#00E0FF]'
+                    : 'border-transparent text-[#B0B8C8] hover:text-white'
+                }`}
+              >
+                Clubs
+              </button>
+            </div>
+          </div>
         </nav>
 
         <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
-          <div className="flex gap-3">
-            <div className="relative flex-1">
-              <select
-                value={positionFilter}
-                onChange={e => setPositionFilter(e.target.value)}
-                className={selectClass}
-              >
-                <option value="">All positions</option>
-                {POSITIONS.map(p => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
-                <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-            <input
-              type="text"
-              value={locationSearch}
-              onChange={e => setLocationSearch(e.target.value)}
-              placeholder="Search location..."
-              className="flex-1 px-3 py-2.5 rounded-lg text-sm bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-white placeholder-[#B0B8C8] focus:outline-none focus:border-[#00E0FF] transition-colors"
-            />
-          </div>
-
-          {loading ? (
-            <div className="space-y-4">
-              {Array.from({ length: 4 }).map((_, i) => <ListingSkeleton key={i} />)}
-            </div>
-          ) : error ? (
-            <div className="glass-card p-8 text-center space-y-3">
-              <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
-              <p className="text-[#B0B8C8] text-sm">{error}</p>
-              <button
-                onClick={() => { setLoading(true); fetchData().finally(() => setLoading(false)); }}
-                className="px-4 py-2 rounded-lg bg-[rgba(0,224,255,0.1)] border border-[rgba(0,224,255,0.2)] text-[#00E0FF] text-sm font-semibold hover:bg-[rgba(0,224,255,0.2)] transition-all"
-              >
-                Retry
-              </button>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="glass-card p-10 text-center">
-              <MapPin className="w-10 h-10 text-[#B0B8C8]/20 mx-auto mb-3" />
-              <p className="text-[#B0B8C8] text-sm font-semibold">No listings found</p>
-              <p className="text-[#B0B8C8]/50 text-xs mt-1">Try adjusting your filters</p>
-            </div>
+          {activeTab === 'clubs' ? (
+            <ClubsTab />
           ) : (
-            <div className="space-y-4">
-              {filtered.map(listing => {
-                const alreadyInterested = myInterests.has(listing.id);
-                const isProcessing = interestLoading === listing.id;
-                const isRemoving = removeLoading === listing.id;
-                const canAct = isVerified;
-                const isOwner = user?.id === listing.team_id;
+            <>
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <select
+                    value={positionFilter}
+                    onChange={e => setPositionFilter(e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="">All positions</option>
+                    {POSITIONS.map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center">
+                    <svg className="w-3.5 h-3.5 text-[#B0B8C8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  value={locationSearch}
+                  onChange={e => setLocationSearch(e.target.value)}
+                  placeholder="Search location..."
+                  className="flex-1 px-3 py-2.5 rounded-lg text-sm bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.2)] text-white placeholder-[#B0B8C8] focus:outline-none focus:border-[#00E0FF] transition-colors"
+                />
+              </div>
 
-                return (
-                  <div key={listing.id} className="glass-card p-4 space-y-3">
-                    <div className="flex items-center gap-3">
-                      {listing.team_avatar_url ? (
-                        <img
-                          src={listing.team_avatar_url}
-                          alt={listing.team_name}
-                          className="w-10 h-10 rounded-full object-cover border-2 border-[rgba(0,224,255,0.3)] flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00FF85] to-[#38BDF8] flex items-center justify-center text-black font-black text-base flex-shrink-0">
-                          {listing.team_name.charAt(0).toUpperCase()}
+              {loading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 4 }).map((_, i) => <ListingSkeleton key={i} />)}
+                </div>
+              ) : error ? (
+                <div className="glass-card p-8 text-center space-y-3">
+                  <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
+                  <p className="text-[#B0B8C8] text-sm">{error}</p>
+                  <button
+                    onClick={() => { setLoading(true); fetchData().finally(() => setLoading(false)); }}
+                    className="px-4 py-2 rounded-lg bg-[rgba(0,224,255,0.1)] border border-[rgba(0,224,255,0.2)] text-[#00E0FF] text-sm font-semibold hover:bg-[rgba(0,224,255,0.2)] transition-all"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="glass-card p-10 text-center">
+                  <MapPin className="w-10 h-10 text-[#B0B8C8]/20 mx-auto mb-3" />
+                  <p className="text-[#B0B8C8] text-sm font-semibold">No listings found</p>
+                  <p className="text-[#B0B8C8]/50 text-xs mt-1">Try adjusting your filters</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filtered.map(listing => {
+                    const alreadyInterested = myInterests.has(listing.id);
+                    const isProcessing = interestLoading === listing.id;
+                    const isRemoving = removeLoading === listing.id;
+                    const canAct = isVerified;
+                    const isOwner = user?.id === listing.team_id;
+
+                    return (
+                      <div key={listing.id} className="glass-card p-4 space-y-3">
+                        <div className="flex items-center gap-3">
+                          {listing.team_avatar_url ? (
+                            <img
+                              src={listing.team_avatar_url}
+                              alt={listing.team_name}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-[rgba(0,224,255,0.3)] flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00FF85] to-[#38BDF8] flex items-center justify-center text-black font-black text-base flex-shrink-0">
+                              {listing.team_name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-white font-bold text-sm truncate">{listing.team_name}</p>
+                            {isOwner && (
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <Users className="w-3 h-3 text-[#00E0FF]" />
+                                <span className="text-[#00E0FF] text-xs font-semibold">
+                                  {listing.interested_count} interested
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          {isOwner && (
+                            <button
+                              onClick={() => handleRemoveListing(listing.id)}
+                              disabled={isRemoving}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold hover:bg-red-500/20 disabled:opacity-50 transition-all flex-shrink-0"
+                              aria-label="Remove listing"
+                            >
+                              {isRemoving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                              Remove
+                            </button>
+                          )}
                         </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="text-white font-bold text-sm truncate">{listing.team_name}</p>
-                        {isOwner && (
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <Users className="w-3 h-3 text-[#00E0FF]" />
-                            <span className="text-[#00E0FF] text-xs font-semibold">
-                              {listing.interested_count} interested
+
+                        <h3 className="text-white text-lg font-bold leading-tight">{listing.title}</h3>
+
+                        <div className="flex flex-wrap gap-2 items-center">
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold text-[#00E0FF] bg-[rgba(0,224,255,0.1)] border border-[rgba(0,224,255,0.2)]">
+                            {listing.position_needed}
+                          </span>
+
+                          {listing.coin_reward > 0 && (
+                            <span className="px-2.5 py-1 rounded-full text-xs font-bold text-black bg-gradient-to-r from-[#00FF85] to-[#38BDF8]">
+                              {listing.coin_reward} coins reward
                             </span>
+                          )}
+                        </div>
+
+                        <div className="space-y-1.5">
+                          {listing.location && (
+                            <div className="flex items-center gap-1.5">
+                              <MapPin className="w-3.5 h-3.5 text-[#B0B8C8] flex-shrink-0" />
+                              <span className="text-[#B0B8C8] text-xs">{listing.location}</span>
+                            </div>
+                          )}
+
+                          {(listing.age_min || listing.age_max) && (
+                            <p className="text-[#B0B8C8] text-xs">
+                              Age: {listing.age_min ?? '?'} – {listing.age_max ?? '?'}
+                            </p>
+                          )}
+
+                          {listing.trial_date && (
+                            <p className="text-yellow-400 text-xs font-semibold">
+                              Trial date: {new Date(listing.trial_date).toLocaleDateString()}
+                            </p>
+                          )}
+
+                          {listing.training_days && (
+                            <p className="text-[#B0B8C8] text-xs">
+                              Training: {listing.training_days}{listing.training_times ? ` · ${listing.training_times}` : ''}
+                            </p>
+                          )}
+
+                          {listing.contact_details && (
+                            <p className="text-[#B0B8C8] text-xs">Contact: {listing.contact_details}</p>
+                          )}
+
+                          {listing.whatsapp_link && (
+                            <a
+                              href={listing.whatsapp_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs text-[#00FF85] font-semibold hover:underline"
+                            >
+                              WhatsApp
+                            </a>
+                          )}
+                        </div>
+
+                        {!isOwner && (
+                          <div className="flex gap-2 pt-1">
+                            <div className="relative flex-1 group">
+                              <button
+                                onClick={() => canAct && !alreadyInterested && handleInterested(listing.id)}
+                                disabled={!canAct || isProcessing || alreadyInterested}
+                                className={`w-full py-2.5 rounded-lg text-sm font-bold transition-all ${
+                                  alreadyInterested
+                                    ? 'bg-[rgba(0,255,133,0.15)] border border-[#00FF85]/40 text-[#00FF85] cursor-default'
+                                    : canAct
+                                    ? 'bg-[rgba(0,255,133,0.1)] border border-[rgba(0,255,133,0.25)] text-[#00FF85] hover:bg-[rgba(0,255,133,0.2)]'
+                                    : 'bg-white/5 border border-white/10 text-[#B0B8C8]/50 cursor-not-allowed'
+                                }`}
+                              >
+                                {isProcessing ? 'Sending...' : 'Interested'}
+                              </button>
+                              {!canAct && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-[#0f1829] border border-white/10 text-[#B0B8C8] text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10">
+                                  You must be verified to respond
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="relative flex-1 group">
+                              <button
+                                onClick={() => canAct && handleMessage(listing.team_id)}
+                                disabled={!canAct}
+                                className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                                  canAct
+                                    ? 'bg-[rgba(0,224,255,0.08)] border border-[rgba(0,224,255,0.2)] text-[#00E0FF] hover:bg-[rgba(0,224,255,0.15)]'
+                                    : 'bg-white/5 border border-white/10 text-[#B0B8C8]/50 cursor-not-allowed'
+                                }`}
+                              >
+                                <MessageCircle className="w-4 h-4" />
+                                Message
+                              </button>
+                              {!canAct && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-[#0f1829] border border-white/10 text-[#B0B8C8] text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10">
+                                  You must be verified to respond
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
-                      {isOwner && (
-                        <button
-                          onClick={() => handleRemoveListing(listing.id)}
-                          disabled={isRemoving}
-                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold hover:bg-red-500/20 disabled:opacity-50 transition-all flex-shrink-0"
-                          aria-label="Remove listing"
-                        >
-                          {isRemoving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                          Remove
-                        </button>
-                      )}
-                    </div>
-
-                    <h3 className="text-white text-lg font-bold leading-tight">{listing.title}</h3>
-
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <span className="px-2.5 py-1 rounded-full text-xs font-bold text-[#00E0FF] bg-[rgba(0,224,255,0.1)] border border-[rgba(0,224,255,0.2)]">
-                        {listing.position_needed}
-                      </span>
-
-                      {listing.coin_reward > 0 && (
-                        <span className="px-2.5 py-1 rounded-full text-xs font-bold text-black bg-gradient-to-r from-[#00FF85] to-[#38BDF8]">
-                          {listing.coin_reward} coins reward
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="space-y-1.5">
-                      {listing.location && (
-                        <div className="flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-[#B0B8C8] flex-shrink-0" />
-                          <span className="text-[#B0B8C8] text-xs">{listing.location}</span>
-                        </div>
-                      )}
-
-                      {(listing.age_min || listing.age_max) && (
-                        <p className="text-[#B0B8C8] text-xs">
-                          Age: {listing.age_min ?? '?'} – {listing.age_max ?? '?'}
-                        </p>
-                      )}
-
-                      {listing.trial_date && (
-                        <p className="text-yellow-400 text-xs font-semibold">
-                          Trial date: {new Date(listing.trial_date).toLocaleDateString()}
-                        </p>
-                      )}
-
-                      {listing.training_days && (
-                        <p className="text-[#B0B8C8] text-xs">
-                          Training: {listing.training_days}{listing.training_times ? ` · ${listing.training_times}` : ''}
-                        </p>
-                      )}
-
-                      {listing.contact_details && (
-                        <p className="text-[#B0B8C8] text-xs">Contact: {listing.contact_details}</p>
-                      )}
-
-                      {listing.whatsapp_link && (
-                        <a
-                          href={listing.whatsapp_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs text-[#00FF85] font-semibold hover:underline"
-                        >
-                          WhatsApp
-                        </a>
-                      )}
-                    </div>
-
-                    {!isOwner && (
-                      <div className="flex gap-2 pt-1">
-                        <div className="relative flex-1 group">
-                          <button
-                            onClick={() => canAct && !alreadyInterested && handleInterested(listing.id)}
-                            disabled={!canAct || isProcessing || alreadyInterested}
-                            className={`w-full py-2.5 rounded-lg text-sm font-bold transition-all ${
-                              alreadyInterested
-                                ? 'bg-[rgba(0,255,133,0.15)] border border-[#00FF85]/40 text-[#00FF85] cursor-default'
-                                : canAct
-                                ? 'bg-[rgba(0,255,133,0.1)] border border-[rgba(0,255,133,0.25)] text-[#00FF85] hover:bg-[rgba(0,255,133,0.2)]'
-                                : 'bg-white/5 border border-white/10 text-[#B0B8C8]/50 cursor-not-allowed'
-                            }`}
-                          >
-                            {isProcessing ? 'Sending...' : 'Interested'}
-                          </button>
-                          {!canAct && (
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-[#0f1829] border border-white/10 text-[#B0B8C8] text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10">
-                              You must be verified to respond
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="relative flex-1 group">
-                          <button
-                            onClick={() => canAct && handleMessage(listing.team_id)}
-                            disabled={!canAct}
-                            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                              canAct
-                                ? 'bg-[rgba(0,224,255,0.08)] border border-[rgba(0,224,255,0.2)] text-[#00E0FF] hover:bg-[rgba(0,224,255,0.15)]'
-                                : 'bg-white/5 border border-white/10 text-[#B0B8C8]/50 cursor-not-allowed'
-                            }`}
-                          >
-                            <MessageCircle className="w-4 h-4" />
-                            Message
-                          </button>
-                          {!canAct && (
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-[#0f1829] border border-white/10 text-[#B0B8C8] text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10">
-                              You must be verified to respond
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </main>
       </div>
