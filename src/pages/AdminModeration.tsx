@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Shield, Flag, AlertTriangle, Loader2, ArrowLeft, Clock, CheckCircle, XCircle, AlertOctagon, MessageCircleOff, Filter, Database, Search, Upload, RefreshCw } from 'lucide-react';
+import { Shield, Flag, AlertTriangle, Loader2, ArrowLeft, Clock, CheckCircle, XCircle, AlertOctagon, MessageCircleOff, Filter, Database, Search, Upload, RefreshCw, ChevronDown, ChevronUp, Plus, Trash2, Pencil, Ticket, MapPin, Calendar } from 'lucide-react';
 import { runSeed } from '../scripts/seedClubs';
 import { useToast } from '../contexts/ToastContext';
 
@@ -40,6 +40,41 @@ interface FootballClub {
   is_partner: boolean;
 }
 
+interface ClubMatch {
+  id: string;
+  club_id: string;
+  opponent: string;
+  match_date: string;
+  venue: string | null;
+  is_home: boolean;
+  tickets_available: boolean;
+  ticket_price: number | null;
+  seats_remaining: number | null;
+  result: string | null;
+  score: string | null;
+  created_at: string;
+}
+
+interface NewMatchForm {
+  opponent: string;
+  match_date: string;
+  venue: string;
+  is_home: boolean;
+  tickets_available: boolean;
+  ticket_price: string;
+  seats_remaining: string;
+}
+
+const DEFAULT_MATCH_FORM: NewMatchForm = {
+  opponent: '',
+  match_date: '',
+  venue: '',
+  is_home: true,
+  tickets_available: false,
+  ticket_price: '',
+  seats_remaining: '',
+};
+
 export default function AdminModeration() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -61,6 +96,16 @@ export default function AdminModeration() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const badgeInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [expandedClubId, setExpandedClubId] = useState<string | null>(null);
+  const [clubMatches, setClubMatches] = useState<Record<string, ClubMatch[]>>({});
+  const [matchesLoading, setMatchesLoading] = useState<Record<string, boolean>>({});
+  const [newMatchForms, setNewMatchForms] = useState<Record<string, NewMatchForm>>({});
+  const [savingMatch, setSavingMatch] = useState<string | null>(null);
+  const [deletingMatchId, setDeletingMatchId] = useState<string | null>(null);
+  const [editingResult, setEditingResult] = useState<string | null>(null);
+  const [resultForm, setResultForm] = useState<Record<string, { result: string; score: string }>>({});
+  const [savingResult, setSavingResult] = useState<string | null>(null);
+
   useEffect(() => {
     loadCases();
     loadFilterStats();
@@ -304,6 +349,121 @@ export default function AdminModeration() {
   const filteredClubs = clubs.filter(c =>
     c.name.toLowerCase().includes(clubSearch.toLowerCase())
   );
+
+  const handleToggleClubExpand = async (clubId: string) => {
+    if (expandedClubId === clubId) {
+      setExpandedClubId(null);
+      return;
+    }
+    setExpandedClubId(clubId);
+    if (!clubMatches[clubId]) {
+      await loadMatchesForClub(clubId);
+    }
+  };
+
+  const loadMatchesForClub = async (clubId: string) => {
+    setMatchesLoading(prev => ({ ...prev, [clubId]: true }));
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('club_matches')
+        .select('*')
+        .eq('club_id', clubId)
+        .order('match_date', { ascending: true });
+      if (fetchError) throw fetchError;
+      setClubMatches(prev => ({ ...prev, [clubId]: data || [] }));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to load matches');
+    } finally {
+      setMatchesLoading(prev => ({ ...prev, [clubId]: false }));
+    }
+  };
+
+  const handleMatchFormChange = (clubId: string, field: keyof NewMatchForm, value: string | boolean) => {
+    setNewMatchForms(prev => ({
+      ...prev,
+      [clubId]: { ...(prev[clubId] ?? DEFAULT_MATCH_FORM), [field]: value },
+    }));
+  };
+
+  const handleSaveMatch = async (clubId: string) => {
+    const form = newMatchForms[clubId] ?? DEFAULT_MATCH_FORM;
+    if (!form.opponent.trim()) { toast.error('Opponent is required'); return; }
+    if (!form.match_date) { toast.error('Match date is required'); return; }
+    setSavingMatch(clubId);
+    try {
+      const payload: Record<string, unknown> = {
+        club_id: clubId,
+        opponent: form.opponent.trim(),
+        match_date: form.match_date,
+        venue: form.venue.trim() || null,
+        is_home: form.is_home,
+        tickets_available: form.tickets_available,
+        ticket_price: form.tickets_available && form.ticket_price !== '' ? parseFloat(form.ticket_price) : null,
+        seats_remaining: form.tickets_available && form.seats_remaining !== '' ? parseInt(form.seats_remaining, 10) : null,
+      };
+      const { error: insertError } = await supabase.from('club_matches').insert(payload);
+      if (insertError) throw insertError;
+      toast.success('Match added');
+      setNewMatchForms(prev => ({ ...prev, [clubId]: DEFAULT_MATCH_FORM }));
+      await loadMatchesForClub(clubId);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to add match');
+    } finally {
+      setSavingMatch(null);
+    }
+  };
+
+  const handleDeleteMatch = async (matchId: string, clubId: string) => {
+    if (!confirm('Delete this match?')) return;
+    setDeletingMatchId(matchId);
+    try {
+      const { error: delError } = await supabase.from('club_matches').delete().eq('id', matchId);
+      if (delError) throw delError;
+      setClubMatches(prev => ({
+        ...prev,
+        [clubId]: (prev[clubId] || []).filter(m => m.id !== matchId),
+      }));
+      toast.success('Match deleted');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete match');
+    } finally {
+      setDeletingMatchId(null);
+    }
+  };
+
+  const handleSaveResult = async (matchId: string, clubId: string) => {
+    const form = resultForm[matchId];
+    if (!form?.result) { toast.error('Select a result'); return; }
+    setSavingResult(matchId);
+    try {
+      const { error: updateError } = await supabase
+        .from('club_matches')
+        .update({ result: form.result, score: form.score?.trim() || null })
+        .eq('id', matchId);
+      if (updateError) throw updateError;
+      setClubMatches(prev => ({
+        ...prev,
+        [clubId]: (prev[clubId] || []).map(m =>
+          m.id === matchId ? { ...m, result: form.result, score: form.score?.trim() || null } : m
+        ),
+      }));
+      toast.success('Result saved');
+      setEditingResult(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save result');
+    } finally {
+      setSavingResult(null);
+    }
+  };
+
+  const isPastMatch = (match_date: string) => new Date(match_date) < new Date();
+
+  const resultPillClass = (result: string | null) => {
+    if (result === 'win') return 'bg-green-500/20 text-green-300 border border-green-500/40';
+    if (result === 'loss') return 'bg-red-500/20 text-red-300 border border-red-500/40';
+    if (result === 'draw') return 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/40';
+    return '';
+  };
 
   const handleSeedClubs = async () => {
     setSeedLoading(true);
@@ -767,93 +927,365 @@ export default function AdminModeration() {
             </div>
           ) : (
             <div className="divide-y divide-gray-800/60">
-              {filteredClubs.map(club => (
-                <div key={club.id} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-800/30 transition-colors">
-                  <div className="w-10 h-10 rounded-lg bg-gray-800 border border-gray-700 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                    {club.badge_url ? (
-                      <img src={club.badge_url} alt={club.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <Shield className="w-5 h-5 text-gray-600" />
-                    )}
-                  </div>
+              {filteredClubs.map(club => {
+                const isClubExpanded = expandedClubId === club.id;
+                const matches = clubMatches[club.id] || [];
+                const isLoadingMatches = matchesLoading[club.id] ?? false;
+                const form = newMatchForms[club.id] ?? DEFAULT_MATCH_FORM;
 
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-medium text-sm truncate">{club.name}</p>
-                    <p className="text-gray-500 text-xs mt-0.5">
-                      {club.region} · {club.gender} · {club.league || 'No league'}
-                    </p>
-                  </div>
+                return (
+                  <div key={club.id} className="transition-colors">
+                    {/* Club row */}
+                    <div className="flex items-center gap-4 px-6 py-4 hover:bg-gray-800/20">
+                      <div className="w-10 h-10 rounded-lg bg-gray-800 border border-gray-700 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        {club.badge_url ? (
+                          <img src={club.badge_url} alt={club.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Shield className="w-5 h-5 text-gray-600" />
+                        )}
+                      </div>
 
-                  <div className="flex items-center gap-5 flex-shrink-0">
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-xs text-gray-500">Verified</span>
-                      <button
-                        onClick={() => handleToggleVerified(club)}
-                        disabled={togglingId === club.id + '_verified'}
-                        className={`relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-60 ${
-                          club.is_verified ? 'bg-cyan-600' : 'bg-gray-700'
-                        }`}
-                      >
-                        <span
-                          className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${
-                            club.is_verified ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-medium text-sm truncate">{club.name}</p>
+                        <p className="text-gray-500 text-xs mt-0.5">
+                          {club.region} · {club.gender} · {club.league || 'No league'}
+                        </p>
+                      </div>
 
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-xs text-gray-500">Partner</span>
-                      <button
-                        onClick={() => handleTogglePartner(club)}
-                        disabled={togglingId === club.id + '_partner'}
-                        className="flex items-center justify-center w-10 h-5 focus:outline-none disabled:opacity-60"
-                        title={club.is_partner ? 'Remove partner' : 'Mark as partner'}
-                      >
-                        <div className="relative flex items-center justify-center w-5 h-5">
-                          <span
-                            className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${
-                              club.is_partner ? 'bg-green-400' : 'bg-gray-500'
+                      <div className="flex items-center gap-5 flex-shrink-0">
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-xs text-gray-500">Verified</span>
+                          <button
+                            onClick={() => handleToggleVerified(club)}
+                            disabled={togglingId === club.id + '_verified'}
+                            className={`relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-60 ${
+                              club.is_verified ? 'bg-cyan-600' : 'bg-gray-700'
                             }`}
-                          />
-                          <span
-                            className={`relative inline-flex rounded-full h-3 w-3 ${
-                              club.is_partner ? 'bg-green-400' : 'bg-gray-500'
-                            }`}
+                          >
+                            <span
+                              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${
+                                club.is_verified ? 'translate-x-5' : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-xs text-gray-500">Partner</span>
+                          <button
+                            onClick={() => handleTogglePartner(club)}
+                            disabled={togglingId === club.id + '_partner'}
+                            className="flex items-center justify-center w-10 h-5 focus:outline-none disabled:opacity-60"
+                            title={club.is_partner ? 'Remove partner' : 'Mark as partner'}
+                          >
+                            <div className="relative flex items-center justify-center w-5 h-5">
+                              <span
+                                className={`absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping ${
+                                  club.is_partner ? 'bg-green-400' : 'bg-gray-500'
+                                }`}
+                              />
+                              <span
+                                className={`relative inline-flex rounded-full h-3 w-3 ${
+                                  club.is_partner ? 'bg-green-400' : 'bg-gray-500'
+                                }`}
+                              />
+                            </div>
+                          </button>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-xs text-gray-500">Badge</span>
+                          <button
+                            onClick={() => badgeInputRefs.current[club.id]?.click()}
+                            disabled={uploadingId === club.id}
+                            className="flex items-center gap-1 px-2.5 py-1 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 border border-gray-700 hover:border-gray-600 text-gray-300 hover:text-white text-xs rounded-lg transition-all"
+                          >
+                            {uploadingId === club.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Upload className="w-3 h-3" />
+                            )}
+                            <span>{uploadingId === club.id ? 'Uploading' : 'Upload'}</span>
+                          </button>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            ref={el => { badgeInputRefs.current[club.id] = el; }}
+                            onChange={e => {
+                              const file = e.target.files?.[0];
+                              if (file) handleBadgeUpload(club, file);
+                              e.target.value = '';
+                            }}
                           />
                         </div>
-                      </button>
+
+                        <button
+                          onClick={() => handleToggleClubExpand(club.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 text-gray-300 hover:text-white text-xs rounded-lg transition-all"
+                        >
+                          <Calendar className="w-3.5 h-3.5" />
+                          <span>Matches</span>
+                          {isClubExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        </button>
+                      </div>
                     </div>
 
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-xs text-gray-500">Badge</span>
-                      <button
-                        onClick={() => badgeInputRefs.current[club.id]?.click()}
-                        disabled={uploadingId === club.id}
-                        className="flex items-center gap-1 px-2.5 py-1 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 border border-gray-700 hover:border-gray-600 text-gray-300 hover:text-white text-xs rounded-lg transition-all"
-                      >
-                        {uploadingId === club.id ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
+                    {/* Expandable matches panel */}
+                    {isClubExpanded && (
+                      <div className="mx-4 mb-4 rounded-xl border border-gray-700 bg-gray-950 overflow-hidden">
+                        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-800 bg-gray-900/60">
+                          <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-cyan-400" />
+                            {club.name} — Matches
+                          </h4>
+                          <button
+                            onClick={() => loadMatchesForClub(club.id)}
+                            disabled={isLoadingMatches}
+                            className="text-xs text-gray-400 hover:text-cyan-400 flex items-center gap-1 transition-colors"
+                          >
+                            <RefreshCw className={`w-3 h-3 ${isLoadingMatches ? 'animate-spin' : ''}`} />
+                            Refresh
+                          </button>
+                        </div>
+
+                        {/* Existing matches */}
+                        {isLoadingMatches ? (
+                          <div className="flex items-center justify-center py-8">
+                            <Loader2 className="w-5 h-5 animate-spin text-cyan-400" />
+                            <span className="ml-2 text-sm text-gray-400">Loading matches...</span>
+                          </div>
+                        ) : matches.length === 0 ? (
+                          <p className="text-center text-gray-600 text-sm py-6">No matches yet.</p>
                         ) : (
-                          <Upload className="w-3 h-3" />
+                          <div className="divide-y divide-gray-800/50">
+                            {matches.map(match => {
+                              const isPast = isPastMatch(match.match_date);
+                              const isEditingThis = editingResult === match.id;
+                              const rf = resultForm[match.id] ?? { result: match.result || '', score: match.score || '' };
+
+                              return (
+                                <div key={match.id} className="px-5 py-3.5 hover:bg-gray-900/40 transition-colors">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-white font-medium text-sm">vs {match.opponent}</span>
+                                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${match.is_home ? 'bg-cyan-900/50 text-cyan-300' : 'bg-gray-800 text-gray-400'}`}>
+                                          {match.is_home ? 'Home' : 'Away'}
+                                        </span>
+                                        {match.result && (
+                                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${resultPillClass(match.result)}`}>
+                                            {match.result.toUpperCase()}
+                                            {match.score ? ` · ${match.score}` : ''}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-3 mt-1 flex-wrap">
+                                        <span className="flex items-center gap-1 text-xs text-gray-500">
+                                          <Calendar className="w-3 h-3" />
+                                          {new Date(match.match_date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                        {match.venue && (
+                                          <span className="flex items-center gap-1 text-xs text-gray-500">
+                                            <MapPin className="w-3 h-3" />
+                                            {match.venue}
+                                          </span>
+                                        )}
+                                        {match.tickets_available && (
+                                          <span className="flex items-center gap-1 text-xs text-green-400">
+                                            <Ticket className="w-3 h-3" />
+                                            {match.ticket_price != null ? `£${match.ticket_price}` : 'Free'}
+                                            {match.seats_remaining != null ? ` · ${match.seats_remaining} seats` : ''}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                      {isPast && !isEditingThis && (
+                                        <button
+                                          onClick={() => {
+                                            setEditingResult(match.id);
+                                            setResultForm(prev => ({
+                                              ...prev,
+                                              [match.id]: { result: match.result || '', score: match.score || '' },
+                                            }));
+                                          }}
+                                          className="flex items-center gap-1 px-2.5 py-1 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 hover:text-white text-xs rounded-lg transition-all"
+                                        >
+                                          <Pencil className="w-3 h-3" />
+                                          Result
+                                        </button>
+                                      )}
+                                      <button
+                                        onClick={() => handleDeleteMatch(match.id, club.id)}
+                                        disabled={deletingMatchId === match.id}
+                                        className="flex items-center gap-1 px-2.5 py-1 bg-red-900/30 hover:bg-red-900/50 border border-red-800/50 text-red-400 hover:text-red-300 text-xs rounded-lg transition-all disabled:opacity-50"
+                                      >
+                                        {deletingMatchId === match.id ? (
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                          <Trash2 className="w-3 h-3" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* Inline result editor */}
+                                  {isEditingThis && (
+                                    <div className="mt-3 pt-3 border-t border-gray-800 flex items-end gap-3 flex-wrap">
+                                      <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Result</label>
+                                        <select
+                                          value={rf.result}
+                                          onChange={e => setResultForm(prev => ({ ...prev, [match.id]: { ...rf, result: e.target.value } }))}
+                                          className="bg-gray-800 border border-gray-700 text-white text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-600"
+                                        >
+                                          <option value="">Select...</option>
+                                          <option value="win">Win</option>
+                                          <option value="draw">Draw</option>
+                                          <option value="loss">Loss</option>
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs text-gray-500 mb-1">Score (e.g. 2-1)</label>
+                                        <input
+                                          type="text"
+                                          value={rf.score}
+                                          onChange={e => setResultForm(prev => ({ ...prev, [match.id]: { ...rf, score: e.target.value } }))}
+                                          placeholder="2-1"
+                                          className="bg-gray-800 border border-gray-700 text-white text-xs rounded-lg px-2.5 py-1.5 w-24 focus:outline-none focus:border-cyan-600"
+                                        />
+                                      </div>
+                                      <button
+                                        onClick={() => handleSaveResult(match.id, club.id)}
+                                        disabled={savingResult === match.id}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-all"
+                                      >
+                                        {savingResult === match.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+                                        Save
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingResult(null)}
+                                        className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-400 text-xs rounded-lg transition-all"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
                         )}
-                        <span>{uploadingId === club.id ? 'Uploading' : 'Upload'}</span>
-                      </button>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        ref={el => { badgeInputRefs.current[club.id] = el; }}
-                        onChange={e => {
-                          const file = e.target.files?.[0];
-                          if (file) handleBadgeUpload(club, file);
-                          e.target.value = '';
-                        }}
-                      />
-                    </div>
+
+                        {/* Add match form */}
+                        <div className="border-t border-gray-800 px-5 py-4 bg-gray-900/40">
+                          <h5 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3 flex items-center gap-2">
+                            <Plus className="w-3.5 h-3.5" /> Add Match
+                          </h5>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Opponent *</label>
+                              <input
+                                type="text"
+                                value={form.opponent}
+                                onChange={e => handleMatchFormChange(club.id, 'opponent', e.target.value)}
+                                placeholder="Opponent name"
+                                className="w-full bg-gray-800 border border-gray-700 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-600 placeholder-gray-600"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Match Date *</label>
+                              <input
+                                type="datetime-local"
+                                value={form.match_date}
+                                onChange={e => handleMatchFormChange(club.id, 'match_date', e.target.value)}
+                                className="w-full bg-gray-800 border border-gray-700 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-600"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Venue</label>
+                              <input
+                                type="text"
+                                value={form.venue}
+                                onChange={e => handleMatchFormChange(club.id, 'venue', e.target.value)}
+                                placeholder="Stadium / ground"
+                                className="w-full bg-gray-800 border border-gray-700 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-600 placeholder-gray-600"
+                              />
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                              <div className="flex flex-col gap-1">
+                                <span className="text-xs text-gray-500">Home / Away</span>
+                                <button
+                                  onClick={() => handleMatchFormChange(club.id, 'is_home', !form.is_home)}
+                                  className={`relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none ${form.is_home ? 'bg-cyan-600' : 'bg-gray-700'}`}
+                                >
+                                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${form.is_home ? 'translate-x-5' : 'translate-x-0'}`} />
+                                </button>
+                                <span className="text-xs text-gray-400">{form.is_home ? 'Home' : 'Away'}</span>
+                              </div>
+
+                              <div className="flex flex-col gap-1">
+                                <span className="text-xs text-gray-500">Tickets</span>
+                                <button
+                                  onClick={() => handleMatchFormChange(club.id, 'tickets_available', !form.tickets_available)}
+                                  className={`relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none ${form.tickets_available ? 'bg-green-600' : 'bg-gray-700'}`}
+                                >
+                                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${form.tickets_available ? 'translate-x-5' : 'translate-x-0'}`} />
+                                </button>
+                                <span className="text-xs text-gray-400">{form.tickets_available ? 'Yes' : 'No'}</span>
+                              </div>
+                            </div>
+
+                            {form.tickets_available && (
+                              <>
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-1">Ticket Price (£)</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={form.ticket_price}
+                                    onChange={e => handleMatchFormChange(club.id, 'ticket_price', e.target.value)}
+                                    placeholder="0.00"
+                                    className="w-full bg-gray-800 border border-gray-700 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-600 placeholder-gray-600"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-1">Seats Remaining</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={form.seats_remaining}
+                                    onChange={e => handleMatchFormChange(club.id, 'seats_remaining', e.target.value)}
+                                    placeholder="e.g. 50"
+                                    className="w-full bg-gray-800 border border-gray-700 text-white text-xs rounded-lg px-3 py-2 focus:outline-none focus:border-cyan-600 placeholder-gray-600"
+                                  />
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() => handleSaveMatch(club.id)}
+                            disabled={savingMatch === club.id}
+                            className="mt-3 flex items-center gap-2 px-4 py-2 bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 text-white text-xs font-semibold rounded-lg transition-all"
+                          >
+                            {savingMatch === club.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Plus className="w-3.5 h-3.5" />
+                            )}
+                            {savingMatch === club.id ? 'Saving...' : 'Add Match'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
