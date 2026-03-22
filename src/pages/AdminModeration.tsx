@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Shield, Flag, AlertTriangle, Loader2, ArrowLeft, Clock, CheckCircle, XCircle, AlertOctagon, MessageCircleOff, Filter } from 'lucide-react';
+import { Shield, Flag, AlertTriangle, Loader2, ArrowLeft, Clock, CheckCircle, XCircle, AlertOctagon, MessageCircleOff, Filter, Database } from 'lucide-react';
+import { runSeed } from '../scripts/seedClubs';
 
 interface ModerationCase {
   case_id: string;
@@ -38,6 +39,8 @@ export default function AdminModeration() {
   const [expandedCaseId, setExpandedCaseId] = useState<string | null>(null);
   const [filterStats, setFilterStats] = useState<any>(null);
   const [showFilteredComments, setShowFilteredComments] = useState(false);
+  const [seedLoading, setSeedLoading] = useState(false);
+  const [seedResult, setSeedResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   useEffect(() => {
     loadCases();
     loadFilterStats();
@@ -188,6 +191,23 @@ export default function AdminModeration() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleSeedClubs = async () => {
+    setSeedLoading(true);
+    setSeedResult(null);
+    try {
+      const { inserted, skipped } = await runSeed();
+      if (inserted === 0) {
+        setSeedResult({ type: 'success', message: `All clubs already in database (${skipped} existing). Nothing inserted.` });
+      } else {
+        setSeedResult({ type: 'success', message: `Successfully inserted ${inserted} club(s). ${skipped} already existed.` });
+      }
+    } catch (err) {
+      setSeedResult({ type: 'error', message: err instanceof Error ? err.message : 'Seed failed.' });
+    } finally {
+      setSeedLoading(false);
+    }
   };
 
   return (
@@ -548,6 +568,47 @@ export default function AdminModeration() {
             })}
           </div>
         )}
+
+        <div className="mt-10 border border-gray-800 rounded-xl bg-gray-900/50 p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Database className="w-5 h-5 text-cyan-400" />
+            <h2 className="text-lg font-bold text-white">Clubs</h2>
+          </div>
+          <p className="text-sm text-gray-400 mb-5">
+            Seed the football clubs database with all London club data. Duplicate clubs (matched by name) are skipped automatically.
+          </p>
+          <button
+            onClick={handleSeedClubs}
+            disabled={seedLoading}
+            className="flex items-center gap-2 px-5 py-2.5 bg-cyan-700 hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all"
+          >
+            {seedLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Seeding...</span>
+              </>
+            ) : (
+              <>
+                <Database className="w-4 h-4" />
+                <span>Seed Clubs</span>
+              </>
+            )}
+          </button>
+          {seedResult && (
+            <div className={`mt-4 flex items-start gap-2 rounded-lg border px-4 py-3 text-sm ${
+              seedResult.type === 'success'
+                ? 'bg-green-500/10 border-green-500/30 text-green-300'
+                : 'bg-red-500/10 border-red-500/30 text-red-300'
+            }`}>
+              {seedResult.type === 'success' ? (
+                <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              ) : (
+                <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              )}
+              <span>{seedResult.message}</span>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

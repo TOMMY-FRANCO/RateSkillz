@@ -843,6 +843,117 @@ const WEST_LONDON_MENS_CLUBS = [
   },
 ] as const;
 
+const WEST_LONDON_WOMENS_CLUBS = [
+  {
+    name: 'Fulham FC Women',
+    region: 'West',
+    gender: 'womens',
+    league: 'Professional',
+    borough: 'Fulham',
+    description:
+      'Fulham FC Women are the professional women\'s team associated with Fulham FC, based in Fulham, West London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Brentford Women FC',
+    region: 'West',
+    gender: 'womens',
+    league: 'London and South East Regional',
+    borough: 'Brentford',
+    description:
+      'Brentford Women FC compete in the London and South East Regional League, based in Brentford, West London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'United Dragons FC Women',
+    region: 'West',
+    gender: 'womens',
+    league: 'Community',
+    borough: 'Maida Vale',
+    description:
+      'United Dragons FC Women is a community women\'s football club based in Maida Vale, West London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Shepherds Booters FC',
+    region: 'West',
+    gender: 'womens',
+    league: 'Community',
+    borough: "Shepherd's Bush",
+    description:
+      "Shepherds Booters FC are a community women's football club based in Shepherd's Bush, West London.",
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Gals FC',
+    region: 'West',
+    gender: 'womens',
+    league: 'Recreational',
+    borough: 'Ealing',
+    description:
+      'Gals FC is a recreational women\'s football club based at Lammas Park in Ealing, West London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Hammersmith FC Women',
+    region: 'West',
+    gender: 'womens',
+    league: 'Community',
+    borough: 'Hammersmith',
+    description:
+      'Hammersmith FC Women is a community women\'s football club based in Hammersmith, West London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Foxes FC Academy',
+    region: 'West',
+    gender: 'womens',
+    league: 'Youth',
+    borough: 'West London',
+    description:
+      'Foxes FC Academy is a youth women\'s football development club based in West London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Actonians LFC',
+    region: 'West',
+    gender: 'womens',
+    league: 'Womens Football',
+    borough: 'Ealing',
+    description:
+      'Actonians LFC is a women\'s football club based in Ealing, West London, with a long history in the women\'s game.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Southall Athletic WFC',
+    region: 'West',
+    gender: 'womens',
+    league: 'Local League',
+    borough: 'Southall',
+    description:
+      'Southall Athletic WFC compete in local league women\'s football, based in Southall, West London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+] as const;
+
 const ALL_CLUBS = [
   ...NORTH_LONDON_MENS_CLUBS,
   ...NORTH_LONDON_WOMENS_CLUBS,
@@ -851,39 +962,50 @@ const ALL_CLUBS = [
   ...EAST_LONDON_MENS_CLUBS,
   ...EAST_LONDON_WOMENS_CLUBS,
   ...WEST_LONDON_MENS_CLUBS,
+  ...WEST_LONDON_WOMENS_CLUBS,
 ];
 
-async function seedClubs() {
-  console.log('Starting club seed...');
-
+export async function runSeed(): Promise<{ inserted: number; skipped: number }> {
   const { data: existing, error: fetchError } = await supabase
     .from('football_clubs')
     .select('name');
 
   if (fetchError) {
-    console.error('Failed to fetch existing clubs:', fetchError.message);
-    process.exit(1);
+    throw new Error(`Failed to fetch existing clubs: ${fetchError.message}`);
   }
 
   const existingNames = new Set((existing || []).map((c: { name: string }) => c.name));
   const toInsert = ALL_CLUBS.filter(c => !existingNames.has(c.name));
 
   if (toInsert.length === 0) {
-    console.log('All clubs already exist — nothing to insert.');
-    return;
+    return { inserted: 0, skipped: ALL_CLUBS.length };
   }
 
-  console.log(`Inserting ${toInsert.length} club(s):`);
-  toInsert.forEach(c => console.log(` - ${c.name}`));
-
-  const { error: insertError } = await supabase.from('football_clubs').insert(toInsert);
+  const { error: insertError } = await supabase.from('football_clubs').insert(toInsert as any[]);
 
   if (insertError) {
-    console.error('Insert failed:', insertError.message);
-    process.exit(1);
+    throw new Error(`Insert failed: ${insertError.message}`);
   }
 
-  console.log('Seed complete.');
+  return { inserted: toInsert.length, skipped: existingNames.size };
+}
+
+export default runSeed;
+
+async function seedClubs() {
+  console.log('Starting club seed...');
+  try {
+    const { inserted, skipped } = await runSeed();
+    if (inserted === 0) {
+      console.log('All clubs already exist — nothing to insert.');
+    } else {
+      console.log(`Inserted ${inserted} club(s). ${skipped} already existed.`);
+    }
+    console.log('Seed complete.');
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : err);
+    process.exit(1);
+  }
 }
 
 seedClubs();
