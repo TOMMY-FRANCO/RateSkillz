@@ -63,6 +63,7 @@ const SecretGames = lazy(() => import('./pages/SecretGames'));
 const Scouter = lazy(() => import('./pages/Scouter'));
 const UsernameSetup = lazy(() => import('./pages/UsernameSetup'));
 const SkinStore = lazy(() => import('./pages/SkinStore'));
+const ClubsPortal = lazy(() => import('./pages/ClubsPortal'));
 
 function LoadingScreen() {
   return (
@@ -520,6 +521,16 @@ function App() {
               <AdminRoute>
                 <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
                   <AdminModeration />
+                </LazyPageWrapper>
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/clubs-portal"
+            element={
+              <AdminRoute>
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <ClubsPortal />
                 </LazyPageWrapper>
               </AdminRoute>
             }
