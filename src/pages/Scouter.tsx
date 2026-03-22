@@ -335,6 +335,9 @@ function ClubCard({
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-white font-bold text-base leading-tight">{club.name}</h3>
               <RippleBadge isPartner={club.is_partner} />
+              {!club.is_partner && (
+                <span className="text-gray-500 text-xs font-normal">Not yet a RatingSkill partner</span>
+              )}
               {club.is_verified && (
                 <CheckCircle className="w-4 h-4 text-[#00E0FF] flex-shrink-0" />
               )}
