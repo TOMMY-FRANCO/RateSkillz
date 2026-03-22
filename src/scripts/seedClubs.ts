@@ -570,11 +570,287 @@ const SOUTH_LONDON_WOMENS_CLUBS = [
   },
 ] as const;
 
+const EAST_LONDON_MENS_CLUBS = [
+  {
+    name: 'West Ham United',
+    region: 'East',
+    gender: 'mens',
+    league: 'Premier League',
+    borough: 'Stratford',
+    description:
+      'West Ham United Football Club is a professional football club based in Stratford, East London. Known as the Hammers, they play their home matches at the London Stadium.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Leyton Orient',
+    region: 'East',
+    gender: 'mens',
+    league: 'League One',
+    borough: 'Leyton',
+    description:
+      'Leyton Orient Football Club is a professional football club based in Leyton, East London. They compete in League One and play their home matches at Brisbane Road.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Dagenham and Redbridge',
+    region: 'East',
+    gender: 'mens',
+    league: 'National League',
+    borough: 'Dagenham',
+    description:
+      'Dagenham and Redbridge Football Club compete in the National League, playing their home matches at Victoria Road in Dagenham, East London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Walthamstow FC',
+    region: 'East',
+    gender: 'mens',
+    league: 'Isthmian League',
+    borough: 'Walthamstow',
+    description:
+      'Walthamstow Football Club compete in the Isthmian League, playing their home matches at Wadham Lodge in Walthamstow, East London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Hornchurch FC',
+    region: 'East',
+    gender: 'mens',
+    league: 'Isthmian League',
+    borough: 'Hornchurch',
+    description:
+      'Hornchurch Football Club compete in the Isthmian League, playing their home matches at Bridge Avenue in Hornchurch, East London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Clapton Community FC',
+    region: 'East',
+    gender: 'mens',
+    league: 'Regional',
+    borough: 'Forest Gate',
+    description:
+      'Clapton Community Football Club is a community-owned football club based in Forest Gate, East London, playing at the Old Spotted Dog Ground.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Barking FC',
+    region: 'East',
+    gender: 'mens',
+    league: 'Isthmian League',
+    borough: 'East London',
+    description:
+      'Barking Football Club compete in the Isthmian League, one of the historic non-league clubs of East London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Redbridge FC',
+    region: 'East',
+    gender: 'mens',
+    league: 'Isthmian League',
+    borough: 'Redbridge',
+    description:
+      'Redbridge Football Club compete in the Isthmian League, playing their home matches at Oakside Stadium in Redbridge, East London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+] as const;
+
+const EAST_LONDON_WOMENS_CLUBS = [
+  {
+    name: 'West Ham United Women',
+    region: 'East',
+    gender: 'womens',
+    league: 'WSL',
+    borough: 'Stratford',
+    description:
+      "West Ham United Women compete in the Women's Super League, playing their home matches at the London Stadium in Stratford, East London.",
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'London Seaward FC',
+    region: 'East',
+    gender: 'womens',
+    league: 'FA Womens National League',
+    borough: 'East London',
+    description:
+      "London Seaward FC compete in the FA Women's National League, representing East London women's football.",
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'AFC Leyton',
+    region: 'East',
+    gender: 'womens',
+    league: 'Development',
+    borough: 'Walthamstow',
+    description:
+      'AFC Leyton Women are a development-level women\'s football club based in Walthamstow, East London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+] as const;
+
+const WEST_LONDON_MENS_CLUBS = [
+  {
+    name: 'Chelsea FC',
+    region: 'West',
+    gender: 'mens',
+    league: 'Premier League',
+    borough: 'Fulham',
+    description:
+      'Chelsea Football Club is a professional football club based in Fulham, West London. One of the most decorated clubs in English football, they play at Stamford Bridge.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Fulham FC',
+    region: 'West',
+    gender: 'mens',
+    league: 'Premier League',
+    borough: 'Fulham',
+    description:
+      'Fulham Football Club is a professional football club based in Fulham, West London. Known as the Cottagers, they play their home matches at Craven Cottage.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Brentford FC',
+    region: 'West',
+    gender: 'mens',
+    league: 'Premier League',
+    borough: 'Brentford',
+    description:
+      'Brentford Football Club is a professional football club based in Brentford, West London. They play their home matches at the Gtech Community Stadium.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Queens Park Rangers',
+    region: 'West',
+    gender: 'mens',
+    league: 'Championship',
+    borough: "Shepherd's Bush",
+    description:
+      "Queens Park Rangers Football Club is a professional football club based in Shepherd's Bush, West London. Known as the Hoops, they play at Loftus Road.",
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Wealdstone FC',
+    region: 'West',
+    gender: 'mens',
+    league: 'National League',
+    borough: 'Ruislip',
+    description:
+      'Wealdstone Football Club compete in the National League, playing their home matches at Grosvenor Vale in Ruislip, West London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Hampton and Richmond Borough',
+    region: 'West',
+    gender: 'mens',
+    league: 'National League South',
+    borough: 'Hampton',
+    description:
+      'Hampton and Richmond Borough Football Club compete in the National League South, playing their home matches at Beveree Stadium in Hampton, West London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Hanwell Town',
+    region: 'West',
+    gender: 'mens',
+    league: 'Southern League',
+    borough: 'Perivale',
+    description:
+      'Hanwell Town Football Club compete in the Southern League, based in Perivale, West London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Harrow Borough',
+    region: 'West',
+    gender: 'mens',
+    league: 'Non-League',
+    borough: 'Harrow',
+    description:
+      'Harrow Borough Football Club is a non-league football club based in Harrow, West London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Hayes and Yeading United',
+    region: 'West',
+    gender: 'mens',
+    league: 'Non-League',
+    borough: 'Hayes',
+    description:
+      'Hayes and Yeading United Football Club is a non-league football club based in Hayes, West London, playing at Skyex Community Stadium.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Wembley FC',
+    region: 'West',
+    gender: 'mens',
+    league: 'Spartan South Midlands League',
+    borough: 'Wembley',
+    description:
+      'Wembley Football Club compete in the Spartan South Midlands League, playing their home matches at Vale Farm in Wembley, West London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+  {
+    name: 'Northwood FC',
+    region: 'West',
+    gender: 'mens',
+    league: 'Southern League Central',
+    borough: 'Northwood',
+    description:
+      'Northwood Football Club compete in the Southern League Central Division, based in Northwood, West London.',
+    badge_url: null,
+    is_verified: false,
+    is_partner: false,
+  },
+] as const;
+
 const ALL_CLUBS = [
   ...NORTH_LONDON_MENS_CLUBS,
   ...NORTH_LONDON_WOMENS_CLUBS,
   ...SOUTH_LONDON_MENS_CLUBS,
   ...SOUTH_LONDON_WOMENS_CLUBS,
+  ...EAST_LONDON_MENS_CLUBS,
+  ...EAST_LONDON_WOMENS_CLUBS,
+  ...WEST_LONDON_MENS_CLUBS,
 ];
 
 async function seedClubs() {
