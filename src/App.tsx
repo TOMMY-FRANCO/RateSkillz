@@ -64,6 +64,8 @@ const Scouter = lazy(() => import('./pages/Scouter'));
 const UsernameSetup = lazy(() => import('./pages/UsernameSetup'));
 const SkinStore = lazy(() => import('./pages/SkinStore'));
 const ClubsPortal = lazy(() => import('./pages/ClubsPortal'));
+const Predictions = lazy(() => import('./pages/Predictions'));
+const AdminPredictions = lazy(() => import('./pages/AdminPredictions'));
 
 function LoadingScreen() {
   return (
@@ -544,6 +546,26 @@ function App() {
               <ProtectedRoute>
                 <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
                   <UsernameSetup />
+                </LazyPageWrapper>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/predictions"
+            element={
+              <ProtectedRoute>
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <Predictions />
+                </LazyPageWrapper>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-predictions"
+            element={
+              <ProtectedRoute>
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <AdminPredictions />
                 </LazyPageWrapper>
               </ProtectedRoute>
             }

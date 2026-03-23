@@ -8,7 +8,7 @@ import TermsAcceptanceModal from '../components/TermsAcceptanceModal';
 import { CoinBalance } from '../components/CoinBalance';
 import Tutorial from '../components/Tutorial';
 import TutorialPrompt from '../components/TutorialPrompt';
-import { Settings, Users, LogOut, Trophy, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search, BookOpen, QrCode, UserPlus, RefreshCw, Activity, HelpCircle, Newspaper, MessageSquare, Sparkles } from 'lucide-react';
+import { Settings, Users, LogOut, Trophy, ShoppingBag, Tv, TrendingUp, Eye, MessageCircle, Swords, Search, BookOpen, QrCode, UserPlus, RefreshCw, Activity, HelpCircle, Newspaper, MessageSquare, Sparkles, Target } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { withCache, CacheKeys, CACHE_TTL } from '../lib/cache';
 import { displayUsername } from '../lib/username';
@@ -467,6 +467,21 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-white font-bold text-sm sm:text-base">Matchday</h3>
                 <p className="text-[#B0B8C8] text-xs sm:text-sm">Premier League</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate('/predictions')}
+            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#FFD700] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
+                <Target className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Predictions</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Predict & earn coins</p>
               </div>
             </div>
           </button>
