@@ -61,12 +61,12 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'scorers', label: 'Top Scorers' },
 ];
 
-const COMPETITIONS: { label: string; code: string }[] = [
-  { label: 'Premier League', code: 'PL' },
-  { label: 'Championship', code: 'ELC' },
-  { label: 'League One', code: 'EL1' },
-  { label: 'League Two', code: 'EL2' },
-  { label: "Women's Super League", code: 'WSL' },
+const COMPETITIONS: { label: string; code: string; available: boolean }[] = [
+  { label: 'Premier League', code: 'PL', available: true },
+  { label: 'Championship', code: 'ELC', available: true },
+  { label: 'League One', code: 'EL1', available: false },
+  { label: 'League Two', code: 'EL2', available: false },
+  { label: "Women's Super League", code: 'WSL', available: false },
 ];
 
 const EMPTY_TAB_DATA: Record<Tab, TabData> = {
@@ -544,23 +544,31 @@ export default function Matchday() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
 
           {/* Competition selector */}
-          <div className="overflow-x-auto pb-1 mb-4 -mx-1 px-1">
+          <div className="overflow-x-auto pb-1 mb-1 -mx-1 px-1">
             <div className="flex gap-2 w-max">
               {COMPETITIONS.map(comp => (
-                <button
-                  key={comp.code}
-                  onClick={() => handleCompetitionSelect(comp.code)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
-                    activeCompetition === comp.code
-                      ? 'bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black'
-                      : 'bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.15)] text-[#B0B8C8] hover:border-[rgba(0,224,255,0.35)] hover:text-white'
-                  }`}
-                >
-                  {comp.label}
-                </button>
+                <div key={comp.code} className="relative flex-shrink-0">
+                  <button
+                    onClick={() => comp.available && handleCompetitionSelect(comp.code)}
+                    disabled={!comp.available}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                      !comp.available
+                        ? 'bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.08)] text-[#4A5568] opacity-50 cursor-not-allowed'
+                        : activeCompetition === comp.code
+                          ? 'bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black'
+                          : 'bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.15)] text-[#B0B8C8] hover:border-[rgba(0,224,255,0.35)] hover:text-white'
+                    }`}
+                  >
+                    {comp.label}
+                    {!comp.available && (
+                      <span className="ml-1.5 text-[9px] font-bold uppercase tracking-wide text-[#4A5568]">Soon</span>
+                    )}
+                  </button>
+                </div>
               ))}
             </div>
           </div>
+          <p className="text-[10px] text-[#4A5568] mb-3 px-1">League One, League Two and Women's Super League coming soon</p>
 
           {/* Tab bar */}
           <div className="flex gap-2 mb-6 flex-wrap">
