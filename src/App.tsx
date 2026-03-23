@@ -150,11 +150,10 @@ function App() {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user) return;
-    updatePresence(user.id);
-    const interval = setInterval(() => updatePresence(user.id), 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [user]);
+  if (!user) return;
+  const cleanup = startPresenceManager(user.id);
+  return cleanup;
+}, [user]);
 
   useEffect(() => {
     let listenerHandle: any = null;
