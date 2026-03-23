@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft, RefreshCw, Send, AlertCircle, ChevronDown, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { DefaultAvatar } from '../components/ui/DefaultAvatar';
 import { useToast } from '../contexts/ToastContext';
 import { ShimmerBar } from '../components/ui/Shimmer';
 
@@ -374,11 +375,7 @@ export default function TheWall() {
                         className="w-10 h-10 rounded-full object-cover border border-white/10 flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00E0FF]/30 to-[#0099BB]/30 flex items-center justify-center border border-white/10 flex-shrink-0">
-                        <span className="text-white font-bold text-sm">
-                          {(post.username || '?')[0].toUpperCase()}
-                        </span>
-                      </div>
+                      <DefaultAvatar size={40} className="rounded-full border border-white/10 flex-shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-white font-bold text-sm truncate">

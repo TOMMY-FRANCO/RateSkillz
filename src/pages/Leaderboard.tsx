@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, User, Swords, RefreshCw, Loader2 } from 'lucide-react';
+import { DefaultAvatar } from '../components/ui/DefaultAvatar';
 import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
 import ArenaLeaderboardTab from '../components/leaderboard/ArenaLeaderboardTab';
@@ -291,9 +292,7 @@ export default function Leaderboard() {
                         loading="lazy"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <User className="w-8 h-8 text-gray-600" />
-                      </div>
+                      <DefaultAvatar size={64} className="w-full h-full" />
                     )}
                   </div>
 

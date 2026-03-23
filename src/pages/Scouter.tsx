@@ -9,6 +9,7 @@ import {
   Instagram, Facebook, Youtube, Twitter,
 } from 'lucide-react';
 import { ShimmerBar } from '../components/ui/Shimmer';
+import { DefaultAvatar } from '../components/ui/DefaultAvatar';
 import { useToast } from '../contexts/ToastContext';
 
 const POSITIONS = ['GK', 'AM', 'WB', 'RW', 'LW', 'CM', 'CB', 'LB', 'RB', 'DM'];
@@ -239,9 +240,7 @@ function PlayerAvatarCard({
           loading="lazy"
         />
       ) : (
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00FF85] to-[#38BDF8] flex items-center justify-center text-black font-black text-sm flex-shrink-0">
-          {(name || username || position || '?').charAt(0).toUpperCase()}
-        </div>
+        <DefaultAvatar size={40} className="rounded-full border-2 border-[rgba(0,224,255,0.3)] flex-shrink-0" />
       )}
       <div className="min-w-0 flex-1">
         <p className="text-white text-xs font-bold truncate">{name}</p>
@@ -1395,9 +1394,7 @@ export default function Scouter() {
                               className="w-10 h-10 rounded-full object-cover border-2 border-[rgba(0,224,255,0.3)] flex-shrink-0"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00FF85] to-[#38BDF8] flex items-center justify-center text-black font-black text-base flex-shrink-0">
-                              {(listing.team_name || '?').charAt(0).toUpperCase()}
-                            </div>
+                            <DefaultAvatar size={40} className="rounded-full border-2 border-[rgba(0,224,255,0.3)] flex-shrink-0" />
                           )}
                           <div className="min-w-0 flex-1">
                             <p className="text-white font-bold text-sm truncate">{listing.team_name}</p>

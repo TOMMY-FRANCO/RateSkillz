@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Conversation, getUserConversations, formatTimestamp } from '../lib/messaging';
-import { MessageCircle, ArrowLeft, User, RefreshCw, Loader2 } from 'lucide-react';
+import { MessageCircle, ArrowLeft, RefreshCw, Loader2 } from 'lucide-react';
+import { DefaultAvatar } from '../components/ui/DefaultAvatar';
 import { displayUsername } from '../lib/username';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
 import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
@@ -227,9 +228,7 @@ export default function Inbox() {
                         loading="lazy"
                       />
                     ) : (
-                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
-                        <User className="w-7 h-7 text-white" />
-                      </div>
+                      <DefaultAvatar size={56} className="rounded-full" />
                     )}
                   </div>
 

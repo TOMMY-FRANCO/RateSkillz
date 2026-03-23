@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../contexts/ToastContext';
 import { Shield, Loader2, ArrowLeft, Search, Upload, RefreshCw, ChevronDown, ChevronUp, Plus, Trash2, CreditCard as Edit2, Check, X, Ticket, Calendar, MapPin, Globe, Save, Instagram, Facebook, Youtube, Twitter, User, UserCheck, Pencil } from 'lucide-react';
+import { DefaultAvatar } from '../components/ui/DefaultAvatar';
 
 interface FootballClub {
   id: string;
@@ -626,7 +627,7 @@ function PlayerSlotPin({
               {u.avatar_url ? (
                 <img src={u.avatar_url} className="w-5 h-5 rounded-full object-cover flex-shrink-0" alt="" />
               ) : (
-                <User className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                <DefaultAvatar size={20} className="rounded-full flex-shrink-0" />
               )}
               <span className="truncate">{u.username}</span>
             </button>
@@ -820,7 +821,7 @@ function SubSlotCard({
               {u.avatar_url ? (
                 <img src={u.avatar_url} className="w-5 h-5 rounded-full object-cover flex-shrink-0" alt="" />
               ) : (
-                <User className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                <DefaultAvatar size={20} className="rounded-full flex-shrink-0" />
               )}
               <span className="truncate">{u.username}</span>
             </button>

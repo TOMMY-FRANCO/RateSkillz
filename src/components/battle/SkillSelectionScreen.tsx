@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Shield, AlertCircle } from 'lucide-react';
 import { PlayerCard } from '../../lib/battleMode';
+import { DefaultAvatar } from '../ui/DefaultAvatar';
 
 interface SkillSelectionScreenProps {
   cards: PlayerCard[];
@@ -119,11 +120,7 @@ export function SkillSelectionScreen({
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center mb-2 border-2 border-[rgba(0,224,255,0.25)]">
-                    <span className="text-black font-black text-xl">
-                      {card.player_name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+                  <DefaultAvatar size={56} className="rounded-full mb-2 border-2 border-[rgba(0,224,255,0.25)]" />
                 )}
                 <p className="text-white text-xs font-semibold text-center w-full truncate leading-tight">
                   {card.player_name}

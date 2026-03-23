@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { DefaultAvatar } from '../components/ui/DefaultAvatar';
 import { supabase } from '../lib/supabase';
 import {
   ArrowLeft, UserCheck, UserX, Clock, Eye, CheckCircle, XCircle, AlertCircle,
@@ -57,11 +58,7 @@ function Avatar({
       loading="lazy"
     />
   ) : (
-    <div
-      className={`${dim} rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center text-black font-black border-2 ${borderClass} flex-shrink-0`}
-    >
-      {name.charAt(0).toUpperCase()}
-    </div>
+    <DefaultAvatar size={size === 'sm' ? 40 : 48} className={`rounded-full border-2 ${borderClass} flex-shrink-0`} />
   );
 }
 

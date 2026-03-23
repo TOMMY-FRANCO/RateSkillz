@@ -1,4 +1,5 @@
 import { getAvatarUrl } from '../lib/avatarStorage';
+import { DefaultAvatar } from './ui/DefaultAvatar';
 
 interface AvatarProps {
   src: string | null;
@@ -21,5 +22,7 @@ export function Avatar({ src, alt, size = 64, className = '', style }: AvatarPro
       loading="lazy"
       style={style}
     />
-  ) : null;
+  ) : (
+    <DefaultAvatar size={size} className={className} />
+  );
 }

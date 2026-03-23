@@ -6,6 +6,7 @@ import { TiebreakerScreen } from './TiebreakerScreen';
 import { useAuth } from '../../contexts/AuthContext';
 import { BattleResultSkeleton, BattleResultReveal } from '../ui/HighValueSkeletons';
 import { ShimmerBar, StaggerItem } from '../ui/Shimmer';
+import { DefaultAvatar } from '../ui/DefaultAvatar';
 import {
   Battle,
   BattleRoyalty,
@@ -613,9 +614,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-orange-400 flex items-center justify-center border border-white/20">
-                          <span className="text-white text-sm font-black">{card.player_name.charAt(0)}</span>
-                        </div>
+                        <DefaultAvatar size={48} className="rounded-full border border-white/20" />
                       )}
                       <p className="text-white text-[9px] font-bold truncate w-full text-center leading-tight">{card.username || card.player_name}</p>
                       <span className="px-1.5 py-0.5 rounded-full bg-white/10 text-white text-[9px] font-black">{card.overall_rating}</span>
@@ -708,9 +707,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                         {pendingCommittedCard.avatar_url ? (
                           <img src={pendingCommittedCard.avatar_url} alt={pendingCommittedCard.player_name} className="w-8 h-8 rounded-full object-cover border border-white/20 mb-1" loading="lazy" />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-orange-400 flex items-center justify-center border border-white/20 mb-1">
-                            <span className="text-white text-xs font-black">{pendingCommittedCard.player_name.charAt(0)}</span>
-                          </div>
+                          <DefaultAvatar size={32} className="rounded-full border border-white/20 mb-1" />
                         )}
                         <p className="text-white text-[9px] font-bold truncate w-full text-center">{pendingCommittedCard.username || pendingCommittedCard.player_name}</p>
                         {pendingCommittedMove.skill && (
@@ -764,9 +761,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                         {pendingCommittedCard.avatar_url ? (
                           <img src={pendingCommittedCard.avatar_url} alt={pendingCommittedCard.player_name} className="w-8 h-8 rounded-full object-cover border border-white/20 mb-1" loading="lazy" />
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center border border-white/20 mb-1">
-                            <span className="text-black text-xs font-black">{pendingCommittedCard.player_name.charAt(0)}</span>
-                          </div>
+                          <DefaultAvatar size={32} className="rounded-full border border-white/20 mb-1" />
                         )}
                         <p className="text-white text-[9px] font-bold truncate w-full text-center">{pendingCommittedCard.username || pendingCommittedCard.player_name}</p>
                         {pendingCommittedMove.skill && (
@@ -850,9 +845,7 @@ export function BattleArena({ battle: initialBattle, onComplete }: BattleArenaPr
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center border border-[rgba(0,255,133,0.3)]">
-                          <span className="text-black text-sm font-black">{card.player_name.charAt(0)}</span>
-                        </div>
+                        <DefaultAvatar size={48} className="rounded-full border border-[rgba(0,255,133,0.3)]" />
                       )}
                       <p className="text-white text-[9px] font-bold truncate w-full text-center leading-tight">{card.username || card.player_name}</p>
                       <span className="px-1.5 py-0.5 rounded-full bg-[rgba(0,255,133,0.15)] text-[#00FF85] text-[9px] font-black">{card.overall_rating}</span>

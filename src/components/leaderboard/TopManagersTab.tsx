@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { Search, Crown, User, Loader2 } from 'lucide-react';
+import { Search, Crown, Loader2 } from 'lucide-react';
+import { DefaultAvatar } from '../ui/DefaultAvatar';
 import { VerificationBadge } from '../VerificationBadge';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../ui/Shimmer';
 import { SkeletonAvatar } from '../ui/SkeletonPresets';
@@ -284,9 +285,7 @@ export default function TopManagersTab() {
                         loading="lazy"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <User className="w-8 h-8 text-gray-600" />
-                      </div>
+                      <DefaultAvatar size={64} className="w-full h-full" />
                     )}
                     <div className="absolute -bottom-1 -right-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full p-1">
                       <Crown className="w-4 h-4 text-black" />

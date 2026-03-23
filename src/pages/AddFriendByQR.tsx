@@ -4,6 +4,7 @@ import { UserPlus, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { sendFriendRequest } from '../lib/friendRequests';
+import { DefaultAvatar } from '../components/ui/DefaultAvatar';
 
 export default function AddFriendByQR() {
   const [searchParams] = useSearchParams();
@@ -219,11 +220,7 @@ export default function AddFriendByQR() {
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center">
-                          <span className="text-2xl font-bold text-black">
-                            {targetProfile.username[0].toUpperCase()}
-                          </span>
-                        </div>
+                        <DefaultAvatar size={64} className="rounded-xl" />
                       )}
                     </div>
                     <div className="flex-1">

@@ -3,6 +3,7 @@ import { Swords, Target, Clock, Flag } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { playSound } from '../../lib/sounds';
+import { DefaultAvatar } from '../ui/DefaultAvatar';
 import {
   Battle,
   PlayerCard,
@@ -344,9 +345,7 @@ export function TiebreakerScreen({
                   {card.avatar_url ? (
                     <img src={card.avatar_url} alt={card.player_name} className="w-12 h-12 rounded-full object-cover border border-white/20" loading="lazy" />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-orange-400 flex items-center justify-center border border-white/20">
-                      <span className="text-white text-sm font-black">{card.player_name.charAt(0)}</span>
-                    </div>
+                    <DefaultAvatar size={48} className="rounded-full border border-white/20" />
                   )}
                   <p className="text-white text-[9px] font-bold truncate w-full text-center">{card.username || card.player_name}</p>
                   <span className="px-1.5 py-0.5 rounded-full bg-white/10 text-white text-[9px] font-black">{card.overall_rating}</span>
@@ -444,9 +443,7 @@ export function TiebreakerScreen({
                       {card.avatar_url ? (
                         <img src={card.avatar_url} alt={card.player_name} className="w-12 h-12 rounded-full object-cover border-2 border-yellow-400/20 mb-1" loading="lazy" />
                       ) : (
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center mb-1 border-2 border-yellow-400/20">
-                          <span className="text-black font-black text-lg">{card.player_name.charAt(0)}</span>
-                        </div>
+                        <DefaultAvatar size={48} className="rounded-full mb-1 border-2 border-yellow-400/20" />
                       )}
                       <p className="text-white text-[10px] font-semibold text-center truncate w-full">{card.player_name}</p>
                       <span className="mt-1 text-[9px] font-black text-black bg-gradient-to-r from-[#00FF85] to-[#00E0FF] px-2 py-0.5 rounded">{card.overall_rating}</span>
@@ -512,9 +509,7 @@ export function TiebreakerScreen({
                   {card.avatar_url ? (
                     <img src={card.avatar_url} alt={card.player_name} className="w-12 h-12 rounded-full object-cover border border-[rgba(0,255,133,0.3)]" loading="lazy" />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center border border-[rgba(0,255,133,0.3)]">
-                      <span className="text-black text-sm font-black">{card.player_name.charAt(0)}</span>
-                    </div>
+                    <DefaultAvatar size={48} className="rounded-full border border-[rgba(0,255,133,0.3)]" />
                   )}
                   <p className="text-white text-[9px] font-bold truncate w-full text-center">{card.username || card.player_name}</p>
                   <span className="px-1.5 py-0.5 rounded-full bg-[rgba(0,255,133,0.15)] text-[#00FF85] text-[9px] font-black">{card.overall_rating}</span>

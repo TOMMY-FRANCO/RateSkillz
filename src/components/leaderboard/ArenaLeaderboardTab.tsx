@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { MapPin, Swords, Lock, User, Trophy, Coins, Loader2, Users } from 'lucide-react';
+import { MapPin, Swords, Lock, Trophy, Coins, Loader2, Users } from 'lucide-react';
+import { DefaultAvatar } from '../ui/DefaultAvatar';
 import { ShimmerBar, StaggerItem } from '../ui/Shimmer';
 import { useArenaUnlocks } from '../../hooks/useArenaUnlocks';
 
@@ -216,9 +217,7 @@ export default function ArenaLeaderboardTab() {
                         loading="lazy"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <User className="w-6 h-6 text-gray-600" />
-                      </div>
+                      <DefaultAvatar size={48} className="w-full h-full" />
                     )}
                   </div>
 

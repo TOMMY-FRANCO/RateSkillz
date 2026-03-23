@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { DefaultAvatar } from '../components/ui/DefaultAvatar';
 import {
   Message,
   getConversationMessages,
@@ -351,9 +352,7 @@ export default function Chat() {
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center ring-2 ring-transparent group-hover:ring-cyan-400/70 transition-all duration-200">
-                    <User className="w-6 h-6 text-white" />
-                  </div>
+                  <DefaultAvatar size={48} className="rounded-full ring-2 ring-transparent group-hover:ring-cyan-400/70 transition-all duration-200" />
                 )}
                 {isOnline && (
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900 pointer-events-none"></div>
@@ -459,9 +458,7 @@ export default function Chat() {
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center ring-1 ring-transparent group-hover:ring-cyan-400/60 transition-all">
-                          <User className="w-3.5 h-3.5 text-white" />
-                        </div>
+                        <DefaultAvatar size={28} className="rounded-full ring-1 ring-transparent group-hover:ring-cyan-400/60 transition-all" />
                       )}
                     </button>
                   )}

@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { Profile } from '../contexts/AuthContext';
-import { User, Download, Coins, Award } from 'lucide-react';
+import { Download, Coins, Award } from 'lucide-react';
+import { DefaultAvatar } from './ui/DefaultAvatar';
 import { displayUsername } from '../lib/username';
 import { calculateOverallRating, getCardTier, getTierBadgeColors } from '../lib/cardTiers';
 import { getAvatarUrl } from '../lib/avatarStorage';
@@ -303,9 +304,7 @@ export default function PlayerCard({ profile, ratings = [], userStats, size = 'l
                     }
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-black/40">
-                    <User className="w-16 h-16 text-white/30" />
-                  </div>
+                  <DefaultAvatar size={120} className="w-full h-full" />
                 )}
               </div>
             </div>

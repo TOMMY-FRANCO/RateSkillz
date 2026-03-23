@@ -10,6 +10,7 @@ import { sendFriendRequest, removeFriend } from '../lib/friendRequests';
 import { displayUsername } from '../lib/username';
 import { useToast } from '../contexts/ToastContext';
 import { isOnline, formatTimeAgo } from '../lib/presence';
+import { DefaultAvatar } from '../components/ui/DefaultAvatar';
 
 interface SearchResult {
   id: string;
@@ -66,9 +67,7 @@ function UserAvatar({ src, name }: { src: string | null; name: string }) {
       loading="lazy"
     />
   ) : (
-    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center text-black font-black text-base border-2 border-[rgba(0,224,255,0.4)] flex-shrink-0">
-      {name.charAt(0).toUpperCase()}
-    </div>
+    <DefaultAvatar size={48} className="rounded-full border-2 border-[rgba(0,224,255,0.4)] flex-shrink-0" />
   );
 }
 

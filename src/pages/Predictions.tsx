@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { displayUsername } from '../lib/username';
 import OnlineStatus from '../components/OnlineStatus';
+import { DefaultAvatar } from '../components/ui/DefaultAvatar';
 import {
   ArrowLeft, RefreshCw, Loader2, CheckCircle, XCircle, AlertCircle,
   Trophy, Clock, Users, Coins, TrendingUp,
@@ -85,9 +86,9 @@ function UserAvatar({
   ) : (
     <div
       onClick={onClick}
-      className="w-9 h-9 rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center text-black font-black text-sm border-2 border-[rgba(0,224,255,0.3)] flex-shrink-0 cursor-pointer hover:border-[#00E0FF] transition-colors"
+      className="rounded-full border-2 border-[rgba(0,224,255,0.3)] flex-shrink-0 cursor-pointer hover:border-[#00E0FF] transition-colors overflow-hidden"
     >
-      {name.charAt(0).toUpperCase()}
+      <DefaultAvatar size={36} />
     </div>
   );
 }

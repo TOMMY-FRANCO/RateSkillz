@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeft, RefreshCw, Plus, AlertCircle, X, Search, UserCheck, ChevronDown, ChevronUp, Trophy, MapPin, Calendar, Clock, FileText, Users } from 'lucide-react';
 import { ShimmerBar } from '../components/ui/Shimmer';
+import { DefaultAvatar } from '../components/ui/DefaultAvatar';
 import { useToast } from '../contexts/ToastContext';
 
 interface FootballMatch {
@@ -78,9 +79,7 @@ function AvatarBubble({ name, avatar, size = 'md' }: { name: string; avatar: str
     );
   }
   return (
-    <div className={`${dim} rounded-full bg-gradient-to-br from-[#00FF85] to-[#00E0FF] flex items-center justify-center text-black font-black flex-shrink-0`}>
-      {name.charAt(0).toUpperCase()}
-    </div>
+    <DefaultAvatar size={size === 'sm' ? 28 : 36} className={`${dim} rounded-full flex-shrink-0`} />
   );
 }
 
