@@ -544,29 +544,23 @@ export default function Matchday() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
 
           {/* Competition selector */}
-          <div className="overflow-x-auto pb-1 mb-1 -mx-1 px-1">
-            <div className="flex gap-2 w-max">
-              {COMPETITIONS.map(comp => (
-                <div key={comp.code} className="relative flex-shrink-0">
-                  <button
-                    onClick={() => comp.available && handleCompetitionSelect(comp.code)}
-                    disabled={!comp.available}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                      !comp.available
-                        ? 'bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.08)] text-[#4A5568] opacity-50 cursor-not-allowed'
-                        : activeCompetition === comp.code
-                          ? 'bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black'
-                          : 'bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.15)] text-[#B0B8C8] hover:border-[rgba(0,224,255,0.35)] hover:text-white'
-                    }`}
-                  >
-                    {comp.label}
-                    {!comp.available && (
-                      <span className="ml-1.5 text-[9px] font-bold uppercase tracking-wide text-[#4A5568]">Soon</span>
-                    )}
-                  </button>
-                </div>
-              ))}
-            </div>
+          <div className="flex flex-wrap gap-2 mb-1">
+            {COMPETITIONS.map(comp => (
+              <button
+                key={comp.code}
+                onClick={() => comp.available && handleCompetitionSelect(comp.code)}
+                disabled={!comp.available}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                  !comp.available
+                    ? 'bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.08)] text-[#4A5568] opacity-50 cursor-not-allowed'
+                    : activeCompetition === comp.code
+                      ? 'bg-gradient-to-r from-[#00E0FF] to-[#38BDF8] text-black'
+                      : 'bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.15)] text-[#B0B8C8] hover:border-[rgba(0,224,255,0.35)] hover:text-white'
+                }`}
+              >
+                {comp.label}
+              </button>
+            ))}
           </div>
           <p className="text-[10px] text-[#4A5568] mb-3 px-1">League One, League Two and Women's Super League coming soon</p>
 
