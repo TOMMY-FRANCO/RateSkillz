@@ -620,6 +620,9 @@ export default function Predictions() {
             })}
           </div>
         )}
+        <p className="text-gray-600 text-[10px] text-center mt-4">
+          Football data provided by the Football-Data.org API
+        </p>
       </main>
     </div>
   );
