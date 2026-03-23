@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useAuth } from './contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { measureWebVitals, perfMonitor } from './lib/performance';
-import { updatePresence } from './lib/presence';
+import { startPresenceManager } from './lib/presence';
 import ErrorBoundary from './components/ErrorBoundary';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import { LazyPageWrapper } from './components/ui/LazyPageWrapper';
