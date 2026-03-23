@@ -7,10 +7,14 @@ import {
   Award,
   Heart,
   Shield,
-  Star,
+  TrendingUp,
   RefreshCw,
   Activity,
-  Sparkles,
+  BookOpen,
+  Coins,
+  Users,
+  Swords,
+  Eye,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -23,20 +27,44 @@ interface FeedItem {
   label: string;
   timestamp: string;
   category: FeedCategory;
+  notificationType: string;
   icon: React.ReactNode;
 }
 
-const CATEGORY_STYLES: Record<FeedCategory, { border: string; bg: string; text: string }> = {
-  gold: { border: 'border-l-amber-400', bg: 'bg-amber-400/10', text: 'text-amber-400' },
-  blue: { border: 'border-l-sky-400', bg: 'bg-sky-400/10', text: 'text-sky-400' },
-  red: { border: 'border-l-red-400', bg: 'bg-red-400/10', text: 'text-red-400' },
-  purple: { border: 'border-l-purple-400', bg: 'bg-purple-400/10', text: 'text-purple-400' },
+const CATEGORY_STYLES: Record<FeedCategory, { border: string; bg: string; text: string; label: string }> = {
+  gold:   { border: 'border-l-amber-400',  bg: 'bg-amber-400/10',  text: 'text-amber-400',  label: 'Card Updates'  },
+  blue:   { border: 'border-l-sky-400',    bg: 'bg-sky-400/10',    text: 'text-sky-400',    label: 'Social'        },
+  red:    { border: 'border-l-red-400',    bg: 'bg-red-400/10',    text: 'text-red-400',    label: 'Security'      },
+  purple: { border: 'border-l-purple-400', bg: 'bg-purple-400/10', text: 'text-purple-400', label: 'Daily Wrap-up' },
 };
 
-function getNotificationIcon(type: string, category: FeedCategory): React.ReactNode {
-  if (category === 'red') return <Shield className="w-4 h-4" />;
-  if (category === 'purple') return <Sparkles className="w-4 h-4" />;
-  if (category === 'blue') return <Heart className="w-4 h-4" />;
+// Map notification content to the most relevant icon
+function getNotificationIcon(notificationType: string, category: FeedCategory, message: string): React.ReactNode {
+  const msg = message.toLowerCase();
+
+  if (category === 'red')   return <Shield className="w-4 h-4" />;
+
+  if (category === 'purple') {
+    // Daily wrap-up — pick icon based on what the message highlights
+    if (msg.includes('quiz'))           return <BookOpen className="w-4 h-4" />;
+    if (msg.includes('battle'))         return <Swords className="w-4 h-4" />;
+    if (msg.includes('coin'))           return <Coins className="w-4 h-4" />;
+    if (msg.includes('friend'))         return <Users className="w-4 h-4" />;
+    if (msg.includes('view'))           return <Eye className="w-4 h-4" />;
+    if (msg.includes('like'))           return <Heart className="w-4 h-4" />;
+    return <TrendingUp className="w-4 h-4" />;
+  }
+
+  if (category === 'blue') {
+    if (msg.includes('friend'))         return <Users className="w-4 h-4" />;
+    if (msg.includes('like'))           return <Heart className="w-4 h-4" />;
+    return <Heart className="w-4 h-4" />;
+  }
+
+  // gold — card / coin updates
+  if (msg.includes('quiz'))             return <BookOpen className="w-4 h-4" />;
+  if (msg.includes('coin'))             return <Coins className="w-4 h-4" />;
+  if (msg.includes('battle'))           return <Swords className="w-4 h-4" />;
   return <Award className="w-4 h-4" />;
 }
 
@@ -46,29 +74,34 @@ function formatTime(dateStr: string): string {
 }
 
 function getDateGroup(dateStr: string): string {
-  const d = new Date(dateStr);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const d    = new Date(dateStr);
+  const now  = new Date();
+  const today     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  const itemDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const itemDate  = new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
-  if (itemDate.getTime() === today.getTime()) return 'Today';
+  if (itemDate.getTime() === today.getTime())     return 'Today';
   if (itemDate.getTime() === yesterday.getTime()) return 'Yesterday';
   return 'Earlier This Week';
 }
 
+const GROUP_ORDER = ['Today', 'Yesterday', 'Earlier This Week'];
+
 export default function ActivityFeed() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const [items, setItems] = useState<FeedItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const navigate   = useNavigate();
+  const { user }   = useAuth();
+
+  const [items,        setItems]        = useState<FeedItem[]>([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
-  const touchStartY = useRef(0);
+
+  const touchStartY  = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // ─── data loading ────────────────────────────────────────────────────────────
   const loadFeed = useCallback(async () => {
     if (!user) return;
     setError(null);
@@ -91,12 +124,16 @@ export default function ActivityFeed() {
         const category = (['gold', 'blue', 'red', 'purple'].includes(row.activity_feed_type)
           ? row.activity_feed_type
           : 'gold') as FeedCategory;
+
+        const message = row.message || '';
+
         return {
-          id: `notif-${row.id}`,
-          label: row.message || '',
-          timestamp: row.created_at,
+          id:               `notif-${row.id}`,
+          label:            message,
+          timestamp:        row.created_at,
           category,
-          icon: getNotificationIcon(row.notification_type, category),
+          notificationType: row.notification_type,
+          icon:             getNotificationIcon(row.notification_type, category, message),
         };
       });
 
@@ -108,11 +145,12 @@ export default function ActivityFeed() {
 
   useEffect(() => {
     if (!user) return;
-    if (user?.id) markNotificationsRead(user.id, 'rank_update').catch(() => {});
+    markNotificationsRead(user.id, 'rank_update').catch(() => {});
     setLoading(true);
     loadFeed().finally(() => setLoading(false));
   }, [user, loadFeed]);
 
+  // ─── pull-to-refresh ─────────────────────────────────────────────────────────
   const handleRefresh = useCallback(async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
@@ -125,28 +163,24 @@ export default function ActivityFeed() {
   }, [isRefreshing, loadFeed]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (containerRef.current && containerRef.current.scrollTop === 0) {
+    if (containerRef.current?.scrollTop === 0)
       touchStartY.current = e.touches[0].clientY;
-    }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (touchStartY.current === 0 || isRefreshing) return;
     const diff = e.touches[0].clientY - touchStartY.current;
-    if (diff > 0 && containerRef.current && containerRef.current.scrollTop === 0) {
+    if (diff > 0 && containerRef.current?.scrollTop === 0)
       setPullDistance(Math.min(diff, 100));
-    }
   };
 
   const handleTouchEnd = () => {
-    if (pullDistance > 60 && !isRefreshing) {
-      handleRefresh();
-    } else {
-      setPullDistance(0);
-    }
+    if (pullDistance > 60 && !isRefreshing) handleRefresh();
+    else setPullDistance(0);
     touchStartY.current = 0;
   };
 
+  // ─── grouping ────────────────────────────────────────────────────────────────
   const grouped: Record<string, FeedItem[]> = {};
   for (const item of items) {
     const group = getDateGroup(item.timestamp);
@@ -154,8 +188,21 @@ export default function ActivityFeed() {
     grouped[group].push(item);
   }
 
-  const groupOrder = ['Today', 'Yesterday', 'Earlier This Week'];
+  // ─── next scheduled update helper ────────────────────────────────────────────
+  function getNextUpdateTime(): string {
+    const now    = new Date();
+    const london = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/London' }));
+    const h      = london.getHours();
 
+    // updates fire at 6, 15, 16 London time
+    const nextHour = [6, 15, 16].find(t => t > h) ?? 6;
+    const label    = nextHour === 6  ? '6am'
+                   : nextHour === 15 ? '3pm'
+                   : '4pm';
+    return label;
+  }
+
+  // ─── render ──────────────────────────────────────────────────────────────────
   return (
     <div
       className="min-h-screen pb-24"
@@ -164,6 +211,7 @@ export default function ActivityFeed() {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
+      {/* pull-to-refresh indicator */}
       {pullDistance > 0 && (
         <div
           className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-gradient-to-b from-gray-900/90 to-transparent"
@@ -173,11 +221,15 @@ export default function ActivityFeed() {
         </div>
       )}
 
+      {/* header */}
       <div className="glass-container rounded-none border-l-0 border-r-0 border-t-0 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center space-x-3">
-              <button onClick={() => navigate('/dashboard')} className="text-[#B0B8C8] hover:text-white transition-colors">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="text-[#B0B8C8] hover:text-white transition-colors"
+              >
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <h1 className="text-lg font-bold text-white">Activity Feed</h1>
@@ -194,23 +246,26 @@ export default function ActivityFeed() {
       </div>
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+        {/* category legend */}
         <div className="flex items-center gap-4 flex-wrap">
-          {(['gold', 'blue', 'red', 'purple'] as FeedCategory[]).map(cat => {
-            const labels: Record<FeedCategory, string> = {
-              gold: 'Achievements',
-              blue: 'Social',
-              red: 'Security',
-              purple: 'Discovery',
-            };
-            return (
-              <div key={cat} className="flex items-center gap-1.5 text-xs">
-                <div className={`w-2.5 h-2.5 rounded-full ${CATEGORY_STYLES[cat].bg} border ${CATEGORY_STYLES[cat].border}`} />
-                <span className="text-[#B0B8C8]">{labels[cat]}</span>
-              </div>
-            );
-          })}
+          {(Object.entries(CATEGORY_STYLES) as [FeedCategory, typeof CATEGORY_STYLES[FeedCategory]][]).map(([cat, style]) => (
+            <div key={cat} className="flex items-center gap-1.5 text-xs">
+              <div className={`w-2.5 h-2.5 rounded-full ${style.bg} border ${style.border}`} />
+              <span className="text-[#B0B8C8]">{style.label}</span>
+            </div>
+          ))}
         </div>
 
+        {/* next update banner — only show when feed has items or finished loading */}
+        {!loading && !error && (
+          <div className="flex items-center gap-2 text-xs text-[#7A8599] bg-white/5 rounded-lg px-3 py-2">
+            <Activity className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>Next update at <strong className="text-[#B0B8C8]">{getNextUpdateTime()}</strong> London time</span>
+          </div>
+        )}
+
+        {/* loading */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-20 space-y-4">
             <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
@@ -218,6 +273,7 @@ export default function ActivityFeed() {
           </div>
         )}
 
+        {/* error */}
         {error && !loading && (
           <div className="glass-card p-6 text-center space-y-3">
             <AlertCircle className="w-10 h-10 text-red-400 mx-auto" />
@@ -228,6 +284,7 @@ export default function ActivityFeed() {
           </div>
         )}
 
+        {/* empty state */}
         {!loading && !error && items.length === 0 && (
           <div className="glass-card p-10 text-center space-y-4">
             <div className="w-16 h-16 mx-auto bg-gradient-to-br from-gray-700 to-gray-800 rounded-2xl flex items-center justify-center">
@@ -235,19 +292,24 @@ export default function ActivityFeed() {
             </div>
             <h3 className="text-white font-bold text-lg">No Recent Activity</h3>
             <p className="text-[#B0B8C8] text-sm max-w-xs mx-auto">
-              Your activity from the last 7 days will appear here. Start trading cards, battling, or earning coins!
+              Your daily wrap-ups, card updates, and social activity will appear here.
+              Check back after <strong>{getNextUpdateTime()}</strong>!
             </p>
           </div>
         )}
 
+        {/* feed */}
         {!loading && !error && items.length > 0 && (
           <div className="space-y-6">
-            {groupOrder.map(groupName => {
+            {GROUP_ORDER.map(groupName => {
               const groupItems = grouped[groupName];
-              if (!groupItems || groupItems.length === 0) return null;
+              if (!groupItems?.length) return null;
+
               return (
                 <div key={groupName}>
-                  <h2 className="text-sm font-semibold text-[#B0B8C8] uppercase tracking-wider mb-3">{groupName}</h2>
+                  <h2 className="text-sm font-semibold text-[#B0B8C8] uppercase tracking-wider mb-3">
+                    {groupName}
+                  </h2>
                   <div className="space-y-2">
                     {groupItems.map((item, i) => {
                       const style = CATEGORY_STYLES[item.category];
@@ -273,6 +335,7 @@ export default function ActivityFeed() {
             })}
           </div>
         )}
+
       </main>
     </div>
   );
