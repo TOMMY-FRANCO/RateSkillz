@@ -76,8 +76,8 @@ const EMPTY_TAB_DATA: Record<Tab, TabData> = {
   scorers:  { data: null, lastUpdated: null, error: null, loaded: false },
 };
 
-const API_BASE = 'https://api.football-data.org/v4';
-const API_KEY = import.meta.env.VITE_FOOTBALL_DATA_API_KEY;
+const PROXY_URL = 'https://niurjxqttyaxmjrladrs.supabase.co/functions/v1/football-data';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 function ShimmerBar() {
   return (
@@ -397,14 +397,19 @@ export default function Matchday() {
     setTabData(prev => ({ ...prev, [tab]: { ...prev[tab], error: null } }));
 
     try {
-      let url = '';
-      if (tab === 'table')    url = `${API_BASE}/competitions/${code}/standings`;
-      if (tab === 'fixtures') url = `${API_BASE}/competitions/${code}/matches?status=SCHEDULED`;
-      if (tab === 'results')  url = `${API_BASE}/competitions/${code}/matches?status=FINISHED`;
-      if (tab === 'scorers')  url = `${API_BASE}/competitions/${code}/scorers?limit=20`;
+      let path = '';
+      if (tab === 'table')    path = `/competitions/${code}/standings`;
+      if (tab === 'fixtures') path = `/competitions/${code}/matches?status=SCHEDULED`;
+      if (tab === 'results')  path = `/competitions/${code}/matches?status=FINISHED`;
+      if (tab === 'scorers')  path = `/competitions/${code}/scorers?limit=20`;
 
-      const res = await fetch(url, {
-        headers: { 'X-Auth-Token': API_KEY ?? '' },
+      const res = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY ?? ''}`,
+        },
+        body: JSON.stringify({ path }),
       });
 
       if (!res.ok) throw new Error(`Request failed (${res.status})`);
