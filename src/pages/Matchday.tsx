@@ -76,8 +76,7 @@ const EMPTY_TAB_DATA: Record<Tab, TabData> = {
   scorers:  { data: null, lastUpdated: null, error: null, loaded: false },
 };
 
-const PROXY_URL = 'https://niurjxqttyaxmjrladrs.supabase.co/functions/v1/football-data';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+import { supabase } from '../lib/supabase';
 
 function ShimmerBar() {
   return (
@@ -392,46 +391,51 @@ export default function Matchday() {
   activeCompetitionRef.current = activeCompetition;
 
   const fetchTab = useCallback(async (tab: Tab, competitionCode?: string) => {
-    const code = competitionCode ?? activeCompetitionRef.current;
-    setLoading(prev => ({ ...prev, [tab]: true }));
-    setTabData(prev => ({ ...prev, [tab]: { ...prev[tab], error: null } }));
+  const code = competitionCode ?? activeCompetitionRef.current;
+  setLoading(prev => ({ ...prev, [tab]: true }));
+  setTabData(prev => ({ ...prev, [tab]: { ...prev[tab], error: null } }));
 
-    try {
-      let path = '';
-      if (tab === 'table')    path = `/competitions/${code}/standings`;
-      if (tab === 'fixtures') path = `/competitions/${code}/matches?status=SCHEDULED`;
-      if (tab === 'results')  path = `/competitions/${code}/matches?status=FINISHED`;
-      if (tab === 'scorers')  path = `/competitions/${code}/scorers?limit=20`;
+  // Map tab name to data_type stored in matchday_cache
+  const dataTypeMap: Record<Tab, string> = {
+    table:    'table',
+    fixtures: 'fixtures',
+    results:  'results',
+    scorers:  'scorers',
+  };
 
-      const res = await fetch(PROXY_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY ?? ''}`,
-        },
-        body: JSON.stringify({ path }),
-      });
+  try {
+    const { data: row, error } = await supabase
+      .from('matchday_cache')
+      .select('data, fetched_at')
+      .eq('competition_code', code)
+      .eq('data_type', dataTypeMap[tab])
+      .single();
 
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
-      const data = await res.json();
+    if (error) throw new Error(error.message);
+    if (!row) throw new Error('No data available yet — please check back soon.');
 
-      setTabData(prev => ({
-        ...prev,
-        [tab]: { data, lastUpdated: new Date(), error: null, loaded: true },
-      }));
-    } catch (err) {
-      setTabData(prev => ({
-        ...prev,
-        [tab]: {
-          ...prev[tab],
-          error: err instanceof Error ? err.message : 'Failed to load data',
-          loaded: false,
-        },
-      }));
-    } finally {
-      setLoading(prev => ({ ...prev, [tab]: false }));
-    }
-  }, []);
+    setTabData(prev => ({
+      ...prev,
+      [tab]: {
+        data: row.data,
+        lastUpdated: new Date(row.fetched_at),
+        error: null,
+        loaded: true,
+      },
+    }));
+  } catch (err) {
+    setTabData(prev => ({
+      ...prev,
+      [tab]: {
+        ...prev[tab],
+        error: err instanceof Error ? err.message : 'Failed to load data',
+        loaded: false,
+      },
+    }));
+  } finally {
+    setLoading(prev => ({ ...prev, [tab]: false }));
+  }
+}, []);
 
   const handleTabSelect = useCallback((tab: Tab) => {
     setActiveTab(tab);
