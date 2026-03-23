@@ -35,7 +35,7 @@ export function DefaultAvatar({ size = 40, className = '' }: DefaultAvatarProps)
 
   const fontSize = 12 * starScale;
   const letterSpacing = 0.6 * starScale;
-  const strokeWidth = Math.max(0.8, 1.8 * starScale);
+  const strokeWidth = 1;
 
   const rPath = buildRPath(cx, cy, size);
   const sPath = buildSPath(cx, cy, size);
@@ -108,7 +108,6 @@ export function DefaultAvatar({ size = 40, className = '' }: DefaultAvatarProps)
         strokeWidth={strokeWidth}
         strokeOpacity={0.9}
         filter={`url(#${glowId})`}
-        paintOrder="stroke"
       >
         RS
       </text>
