@@ -21,6 +21,8 @@ interface WallPost {
   likes_count: number;
   dislikes_count: number;
   coins_earned: number;
+  media_url?: string | null;
+  media_type?: string | null;
 }
 
 const PAGE_SIZE = 20;
@@ -77,6 +79,8 @@ export default function TheWall() {
   const [allLoaded, setAllLoaded] = useState(false);
   const [posting, setPosting] = useState(false);
   const [content, setContent] = useState('');
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [mediaType, setMediaType] = useState<'tiktok' | 'twitter' | 'facebook' | null>(null);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
@@ -91,10 +95,17 @@ export default function TheWall() {
   const charsLeft = 280 - content.length;
   const hasPostedToday = posts.some(p => p.user_id === user?.id && p.wall_date === today);
 
+  function detectMediaType(url: string): 'tiktok' | 'twitter' | 'facebook' | null {
+    if (url.includes('tiktok.com')) return 'tiktok';
+    if (url.includes('twitter.com') || url.includes('x.com')) return 'twitter';
+    if (url.includes('facebook.com') || url.includes('fb.watch')) return 'facebook';
+    return null;
+  }
+
   const fetchPosts = useCallback(async (from = 0): Promise<WallPost[]> => {
     const { data, error } = await supabase
       .from('wall_posts')
-      .select('id, user_id, content, wall_date, created_at, username, avatar_url, likes_count, dislikes_count, coins_earned')
+      .select('id, user_id, content, wall_date, created_at, username, avatar_url, likes_count, dislikes_count, coins_earned, media_url, media_type')
       .eq('wall_date', today)
       .order('created_at', { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
@@ -212,7 +223,7 @@ export default function TheWall() {
   };
 
   const handlePost = async () => {
-    if (!user || !content.trim() || posting || hasPostedToday) return;
+    if (!user || (!content.trim() && !mediaUrl) || posting || hasPostedToday) return;
     const trimmedContent = content.trim();
 
     const { data: filterData } = await supabase
@@ -243,6 +254,8 @@ export default function TheWall() {
       const { data, error } = await supabase.rpc('post_to_wall', {
         p_user_id: user.id,
         p_content: trimmedContent,
+        p_media_url: mediaUrl || null,
+        p_media_type: mediaType || null,
       });
       if (error) throw error;
       const newPost: WallPost = {
@@ -260,6 +273,8 @@ export default function TheWall() {
       };
       setPosts(prev => [newPost, ...prev]);
       setContent('');
+      setMediaUrl('');
+      setMediaType(null);
       toast.success('Posted to The Wall!');
     } catch (err: any) {
       toast.error(err?.message || 'Failed to post. You may not have enough coins.');
@@ -361,7 +376,7 @@ export default function TheWall() {
             </div>
             <button
               onClick={handlePost}
-              disabled={!content.trim() || posting || hasPostedToday || charsLeft < 0}
+              disabled={(!content.trim() && !mediaUrl) || posting || hasPostedToday || charsLeft < 0}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#00E0FF] to-[#0099BB] text-black font-semibold text-sm rounded-xl transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {posting ? (
