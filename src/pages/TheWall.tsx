@@ -409,7 +409,8 @@ export default function TheWall() {
         {!loading && !fetchError && posts.length > 0 && (
           <div className="space-y-3">
             {posts.map(post => {
-              const isOwnPost = !!user?.id && post.user_id === user.id;
+              const isOwnPost = post.user_id === user?.id;
+            console.log('post.user_id:', post.user_id, 'user?.id:', user?.id, 'match:', post.user_id === user?.id);
               const hasReacted = userReactions.has(post.id);
               const reactionValue = userReactions.get(post.id);
               const isSubmitting = reactingTo === post.id;
