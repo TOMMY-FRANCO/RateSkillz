@@ -51,7 +51,17 @@ export default function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const touchStartY = useRef(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const isAtTop = useRef(true);
+
+  // Track real scroll position via window — containerRef.scrollTop is always 0
+  // in a PWA because the page scrolls on window, not the div
+  useEffect(() => {
+    const handleScroll = () => {
+      isAtTop.current = window.scrollY === 0;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     if (profile) {
@@ -97,7 +107,6 @@ export default function Dashboard() {
       ]);
 
       setUserStats(stats);
-
       setIsVerified(profileData?.is_verified || false);
 
       if (profileData) {
@@ -147,20 +156,25 @@ export default function Dashboard() {
     }
   }, [isRefreshing, profile]);
 
+  // ─── pull-to-refresh handlers ─────────────────────────────────────────────
+  // Uses window.scrollY (not containerRef.scrollTop which is always 0 in PWAs)
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (containerRef.current && containerRef.current.scrollTop === 0) {
+    if (isAtTop.current) {
       touchStartY.current = e.touches[0].clientY;
+    } else {
+      touchStartY.current = 0;
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (touchStartY.current === 0 || isRefreshing) return;
-
-    const touchY = e.touches[0].clientY;
-    const diff = touchY - touchStartY.current;
-
-    if (diff > 0 && containerRef.current && containerRef.current.scrollTop === 0) {
+    const diff = e.touches[0].clientY - touchStartY.current;
+    if (diff > 0) {
       setPullDistance(Math.min(diff, 100));
+    } else {
+      // Swiped up — cancel pull
+      touchStartY.current = 0;
+      setPullDistance(0);
     }
   };
 
@@ -182,7 +196,12 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen pb-24" ref={containerRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+    <div
+      className="min-h-screen pb-24"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {pullDistance > 0 && (
         <div
           className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-gradient-to-b from-gray-900/90 to-transparent"
@@ -288,16 +307,8 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 max-w-6xl mx-auto">
-          <button
-            onClick={() => navigate('/inbox')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.messages}
-              userId={profile?.id}
-              notificationType="message"
-              capAt9
-            />
+          <button onClick={() => navigate('/inbox')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
+            <NotificationBadge count={badgeCounts.messages} userId={profile?.id} notificationType="message" capAt9 />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#C44569] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
                 <MessageCircle className="w-5 h-5 text-black" />
@@ -309,10 +320,7 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/search-friends')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
-          >
+          <button onClick={() => navigate('/search-friends')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <Search className="w-5 h-5 text-black" />
@@ -324,16 +332,8 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/friends')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.pendingFriendRequests}
-              userId={profile?.id}
-              notificationType="coin_request"
-              capAt9
-            />
+          <button onClick={() => navigate('/friends')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
+            <NotificationBadge count={badgeCounts.pendingFriendRequests} userId={profile?.id} notificationType="coin_request" capAt9 />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <Users className="w-5 h-5 text-black" />
@@ -345,15 +345,8 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/trading')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={getCount(['swap_offer', 'purchase_offer', 'card_sold', 'purchase_request'])}
-              userId={profile?.id}
-              notificationType="card_sold"
-            />
+          <button onClick={() => navigate('/trading')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
+            <NotificationBadge count={getCount(['swap_offer', 'purchase_offer', 'card_sold', 'purchase_request'])} userId={profile?.id} notificationType="card_sold" />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
                 <ShoppingBag className="w-5 h-5 text-black" />
@@ -365,17 +358,8 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/battle-mode')}
-            className="glass-card p-3 sm:p-4 border-2 border-[#38BDF8]/50 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.battleRequests}
-              userId={profile?.id}
-              notificationType="battle_request"
-              className={profile.is_manager ? 'top-10' : ''}
-              capAt9
-            />
+          <button onClick={() => navigate('/battle-mode')} className="glass-card p-3 sm:p-4 border-2 border-[#38BDF8]/50 cursor-pointer text-left w-full relative">
+            <NotificationBadge count={badgeCounts.battleRequests} userId={profile?.id} notificationType="battle_request" className={profile.is_manager ? 'top-10' : ''} capAt9 />
             {profile.is_manager && (
               <span className="absolute top-1 right-1 px-2 py-0.5 bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-black text-[10px] font-bold rounded-md shadow-lg shadow-[#FFD700]/30 uppercase tracking-wider">
                 Manager
@@ -387,23 +371,13 @@ export default function Dashboard() {
               </div>
               <div>
                 <h3 className="text-white font-bold text-sm sm:text-base">Battle Mode</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">
-                  {profile.is_manager ? 'Card battles & wagers' : 'View battles & challenges'}
-                </p>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">{profile.is_manager ? 'Card battles & wagers' : 'View battles & challenges'}</p>
               </div>
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/daily-quiz')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.dailyQuiz}
-              userId={profile?.id}
-              notificationType="quiz_complete"
-              capAt9
-            />
+          <button onClick={() => navigate('/daily-quiz')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
+            <NotificationBadge count={badgeCounts.dailyQuiz} userId={profile?.id} notificationType="quiz_complete" capAt9 />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <HelpCircle className="w-5 h-5 text-black" />
@@ -415,15 +389,8 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/watch-ad')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={notificationCounts.ad_available}
-              userId={profile?.id}
-              notificationType="ad_available"
-            />
+          <button onClick={() => navigate('/watch-ad')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
+            <NotificationBadge count={notificationCounts.ad_available} userId={profile?.id} notificationType="ad_available" />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00D67A] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <Tv className="w-5 h-5 text-black" />
@@ -435,16 +402,8 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/activity-feed')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.activityFeed}
-              userId={profile?.id}
-              notificationType="activity_feed"
-              capAt9
-            />
+          <button onClick={() => navigate('/activity-feed')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
+            <NotificationBadge count={badgeCounts.activityFeed} userId={profile?.id} notificationType="activity_feed" capAt9 />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
                 <Activity className="w-5 h-5 text-black" />
@@ -456,10 +415,7 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/matchday')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
-          >
+          <button onClick={() => navigate('/matchday')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FFD700]/30">
                 <Trophy className="w-5 h-5 text-black" />
@@ -471,10 +427,7 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/predictions')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
-          >
+          <button onClick={() => navigate('/predictions')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#FFD700] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <Target className="w-5 h-5 text-black" />
@@ -486,10 +439,7 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/world-cup')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
-          >
+          <button onClick={() => navigate('/world-cup')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#C0392B] to-[#8B0000] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#C0392B]/30">
                 <Trophy className="w-5 h-5 text-white" />
@@ -501,16 +451,8 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/football-match')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.footballMatch}
-              userId={profile?.id}
-              notificationType="football_match"
-              capAt9
-            />
+          <button onClick={() => navigate('/football-match')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
+            <NotificationBadge count={badgeCounts.footballMatch} userId={profile?.id} notificationType="football_match" capAt9 />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#38BDF8] rounded-xl flex items-center justify-center shadow-lg shadow-[#00FF85]/30">
                 <Users className="w-5 h-5 text-black" />
@@ -522,10 +464,7 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/the-wall')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
-          >
+          <button onClick={() => navigate('/the-wall')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#FF8C42] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
                 <MessageSquare className="w-5 h-5 text-black" />
@@ -537,16 +476,8 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/news')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.news}
-              userId={profile?.id}
-              notificationType="news"
-              capAt9
-            />
+          <button onClick={() => navigate('/news')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
+            <NotificationBadge count={badgeCounts.news} userId={profile?.id} notificationType="news" capAt9 />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#C44569] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
                 <Newspaper className="w-5 h-5 text-white" />
@@ -558,16 +489,8 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/transactions')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.transactions}
-              userId={profile?.id}
-              notificationType="transaction"
-              capAt9
-            />
+          <button onClick={() => navigate('/transactions')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
+            <NotificationBadge count={badgeCounts.transactions} userId={profile?.id} notificationType="transaction" capAt9 />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#38BDF8] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
                 <TrendingUp className="w-5 h-5 text-black" />
@@ -579,10 +502,7 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/shop')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
-          >
+          <button onClick={() => navigate('/shop')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FFA500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FFD700]/30">
                 <ShoppingBag className="w-5 h-5 text-black" />
@@ -594,10 +514,7 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/skin-store')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
-          >
+          <button onClick={() => navigate('/skin-store')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B9D] to-[#C44569] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B9D]/30">
                 <Sparkles className="w-5 h-5 text-white" />
@@ -609,16 +526,8 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/viewed-me')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.viewedMe}
-              userId={profile?.id}
-              notificationType="viewed_me"
-              capAt9
-            />
+          <button onClick={() => navigate('/viewed-me')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
+            <NotificationBadge count={badgeCounts.viewedMe} userId={profile?.id} notificationType="viewed_me" capAt9 />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00E0FF] to-[#38BDF8] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00E0FF]/30">
                 <Eye className="w-5 h-5 text-black" />
@@ -630,16 +539,8 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/scouter')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={badgeCounts.scouter}
-              userId={profile?.id}
-              notificationType="scout_interest"
-              capAt9
-            />
+          <button onClick={() => navigate('/scouter')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
+            <NotificationBadge count={badgeCounts.scouter} userId={profile?.id} notificationType="scout_interest" capAt9 />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#FFD700] to-[#FF6B9D] rounded-xl flex items-center justify-center shadow-lg shadow-[#FFD700]/30">
                 <Search className="w-5 h-5 text-black" />
@@ -651,15 +552,8 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => navigate('/settings')}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative"
-          >
-            <NotificationBadge
-              count={getCount(['setting_change'])}
-              userId={profile?.id}
-              notificationType="setting_change"
-            />
+          <button onClick={() => navigate('/settings')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
+            <NotificationBadge count={getCount(['setting_change'])} userId={profile?.id} notificationType="setting_change" />
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <Settings className="w-5 h-5 text-black" />
@@ -671,10 +565,7 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => setShowTutorial(true)}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative border-2 border-blue-500/30"
-          >
+          <button onClick={() => setShowTutorial(true)} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative border-2 border-blue-500/30">
             {!tutorialCompleted && (
               <span className="absolute top-1 right-1 px-2 py-0.5 bg-gradient-to-r from-blue-500 to-green-500 text-white text-[10px] font-bold rounded-md shadow-lg shadow-blue-500/30 uppercase tracking-wider animate-pulse">
                 +5 Coins
@@ -686,17 +577,12 @@ export default function Dashboard() {
               </div>
               <div>
                 <h3 className="text-white font-bold text-sm sm:text-base">Tutorial</h3>
-                <p className="text-[#B0B8C8] text-xs sm:text-sm">
-                  {tutorialCompleted ? 'Review guide' : 'Learn & earn 5 coins'}
-                </p>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">{tutorialCompleted ? 'Review guide' : 'Learn & earn 5 coins'}</p>
               </div>
             </div>
           </button>
 
-          <button
-            onClick={() => setShowFriendQR(true)}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
-          >
+          <button onClick={() => setShowFriendQR(true)} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#38BDF8] to-[#0EA5E9] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#38BDF8]/30">
                 <UserPlus className="w-5 h-5 text-black" />
@@ -708,10 +594,7 @@ export default function Dashboard() {
             </div>
           </button>
 
-          <button
-            onClick={() => setShowInviteQR(true)}
-            className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full"
-          >
+          <button onClick={() => setShowInviteQR(true)} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-[#00FF85] to-[#00E0FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00FF85]/30">
                 <QrCode className="w-5 h-5 text-black" />
@@ -746,9 +629,7 @@ export default function Dashboard() {
           setShowTutorialPrompt(false);
           setShowTutorial(true);
         }}
-        onDismiss={() => {
-          setShowTutorialPrompt(false);
-        }}
+        onDismiss={() => setShowTutorialPrompt(false)}
       />
 
       <Tutorial
