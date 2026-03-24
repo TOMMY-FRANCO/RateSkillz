@@ -55,6 +55,19 @@ interface ClubMatch {
   created_at: string;
 }
 
+interface WallReport {
+  id: string;
+  post_id: string;
+  reporter_id: string;
+  reason: string;
+  status: string;
+  resolved_by: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  post_content: string;
+  reporter_username: string;
+}
+
 interface NewMatchForm {
   opponent: string;
   match_date: string;
@@ -106,10 +119,16 @@ export default function AdminModeration() {
   const [resultForm, setResultForm] = useState<Record<string, { result: string; score: string }>>({});
   const [savingResult, setSavingResult] = useState<string | null>(null);
 
+  const [wallReports, setWallReports] = useState<WallReport[]>([]);
+  const [wallReportsLoading, setWallReportsLoading] = useState(false);
+  const [wallReportsError, setWallReportsError] = useState('');
+  const [resolvingReportId, setResolvingReportId] = useState<string | null>(null);
+
   useEffect(() => {
     loadCases();
     loadFilterStats();
-  }, []);
+    loadWallReports();
+  }, [loadWallReports]);
 
   const loadCases = async () => {
     console.log('[AdminModeration] Starting to load cases...');
@@ -453,6 +472,66 @@ export default function AdminModeration() {
       toast.error(err instanceof Error ? err.message : 'Failed to save result');
     } finally {
       setSavingResult(null);
+    }
+  };
+
+  const loadWallReports = useCallback(async () => {
+    setWallReportsLoading(true);
+    setWallReportsError('');
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('wall_post_reports')
+        .select(`
+          id, post_id, reporter_id, reason, status, resolved_by, resolved_at, created_at,
+          wall_posts!inner(content),
+          profiles!wall_post_reports_reporter_id_fkey(username)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+
+      const reports: WallReport[] = (data || []).map((row: any) => ({
+        id: row.id,
+        post_id: row.post_id,
+        reporter_id: row.reporter_id,
+        reason: row.reason,
+        status: row.status,
+        resolved_by: row.resolved_by,
+        resolved_at: row.resolved_at,
+        created_at: row.created_at,
+        post_content: row.wall_posts?.content ?? '',
+        reporter_username: row.profiles?.username ?? 'Unknown',
+      }));
+
+      setWallReports(reports);
+    } catch (err) {
+      setWallReportsError(err instanceof Error ? err.message : 'Failed to load wall reports');
+    } finally {
+      setWallReportsLoading(false);
+    }
+  }, []);
+
+  const handleResolveWallReport = async (reportId: string, newStatus: 'dismissed' | 'reviewed') => {
+    if (!user || resolvingReportId === reportId) return;
+    setResolvingReportId(reportId);
+    try {
+      const { error: updateError } = await supabase
+        .from('wall_post_reports')
+        .update({ status: newStatus, resolved_by: user.id, resolved_at: new Date().toISOString() })
+        .eq('id', reportId);
+      if (updateError) throw updateError;
+      setWallReports(prev =>
+        prev.map(r =>
+          r.id === reportId
+            ? { ...r, status: newStatus, resolved_by: user.id, resolved_at: new Date().toISOString() }
+            : r
+        )
+      );
+      toast.success(`Report ${newStatus}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update report');
+    } finally {
+      setResolvingReportId(null);
     }
   };
 
@@ -840,6 +919,110 @@ export default function AdminModeration() {
             })}
           </div>
         )}
+
+        <div className="mt-10 border border-gray-800 rounded-xl bg-gray-900/50 overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+            <div className="flex items-center gap-3">
+              <Flag className="w-5 h-5 text-red-400" />
+              <h2 className="text-lg font-bold text-white">Wall Reports</h2>
+              {!wallReportsLoading && (
+                <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">
+                  {wallReports.filter(r => r.status === 'pending').length} pending
+                </span>
+              )}
+            </div>
+            <button
+              onClick={loadWallReports}
+              disabled={wallReportsLoading}
+              className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-300 hover:text-white text-sm rounded-lg transition-all"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${wallReportsLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
+
+          {wallReportsLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-6 h-6 animate-spin text-cyan-400" />
+              <span className="ml-3 text-gray-400 text-sm">Loading reports...</span>
+            </div>
+          ) : wallReportsError ? (
+            <div className="p-6 text-center">
+              <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+              <p className="text-red-400 text-sm mb-3">{wallReportsError}</p>
+              <button
+                onClick={loadWallReports}
+                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-semibold rounded-lg transition-all"
+              >
+                Retry
+              </button>
+            </div>
+          ) : wallReports.length === 0 ? (
+            <div className="py-14 text-center text-gray-500 text-sm">
+              No wall reports yet.
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-800/60">
+              {wallReports.map(report => {
+                const isPending = report.status === 'pending';
+                const isResolving = resolvingReportId === report.id;
+                return (
+                  <div key={report.id} className="px-6 py-4 hover:bg-gray-800/20 transition-colors">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                            report.status === 'pending'
+                              ? 'bg-yellow-500/20 text-yellow-300'
+                              : report.status === 'reviewed'
+                              ? 'bg-green-500/20 text-green-300'
+                              : 'bg-gray-500/20 text-gray-400'
+                          }`}>
+                            {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                          </span>
+                          <span className="text-xs bg-red-500/10 border border-red-500/20 text-red-300 px-2 py-0.5 rounded-full">
+                            {report.reason}
+                          </span>
+                        </div>
+                        <p className="text-white text-sm leading-relaxed mb-1 line-clamp-3">
+                          "{report.post_content}"
+                        </p>
+                        <p className="text-gray-500 text-xs">
+                          Reported by <span className="text-gray-400 font-medium">{report.reporter_username}</span>
+                          {' · '}{formatDate(report.created_at)}
+                          {report.resolved_at && (
+                            <span> · Resolved {formatDate(report.resolved_at)}</span>
+                          )}
+                        </p>
+                      </div>
+
+                      {isPending && (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => handleResolveWallReport(report.id, 'reviewed')}
+                            disabled={isResolving}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-green-900/30 hover:bg-green-900/50 border border-green-700/40 text-green-400 hover:text-green-300 text-xs font-semibold rounded-lg transition-all disabled:opacity-50"
+                          >
+                            {isResolving ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+                            Reviewed
+                          </button>
+                          <button
+                            onClick={() => handleResolveWallReport(report.id, 'dismissed')}
+                            disabled={isResolving}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 hover:text-white text-xs font-semibold rounded-lg transition-all disabled:opacity-50"
+                          >
+                            {isResolving ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+                            Dismiss
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         <div className="mt-10 border border-gray-800 rounded-xl bg-gray-900/50 p-6">
           <div className="flex items-center gap-3 mb-4">

@@ -2,10 +2,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeft, RefreshCw, Send, AlertCircle, ChevronDown, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Send, AlertCircle, ChevronDown, ThumbsUp, ThumbsDown, Flag, X } from 'lucide-react';
 import { DefaultAvatar } from '../components/ui/DefaultAvatar';
 import { useToast } from '../contexts/ToastContext';
 import { ShimmerBar } from '../components/ui/Shimmer';
+
+const REPORT_REASONS = ['Hate Speech', 'Bullying/Harassment', 'Spam', 'Inappropriate Content', 'Other'] as const;
+type ReportReason = typeof REPORT_REASONS[number];
 
 interface WallPost {
   id: string;
@@ -79,6 +82,10 @@ export default function TheWall() {
   const [pullDistance, setPullDistance] = useState(0);
   const touchStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const [reportModalPostId, setReportModalPostId] = useState<string | null>(null);
+  const [reportingPostId, setReportingPostId] = useState<string | null>(null);
+  const [reportedPostIds, setReportedPostIds] = useState<Set<string>>(new Set());
 
   const today = getTodayDate();
   const charsLeft = 280 - content.length;
@@ -186,19 +193,62 @@ export default function TheWall() {
     }
   };
 
+  const handleReport = async (postId: string, reason: ReportReason) => {
+    if (!user || reportingPostId === postId) return;
+    setReportingPostId(postId);
+    try {
+      const { error } = await supabase
+        .from('wall_post_reports')
+        .insert({ post_id: postId, reporter_id: user.id, reason, status: 'pending' });
+      if (error) throw error;
+      setReportedPostIds(prev => new Set(prev).add(postId));
+      setReportModalPostId(null);
+      toast.success('Post reported');
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to submit report');
+    } finally {
+      setReportingPostId(null);
+    }
+  };
+
   const handlePost = async () => {
     if (!user || !content.trim() || posting || hasPostedToday) return;
+    const trimmedContent = content.trim();
+
+    const { data: filterData } = await supabase
+      .from('profanity_filter')
+      .select('word, pattern')
+      .eq('is_active', true);
+
+    if (filterData && filterData.length > 0) {
+      const lower = trimmedContent.toLowerCase();
+      const hasProfanity = filterData.some((entry: { word: string; pattern: string | null }) => {
+        if (entry.pattern) {
+          try {
+            return new RegExp(entry.pattern, 'i').test(trimmedContent);
+          } catch {
+            return false;
+          }
+        }
+        return lower.includes(entry.word.toLowerCase());
+      });
+      if (hasProfanity) {
+        toast.error('Your post contains inappropriate language');
+        return;
+      }
+    }
+
     setPosting(true);
     try {
       const { data, error } = await supabase.rpc('post_to_wall', {
         p_user_id: user.id,
-        p_content: content.trim(),
+        p_content: trimmedContent,
       });
       if (error) throw error;
       const newPost: WallPost = {
         id: data?.id || `${Date.now()}`,
         user_id: user.id,
-        content: content.trim(),
+        content: trimmedContent,
         wall_date: today,
         created_at: new Date().toISOString(),
         username: profile?.username || undefined,
@@ -436,6 +486,22 @@ export default function TheWall() {
                       )}
                       <span>{post.dislikes_count}</span>
                     </button>
+
+                    {!isOwnPost && (
+                      <button
+                        onClick={() => setReportModalPostId(post.id)}
+                        disabled={reportedPostIds.has(post.id)}
+                        title={reportedPostIds.has(post.id) ? 'Already reported' : 'Report post'}
+                        className={[
+                          'ml-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm border transition-all',
+                          reportedPostIds.has(post.id)
+                            ? 'bg-[rgba(239,68,68,0.1)] border-red-500/20 text-red-400/50 cursor-not-allowed'
+                            : 'bg-transparent border-transparent text-[#B0B8C8] hover:text-red-400 hover:border-red-500/30 hover:bg-[rgba(239,68,68,0.08)]',
+                        ].join(' ')}
+                      >
+                        <Flag className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -464,6 +530,46 @@ export default function TheWall() {
           </div>
         )}
       </main>
+
+      {reportModalPostId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="glass-card w-full max-w-sm p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-white font-bold text-base">Report Post</h3>
+              <button
+                onClick={() => setReportModalPostId(null)}
+                className="text-[#B0B8C8] hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-[#B0B8C8] text-sm">Select a reason for reporting this post:</p>
+            <div className="space-y-2">
+              {REPORT_REASONS.map(reason => (
+                <button
+                  key={reason}
+                  onClick={() => handleReport(reportModalPostId, reason)}
+                  disabled={reportingPostId === reportModalPostId}
+                  className="w-full text-left px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white text-sm hover:border-red-500/40 hover:bg-red-500/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {reportingPostId === reportModalPostId ? (
+                    <span className="flex items-center gap-2">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Submitting...
+                    </span>
+                  ) : reason}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setReportModalPostId(null)}
+              className="w-full py-2 text-sm text-[#B0B8C8] hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
