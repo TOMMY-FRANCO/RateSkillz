@@ -38,33 +38,30 @@ const CATEGORY_STYLES: Record<FeedCategory, { border: string; bg: string; text: 
   purple: { border: 'border-l-purple-400', bg: 'bg-purple-400/10', text: 'text-purple-400', label: 'Daily Wrap-up' },
 };
 
-// Map notification content to the most relevant icon
 function getNotificationIcon(notificationType: string, category: FeedCategory, message: string): React.ReactNode {
   const msg = message.toLowerCase();
 
-  if (category === 'red')   return <Shield className="w-4 h-4" />;
+  if (category === 'red') return <Shield className="w-4 h-4" />;
 
   if (category === 'purple') {
-    // Daily wrap-up — pick icon based on what the message highlights
-    if (msg.includes('quiz'))           return <BookOpen className="w-4 h-4" />;
-    if (msg.includes('battle'))         return <Swords className="w-4 h-4" />;
-    if (msg.includes('coin'))           return <Coins className="w-4 h-4" />;
-    if (msg.includes('friend'))         return <Users className="w-4 h-4" />;
-    if (msg.includes('view'))           return <Eye className="w-4 h-4" />;
-    if (msg.includes('like'))           return <Heart className="w-4 h-4" />;
+    if (msg.includes('quiz'))   return <BookOpen className="w-4 h-4" />;
+    if (msg.includes('battle')) return <Swords className="w-4 h-4" />;
+    if (msg.includes('coin'))   return <Coins className="w-4 h-4" />;
+    if (msg.includes('friend')) return <Users className="w-4 h-4" />;
+    if (msg.includes('view'))   return <Eye className="w-4 h-4" />;
+    if (msg.includes('like'))   return <Heart className="w-4 h-4" />;
     return <TrendingUp className="w-4 h-4" />;
   }
 
   if (category === 'blue') {
-    if (msg.includes('friend'))         return <Users className="w-4 h-4" />;
-    if (msg.includes('like'))           return <Heart className="w-4 h-4" />;
+    if (msg.includes('friend')) return <Users className="w-4 h-4" />;
     return <Heart className="w-4 h-4" />;
   }
 
-  // gold — card / coin updates
-  if (msg.includes('quiz'))             return <BookOpen className="w-4 h-4" />;
-  if (msg.includes('coin'))             return <Coins className="w-4 h-4" />;
-  if (msg.includes('battle'))           return <Swords className="w-4 h-4" />;
+  // gold
+  if (msg.includes('quiz'))   return <BookOpen className="w-4 h-4" />;
+  if (msg.includes('coin'))   return <Coins className="w-4 h-4" />;
+  if (msg.includes('battle')) return <Swords className="w-4 h-4" />;
   return <Award className="w-4 h-4" />;
 }
 
@@ -74,8 +71,8 @@ function formatTime(dateStr: string): string {
 }
 
 function getDateGroup(dateStr: string): string {
-  const d    = new Date(dateStr);
-  const now  = new Date();
+  const d         = new Date(dateStr);
+  const now       = new Date();
   const today     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
@@ -89,8 +86,8 @@ function getDateGroup(dateStr: string): string {
 const GROUP_ORDER = ['Today', 'Yesterday', 'Earlier This Week'];
 
 export default function ActivityFeed() {
-  const navigate   = useNavigate();
-  const { user }   = useAuth();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [items,        setItems]        = useState<FeedItem[]>([]);
   const [loading,      setLoading]      = useState(true);
@@ -98,10 +95,20 @@ export default function ActivityFeed() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
 
-  const touchStartY  = useRef(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef(0);
+  const isAtTop     = useRef(true);
 
-  // ─── data loading ────────────────────────────────────────────────────────────
+  // Track real scroll position on window — containerRef.scrollTop is always
+  // 0 in a PWA because scrolling happens on window, not the div
+  useEffect(() => {
+    const handleScroll = () => {
+      isAtTop.current = window.scrollY === 0;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // ─── data loading ─────────────────────────────────────────────────────────
   const loadFeed = useCallback(async () => {
     if (!user) return;
     setError(null);
@@ -124,9 +131,7 @@ export default function ActivityFeed() {
         const category = (['gold', 'blue', 'red', 'purple'].includes(row.activity_feed_type)
           ? row.activity_feed_type
           : 'gold') as FeedCategory;
-
         const message = row.message || '';
-
         return {
           id:               `notif-${row.id}`,
           label:            message,
@@ -150,7 +155,7 @@ export default function ActivityFeed() {
     loadFeed().finally(() => setLoading(false));
   }, [user, loadFeed]);
 
-  // ─── pull-to-refresh ─────────────────────────────────────────────────────────
+  // ─── pull-to-refresh ──────────────────────────────────────────────────────
   const handleRefresh = useCallback(async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
@@ -163,15 +168,23 @@ export default function ActivityFeed() {
   }, [isRefreshing, loadFeed]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (containerRef.current?.scrollTop === 0)
+    if (isAtTop.current) {
       touchStartY.current = e.touches[0].clientY;
+    } else {
+      touchStartY.current = 0;
+    }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (touchStartY.current === 0 || isRefreshing) return;
     const diff = e.touches[0].clientY - touchStartY.current;
-    if (diff > 0 && containerRef.current?.scrollTop === 0)
+    if (diff > 0) {
       setPullDistance(Math.min(diff, 100));
+    } else {
+      // Swiped up — cancel pull
+      touchStartY.current = 0;
+      setPullDistance(0);
+    }
   };
 
   const handleTouchEnd = () => {
@@ -180,7 +193,7 @@ export default function ActivityFeed() {
     touchStartY.current = 0;
   };
 
-  // ─── grouping ────────────────────────────────────────────────────────────────
+  // ─── grouping ─────────────────────────────────────────────────────────────
   const grouped: Record<string, FeedItem[]> = {};
   for (const item of items) {
     const group = getDateGroup(item.timestamp);
@@ -188,30 +201,23 @@ export default function ActivityFeed() {
     grouped[group].push(item);
   }
 
-  // ─── next scheduled update helper ────────────────────────────────────────────
+  // ─── next scheduled update ────────────────────────────────────────────────
   function getNextUpdateTime(): string {
     const now    = new Date();
     const london = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/London' }));
     const h      = london.getHours();
-
-    // updates fire at 6, 15, 16 London time
     const nextHour = [6, 15, 16].find(t => t > h) ?? 6;
-    const label    = nextHour === 6  ? '6am'
-                   : nextHour === 15 ? '3pm'
-                   : '4pm';
-    return label;
+    return nextHour === 6 ? '6am' : nextHour === 15 ? '3pm' : '4pm';
   }
 
-  // ─── render ──────────────────────────────────────────────────────────────────
+  // ─── render ───────────────────────────────────────────────────────────────
   return (
     <div
       className="min-h-screen pb-24"
-      ref={containerRef}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* pull-to-refresh indicator */}
       {pullDistance > 0 && (
         <div
           className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-gradient-to-b from-gray-900/90 to-transparent"
@@ -257,7 +263,7 @@ export default function ActivityFeed() {
           ))}
         </div>
 
-        {/* next update banner — only show when feed has items or finished loading */}
+        {/* next update banner */}
         {!loading && !error && (
           <div className="flex items-center gap-2 text-xs text-[#7A8599] bg-white/5 rounded-lg px-3 py-2">
             <Activity className="w-3.5 h-3.5 flex-shrink-0" />
@@ -304,7 +310,6 @@ export default function ActivityFeed() {
             {GROUP_ORDER.map(groupName => {
               const groupItems = grouped[groupName];
               if (!groupItems?.length) return null;
-
               return (
                 <div key={groupName}>
                   <h2 className="text-sm font-semibold text-[#B0B8C8] uppercase tracking-wider mb-3">
