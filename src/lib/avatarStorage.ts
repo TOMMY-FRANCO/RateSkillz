@@ -100,7 +100,7 @@ export async function uploadAvatar(file: File, userId: string): Promise<AvatarUp
     }
   }
 
-  const stripped = await stripExifAndConvert(file);
+  const stripped = isGif ? file : await stripExifAndConvert(file);
 
   if (stripped.size > sizeLimit) {
     throw new Error(`File size must be under ${sizeLimitLabel} after processing. Please try a smaller ${isGif ? 'GIF' : 'image'}.`);
