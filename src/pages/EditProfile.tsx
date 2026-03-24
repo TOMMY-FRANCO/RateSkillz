@@ -241,15 +241,19 @@ export default function EditProfile() {
 
       const file = e.target.files[0];
 
-      if (file.size > 500 * 1024) {
-        setMessage('File size must be less than 500KB. Please compress your image and try again.');
+      const isGif = file.type === 'image/gif';
+      const sizeLimit = isGif ? 300 * 1024 : 2 * 1024 * 1024;
+      const sizeLimitLabel = isGif ? '300KB' : '2MB';
+
+      if (file.size > sizeLimit) {
+        setMessage(`File size must be under ${sizeLimitLabel}. Please compress your ${isGif ? 'GIF' : 'image'} and try again.`);
         setUploading(false);
         return;
       }
 
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
       if (!allowedTypes.includes(file.type)) {
-        setMessage('Only JPEG and PNG images are allowed. SVG, GIF, and other formats are not supported.');
+        setMessage('Only JPEG, PNG, and GIF images are allowed.');
         setUploading(false);
         return;
       }
@@ -426,7 +430,7 @@ export default function EditProfile() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/jpg,image/png"
+                accept="image/jpeg,image/jpg,image/png,image/gif"
                 onChange={handleFileSelect}
                 className="hidden"
               />
