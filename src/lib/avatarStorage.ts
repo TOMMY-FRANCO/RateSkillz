@@ -3,8 +3,9 @@ import { supabase } from './supabase';
 const AVATAR_BUCKET = 'avatars';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const MAX_FILE_SIZE = 500 * 1024; // 500KB
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png'];
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB for images
+const MAX_GIF_SIZE = 300 * 1024;        // 300KB for GIFs
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif'];
 
 interface AvatarUploadResult {
   path: string;
@@ -16,6 +17,7 @@ async function readMagicBytes(file: File): Promise<string | null> {
   const bytes = new Uint8Array(buffer);
   if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) return 'image/jpeg';
   if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) return 'image/png';
+  if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) return 'image/gif';
   return null;
 }
 
@@ -56,17 +58,21 @@ async function stripExifAndConvert(file: File): Promise<Blob> {
 }
 
 export async function uploadAvatar(file: File, userId: string): Promise<AvatarUploadResult> {
-  if (file.size > MAX_FILE_SIZE) {
-    throw new Error('File size must be less than 500KB. Please compress your image and try again.');
+  const isGif = file.type === 'image/gif';
+  const sizeLimit = isGif ? MAX_GIF_SIZE : MAX_FILE_SIZE;
+  const sizeLimitLabel = isGif ? '300KB' : '2MB';
+
+  if (file.size > sizeLimit) {
+    throw new Error(`File size must be under ${sizeLimitLabel}. Please compress your ${isGif ? 'GIF' : 'image'} and try again.`);
   }
 
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-    throw new Error('Only JPEG and PNG images are allowed. SVG, GIF, and other formats are not supported.');
+    throw new Error('Only JPEG, PNG, and GIF images are allowed.');
   }
 
   const detectedType = await readMagicBytes(file);
   if (!detectedType) {
-    throw new Error('Invalid image file. Only JPEG and PNG images are allowed.');
+    throw new Error('Invalid image file. Only JPEG, PNG, and GIF images are allowed.');
   }
   if (detectedType !== file.type && !(detectedType === 'image/jpeg' && file.type === 'image/jpeg')) {
     throw new Error('File content does not match its type. Upload rejected.');
@@ -96,11 +102,11 @@ export async function uploadAvatar(file: File, userId: string): Promise<AvatarUp
 
   const stripped = await stripExifAndConvert(file);
 
-  if (stripped.size > MAX_FILE_SIZE) {
-    throw new Error('File size must be less than 500KB. Please compress your image and try again.');
+  if (stripped.size > sizeLimit) {
+    throw new Error(`File size must be under ${sizeLimitLabel} after processing. Please try a smaller ${isGif ? 'GIF' : 'image'}.`);
   }
 
-  const ext = file.type === 'image/png' ? 'png' : 'jpg';
+  const ext = file.type === 'image/png' ? 'png' : isGif ? 'gif' : 'jpg';
   const fileName = `${Date.now()}.${ext}`;
   const filePath = `${userId}/${fileName}`;
 
@@ -120,7 +126,7 @@ export async function uploadAvatar(file: File, userId: string): Promise<AvatarUp
     .upload(filePath, stripped, {
       cacheControl: '3600',
       upsert: false,
-      contentType: file.type === 'image/png' ? 'image/png' : 'image/jpeg',
+      contentType: file.type,
     });
 
   if (error) {
