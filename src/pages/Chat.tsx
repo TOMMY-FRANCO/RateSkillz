@@ -689,20 +689,20 @@ const MAX_SECONDS = 5;
               onClose={() => setShowEmojiPicker(false)}
             />
           )}
-          <form onSubmit={handleSend} className="flex items-center gap-2">
+          <form onSubmit={handleSend} className="flex items-center gap-1.5">
             <div className="relative group flex-shrink-0">
               <button
                 type="button"
                 onClick={() => canSendCoins && setShowSendCoinsModal(true)}
                 disabled={!canSendCoins}
-                className={`w-11 h-11 rounded-xl font-bold transition-all flex items-center justify-center flex-shrink-0 ${
+                className={`w-9 h-9 rounded-xl font-bold transition-all flex items-center justify-center flex-shrink-0 ${
                   canSendCoins
                     ? 'bg-white/10 hover:bg-yellow-500/20 hover:text-yellow-400 text-white'
                     : 'bg-white/10 text-white opacity-50 cursor-not-allowed'
                 }`}
                 title={canSendCoins ? 'Send coins' : sendCoinsTooltip}
               >
-                <Coins className="w-5 h-5" />
+                <Coins className="w-4 h-4" />
               </button>
               {!canSendCoins && sendCoinsTooltip && (
                 <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-10">
@@ -720,7 +720,7 @@ const MAX_SECONDS = 5;
                 setShowQuickTray(next);
                 if (next) setShowEmojiPicker(false);
               }}
-              className={`w-11 h-11 rounded-xl transition-all flex items-center justify-center flex-shrink-0 text-lg leading-none ${
+              className={`w-9 h-9 rounded-xl transition-all flex items-center justify-center flex-shrink-0 text-base leading-none ${
                 showQuickTray
                   ? 'bg-gradient-to-r from-cyan-600/40 to-teal-600/40 border border-cyan-500/50'
                   : 'bg-white/10 hover:bg-white/20 border border-white/10'
@@ -737,7 +737,7 @@ const MAX_SECONDS = 5;
                 setShowEmojiPicker(next);
                 if (next) setShowQuickTray(false);
               }}
-              className={`w-11 h-11 rounded-xl transition-all flex items-center justify-center flex-shrink-0 text-lg leading-none ${
+              className={`w-9 h-9 rounded-xl transition-all flex items-center justify-center flex-shrink-0 text-base leading-none ${
                 showEmojiPicker
                   ? 'bg-gradient-to-r from-cyan-600/40 to-teal-600/40 border border-cyan-500/50'
                   : 'bg-white/10 hover:bg-white/20 border border-white/10'
@@ -791,7 +791,7 @@ const MAX_SECONDS = 5;
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder={isRecording ? `Recording… ${Math.floor(recordingSeconds / 60)}:${String(recordingSeconds % 60).padStart(2, '0')}` : audioBlob ? `Voice note ready (${Math.floor(audioDuration / 60)}:${String(audioDuration % 60).padStart(2, '0')})` : 'Type a message...'}
-              className="flex-1 bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.3)] text-white placeholder-[#B0B8C8] rounded-xl px-4 h-11 focus:outline-none focus:border-[#00E0FF] transition-colors text-sm"
+              className="flex-1 min-w-0 bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.3)] text-white placeholder-[#B0B8C8] rounded-xl px-3 h-11 focus:outline-none focus:border-[#00E0FF] transition-colors text-sm"
               disabled={sending || isRecording || !!audioBlob}
             />
 
