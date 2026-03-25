@@ -53,7 +53,7 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
-  const [age, setAge] = useState('');
+  const [dob, setDob] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -104,14 +104,23 @@ export default function Signup() {
       return;
     }
 
-    const ageNum = age ? parseInt(age) : null;
-    if (ageNum !== null && ageNum < 11) {
+    if (!dob) {
+      setError('Date of birth is required.');
+      setLoading(false);
+      return;
+    }
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let ageNum = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) ageNum--;
+    if (ageNum < 11) {
       setError('You must be at least 11 years old to use this app.');
       setLoading(false);
       return;
     }
-    if (ageNum !== null && ageNum > 150) {
-      setError('Please enter a valid age (maximum 150).');
+    if (ageNum > 150) {
+      setError('Please enter a valid age.');
       setLoading(false);
       return;
     }
@@ -237,20 +246,19 @@ const { error } = await signUp(email, password, username, fullName, recaptchaTok
               </div>
 
               <div>
-                <label htmlFor="age" className="block text-sm font-semibold text-white mb-2 uppercase tracking-wider">
-                  Age (Optional)
+                <label htmlFor="dob" className="block text-sm font-semibold text-white mb-2 uppercase tracking-wider">
+                  Date of Birth <span className="text-red-400">*</span>
                 </label>
                 <input
-                  id="age"
-                  type="number"
-                  min="11"
-                  max="150"
-                  value={age}
-                  onChange={(e) => setAge(e.target.value)}
+                  id="dob"
+                  type="date"
+                  required
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  max={new Date(new Date().setFullYear(new Date().getFullYear() - 11)).toISOString().split('T')[0]}
                   className="w-full"
-                  placeholder="Enter your age (11-150)"
                 />
-                <p className="mt-1 text-xs text-[#6B7280]">Minimum age: 11. Used for Safety & Privacy Settings</p>
+                <p className="mt-1 text-xs text-[#6B7280]">You must be at least 11. Under-18s get extra privacy protection automatically.</p>
               </div>
             </div>
 
