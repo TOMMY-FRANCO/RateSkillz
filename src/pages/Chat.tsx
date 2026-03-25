@@ -397,10 +397,10 @@ export default function Chat() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col">
-        <div className="bg-black/20 backdrop-blur-sm border-b border-white/10">
-          <div className="max-w-4xl mx-auto px-4 py-4">
-            <div className="flex items-center gap-4">
+      <div className="min-h-screen flex flex-col">
+        <div className="glass-container rounded-none border-l-0 border-r-0 border-t-0 sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-3 h-16">
               <ShimmerBar className="w-10 h-10 rounded-lg" />
               <SkeletonAvatar size="md" />
               <div className="space-y-2">
@@ -429,15 +429,15 @@ export default function Chat() {
   if (!otherUser) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col">
-      <div className="bg-black/20 backdrop-blur-sm border-b border-white/10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
+    <div className="min-h-screen flex flex-col">
+      <div className="glass-container rounded-none border-l-0 border-r-0 border-t-0 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 h-16">
             <button
               onClick={() => navigate('/inbox')}
-              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+              className="text-[#B0B8C8] hover:text-[#00E0FF] transition-colors"
             >
-              <ArrowLeft className="w-6 h-6 text-white" />
+              <ArrowLeft className="w-6 h-6" />
             </button>
 
             <div className="flex items-center gap-3 flex-1">
@@ -485,10 +485,10 @@ export default function Chat() {
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-50"
+              className="text-[#B0B8C8] hover:text-[#00E0FF] transition-colors disabled:opacity-50"
               title="Refresh messages"
             >
-              <RefreshCw className={`w-5 h-5 text-white ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
@@ -504,7 +504,7 @@ export default function Chat() {
       )}
 
       <div
-        className="flex-1 overflow-y-auto max-w-4xl w-full mx-auto px-4 py-6"
+        className="flex-1 overflow-y-auto max-w-3xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28"
         ref={containerRef}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
