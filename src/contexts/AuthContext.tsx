@@ -59,7 +59,7 @@ interface AuthContextType {
   session: { user: { id: string } } | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, username: string, fullName: string, recaptchaToken: string, age?: number | null) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, username: string, fullName: string, recaptchaToken: string, age?: number | null, deviceFingerprint?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
