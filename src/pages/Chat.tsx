@@ -276,11 +276,12 @@ export default function Chat() {
       };
 
       let seconds = 0;
+const MAX_SECONDS = 5;
       recorder.onstart = () => {
         recordingTimerRef.current = setInterval(() => {
           seconds += 1;
           setRecordingSeconds(seconds);
-          if (seconds >= 5) {
+          if (seconds >= MAX_SECONDS) {
             clearInterval(recordingTimerRef.current!);
             recordingTimerRef.current = undefined;
             mediaRecorderRef.current?.stop();
@@ -297,7 +298,7 @@ export default function Chat() {
         setAudioDuration(seconds);
       };
 
-      recorder.start();
+      recorder.start(100);
       setIsRecording(true);
     } catch {
       toast.error('Microphone permission denied');
