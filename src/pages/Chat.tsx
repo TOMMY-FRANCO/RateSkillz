@@ -280,9 +280,10 @@ export default function Chat() {
         recordingTimerRef.current = setInterval(() => {
           seconds += 1;
           setRecordingSeconds(seconds);
-          if (seconds >= 60) {
-            recorder.stop();
-            if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+          if (seconds >= 5) {
+            clearInterval(recordingTimerRef.current!);
+            recordingTimerRef.current = undefined;
+            mediaRecorderRef.current?.stop();
             setIsRecording(false);
             setRecordingSeconds(0);
           }
