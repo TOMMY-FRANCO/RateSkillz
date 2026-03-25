@@ -513,11 +513,11 @@ export default function Chat() {
         <div className="space-y-3">
           {messages.length === 0 && (
             <div className="text-center py-16">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <Send className="w-8 h-8 text-gray-500" />
+              <div className="w-16 h-16 rounded-full glass-card flex items-center justify-center mx-auto mb-4">
+                <Send className="w-8 h-8 text-[#B0B8C8]" />
               </div>
-              <p className="text-gray-400 text-lg font-medium">No messages yet</p>
-              <p className="text-gray-500 text-sm mt-1">Send a message to start the conversation</p>
+              <p className="text-white text-lg font-medium">No messages yet</p>
+              <p className="text-[#B0B8C8] text-sm mt-1">Send a message to start the conversation</p>
             </div>
           )}
 
@@ -567,7 +567,7 @@ export default function Chat() {
                     </button>
                   )}
                   <div
-                    className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl transition-all ${
+                    className={`max-w-[75%] px-4 py-3 rounded-2xl transition-all ${
                       isCoinTransfer
                         ? isSentByMe
                           ? 'bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-br-none'
@@ -662,9 +662,9 @@ export default function Chat() {
 
       {sendError && (
         <div className="max-w-4xl mx-auto px-4 w-full">
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2 mb-2 flex items-center gap-2 animate-[fadeSlideIn_0.2s_ease-out]">
+          <div className="glass-card border border-red-500/30 rounded-lg px-4 py-2 mb-2 flex items-center gap-2 animate-[fadeSlideIn_0.2s_ease-out]">
             <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-            <p className="text-red-300 text-sm flex-1">{sendError}</p>
+            <p className="text-red-400 text-sm flex-1">{sendError}</p>
             <button onClick={() => setSendError(null)} className="text-red-400 hover:text-red-300 text-sm font-medium">
               Dismiss
             </button>
@@ -672,8 +672,8 @@ export default function Chat() {
         </div>
       )}
 
-      <div className="bg-black/20 backdrop-blur-sm border-t border-white/10">
-        <div className="max-w-4xl mx-auto px-4 pt-2 pb-4">
+      <div className="glass-container rounded-none border-l-0 border-r-0 border-b-0 fixed bottom-0 left-0 right-0 z-40">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 pb-6">
           {showQuickTray && (
             <QuickMessageTray
               onSend={handleQuickMessageSend}
@@ -790,7 +790,7 @@ export default function Chat() {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder={isRecording ? `Recording… ${Math.floor(recordingSeconds / 60)}:${String(recordingSeconds % 60).padStart(2, '0')}` : audioBlob ? `Voice note ready (${Math.floor(audioDuration / 60)}:${String(audioDuration % 60).padStart(2, '0')})` : 'Type a message...'}
-              className="flex-1 bg-white/10 text-white placeholder-gray-400 rounded-xl px-4 h-11 focus:outline-none focus:ring-2 focus:ring-cyan-500 border border-white/10"
+              className="flex-1 bg-[rgba(15,24,41,0.85)] border border-[rgba(0,224,255,0.3)] text-white placeholder-[#B0B8C8] rounded-xl px-4 h-11 focus:outline-none focus:border-[#00E0FF] transition-colors text-sm"
               disabled={sending || isRecording || !!audioBlob}
             />
 
@@ -807,7 +807,7 @@ export default function Chat() {
               <button
                 type="submit"
                 disabled={!newMessage.trim() || sending}
-                className="w-11 h-11 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-xl font-bold hover:from-cyan-700 hover:to-teal-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
+                className="w-11 h-11 bg-gradient-to-r from-[#00E0FF] to-[#0099BB] text-black rounded-xl font-bold hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
                 title="Send"
               >
                 {sending ? (
