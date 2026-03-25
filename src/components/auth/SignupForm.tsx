@@ -283,6 +283,7 @@ const { error: signUpError } = await signUp(email, password, username, fullName,
             className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-md text-white placeholder-white/40 focus:outline-none focus:border-[#00E0FF]/50 transition-colors"
           />
           <p className="text-xs text-white/50 mt-1">You must be at least 11 years old. Under-18s get extra privacy protection.</p>
+        </div>
 
         <div>
           <label className="flex items-start gap-3 cursor-pointer group">
