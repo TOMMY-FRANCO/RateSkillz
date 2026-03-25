@@ -25,7 +25,6 @@ export default function Landing() {
     { title: 'Predictions', description: 'Predict & earn coins' },
     { title: 'World Cup 2026', description: 'Coming June 2026' },
     { title: 'Football Match', description: 'Organise and wager' },
-    { title: 'Viewed Me', description: 'See who visited' },
     { title: 'Scouter', description: 'Find local teams' },
   ];
 
