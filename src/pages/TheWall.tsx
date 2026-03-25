@@ -151,6 +151,41 @@ export default function TheWall() {
     loadInitial();
   }, [user]);
 
+  useEffect(() => {
+    if (mediaType === 'twitter') {
+      if (!document.querySelector('script[src="https://platform.twitter.com/widgets.js"]')) {
+        const s = document.createElement('script');
+        s.src = 'https://platform.twitter.com/widgets.js';
+        s.async = true;
+        document.body.appendChild(s);
+      }
+    } else if (mediaType === 'tiktok') {
+      if (!document.querySelector('script[src="https://www.tiktok.com/embed.js"]')) {
+        const s = document.createElement('script');
+        s.src = 'https://www.tiktok.com/embed.js';
+        s.async = true;
+        document.body.appendChild(s);
+      }
+    }
+  }, [mediaType]);
+
+  useEffect(() => {
+    const hasTwitter = posts.some(p => p.media_type === 'twitter');
+    const hasTiktok = posts.some(p => p.media_type === 'tiktok');
+    if (hasTwitter && !document.querySelector('script[src="https://platform.twitter.com/widgets.js"]')) {
+      const s = document.createElement('script');
+      s.src = 'https://platform.twitter.com/widgets.js';
+      s.async = true;
+      document.body.appendChild(s);
+    }
+    if (hasTiktok && !document.querySelector('script[src="https://www.tiktok.com/embed.js"]')) {
+      const s = document.createElement('script');
+      s.src = 'https://www.tiktok.com/embed.js';
+      s.async = true;
+      document.body.appendChild(s);
+    }
+  }, [posts]);
+
   const handleRefresh = useCallback(async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
@@ -365,6 +400,43 @@ export default function TheWall() {
             rows={3}
             className="w-full bg-transparent text-white placeholder-[#B0B8C8] text-sm resize-none focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
           />
+          {!hasPostedToday && (
+            <div className="border-t border-white/10 pt-3 space-y-2">
+              <input
+                type="url"
+                value={mediaUrl}
+                onChange={e => {
+                  const val = e.target.value;
+                  setMediaUrl(val);
+                  setMediaType(val ? detectMediaType(val) : null);
+                }}
+                placeholder="Paste a TikTok, X or Facebook link (optional)"
+                className="w-full bg-transparent text-white placeholder-[#B0B8C8] text-sm focus:outline-none"
+              />
+              {mediaUrl && mediaType === null && (
+                <p className="text-red-400 text-xs">Unrecognised link — only TikTok, X and Facebook links are supported</p>
+              )}
+              {mediaUrl && mediaType !== null && (
+                <div className="space-y-2">
+                  <p className="text-[#B0B8C8] text-xs">Preview</p>
+                  {mediaType === 'twitter' && (
+                    <blockquote className="twitter-tweet">
+                      <a href={mediaUrl}>{mediaUrl}</a>
+                    </blockquote>
+                  )}
+                  {mediaType === 'tiktok' && (
+                    <blockquote className="tiktok-embed" cite={mediaUrl}></blockquote>
+                  )}
+                  {mediaType === 'facebook' && (
+                    <div className="text-[#B0B8C8] text-sm flex items-center gap-2">
+                      <span>📘</span>
+                      <span className="truncate">{mediaUrl}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <span className={`text-xs font-medium ${charsLeft < 20 ? 'text-red-400' : 'text-[#B0B8C8]'}`}>
@@ -460,6 +532,28 @@ export default function TheWall() {
                   <p className="text-white text-sm leading-relaxed whitespace-pre-wrap break-words">
                     {post.content}
                   </p>
+
+                  {post.media_type === 'twitter' && post.media_url && (
+                    <blockquote className="twitter-tweet">
+                      <a href={post.media_url}></a>
+                    </blockquote>
+                  )}
+                  {post.media_type === 'tiktok' && post.media_url && (
+                    <blockquote className="tiktok-embed" cite={post.media_url}></blockquote>
+                  )}
+                  {post.media_type === 'facebook' && post.media_url && (
+                    <div className="glass-card p-3 flex items-center gap-2">
+                      <span>📘</span>
+                      <a
+                        href={post.media_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#00E0FF] text-sm truncate"
+                      >
+                        {post.media_url}
+                      </a>
+                    </div>
+                  )}
 
                   <div className="flex items-center gap-2 pt-1">
                     <button
