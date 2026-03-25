@@ -10,6 +10,8 @@ export interface Message {
   read_at: string | null;
   created_at: string;
   is_prewritten?: boolean;
+  voice_note_url?: string | null;
+  voice_note_duration?: number | null;
 }
 
 export interface Conversation {

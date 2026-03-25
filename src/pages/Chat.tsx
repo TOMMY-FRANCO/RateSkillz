@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { DefaultAvatar } from '../components/ui/DefaultAvatar';
 import {
   Message,
@@ -11,7 +12,7 @@ import {
   formatTimestamp,
   getPrewrittenMessageCount,
 } from '../lib/messaging';
-import { ArrowLeft, Send, User, Check, CheckCheck, Coins, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Send, User, Check, CheckCheck, Coins, AlertCircle, Loader2, RefreshCw, Mic, Square } from 'lucide-react';
 import { displayUsername } from '../lib/username';
 import SendCoinsModal from '../components/SendCoinsModal';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
@@ -36,6 +37,7 @@ export default function Chat() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -50,6 +52,9 @@ export default function Chat() {
   const touchStartY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   const [showSendCoinsModal, setShowSendCoinsModal] = useState(false);
   const [canSendCoins, setCanSendCoins] = useState(false);
@@ -58,6 +63,11 @@ export default function Chat() {
   const [showQuickTray, setShowQuickTray] = useState(false);
   const [prewrittenUsedToday, setPrewrittenUsedToday] = useState(0);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [sendingVoice, setSendingVoice] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -242,6 +252,97 @@ export default function Chat() {
       setSendError(error || 'Failed to send message');
     }
     setSending(false);
+  };
+
+  const handleToggleRecording = async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      setIsRecording(false);
+      setRecordingSeconds(0);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      let seconds = 0;
+      recorder.onstart = () => {
+        recordingTimerRef.current = setInterval(() => {
+          seconds += 1;
+          setRecordingSeconds(seconds);
+          if (seconds >= 60) {
+            recorder.stop();
+            if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+            setIsRecording(false);
+            setRecordingSeconds(0);
+          }
+        }, 1000);
+      };
+
+      recorder.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        setAudioDuration(seconds);
+      };
+
+      recorder.start();
+      setIsRecording(true);
+    } catch {
+      toast.error('Microphone permission denied');
+    }
+  };
+
+  const handleSendVoiceNote = async () => {
+    if (!user || !conversationId || !otherUser || !audioBlob || sendingVoice) return;
+    setSendingVoice(true);
+
+    try {
+      const path = `${user.id}/${Date.now()}.webm`;
+      const { error: uploadError } = await supabase.storage
+        .from('voice-notes')
+        .upload(path, audioBlob, { contentType: 'audio/webm' });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('voice-notes').getPublicUrl(path);
+      const publicUrl = urlData.publicUrl;
+
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id: user.id,
+          recipient_id: otherUser.id,
+          content: '🎤 Voice note',
+          voice_note_url: publicUrl,
+          voice_note_duration: audioDuration,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      playSound('message-sent');
+      setMessages(prev => {
+        if (prev.some(m => m.id === data.id)) return prev;
+        return [...prev, data as Message];
+      });
+      setAudioBlob(null);
+      setAudioDuration(0);
+    } catch {
+      toast.error('Failed to send voice note');
+    } finally {
+      setSendingVoice(false);
+    }
   };
 
   const handleEmojiSelect = (emoji: string) => {
@@ -599,28 +700,67 @@ export default function Chat() {
               😊
             </button>
 
-            <input
-              ref={inputRef}
-              type="text"
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1 bg-white/10 text-white placeholder-gray-400 rounded-xl px-4 h-11 focus:outline-none focus:ring-2 focus:ring-cyan-500 border border-white/10"
-              disabled={sending}
-            />
-
             <button
-              type="submit"
-              disabled={!newMessage.trim() || sending}
-              className="w-11 h-11 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-xl font-bold hover:from-cyan-700 hover:to-teal-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
-              title="Send"
+              type="button"
+              onClick={handleToggleRecording}
+              disabled={!!audioBlob || sendingVoice}
+              className={`w-11 h-11 rounded-xl transition-all flex items-center justify-center flex-shrink-0 ${
+                isRecording
+                  ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
+                  : 'bg-white/10 hover:bg-white/20 text-white'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+              title={isRecording ? `Stop recording (${recordingSeconds}s)` : 'Record voice note'}
             >
-              {sending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Send className="w-5 h-5" />
-              )}
+              {isRecording ? <Square className="w-4 h-4" /> : <Mic className="w-5 h-5" />}
             </button>
+
+            {audioBlob ? (
+              <div className="flex-1 flex items-center gap-2 bg-white/10 rounded-xl px-3 h-11 border border-white/10">
+                <span className="text-[#00E0FF] text-sm font-medium">🎤 {audioDuration}s</span>
+                <button
+                  type="button"
+                  onClick={() => { setAudioBlob(null); setAudioDuration(0); }}
+                  className="text-gray-400 hover:text-red-400 transition-colors text-xs ml-auto"
+                >
+                  Discard
+                </button>
+              </div>
+            ) : (
+              <input
+                ref={inputRef}
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder={isRecording ? `Recording… ${recordingSeconds}s` : 'Type a message...'}
+                className="flex-1 bg-white/10 text-white placeholder-gray-400 rounded-xl px-4 h-11 focus:outline-none focus:ring-2 focus:ring-cyan-500 border border-white/10"
+                disabled={sending || isRecording}
+              />
+            )}
+
+            {audioBlob ? (
+              <button
+                type="button"
+                onClick={handleSendVoiceNote}
+                disabled={sendingVoice}
+                className="w-11 h-11 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-xl font-bold hover:from-cyan-700 hover:to-teal-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
+                title="Send voice note"
+              >
+                {sendingVoice ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!newMessage.trim() || sending}
+                className="w-11 h-11 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-xl font-bold hover:from-cyan-700 hover:to-teal-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
+                title="Send"
+              >
+                {sending ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
+              </button>
+            )}
           </form>
         </div>
       </div>
