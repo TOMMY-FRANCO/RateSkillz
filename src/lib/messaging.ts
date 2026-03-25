@@ -130,7 +130,7 @@ export async function getConversationMessages(conversationId: string): Promise<M
   try {
     const { data, error } = await supabase
       .from('messages')
-      .select('id, conversation_id, sender_id, recipient_id, content, is_read, read_at, created_at, is_prewritten')
+      .select('id, conversation_id, sender_id, recipient_id, content, is_read, read_at, created_at, is_prewritten, voice_note_url, voice_note_duration')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 

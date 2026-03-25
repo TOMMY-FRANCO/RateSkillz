@@ -68,6 +68,8 @@ export default function Chat() {
   const [audioDuration, setAudioDuration] = useState(0);
   const [sendingVoice, setSendingVoice] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
+  const activeAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -586,7 +588,50 @@ export default function Chat() {
                         <span className="text-xs opacity-60 font-medium">Quick message</span>
                       </div>
                     )}
-                    <p className="break-words">{message.content}</p>
+                    {message.voice_note_url ? (
+                      <div className={`flex items-center gap-2 mt-1 rounded-lg px-2 py-1.5 ${isSentByMe ? 'bg-black/20' : 'bg-white/10'}`}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (playingVoiceId === message.id) {
+                              activeAudioRef.current?.pause();
+                              setPlayingVoiceId(null);
+                            } else {
+                              if (activeAudioRef.current) {
+                                activeAudioRef.current.pause();
+                              }
+                              const audio = new Audio(message.voice_note_url!);
+                              activeAudioRef.current = audio;
+                              audio.play();
+                              setPlayingVoiceId(message.id);
+                              audio.onended = () => setPlayingVoiceId(null);
+                            }
+                          }}
+                          className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center flex-shrink-0 transition-colors"
+                        >
+                          {playingVoiceId === message.id ? (
+                            <Square className="w-3 h-3 text-white" />
+                          ) : (
+                            <svg className="w-3 h-3 text-white ml-0.5" viewBox="0 0 12 12" fill="currentColor">
+                              <polygon points="2,1 11,6 2,11" />
+                            </svg>
+                          )}
+                        </button>
+                        <div className="flex-1 h-1 rounded-full bg-white/20 overflow-hidden">
+                          <div className={`h-full rounded-full bg-white/60 transition-all ${playingVoiceId === message.id ? 'animate-pulse w-full' : 'w-0'}`} />
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Mic className="w-3 h-3 opacity-70" />
+                          <span className="text-xs opacity-80">
+                            {message.voice_note_duration
+                              ? `${Math.floor(message.voice_note_duration / 60)}:${String(message.voice_note_duration % 60).padStart(2, '0')}`
+                              : '0:00'}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="break-words">{message.content}</p>
+                    )}
                     <div className="flex items-center justify-end gap-1 mt-1">
                       <span className="text-xs opacity-70">
                         {new Date(message.created_at).toLocaleTimeString('en-US', {
@@ -700,52 +745,62 @@ export default function Chat() {
               😊
             </button>
 
-            <button
-              type="button"
-              onClick={handleToggleRecording}
-              disabled={!!audioBlob || sendingVoice}
-              className={`w-11 h-11 rounded-xl transition-all flex items-center justify-center flex-shrink-0 ${
-                isRecording
-                  ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse'
-                  : 'bg-white/10 hover:bg-white/20 text-white'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-              title={isRecording ? `Stop recording (${recordingSeconds}s)` : 'Record voice note'}
-            >
-              {isRecording ? <Square className="w-4 h-4" /> : <Mic className="w-5 h-5" />}
-            </button>
-
-            {audioBlob ? (
-              <div className="flex-1 flex items-center gap-2 bg-white/10 rounded-xl px-3 h-11 border border-white/10">
-                <span className="text-[#00E0FF] text-sm font-medium">🎤 {audioDuration}s</span>
-                <button
-                  type="button"
-                  onClick={() => { setAudioBlob(null); setAudioDuration(0); }}
-                  className="text-gray-400 hover:text-red-400 transition-colors text-xs ml-auto"
-                >
-                  Discard
-                </button>
-              </div>
-            ) : (
-              <input
-                ref={inputRef}
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder={isRecording ? `Recording… ${recordingSeconds}s` : 'Type a message...'}
-                className="flex-1 bg-white/10 text-white placeholder-gray-400 rounded-xl px-4 h-11 focus:outline-none focus:ring-2 focus:ring-cyan-500 border border-white/10"
-                disabled={sending || isRecording}
-              />
-            )}
-
             {audioBlob ? (
               <button
                 type="button"
                 onClick={handleSendVoiceNote}
                 disabled={sendingVoice}
-                className="w-11 h-11 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-xl font-bold hover:from-cyan-700 hover:to-teal-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
-                title="Send voice note"
+                className="w-11 h-11 rounded-xl transition-all flex items-center justify-center flex-shrink-0 bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                title={`Send voice note (${Math.floor(audioDuration / 60)}:${String(audioDuration % 60).padStart(2, '0')})`}
               >
-                {sendingVoice ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                {sendingVoice ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                  <div className="flex flex-col items-center leading-none">
+                    <Send className="w-4 h-4" />
+                    <span className="text-[9px] font-semibold mt-0.5">{Math.floor(audioDuration / 60)}:{String(audioDuration % 60).padStart(2, '0')}</span>
+                  </div>
+                )}
+              </button>
+            ) : isRecording ? (
+              <button
+                type="button"
+                onClick={handleToggleRecording}
+                className="w-11 h-11 rounded-xl transition-all flex items-center justify-center flex-shrink-0 bg-red-600 hover:bg-red-700 text-white animate-pulse"
+                title={`Stop recording (${Math.floor(recordingSeconds / 60)}:${String(recordingSeconds % 60).padStart(2, '0')})`}
+              >
+                <div className="flex flex-col items-center leading-none">
+                  <Square className="w-4 h-4" />
+                  <span className="text-[9px] font-semibold mt-0.5">{Math.floor(recordingSeconds / 60)}:{String(recordingSeconds % 60).padStart(2, '0')}</span>
+                </div>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleToggleRecording}
+                className="w-11 h-11 rounded-xl transition-all flex items-center justify-center flex-shrink-0 bg-white/10 hover:bg-white/20 text-white"
+                title="Record voice note"
+              >
+                <Mic className="w-5 h-5" />
+              </button>
+            )}
+
+            <input
+              ref={inputRef}
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder={isRecording ? `Recording… ${Math.floor(recordingSeconds / 60)}:${String(recordingSeconds % 60).padStart(2, '0')}` : audioBlob ? `Voice note ready (${Math.floor(audioDuration / 60)}:${String(audioDuration % 60).padStart(2, '0')})` : 'Type a message...'}
+              className="flex-1 bg-white/10 text-white placeholder-gray-400 rounded-xl px-4 h-11 focus:outline-none focus:ring-2 focus:ring-cyan-500 border border-white/10"
+              disabled={sending || isRecording || !!audioBlob}
+            />
+
+            {audioBlob ? (
+              <button
+                type="button"
+                onClick={() => { setAudioBlob(null); setAudioDuration(0); }}
+                className="w-11 h-11 rounded-xl transition-all flex items-center justify-center flex-shrink-0 bg-white/10 hover:bg-red-500/20 text-gray-400 hover:text-red-400"
+                title="Discard voice note"
+              >
+                <Square className="w-4 h-4" />
               </button>
             ) : (
               <button
