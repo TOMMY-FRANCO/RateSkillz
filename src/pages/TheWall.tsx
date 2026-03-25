@@ -15,6 +15,7 @@ interface WallPost {
   user_id: string;
   content: string;
   wall_date: string;
+  week_start?: string;
   created_at: string;
   username?: string;
   avatar_url?: string | null;
@@ -27,12 +28,27 @@ interface WallPost {
 
 const PAGE_SIZE = 20;
 
-function getTodayDate(): string {
+function getUKWeekStart(): string {
   const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  const day = now.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - diff);
+  return monday.toISOString().slice(0, 10);
+}
+
+function getTimeUntilMonday(): string {
+  const now = new Date();
+  const day = now.getDay();
+  const daysUntil = day === 0 ? 1 : 8 - day;
+  const next = new Date(now);
+  next.setDate(now.getDate() + daysUntil);
+  next.setHours(0, 0, 0, 0);
+  const diff = next.getTime() - now.getTime();
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  return `${d}d ${h}h ${m}m`;
 }
 
 function relativeTime(isoString: string): string {
@@ -91,9 +107,9 @@ export default function TheWall() {
   const [reportingPostId, setReportingPostId] = useState<string | null>(null);
   const [reportedPostIds, setReportedPostIds] = useState<Set<string>>(new Set());
 
-  const today = getTodayDate();
+  const weekStart = getUKWeekStart();
   const charsLeft = 280 - content.length;
-  const hasPostedToday = posts.some(p => p.user_id === user?.id && p.wall_date === today);
+  const hasPostedThisWeek = posts.some(p => p.user_id === user?.id && (p.week_start === weekStart || p.wall_date === weekStart));
 
   function detectMediaType(url: string): 'tiktok' | 'twitter' | 'facebook' | null {
     if (url.includes('tiktok.com')) return 'tiktok';
@@ -105,14 +121,14 @@ export default function TheWall() {
   const fetchPosts = useCallback(async (from = 0): Promise<WallPost[]> => {
     const { data, error } = await supabase
       .from('wall_posts')
-      .select('id, user_id, content, wall_date, created_at, username, avatar_url, likes_count, dislikes_count, coins_earned, media_url, media_type')
-      .eq('wall_date', today)
+      .select('id, user_id, content, wall_date, week_start, created_at, username, avatar_url, likes_count, dislikes_count, coins_earned, media_url, media_type')
+      .eq('week_start', weekStart)
       .order('created_at', { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
     if (error) throw error;
     return (data as WallPost[]) || [];
-  }, [today]);
+  }, [weekStart]);
 
   const fetchUserReactions = useCallback(async () => {
     if (!user) return;
@@ -258,7 +274,7 @@ export default function TheWall() {
   };
 
   const handlePost = async () => {
-    if (!user || (!content.trim() && !mediaUrl) || posting || hasPostedToday) return;
+    if (!user || (!content.trim() && !mediaUrl) || posting || hasPostedThisWeek) return;
     const trimmedContent = content.trim();
 
     const { data: filterData } = await supabase
@@ -297,7 +313,8 @@ export default function TheWall() {
         id: data?.id || `${Date.now()}`,
         user_id: user.id,
         content: trimmedContent,
-        wall_date: today,
+        wall_date: weekStart,
+        week_start: weekStart,
         created_at: new Date().toISOString(),
         username: profile?.username || undefined,
         avatar_url: profile?.avatar_url || null,
@@ -391,16 +408,25 @@ export default function TheWall() {
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 space-y-4">
 
+        <div className="glass-card p-4 space-y-2">
+          <p className="text-[#B0B8C8] text-sm leading-relaxed">
+            The Wall is where the community speaks. Share your skills, drop a trick clip from TikTok, X or Facebook, and let the world react. One post per week — make it count.
+          </p>
+          <p className="text-[#00E0FF] text-xs font-semibold">
+            Next reset in: {getTimeUntilMonday()}
+          </p>
+        </div>
+
         <div className="glass-card p-4 space-y-3">
           <textarea
             value={content}
             onChange={e => setContent(e.target.value.slice(0, 280))}
-            placeholder={hasPostedToday ? "You've already posted today. Come back tomorrow!" : "What's on your mind today?"}
-            disabled={hasPostedToday}
+            placeholder={hasPostedThisWeek ? "You've already posted this week. Come back next Monday!" : "What's on your mind this week?"}
+            disabled={hasPostedThisWeek}
             rows={3}
             className="w-full bg-transparent text-white placeholder-[#B0B8C8] text-sm resize-none focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
           />
-          {!hasPostedToday && (
+          {!hasPostedThisWeek && (
             <div className="border-t border-white/10 pt-3 space-y-2">
               <input
                 type="url"
@@ -448,7 +474,7 @@ export default function TheWall() {
             </div>
             <button
               onClick={handlePost}
-              disabled={(!content.trim() && !mediaUrl) || posting || hasPostedToday || charsLeft < 0}
+              disabled={(!content.trim() && !mediaUrl) || posting || hasPostedThisWeek || charsLeft < 0}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#00E0FF] to-[#0099BB] text-black font-semibold text-sm rounded-xl transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {posting ? (
@@ -459,9 +485,9 @@ export default function TheWall() {
               Post
             </button>
           </div>
-          {hasPostedToday && (
+          {hasPostedThisWeek && (
             <p className="text-xs text-[#00E0FF]/80 text-center">
-              One post per day — your post is live on The Wall.
+              One post per week — your post is live on The Wall.
             </p>
           )}
         </div>
@@ -489,7 +515,7 @@ export default function TheWall() {
 
         {!loading && !fetchError && posts.length === 0 && (
           <div className="glass-card p-8 text-center">
-            <p className="text-[#B0B8C8] text-sm">No posts yet today. Be the first!</p>
+            <p className="text-[#B0B8C8] text-sm">No posts yet this week. Be the first!</p>
           </div>
         )}
 
