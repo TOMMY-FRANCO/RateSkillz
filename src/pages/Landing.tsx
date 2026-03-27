@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import PlayerCard from '../components/PlayerCard';
 import { LoginForm } from '../components/auth/LoginForm';
 import { SignupForm } from '../components/auth/SignupForm';
