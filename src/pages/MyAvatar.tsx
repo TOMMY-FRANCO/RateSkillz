@@ -54,145 +54,506 @@ function FootballAvatar({
   username: string;
   number: string;
 }) {
-  const skin = SKIN_COLORS[config.skin_tone];
-  const hair = HAIR_COLORS[config.hair_color];
-  const eye  = EYE_COLORS[config.eye_color];
-  const isMale = config.gender === 'male';
-
+  const skin    = SKIN_COLORS[config.skin_tone];
+  const hair    = HAIR_COLORS[config.hair_color];
+  const eye     = EYE_COLORS[config.eye_color];
+  const isMale  = config.gender === 'male';
   const primary   = kit.primary;
   const secondary = kit.secondary;
+  const logoFill  = isLight(primary) ? secondary : '#FFFFFF';
 
-  const textOnPrimary = isLight(primary) ? '#000000' : '#FFFFFF';
-  const textOnSecondary = isLight(secondary) ? '#000000' : '#FFFFFF';
+  const skinGradId   = `sg-${config.skin_tone}`;
+  const skinHiColor  = config.skin_tone === 'dark'   ? '#8B5240'
+                     : config.skin_tone === 'medium' ? '#D9975A'
+                     : '#FFF0DA';
 
   return (
     <svg
-      viewBox="0 0 160 320"
-      width="160"
-      height="320"
+      viewBox="0 0 200 420"
+      width="200"
+      height="420"
       xmlns="http://www.w3.org/2000/svg"
-      aria-label="Avatar"
+      aria-label="Football player avatar"
     >
-      {/* ── LEGS ── */}
-      {/* Left thigh */}
-      <rect x="55" y="188" width="22" height="50" rx="6" fill={primary} />
-      {/* Right thigh */}
-      <rect x="83" y="188" width="22" height="50" rx="6" fill={primary} />
+      <defs>
+        {/* Skin gradient — lighter highlight on top, darker shadow below */}
+        <linearGradient id={skinGradId} x1="0.3" y1="0" x2="0.7" y2="1">
+          <stop offset="0%"   stopColor={skinHiColor} />
+          <stop offset="60%"  stopColor={skin.skin} />
+          <stop offset="100%" stopColor={skin.shade} />
+        </linearGradient>
+        {/* Neck gradient */}
+        <linearGradient id={`nk-${config.skin_tone}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stopColor={skin.shade} />
+          <stop offset="40%"  stopColor={skin.skin} />
+          <stop offset="100%" stopColor={skin.shade} />
+        </linearGradient>
+        {/* Shirt body shading */}
+        <linearGradient id="shirtGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%"   stopColor="rgba(0,0,0,0.12)" />
+          <stop offset="50%"  stopColor="rgba(255,255,255,0.06)" />
+          <stop offset="100%" stopColor="rgba(0,0,0,0.12)" />
+        </linearGradient>
+      </defs>
 
-      {/* Left shin */}
-      <rect x="56" y="234" width="20" height="44" rx="5" fill="#FFFFFF" />
-      {/* Right shin */}
-      <rect x="84" y="234" width="20" height="44" rx="5" fill="#FFFFFF" />
+      {/* ═══════════════════════════════════════════
+          BOOTS — drawn first so legs layer on top
+      ═══════════════════════════════════════════ */}
+      {/* Left boot */}
+      <path
+        d="M68 388 C62 388 58 385 57 381 C56 377 58 373 63 372 L80 372 L80 388 Z"
+        fill="#1F2937"
+      />
+      <path
+        d="M57 381 C56 384 57 388 62 390 L80 390 L80 388 L63 388 C60 388 58 385 57 381 Z"
+        fill="#111827"
+      />
+      {/* Right boot */}
+      <path
+        d="M132 388 C138 388 142 385 143 381 C144 377 142 373 137 372 L120 372 L120 388 Z"
+        fill="#1F2937"
+      />
+      <path
+        d="M143 381 C144 384 143 388 138 390 L120 390 L120 388 L137 388 C140 388 142 385 143 381 Z"
+        fill="#111827"
+      />
 
-      {/* Socks blue trim at top */}
-      <rect x="56" y="234" width="20" height="6" rx="3" fill={secondary} />
-      <rect x="84" y="234" width="20" height="6" rx="3" fill={secondary} />
+      {/* ═══════════════════════════════════════════
+          SOCKS
+      ═══════════════════════════════════════════ */}
+      {/* Left sock */}
+      <path
+        d="M63 320 C62 320 60 321 60 323 L60 372 C60 373 61 374 63 374 L80 374 L80 320 Z"
+        fill={primary}
+      />
+      {/* Left sock secondary stripe */}
+      <path
+        d="M60 323 C60 321 62 320 63 320 L80 320 L80 330 L60 330 Z"
+        fill={secondary}
+      />
+      {/* Right sock */}
+      <path
+        d="M137 320 C138 320 140 321 140 323 L140 372 C140 373 139 374 137 374 L120 374 L120 320 Z"
+        fill={primary}
+      />
+      {/* Right sock secondary stripe */}
+      <path
+        d="M140 323 C140 321 138 320 137 320 L120 320 L120 330 L140 330 Z"
+        fill={secondary}
+      />
 
-      {/* Boots */}
-      <rect x="54" y="272" width="24" height="12" rx="4" fill="#111827" />
-      <rect x="82" y="272" width="24" height="12" rx="4" fill="#111827" />
+      {/* ═══════════════════════════════════════════
+          LEGS (shorts region blends into thighs)
+      ═══════════════════════════════════════════ */}
+      {/* Left thigh + shin — single curved shape */}
+      <path
+        d="M68 250 C64 250 62 252 62 256 L60 320 C60 322 61 323 63 323 L80 323 L80 248 Z"
+        fill={primary}
+        opacity="0.95"
+      />
+      {/* Right thigh + shin */}
+      <path
+        d="M132 250 C136 250 138 252 138 256 L140 320 C140 322 139 323 137 323 L120 323 L120 248 Z"
+        fill={primary}
+        opacity="0.95"
+      />
 
-      {/* ── SHORTS ── */}
-      <rect x="52" y="182" width="56" height="22" rx="6" fill={primary} />
-      <line x1="80" y1="182" x2="80" y2="204" stroke={secondary} strokeWidth="2" />
+      {/* ═══════════════════════════════════════════
+          SHORTS
+      ═══════════════════════════════════════════ */}
+      <path
+        d="M62 210
+           C60 210 58 212 58 215
+           L60 252 C60 254 62 256 65 256
+           L80 256 L80 210 Z"
+        fill={secondary}
+      />
+      <path
+        d="M138 210
+           C140 210 142 212 142 215
+           L140 252 C140 254 138 256 135 256
+           L120 256 L120 210 Z"
+        fill={secondary}
+      />
+      {/* Shorts waistband / centre */}
+      <path
+        d="M58 210 C58 206 62 204 68 204 L80 204 L120 204 L132 204 C138 204 142 206 142 210 L142 218 C142 222 138 224 132 224 L68 224 C62 224 58 222 58 218 Z"
+        fill={secondary}
+      />
+      {/* Centre seam on shorts */}
+      <path
+        d="M100 224 L100 256"
+        stroke={primary}
+        strokeWidth="1.5"
+        strokeOpacity="0.5"
+        fill="none"
+      />
 
-      {/* ── SHIRT BODY ── */}
-      <rect x="44" y="112" width="72" height="75" rx="8" fill={primary} />
+      {/* ═══════════════════════════════════════════
+          ARMS & HANDS
+      ═══════════════════════════════════════════ */}
+      {/* Left sleeve (secondary colour) */}
+      <path
+        d="M68 140
+           C60 140 48 144 44 152
+           L38 178
+           C36 184 38 190 44 192
+           C48 193 52 191 54 187
+           L60 164
+           C62 158 64 154 68 152 Z"
+        fill={secondary}
+      />
+      {/* Left sleeve seam curve */}
+      <path
+        d="M68 140 C66 146 62 152 60 158"
+        stroke={primary}
+        strokeWidth="1"
+        strokeOpacity="0.4"
+        fill="none"
+      />
+      {/* Left cuff */}
+      <path
+        d="M38 178 C36 184 38 190 44 192 C48 193 52 191 54 187 L56 180 C52 182 46 182 44 178 Z"
+        fill={primary}
+        opacity="0.7"
+      />
+      {/* Left hand */}
+      <path
+        d="M44 192 C40 192 36 196 36 200 C36 205 40 208 45 208 C50 208 55 205 56 200 C57 196 53 192 48 192 Z"
+        fill={`url(#${skinGradId})`}
+      />
 
-      {/* Shirt collar */}
-      <path d="M72 112 Q80 120 88 112" stroke={secondary} strokeWidth="2" fill="none" />
-
-      {/* Blue sleeves */}
-      {/* Left sleeve */}
-      <rect x="24" y="112" width="22" height="44" rx="6" fill={secondary} />
       {/* Right sleeve */}
-      <rect x="114" y="112" width="22" height="44" rx="6" fill={secondary} />
+      <path
+        d="M132 140
+           C140 140 152 144 156 152
+           L162 178
+           C164 184 162 190 156 192
+           C152 193 148 191 146 187
+           L140 164
+           C138 158 136 154 132 152 Z"
+        fill={secondary}
+      />
+      {/* Right sleeve seam */}
+      <path
+        d="M132 140 C134 146 138 152 140 158"
+        stroke={primary}
+        strokeWidth="1"
+        strokeOpacity="0.4"
+        fill="none"
+      />
+      {/* Right cuff */}
+      <path
+        d="M162 178 C164 184 162 190 156 192 C152 193 148 191 146 187 L144 180 C148 182 154 182 156 178 Z"
+        fill={primary}
+        opacity="0.7"
+      />
+      {/* Right hand */}
+      <path
+        d="M156 192 C160 192 164 196 164 200 C164 205 160 208 155 208 C150 208 145 205 144 200 C143 196 147 192 152 192 Z"
+        fill={`url(#${skinGradId})`}
+      />
 
-      {/* Sleeve cuffs */}
-      <rect x="24" y="150" width="22" height="6" rx="3" fill={primary} />
-      <rect x="114" y="150" width="22" height="6" rx="3" fill={primary} />
+      {/* ═══════════════════════════════════════════
+          SHIRT BODY
+      ═══════════════════════════════════════════ */}
+      <path
+        d="M68 140
+           C62 140 58 144 58 150
+           L58 204
+           C58 208 62 210 68 210
+           L132 210
+           C138 210 142 208 142 204
+           L142 150
+           C142 144 138 140 132 140 Z"
+        fill={primary}
+      />
+      {/* Shading overlay on shirt */}
+      <path
+        d="M68 140 C62 140 58 144 58 150 L58 204 C58 208 62 210 68 210 L132 210 C138 210 142 208 142 204 L142 150 C142 144 138 140 132 140 Z"
+        fill="url(#shirtGrad)"
+      />
 
-      {/* "RatingSkill.com" on left chest */}
+      {/* Shirt collar — V-neck */}
+      <path
+        d="M88 140 Q100 155 112 140"
+        stroke={secondary}
+        strokeWidth="2.5"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path
+        d="M88 140 Q100 158 112 140"
+        stroke={secondary}
+        strokeWidth="1"
+        fill="none"
+        strokeOpacity="0.4"
+      />
+
+      {/* Sleeve seam lines on shirt shoulders */}
+      <path
+        d="M68 140 C65 148 63 156 63 165"
+        stroke={secondary}
+        strokeWidth="1.5"
+        strokeOpacity="0.5"
+        fill="none"
+      />
+      <path
+        d="M132 140 C135 148 137 156 137 165"
+        stroke={secondary}
+        strokeWidth="1.5"
+        strokeOpacity="0.5"
+        fill="none"
+      />
+
+      {/* RatingSkill.com logo on left chest */}
       <text
-        x="57"
-        y="133"
-        fontSize="5.5"
+        x="82"
+        y="168"
+        fontSize="6.5"
         fontFamily="Arial, sans-serif"
         fontWeight="bold"
-        fill={isLight(primary) ? secondary : '#FFFFFF'}
+        fill={logoFill}
         textAnchor="middle"
       >
         RatingSkill
       </text>
       <text
-        x="57"
-        y="140"
-        fontSize="4.5"
+        x="82"
+        y="177"
+        fontSize="5.5"
         fontFamily="Arial, sans-serif"
-        fill={isLight(primary) ? secondary : '#FFFFFF'}
+        fill={logoFill}
         textAnchor="middle"
+        opacity="0.85"
       >
         .com
       </text>
 
-      {/* ── NECK ── */}
-      <rect x="72" y="100" width="16" height="16" rx="4" fill={skin.skin} />
+      {/* ═══════════════════════════════════════════
+          NECK
+      ═══════════════════════════════════════════ */}
+      <path
+        d="M88 128 C86 128 84 129 83 131 L83 142 C83 144 85 146 88 146 L112 146 C115 146 117 144 117 142 L117 131 C116 129 114 128 112 128 Z"
+        fill={`url(#nk-${config.skin_tone})`}
+      />
 
-      {/* ── HEAD ── */}
-      <ellipse cx="80" cy="82" rx="28" ry="30" fill={skin.skin} />
+      {/* ═══════════════════════════════════════════
+          HEAD
+      ═══════════════════════════════════════════ */}
+      {/* Ears — behind head */}
+      <path
+        d="M64 88 C59 86 55 89 55 95 C55 101 59 106 65 104 C68 103 70 100 70 97 C70 92 68 89 64 88 Z"
+        fill={`url(#${skinGradId})`}
+      />
+      <path
+        d="M136 88 C141 86 145 89 145 95 C145 101 141 106 135 104 C132 103 130 100 130 97 C130 92 132 89 136 88 Z"
+        fill={`url(#${skinGradId})`}
+      />
+      {/* Inner ear shadow */}
+      <path
+        d="M64 91 C61 90 59 93 59 97 C59 101 61 104 64 103 C66 102 67 100 67 97 C67 93 66 91 64 91 Z"
+        fill={skin.shade}
+        opacity="0.5"
+      />
+      <path
+        d="M136 91 C139 90 141 93 141 97 C141 101 139 104 136 103 C134 102 133 100 133 97 C133 93 134 91 136 91 Z"
+        fill={skin.shade}
+        opacity="0.5"
+      />
 
-      {/* ── HAIR ── */}
+      {/* Head shape — oval with gentle jawline curve */}
+      <path
+        d="M100 52
+           C78 52 62 65 62 85
+           C62 100 66 113 75 122
+           C80 127 88 130 100 130
+           C112 130 120 127 125 122
+           C134 113 138 100 138 85
+           C138 65 122 52 100 52 Z"
+        fill={`url(#${skinGradId})`}
+      />
+
+      {/* ═══════════════════════════════════════════
+          HAIR
+      ═══════════════════════════════════════════ */}
       {isMale ? (
-        /* Male: short sides, top coverage */
         <>
-          <ellipse cx="80" cy="58" rx="28" ry="12" fill={hair} />
-          <rect x="52" y="58" width="56" height="14" fill={hair} />
-          {/* Fade sides */}
-          <ellipse cx="54" cy="75" rx="4" ry="10" fill={hair} opacity="0.6" />
-          <ellipse cx="106" cy="75" rx="4" ry="10" fill={hair} opacity="0.6" />
+          {/* Male — short crop top, faded sides */}
+          <path
+            d="M100 50
+               C80 50 63 58 62 72
+               C61 78 63 83 66 87
+               C67 82 68 76 70 73
+               C72 70 76 68 80 68
+               L100 66
+               L120 68
+               C124 68 128 70 130 73
+               C132 76 133 82 134 87
+               C137 83 139 78 138 72
+               C137 58 120 50 100 50 Z"
+            fill={hair}
+          />
+          {/* Side fade — left */}
+          <path
+            d="M62 72 C61 78 63 84 66 88 C64 85 63 80 63 75 C63 70 64 65 66 61 Z"
+            fill={hair}
+            opacity="0.5"
+          />
+          {/* Side fade — right */}
+          <path
+            d="M138 72 C139 78 137 84 134 88 C136 85 137 80 137 75 C137 70 136 65 134 61 Z"
+            fill={hair}
+            opacity="0.5"
+          />
         </>
       ) : (
-        /* Female: ponytail */
         <>
-          <ellipse cx="80" cy="56" rx="28" ry="14" fill={hair} />
-          <rect x="52" y="56" width="56" height="20" fill={hair} />
-          {/* Ponytail */}
-          <ellipse cx="108" cy="76" rx="7" ry="18" fill={hair} transform="rotate(20 108 76)" />
-          <ellipse cx="113" cy="88" rx="5" ry="12" fill={hair} transform="rotate(30 113 88)" />
+          {/* Female — full head coverage */}
+          <path
+            d="M100 48
+               C78 48 60 60 60 78
+               C60 85 62 91 66 96
+               C66 90 67 83 70 78
+               C73 73 78 70 84 70
+               L100 68
+               L116 70
+               C122 70 127 73 130 78
+               C133 83 134 90 134 96
+               C138 91 140 85 140 78
+               C140 60 122 48 100 48 Z"
+            fill={hair}
+          />
+          {/* Side hair falling down */}
+          <path
+            d="M62 80 C60 87 60 96 63 104 C66 110 70 115 74 119 C70 112 67 104 66 96 C65 90 64 84 62 80 Z"
+            fill={hair}
+          />
+          <path
+            d="M138 80 C140 87 140 96 137 104 C134 110 130 115 126 119 C130 112 133 104 134 96 C135 90 136 84 138 80 Z"
+            fill={hair}
+          />
+          {/* Ponytail — sweeps back from right side */}
+          <path
+            d="M130 82
+               C134 80 140 80 145 84
+               C152 90 155 100 153 112
+               C151 122 146 130 140 134
+               C136 136 132 136 130 132
+               C134 128 137 122 138 114
+               C139 106 137 96 132 90
+               C130 86 129 84 130 82 Z"
+            fill={hair}
+          />
+          {/* Ponytail tail tip */}
+          <path
+            d="M140 134 C138 140 136 146 134 150 C132 154 130 156 128 155 C130 150 133 144 135 137 C137 130 138 124 138 118 C139 124 140 130 140 134 Z"
+            fill={hair}
+          />
+          {/* Hair band */}
+          <path
+            d="M130 100 C133 98 137 98 139 100 C141 102 141 105 139 107 C137 109 133 109 131 107 C129 105 129 102 130 100 Z"
+            fill={secondary}
+          />
         </>
       )}
 
-      {/* ── EARS ── */}
-      <ellipse cx="52" cy="82" rx="5" ry="7" fill={skin.skin} />
-      <ellipse cx="108" cy="82" rx="5" ry="7" fill={skin.skin} />
-      <ellipse cx="52" cy="82" rx="3" ry="5" fill={skin.shade} />
-      <ellipse cx="108" cy="82" rx="3" ry="5" fill={skin.shade} />
+      {/* ═══════════════════════════════════════════
+          FACE FEATURES
+      ═══════════════════════════════════════════ */}
 
-      {/* ── EYES ── */}
-      {/* Eye whites */}
-      <ellipse cx="70" cy="82" rx="7" ry="5.5" fill="white" />
-      <ellipse cx="90" cy="82" rx="7" ry="5.5" fill="white" />
-      {/* Irises */}
-      <circle cx="70" cy="82" r="3.5" fill={eye} />
-      <circle cx="90" cy="82" r="3.5" fill={eye} />
-      {/* Pupils */}
-      <circle cx="70" cy="82" r="1.5" fill="#111" />
-      <circle cx="90" cy="82" r="1.5" fill="#111" />
-      {/* Eye shine */}
-      <circle cx="71" cy="81" r="0.8" fill="white" />
-      <circle cx="91" cy="81" r="0.8" fill="white" />
       {/* Eyebrows */}
-      <path d="M63 75 Q70 72 77 75" stroke={hair} strokeWidth="2" fill="none" strokeLinecap="round" />
-      <path d="M83 75 Q90 72 97 75" stroke={hair} strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path
+        d="M76 82 C79 78 84 77 88 79"
+        stroke={hair}
+        strokeWidth="2.5"
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path
+        d="M112 82 C109 78 104 77 100 79"
+        stroke={hair}
+        strokeWidth="2.5"
+        fill="none"
+        strokeLinecap="round"
+      />
 
-      {/* ── NOSE ── */}
-      <ellipse cx="80" cy="89" rx="3" ry="2" fill={skin.shade} />
+      {/* Eye whites */}
+      <path
+        d="M76 91 C76 87 78 85 82 85 C86 85 88 87 88 91 C88 95 86 97 82 97 C78 97 76 95 76 91 Z"
+        fill="white"
+      />
+      <path
+        d="M112 91 C112 87 114 85 118 85 C122 85 124 87 124 91 C124 95 122 97 118 97 C114 97 112 95 112 91 Z"
+        fill="white"
+      />
+      {/* Irises */}
+      <circle cx="82"  cy="91" r="4.5" fill={eye} />
+      <circle cx="118" cy="91" r="4.5" fill={eye} />
+      {/* Pupils */}
+      <circle cx="82"  cy="91" r="2.2" fill="#111" />
+      <circle cx="118" cy="91" r="2.2" fill="#111" />
+      {/* Eye shine highlights */}
+      <circle cx="83.5" cy="89.5" r="1.2" fill="white" opacity="0.9" />
+      <circle cx="119.5" cy="89.5" r="1.2" fill="white" opacity="0.9" />
+      {/* Lower eyelid line */}
+      <path
+        d="M76 93 C78 96 86 96 88 93"
+        stroke={skin.shade}
+        strokeWidth="0.8"
+        fill="none"
+        opacity="0.5"
+      />
+      <path
+        d="M112 93 C114 96 122 96 124 93"
+        stroke={skin.shade}
+        strokeWidth="0.8"
+        fill="none"
+        opacity="0.5"
+      />
 
-      {/* ── SMILE ── */}
-      <path d="M71 96 Q80 104 89 96" stroke={skin.shade} strokeWidth="2.2" fill="none" strokeLinecap="round" />
+      {/* Nose — subtle curved bridge and nostrils */}
+      <path
+        d="M100 96 C99 100 97 104 96 107 C98 109 102 109 104 107 C103 104 101 100 100 96 Z"
+        fill={skin.shade}
+        opacity="0.45"
+      />
+      <path
+        d="M96 107 C95 110 97 112 100 112 C103 112 105 110 104 107"
+        stroke={skin.shade}
+        strokeWidth="1.2"
+        fill="none"
+        opacity="0.6"
+        strokeLinecap="round"
+      />
 
-      {/* ── SHIRT BACK TEXT (shown via transform on a separate group) ── */}
-      {/* We show it on the back by using a sub-section below the avatar */}
+      {/* Smile — wide curve showing teeth */}
+      <path
+        d="M84 118 C87 125 100 127 116 118"
+        stroke={skin.shade}
+        strokeWidth="1.8"
+        fill="none"
+        strokeLinecap="round"
+        opacity="0.7"
+      />
+      {/* Teeth */}
+      <path
+        d="M85 118 C88 124 100 126 115 118 C112 124 105 128 100 128 C95 128 88 124 85 118 Z"
+        fill="white"
+        opacity="0.9"
+      />
+      {/* Smile mouth outline */}
+      <path
+        d="M84 118 C87 126 100 129 116 118"
+        stroke={skin.shade}
+        strokeWidth="1.5"
+        fill="none"
+        strokeLinecap="round"
+        opacity="0.5"
+      />
+      {/* Cheek blush */}
+      <ellipse cx="74"  cy="110" rx="7" ry="4" fill="#FF9999" opacity="0.25" />
+      <ellipse cx="126" cy="110" rx="7" ry="4" fill="#FF9999" opacity="0.25" />
     </svg>
   );
 }
