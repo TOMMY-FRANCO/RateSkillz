@@ -2,11 +2,12 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, User, Swords, RefreshCw, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, User, Swords, RefreshCw, Loader2, MapPin } from 'lucide-react';
 import { DefaultAvatar } from '../components/ui/DefaultAvatar';
 import { getMultipleUserPresence, type UserPresence } from '../lib/presence';
 import OnlineStatus from '../components/OnlineStatus';
 import ArenaLeaderboardTab from '../components/leaderboard/ArenaLeaderboardTab';
+import LondonLeaderboardTab from '../components/leaderboard/LondonLeaderboardTab';
 import { markNotificationsRead } from '../lib/notifications';
 
 const PAGE_SIZE = 20;
@@ -24,7 +25,7 @@ interface LeaderboardEntry {
   gender: string | null;
 }
 
-type TabType = 'global' | 'arenas';
+type TabType = 'global' | 'london' | 'arenas';
 
 export default function Leaderboard() {
   const { profile } = useAuth();
@@ -236,6 +237,18 @@ export default function Leaderboard() {
             </button>
 
             <button
+              onClick={() => setActiveTab('london')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
+                activeTab === 'london'
+                  ? 'btn-primary'
+                  : 'btn-ghost'
+              }`}
+            >
+              <MapPin className="w-5 h-5" />
+              <span>London Arena</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('arenas')}
               className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all ${
                 activeTab === 'arenas'
@@ -410,6 +423,8 @@ export default function Leaderboard() {
             )}
           </div>
         )}
+
+        {activeTab === 'london' && <LondonLeaderboardTab />}
 
         {activeTab === 'arenas' && <ArenaLeaderboardTab />}
       </main>
