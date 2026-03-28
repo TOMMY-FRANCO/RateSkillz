@@ -111,8 +111,8 @@ export default function Landing() {
 <div className="flex justify-center mb-8">
   <PlayerCard
     profile={{
-      id: 'demo',
-      username: 'test123',
+      id: 'f6832f92-0877-46cc-9231-1ca01ccd2364',
+username: 'test123',
       full_name: 'Test User',
       position: 'AM',
       team: 'Chelsea',
@@ -121,8 +121,8 @@ export default function Landing() {
       coin_balance: 0,
     } as any}
     userStats={{
-      id: 'demo',
-      user_id: 'demo',
+      id: 'f6832f92-0877-46cc-9231-1ca01ccd2364',
+user_id: 'f6832f92-0877-46cc-9231-1ca01ccd2364',
       pac: 98, sho: 98, pas: 98,
       dri: 98, def: 98, phy: 98,
       overall: 98,
