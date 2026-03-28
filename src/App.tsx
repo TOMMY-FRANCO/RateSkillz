@@ -63,6 +63,8 @@ const SecretGames = lazy(() => import('./pages/SecretGames'));
 const Scouter = lazy(() => import('./pages/Scouter'));
 const UsernameSetup = lazy(() => import('./pages/UsernameSetup'));
 const SkinStore = lazy(() => import('./pages/SkinStore'));
+const MyAvatar = lazy(() => import('./pages/MyAvatar'));
+const SkinsStore = lazy(() => import('./pages/SkinsStore'));
 const ClubsPortal = lazy(() => import('./pages/ClubsPortal'));
 const Predictions = lazy(() => import('./pages/Predictions'));
 const AdminPredictions = lazy(() => import('./pages/AdminPredictions'));
@@ -574,6 +576,26 @@ function App() {
           <Route path="/terms" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><TermsOfService /></LazyPageWrapper>} />
           <Route path="/terms-of-service" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><TermsOfService /></LazyPageWrapper>} />
           <Route path="/privacy-policy" element={<LazyPageWrapper skeleton={<GenericPageSkeleton />}><PrivacyPolicy /></LazyPageWrapper>} />
+          <Route
+            path="/my-avatar"
+            element={
+              <ProtectedRoute>
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <MyAvatar />
+                </LazyPageWrapper>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/skins-store"
+            element={
+              <ProtectedRoute>
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <SkinsStore />
+                </LazyPageWrapper>
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
