@@ -13,7 +13,7 @@ import ProfileRatingsSection from '../components/profile/ProfileRatingsSection';
 import ProfileCommentsSection from '../components/profile/ProfileCommentsSection';
 import { useProfileData } from '../hooks/useProfileData';
 import { useProfileActions } from '../hooks/useProfileActions';
-import { Coins, Users, Eye, ThumbsUp, Share2, Loader2 } from 'lucide-react';
+import { Coins, Users, Eye, ThumbsUp, Share2, Loader2, Shield } from 'lucide-react';
 import { formatCoinBalance, formatCoinBalanceFull } from '../lib/formatBalance';
 import { ShimmerBar, StaggerItem, SlowLoadMessage } from '../components/ui/Shimmer';
 import { SkeletonAvatar } from '../components/ui/SkeletonPresets';
@@ -212,6 +212,21 @@ export default function ProfileView() {
             hasSocialBadge={hasSocialBadge}
           />
         </div>
+
+        {/* Team → Scouter link */}
+        {profile.team && (profile as any).club_id && (
+          <div className="flex justify-center mb-2 -mt-2">
+            <button
+              onClick={() => navigate('/scouter', {
+                state: { highlightClubId: (profile as any).club_id }
+              })}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all"
+            >
+              <Shield className="w-3 h-3" />
+              {profile.team}
+            </button>
+          </div>
+        )}
 
         <div className="flex justify-center mb-6">
           <button
