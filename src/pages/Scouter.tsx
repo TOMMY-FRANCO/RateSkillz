@@ -264,11 +264,13 @@ function ClubCard({
   expanded,
   onToggle,
   navigate,
+  id,
 }: {
   club: FootballClub;
   expanded: boolean;
   onToggle: () => void;
   navigate: (path: string) => void;
+  id?: string;
 }) {
   const [staff, setStaff] = useState<ClubStaff[]>([]);
   const [players, setPlayers] = useState<ClubPlayer[]>([]);
@@ -322,7 +324,7 @@ function ClubCard({
   };
 
   return (
-    <div className="glass-card overflow-hidden">
+    <div id={id} className="glass-card overflow-hidden">
       <div
         className="p-4 cursor-pointer select-none"
         onClick={handleToggle}
