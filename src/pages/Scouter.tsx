@@ -658,6 +658,19 @@ function ClubsTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedClubId, setExpandedClubId] = useState<string | null>(null);
   const [collapsedRegions, setCollapsedRegions] = useState<Set<string>>(new Set());
+  const location = useLocation();
+
+useEffect(() => {
+  const highlightClubId = (location.state as any)?.highlightClubId;
+  if (highlightClubId && clubs.length > 0) {
+    setExpandedClubId(highlightClubId);
+    setTimeout(() => {
+      document.getElementById(`club-${highlightClubId}`)?.scrollIntoView({
+        behavior: 'smooth', block: 'center',
+      });
+    }, 300);
+  }
+}, [location.state, clubs]);
 
   const fetchClubs = useCallback(async () => {
     setError(null);
