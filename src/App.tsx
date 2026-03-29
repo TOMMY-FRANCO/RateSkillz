@@ -68,6 +68,8 @@ const SkinsStore = lazy(() => import('./pages/SkinsStore'));
 const ClubsPortal = lazy(() => import('./pages/ClubsPortal'));
 const Predictions = lazy(() => import('./pages/Predictions'));
 const AdminPredictions = lazy(() => import('./pages/AdminPredictions'));
+const ClubChat = lazy(() => import('./pages/ClubChat'));
+const ChatMatchSettings = lazy(() => import('./pages/ChatMatchSettings'));
 
 function LoadingScreen() {
   return (
@@ -444,6 +446,26 @@ function App() {
               <ProtectedRoute>
                 <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
                   <WatchAd />
+                </LazyPageWrapper>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/club-chat"
+            element={
+              <ProtectedRoute>
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <ClubChat />
+                </LazyPageWrapper>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chat-match-settings"
+            element={
+              <ProtectedRoute>
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <ChatMatchSettings />
                 </LazyPageWrapper>
               </ProtectedRoute>
             }

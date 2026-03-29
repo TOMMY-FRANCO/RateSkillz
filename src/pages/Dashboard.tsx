@@ -438,6 +438,18 @@ export default function Dashboard() {
             </div>
           </button>
 
+          <button onClick={() => navigate('/club-chat')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#FF6B00] to-[#FF9500] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#FF6B00]/30">
+                <MessageSquare className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Club Chat</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Chat with your club · 16–21 UTC</p>
+              </div>
+            </div>
+          </button>
+
           <button onClick={() => navigate('/activity-feed')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
             <NotificationBadge count={badgeCounts.activityFeed} userId={profile?.id} notificationType="activity_feed" capAt9 />
             <div className="flex items-center space-x-3">
