@@ -27,6 +27,8 @@ export default function EditProfile() {
   const [avatarPosition, setAvatarPosition] = useState(
     profile?.avatar_position || { x: 0, y: 0, scale: 1 }
   );
+  const [clubs, setClubs] = useState<{ id: string; name: string; gender: string }[]>([]);
+  const [clubId, setClubId] = useState(profile?.club_id || '');
   const [showPositioning, setShowPositioning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,6 +73,12 @@ export default function EditProfile() {
     if (profile) {
       loadCurrentEducation();
       checkOAuthUser(profile.id);
+      // Fetch clubs from football_clubs table
+      supabase
+        .from('football_clubs')
+        .select('id, name, gender')
+        .order('name')
+        .then(({ data }) => setClubs(data || []));
     }
   }, [profile?.id]);
 
@@ -338,11 +346,15 @@ export default function EditProfile() {
       return;
     }
 
+    // Resolve team name and club_id from selected club
+    const selectedClub = clubs.find(c => c.id === clubId);
+
     const { error } = await updateProfile({
       full_name: fullName,
       position,
       number,
-      team,
+      team: selectedClub?.name || team,
+      club_id: clubId || null,
       gender: gender || null,
       secondary_school_id: secondarySchoolId || null,
       college_id: collegeId || null,
@@ -377,6 +389,9 @@ export default function EditProfile() {
       </div>
     );
   }
+
+  const mensClubs = clubs.filter(c => c.gender === 'mens');
+  const womensClubs = clubs.filter(c => c.gender === 'womens');
 
   return (
     <div className="min-h-screen bg-black">
@@ -541,18 +556,18 @@ export default function EditProfile() {
                   onChange={(e) => setPosition(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
                 >
-                <option value="">Select a position</option>
-                <option value="GK">GK – Goalkeeper</option>
-                <option value="AM">AM – Attacking Midfielder</option>
-                <option value="WB">WB – Wing-Back</option>
-                <option value="RW">RW – Winger</option>
-                <option value="LW">LW – Winger</option>
-                <option value="CM">CM – Central Midfielder</option>
-                <option value="CB">CB – Centre-Back</option>
-                <option value="LB">LB – Left Back</option>
-                <option value="RB">RB – Right Back</option>
-                <option value="DM">DM – Defensive Midfielder</option>
-              </select>
+                  <option value="">Select a position</option>
+                  <option value="GK">GK – Goalkeeper</option>
+                  <option value="AM">AM – Attacking Midfielder</option>
+                  <option value="WB">WB – Wing-Back</option>
+                  <option value="RW">RW – Winger</option>
+                  <option value="LW">LW – Winger</option>
+                  <option value="CM">CM – Central Midfielder</option>
+                  <option value="CB">CB – Centre-Back</option>
+                  <option value="LB">LB – Left Back</option>
+                  <option value="RB">RB – Right Back</option>
+                  <option value="DM">DM – Defensive Midfielder</option>
+                </select>
               </div>
 
               <div>
@@ -574,55 +589,32 @@ export default function EditProfile() {
               </div>
             </div>
 
+            {/* ── TEAM DROPDOWN (replaced hardcoded list with football_clubs) ── */}
             <div>
               <label htmlFor="team" className="block text-sm font-medium text-gray-300 mb-2">
                 Team
               </label>
               <select
                 id="team"
-                value={team}
-                onChange={(e) => setTeam(e.target.value)}
+                value={clubId}
+                onChange={(e) => {
+                  const selected = clubs.find(c => c.id === e.target.value);
+                  setClubId(e.target.value);
+                  setTeam(selected?.name || '');
+                }}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
               >
                 <option value="">Select a team</option>
-                <option value="Arsenal">Arsenal</option>
-                <option value="Aston Villa">Aston Villa</option>
-                <option value="Barnet">Barnet</option>
-                <option value="Barrow">Barrow</option>
-                <option value="Birmingham City">Birmingham City</option>
-                <option value="Blackburn Rovers">Blackburn Rovers</option>
-                <option value="Blackpool">Blackpool</option>
-                <option value="Bolton Wanderers">Bolton Wanderers</option>
-                <option value="Bournemouth">Bournemouth</option>
-                <option value="Brentford">Brentford</option>
-                <option value="Brighton & Hove Albion">Brighton & Hove Albion</option>
-                <option value="Bristol Rovers">Bristol Rovers</option>
-                <option value="Burnley">Burnley</option>
-                <option value="Charlton Athletic">Charlton Athletic</option>
-                <option value="Chelsea">Chelsea</option>
-                <option value="Coventry City">Coventry City</option>
-                <option value="Crewe Alexandra">Crewe Alexandra</option>
-                <option value="Crystal Palace">Crystal Palace</option>
-                <option value="Everton">Everton</option>
-                <option value="Fulham">Fulham</option>
-                <option value="Ipswich Town">Ipswich Town</option>
-                <option value="Leeds United">Leeds United</option>
-                <option value="Leicester City">Leicester City</option>
-                <option value="Liverpool">Liverpool</option>
-                <option value="Manchester City">Manchester City</option>
-                <option value="Manchester United">Manchester United</option>
-                <option value="Newcastle United">Newcastle United</option>
-                <option value="Nottingham Forest">Nottingham Forest</option>
-                <option value="Oldham Athletic">Oldham Athletic</option>
-                <option value="Queens Park Rangers">Queens Park Rangers</option>
-                <option value="Reading">Reading</option>
-                <option value="Sheffield United">Sheffield United</option>
-                <option value="Sheffield Wednesday">Sheffield Wednesday</option>
-                <option value="Sunderland">Sunderland</option>
-                <option value="Tottenham Hotspur">Tottenham Hotspur</option>
-                <option value="West Bromwich Albion">West Bromwich Albion</option>
-                <option value="West Ham United">West Ham United</option>
-                <option value="Wolverhampton Wanderers">Wolverhampton Wanderers</option>
+                <optgroup label="Men's Clubs">
+                  {mensClubs.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Women's Clubs">
+                  {womensClubs.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </optgroup>
               </select>
             </div>
 
