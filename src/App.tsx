@@ -70,6 +70,7 @@ const Predictions = lazy(() => import('./pages/Predictions'));
 const AdminPredictions = lazy(() => import('./pages/AdminPredictions'));
 const ClubChat = lazy(() => import('./pages/ClubChat'));
 const ChatMatchSettings = lazy(() => import('./pages/ChatMatchSettings'));
+const Connections = lazy(() => import('./pages/Connections'));
 
 function LoadingScreen() {
   return (
@@ -446,6 +447,16 @@ function App() {
               <ProtectedRoute>
                 <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
                   <WatchAd />
+                </LazyPageWrapper>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/connections"
+            element={
+              <ProtectedRoute>
+                <LazyPageWrapper skeleton={<GenericPageSkeleton />}>
+                  <Connections />
                 </LazyPageWrapper>
               </ProtectedRoute>
             }

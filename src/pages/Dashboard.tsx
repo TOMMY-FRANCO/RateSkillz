@@ -450,6 +450,18 @@ export default function Dashboard() {
             </div>
           </button>
 
+          <button onClick={() => navigate('/connections')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#00C2FF] to-[#0077FF] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#00C2FF]/30">
+                <Users className="w-5 h-5 text-black" />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-sm sm:text-base">Connections</h3>
+                <p className="text-[#B0B8C8] text-xs sm:text-sm">Your club, squad & friends</p>
+              </div>
+            </div>
+          </button>
+
           <button onClick={() => navigate('/activity-feed')} className="glass-card p-3 sm:p-4 cursor-pointer text-left w-full relative">
             <NotificationBadge count={badgeCounts.activityFeed} userId={profile?.id} notificationType="activity_feed" capAt9 />
             <div className="flex items-center space-x-3">
