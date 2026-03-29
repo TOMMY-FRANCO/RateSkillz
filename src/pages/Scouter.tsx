@@ -660,6 +660,7 @@ function ClubsTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedClubId, setExpandedClubId] = useState<string | null>(null);
   const [collapsedRegions, setCollapsedRegions] = useState<Set<string>>(new Set());
+  
   const location = useLocation();
 
 useEffect(() => {
